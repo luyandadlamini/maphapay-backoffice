@@ -13,6 +13,7 @@ import {
   getUTXOMerkletreeForNetwork,
   ArtifactStore,
 } from '@railgun-community/wallet';
+import LevelDOWN from 'leveldown';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -95,10 +96,13 @@ export async function initializeEngine(): Promise<void> {
     (msg: string) => logger.error(`[RAILGUN] ${msg}`),
   );
 
+  // Create LevelDB instance (SDK requires AbstractLevelDOWN, not a path string)
+  const db = new LevelDOWN(dbPath);
+
   // Start the engine (v9 SDK signature)
   await startRailgunEngine(
     'finaegisbridge',
-    dbPath,
+    db,
     // Debug mode in non-production
     process.env.NODE_ENV !== 'production',
     // Artifact store — RAILGUN downloads proving artifacts here
