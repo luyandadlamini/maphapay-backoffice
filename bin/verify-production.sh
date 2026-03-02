@@ -281,8 +281,9 @@ section "7. CoinGecko (Exchange Rates)"
 # =============================================================================
 
 CG_KEY=$(env_get COINGECKO_API_KEY)
-CG_ENABLED=$(env_get COINGECKO_ENABLED)
-if [[ "$CG_ENABLED" == "true" && -n "$CG_KEY" ]]; then
+CG_ENABLED=$(env_get EXCHANGE_COINGECKO_ENABLED)
+if [[ -n "$CG_KEY" ]]; then
+    [[ "$CG_ENABLED" != "true" ]] && warn "EXCHANGE_COINGECKO_ENABLED not set to true (add to .env to enable)"
     CG_RESP=$(c -s -H "x-cg-demo-api-key: ${CG_KEY}" "https://api.coingecko.com/api/v3/ping")
     if echo "$CG_RESP" | grep -q "gecko_says"; then
         pass "CoinGecko API (ping OK)"
