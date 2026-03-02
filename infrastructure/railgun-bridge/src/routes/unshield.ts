@@ -2,10 +2,9 @@ import { Router, Request, Response } from 'express';
 import {
   populateProvedUnshield,
   generateUnshieldProof,
-  gasEstimateForUnshield,
 } from '@railgun-community/wallet';
-import { NetworkName, RailgunERC20Amount } from '@railgun-community/shared-models';
-import { isEngineReady, resolveNetworkName, resolveChainId, logger } from '../engine';
+import { NetworkName, RailgunERC20AmountRecipient, TXIDVersion, EVMGasType } from '@railgun-community/shared-models';
+import { isEngineReady, resolveNetworkName, resolveChainId, logger, DEFAULT_TXID_VERSION } from '../engine';
 import { walletRegistry } from './wallet';
 import { EngineNotReadyError, ValidationError, errorResponse } from '../utils/errors';
 
@@ -37,37 +36,39 @@ router.post('/unshield', async (req: Request, res: Response) => {
     }
 
     const networkName = resolveNetworkName(network);
-    const chainId = resolveChainId(network);
-    const chain = { type: 0, id: chainId };
 
-    const erc20Amount: RailgunERC20Amount = {
+    const erc20AmountRecipient: RailgunERC20AmountRecipient = {
       tokenAddress,
       amount: BigInt(amount),
+      recipientAddress,
     };
 
-    // Generate the unshield proof (this is computationally expensive)
+    // Generate the unshield proof (v9 SDK signature)
     logger.info('Generating unshield proof...', { walletId, network });
     await generateUnshieldProof(
+      DEFAULT_TXID_VERSION,
       networkName,
-      walletInfo.railgunAddress,
+      walletInfo.id,
       encryptionKey,
-      [erc20Amount],
+      [erc20AmountRecipient],
       [], // No NFTs
-      recipientAddress,
-      false, // Not a relayer fee
-      0, // No relay adaptation
+      undefined, // No broadcaster fee
+      true, // sendWithPublicWallet
+      undefined, // overallBatchMinGasPrice
       () => {}, // Progress callback
     );
 
     // Populate the proved unshield transaction
     const { transaction, nullifiers } = await populateProvedUnshield(
+      DEFAULT_TXID_VERSION,
       networkName,
-      walletInfo.railgunAddress,
-      [erc20Amount],
+      walletInfo.id,
+      [erc20AmountRecipient],
       [], // No NFTs
-      recipientAddress,
-      false,
-      0,
+      undefined, // No broadcaster fee
+      true, // sendWithPublicWallet
+      undefined, // overallBatchMinGasPrice
+      { evmGasType: EVMGasType.Type2, maxFeePerGas: BigInt(0), maxPriorityFeePerGas: BigInt(0), gasEstimate: BigInt(0) }, // gasDetails placeholder — caller sets actual gas
     );
 
     logger.info('Unshield transaction built', {

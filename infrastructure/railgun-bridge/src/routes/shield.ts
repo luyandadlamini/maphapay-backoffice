@@ -3,8 +3,8 @@ import {
   populateShield,
   gasEstimateForShield,
 } from '@railgun-community/wallet';
-import { NetworkName, RailgunERC20Amount } from '@railgun-community/shared-models';
-import { isEngineReady, resolveNetworkName, resolveChainId, logger } from '../engine';
+import { NetworkName, RailgunERC20AmountRecipient, TXIDVersion } from '@railgun-community/shared-models';
+import { isEngineReady, resolveNetworkName, resolveChainId, logger, DEFAULT_TXID_VERSION } from '../engine';
 import { walletRegistry } from './wallet';
 import { EngineNotReadyError, ValidationError, errorResponse } from '../utils/errors';
 
@@ -19,9 +19,9 @@ router.post('/shield', async (req: Request, res: Response) => {
   try {
     if (!isEngineReady()) throw new EngineNotReadyError();
 
-    const { walletId, tokenAddress, amount, network } = req.body;
-    if (!walletId || !tokenAddress || !amount || !network) {
-      throw new ValidationError('walletId, tokenAddress, amount, and network are required');
+    const { walletId, tokenAddress, amount, network, shieldPrivateKey } = req.body;
+    if (!walletId || !tokenAddress || !amount || !network || !shieldPrivateKey) {
+      throw new ValidationError('walletId, tokenAddress, amount, network, and shieldPrivateKey are required');
     }
 
     const walletInfo = walletRegistry.get(walletId);
@@ -34,20 +34,20 @@ router.post('/shield', async (req: Request, res: Response) => {
     }
 
     const networkName = resolveNetworkName(network);
-    const chainId = resolveChainId(network);
-    const chain = { type: 0, id: chainId };
 
-    // Build ERC20 amount
-    const shieldAmount: RailgunERC20Amount = {
+    // Build ERC20 amount recipient (v9 SDK uses AmountRecipient)
+    const shieldAmountRecipient: RailgunERC20AmountRecipient = {
       tokenAddress,
       amount: BigInt(amount),
+      recipientAddress: walletInfo.railgunAddress,
     };
 
     // Populate shield transaction
     const { transaction, nullifiers } = await populateShield(
+      DEFAULT_TXID_VERSION,
       networkName,
-      walletInfo.railgunAddress,
-      [shieldAmount],
+      shieldPrivateKey,
+      [shieldAmountRecipient],
       [], // No NFTs
     );
 
@@ -55,10 +55,12 @@ router.post('/shield', async (req: Request, res: Response) => {
     let gasEstimate: string | undefined;
     try {
       const estimate = await gasEstimateForShield(
+        DEFAULT_TXID_VERSION,
         networkName,
-        walletInfo.railgunAddress,
-        [shieldAmount],
+        shieldPrivateKey,
+        [shieldAmountRecipient],
         [], // No NFTs
+        walletInfo.railgunAddress, // fromWalletAddress
       );
       gasEstimate = estimate.gasEstimate.toString();
     } catch (gasErr) {

@@ -3,12 +3,15 @@ import {
   NetworkName,
   NETWORK_CONFIG,
   FallbackProviderJsonConfig,
+  TXIDVersion,
 } from '@railgun-community/shared-models';
 import {
   startRailgunEngine,
   loadProvider,
   setLoggers,
   getProver,
+  getUTXOMerkletreeForNetwork,
+  ArtifactStore,
 } from '@railgun-community/wallet';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -21,6 +24,9 @@ export const logger = winston.createLogger({
   ),
   transports: [new winston.transports.Console()],
 });
+
+// Default TXID version for all operations
+export const DEFAULT_TXID_VERSION = TXIDVersion.V2_PoseidonMerkle;
 
 // Chain ID → NetworkName mapping for RAILGUN
 export const SUPPORTED_NETWORKS: Record<string, NetworkName> = {
@@ -89,33 +95,35 @@ export async function initializeEngine(): Promise<void> {
     (msg: string) => logger.error(`[RAILGUN] ${msg}`),
   );
 
-  // Start the engine
+  // Start the engine (v9 SDK signature)
   await startRailgunEngine(
     'finaegis-railgun-bridge',
     dbPath,
     // Debug mode in non-production
     process.env.NODE_ENV !== 'production',
     // Artifact store — RAILGUN downloads proving artifacts here
-    {
-      getFile: async (filePath: string) => {
+    new ArtifactStore(
+      async (filePath: string) => {
         const fullPath = path.join(artifactsDir, filePath);
         if (fs.existsSync(fullPath)) {
           return fs.readFileSync(fullPath);
         }
-        return undefined;
+        return null;
       },
-      storeFile: async (filePath: string, data: Buffer | string | Uint8Array) => {
-        const fullPath = path.join(artifactsDir, filePath);
-        const dir = path.dirname(fullPath);
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, { recursive: true });
+      async (dir: string, filePath: string, data: string | Uint8Array) => {
+        const fullPath = path.join(artifactsDir, dir, filePath);
+        const parentDir = path.dirname(fullPath);
+        if (!fs.existsSync(parentDir)) {
+          fs.mkdirSync(parentDir, { recursive: true });
         }
         fs.writeFileSync(fullPath, data);
       },
-      fileExists: async (filePath: string) => {
+      async (filePath: string) => {
         return fs.existsSync(path.join(artifactsDir, filePath));
       },
-    },
+    ),
+    false, // useNativeArtifacts — false for Node.js (true for mobile)
+    false, // skipMerkletreeScans — false to enable balance scanning
   );
 
   logger.info('RAILGUN Engine started');
@@ -136,7 +144,7 @@ export async function initializeEngine(): Promise<void> {
       const { feesSerialized } = await loadProvider(
         providerConfig,
         networkName,
-        false, // polling not needed for bridge
+        // pollingInterval in ms (0 = no polling, just on-demand)
       );
 
       loadedNetworks.add(networkKey);
@@ -182,4 +190,15 @@ export function resolveChainId(network: string): number {
     throw new Error(`Unknown chain ID for network: ${network}`);
   }
   return id;
+}
+
+/**
+ * Get the current Merkle root for a network.
+ */
+export async function getMerkleRootForNetwork(network: string): Promise<{ root: string; latestTree: number }> {
+  const networkName = resolveNetworkName(network);
+  const merkletree = getUTXOMerkletreeForNetwork(DEFAULT_TXID_VERSION, networkName);
+  const latestTree = await merkletree.latestTree();
+  const root = await merkletree.getRoot(latestTree);
+  return { root, latestTree };
 }

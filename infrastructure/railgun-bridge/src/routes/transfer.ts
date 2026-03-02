@@ -3,8 +3,8 @@ import {
   populateProvedTransfer,
   generateTransferProof,
 } from '@railgun-community/wallet';
-import { NetworkName, RailgunERC20Amount } from '@railgun-community/shared-models';
-import { isEngineReady, resolveNetworkName, resolveChainId, logger } from '../engine';
+import { NetworkName, RailgunERC20AmountRecipient, TXIDVersion, EVMGasType } from '@railgun-community/shared-models';
+import { isEngineReady, resolveNetworkName, resolveChainId, logger, DEFAULT_TXID_VERSION } from '../engine';
 import { walletRegistry } from './wallet';
 import { EngineNotReadyError, ValidationError, errorResponse } from '../utils/errors';
 
@@ -36,41 +36,43 @@ router.post('/transfer', async (req: Request, res: Response) => {
     }
 
     const networkName = resolveNetworkName(network);
-    const chainId = resolveChainId(network);
-    const chain = { type: 0, id: chainId };
 
-    const erc20Amount: RailgunERC20Amount = {
+    const erc20AmountRecipient: RailgunERC20AmountRecipient = {
       tokenAddress,
       amount: BigInt(amount),
+      recipientAddress: recipientRailgunAddress,
     };
 
-    // Generate the transfer proof
+    // Generate the transfer proof (v9 SDK signature)
     logger.info('Generating transfer proof...', { walletId, network });
     await generateTransferProof(
+      DEFAULT_TXID_VERSION,
       networkName,
-      walletInfo.railgunAddress,
+      walletInfo.id,
       encryptionKey,
       false, // showSenderAddressToRecipient
       undefined, // memoText
-      [erc20Amount],
+      [erc20AmountRecipient],
       [], // No NFTs
-      recipientRailgunAddress,
-      false, // Not a relayer fee
-      0, // No relay adaptation
+      undefined, // No broadcaster fee
+      true, // sendWithPublicWallet
+      undefined, // overallBatchMinGasPrice
       () => {}, // Progress callback
     );
 
     // Populate the proved transfer transaction
     const { transaction, nullifiers } = await populateProvedTransfer(
+      DEFAULT_TXID_VERSION,
       networkName,
-      walletInfo.railgunAddress,
-      false,
-      undefined,
-      [erc20Amount],
+      walletInfo.id,
+      false, // showSenderAddressToRecipient
+      undefined, // memoText
+      [erc20AmountRecipient],
       [], // No NFTs
-      recipientRailgunAddress,
-      false,
-      0,
+      undefined, // No broadcaster fee
+      true, // sendWithPublicWallet
+      undefined, // overallBatchMinGasPrice
+      { evmGasType: EVMGasType.Type2, maxFeePerGas: BigInt(0), maxPriorityFeePerGas: BigInt(0), gasEstimate: BigInt(0) }, // gasDetails placeholder
     );
 
     logger.info('Private transfer transaction built', {

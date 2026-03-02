@@ -5,13 +5,14 @@ import {
   refreshBalances,
   walletForID,
 } from '@railgun-community/wallet';
-import { NetworkName, RailgunWalletInfo } from '@railgun-community/shared-models';
+import { NetworkName, RailgunWalletInfo, TXIDVersion } from '@railgun-community/shared-models';
 import {
   isEngineReady,
   resolveNetworkName,
   resolveChainId,
   logger,
   SUPPORTED_NETWORKS,
+  DEFAULT_TXID_VERSION,
 } from '../engine';
 import { EngineNotReadyError, ValidationError, errorResponse } from '../utils/errors';
 
@@ -67,7 +68,7 @@ router.get('/wallet/:id/balances', async (req: Request, res: Response) => {
   try {
     if (!isEngineReady()) throw new EngineNotReadyError();
 
-    const walletId = req.params.id;
+    const walletId = req.params.id as string;
     const network = (req.query.network as string) || 'polygon';
 
     const walletInfo = walletRegistry.get(walletId);
@@ -84,7 +85,7 @@ router.get('/wallet/:id/balances', async (req: Request, res: Response) => {
     const chain = { type: 0, id: chainId }; // type 0 = EVM
 
     const wallet = walletForID(walletInfo.id);
-    const balances = await wallet.getTokenBalances(chain, false);
+    const balances = await wallet.getTokenBalances(DEFAULT_TXID_VERSION, chain, false);
 
     // Convert bigint balances to string format
     const formattedBalances: Record<string, string> = {};
