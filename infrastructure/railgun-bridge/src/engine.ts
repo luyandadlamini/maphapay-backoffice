@@ -97,7 +97,7 @@ export async function initializeEngine(): Promise<void> {
 
   // Start the engine (v9 SDK signature)
   await startRailgunEngine(
-    'finaegis-bridge',
+    'finaegisbridge',
     dbPath,
     // Debug mode in non-production
     process.env.NODE_ENV !== 'production',
