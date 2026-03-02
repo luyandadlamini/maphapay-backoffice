@@ -58,7 +58,7 @@
                         Developers Deserve
                     </h1>
                     <p class="text-xl md:text-2xl mb-8 text-purple-100 max-w-4xl mx-auto">
-                        42 domain modules covering everything from <a href="{{ route('features.show', 'gcu') }}" class="text-white underline hover:text-purple-100">democratic currency governance</a> to cross-chain DeFi, privacy-preserving identity, AI-driven analytics, and HTTP-native micropayments. Open source. MIT licensed.
+                        43 domain modules covering everything from <a href="{{ route('features.show', 'gcu') }}" class="text-white underline hover:text-purple-100">democratic currency governance</a> to cross-chain DeFi, privacy-preserving identity, AI-driven analytics, and HTTP-native micropayments. Open source. MIT licensed.
                     </p>
                     <p class="mb-8">
                         <a href="{{ route('about') }}" class="text-purple-200 hover:text-white underline">Why we built this →</a>
@@ -176,7 +176,7 @@
                 <div class="text-center mb-16">
                     <h2 class="text-4xl font-bold text-gray-900 mb-4">Built-In Capabilities</h2>
                     <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                        42 domain modules spanning payments, lending, compliance, DeFi, privacy, mobile wallets, AI analytics, and more
+                        43 domain modules spanning payments, lending, compliance, DeFi, privacy, mobile wallets, AI analytics, and more
                     </p>
                 </div>
 
@@ -268,7 +268,7 @@
                         </div>
                         <h3 class="text-xl font-semibold mb-3">REST, GraphQL & OpenAPI</h3>
                         <p class="text-gray-600 mb-4">
-                            Full REST coverage with OpenAPI specs, GraphQL across 34 domains with real-time subscriptions, and configurable webhooks.
+                            Full REST coverage with OpenAPI specs, GraphQL across 35 domains with real-time subscriptions, and configurable webhooks.
                         </p>
                         <span class="text-blue-600 font-medium hover:text-blue-700">
                             View docs →
@@ -723,7 +723,7 @@
                             </svg>
                         </div>
                         <h3 class="text-xl font-semibold mb-3">REST & GraphQL APIs</h3>
-                        <p class="text-gray-600">OpenAPI/Swagger docs, GraphQL (34 domains), webhooks, and comprehensive test coverage</p>
+                        <p class="text-gray-600">OpenAPI/Swagger docs, GraphQL (35 domains), webhooks, and comprehensive test coverage</p>
                     </div>
                 </div>
 

@@ -261,7 +261,7 @@
                     </div>
                     <h3 class="text-xl font-semibold mb-3">Developer APIs</h3>
                     <p class="text-gray-600 mb-4">
-                        Full REST coverage with OpenAPI specs, GraphQL across 34 domains with real-time subscriptions, and configurable webhooks.
+                        Full REST coverage with OpenAPI specs, GraphQL across 35 domains with real-time subscriptions, and configurable webhooks.
                     </p>
                     <a href="{{ route('features.show', 'api') }}" class="text-blue-600 font-medium hover:text-blue-700">
                         View docs →
@@ -405,7 +405,7 @@
                     </div>
                     <h3 class="text-xl font-semibold mb-3">GraphQL API</h3>
                     <p class="text-gray-600 mb-4">
-                        Lighthouse-powered GraphQL covering 34 domains with real-time subscriptions, N+1 safe DataLoaders, and cursor-based pagination.
+                        Lighthouse-powered GraphQL covering 35 domains with real-time subscriptions, N+1 safe DataLoaders, and cursor-based pagination.
                     </p>
                     <a href="{{ route('features.show', 'api') }}" class="text-pink-600 font-medium hover:text-pink-700">
                         View API &rarr;

@@ -5,7 +5,7 @@
 @section('seo')
     @include('partials.seo', [
         'title' => 'Support Guides - FinAegis',
-        'description' => 'FinAegis platform guides and documentation. Learn how to use, deploy, and contribute to our open-source core banking platform with 42 domain modules.',
+        'description' => 'FinAegis platform guides and documentation. Learn how to use, deploy, and contribute to our open-source core banking platform with 43 domain modules.',
         'keywords' => 'FinAegis guides, documentation, tutorials, open source banking, core banking platform',
     ])
 @endsection

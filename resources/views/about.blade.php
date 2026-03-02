@@ -61,7 +61,7 @@
                 </div>
                 <h1 class="text-5xl font-bold text-gray-900 mb-6">About FinAegis</h1>
                 <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    Open-source core banking infrastructure built with Laravel—42 domain modules covering everything from democratic currency governance to AI agent commerce.
+                    Open-source core banking infrastructure built with Laravel—43 domain modules covering everything from democratic currency governance to AI agent commerce.
                 </p>
             </div>
         </div>
@@ -236,7 +236,7 @@
                 <div class="timeline-item mb-12">
                     <h3 class="text-xl font-bold text-gray-900 mb-2">GraphQL API</h3>
                     <p class="text-gray-600">
-                        Lighthouse-powered GraphQL covering 34 domains with real-time subscriptions, N+1 safe DataLoaders, and cursor-based pagination alongside REST/OpenAPI.
+                        Lighthouse-powered GraphQL covering 35 domains with real-time subscriptions, N+1 safe DataLoaders, and cursor-based pagination alongside REST/OpenAPI.
                     </p>
                 </div>
                 <div class="timeline-item mb-12">
@@ -305,7 +305,7 @@
                     <div class="bg-white rounded-xl shadow-lg p-6">
                         <h4 class="text-xl font-bold text-gray-900 mb-3">For Founders</h4>
                         <p class="text-gray-600 mb-4">
-                            Build your fintech product on battle-tested infrastructure. 42 domain modules, MIT licensed, ready to customize.
+                            Build your fintech product on battle-tested infrastructure. 43 domain modules, MIT licensed, ready to customize.
                         </p>
                         <a href="{{ route('developers') }}" class="text-indigo-600 font-semibold hover:text-indigo-700">
                             View Documentation →
