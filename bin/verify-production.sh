@@ -233,6 +233,24 @@ if [[ -n "$ALCHEMY_KEY" && ${#ALCHEMY_KEY} -gt 5 ]]; then
     else
         fail "Alchemy Ethereum RPC not responding"
     fi
+
+    ARB_BLOCK=$(c -s -X POST -H "Content-Type: application/json" \
+        -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+        "https://arb-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}")
+    if echo "$ARB_BLOCK" | grep -q '"result"'; then
+        pass "Alchemy Arbitrum RPC"
+    else
+        fail "Alchemy Arbitrum RPC not responding"
+    fi
+
+    BASE_BLOCK=$(c -s -X POST -H "Content-Type: application/json" \
+        -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+        "https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}")
+    if echo "$BASE_BLOCK" | grep -q '"result"'; then
+        pass "Alchemy Base RPC"
+    else
+        warn "Alchemy Base RPC not responding (needed for X402)"
+    fi
 else
     fail "Alchemy API key not configured"
 fi
