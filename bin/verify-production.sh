@@ -28,36 +28,40 @@ section() { echo -e "\n${CYAN}━━━ $1 ━━━${NC}"; }
 c() { curl --connect-timeout 3 --max-time 5 "$@" 2>/dev/null || echo ""; }
 
 # =============================================================================
-# Dump all config values in a single PHP call (avoids 25+ tinker invocations)
+# Dump all config values via direct PHP (avoids tinker/PsySH hanging)
 # =============================================================================
-CONFIG_DUMP=$(php artisan tinker --no-interaction --execute='
-$vals = [
-    "app_version"      => app()->version(),
-    "bridge_url"       => config("privacy.railgun.bridge_url", ""),
-    "bridge_secret"    => config("privacy.railgun.bridge_secret", ""),
-    "alchemy_key"      => env("ALCHEMY_API_KEY", ""),
-    "pimlico_key"      => config("relayer.pimlico.api_key", ""),
-    "cg_key"           => config("exchange.providers.coingecko.api_key", ""),
-    "cg_enabled"       => config("exchange.providers.coingecko.enabled") ? "true" : "false",
-    "pusher_key"       => config("broadcasting.connections.pusher.key", ""),
-    "pusher_cluster"   => config("broadcasting.connections.pusher.options.cluster", ""),
-    "fb_creds"         => config("firebase.projects.app.credentials", ""),
-    "stripe_key"       => config("cashier.secret") ?: config("services.stripe.secret", ""),
-    "tc_ca"            => config("trustcert.certificate_authority.ca_signing_key") ? "SET" : "EMPTY",
-    "tc_cred"          => config("trustcert.credentials.credential_signing_key") ? "SET" : "EMPTY",
-    "tc_pres"          => config("trustcert.credentials.presentation_signing_key") ? "SET" : "EMPTY",
-    "pp_enabled"       => config("privacy.privacy_pools.enabled") ? "true" : "false",
-    "zk_prov"          => config("privacy.zk.provider", ""),
-    "mk_prov"          => config("privacy.merkle.provider", ""),
-    "x402_on"          => config("x402.enabled") ? "true" : "false",
-    "x402_addr"        => config("x402.pay_to_address", ""),
-    "hsm_on"           => config("keymanagement.hsm.enabled") ? "true" : "false",
-    "hsm_prov"         => config("keymanagement.hsm.provider", ""),
-    "ondato_id"        => config("services.ondato.application_id", ""),
-    "marqeta_url"      => config("cardissuance.marqeta.base_url", ""),
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+CONFIG_DUMP=$(php -r "
+require '${SCRIPT_DIR}/vendor/autoload.php';
+\$app = require '${SCRIPT_DIR}/bootstrap/app.php';
+\$app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+\$vals = [
+    'app_version'    => app()->version(),
+    'bridge_url'     => config('privacy.railgun.bridge_url', ''),
+    'bridge_secret'  => config('privacy.railgun.bridge_secret', ''),
+    'alchemy_key'    => env('ALCHEMY_API_KEY', ''),
+    'pimlico_key'    => config('relayer.pimlico.api_key', ''),
+    'cg_key'         => config('exchange.providers.coingecko.api_key', ''),
+    'cg_enabled'     => config('exchange.providers.coingecko.enabled') ? 'true' : 'false',
+    'pusher_key'     => config('broadcasting.connections.pusher.key', ''),
+    'pusher_cluster' => config('broadcasting.connections.pusher.options.cluster', ''),
+    'fb_creds'       => config('firebase.projects.app.credentials', ''),
+    'stripe_key'     => config('cashier.secret') ?: config('services.stripe.secret', ''),
+    'tc_ca'          => config('trustcert.certificate_authority.ca_signing_key') ? 'SET' : 'EMPTY',
+    'tc_cred'        => config('trustcert.credentials.credential_signing_key') ? 'SET' : 'EMPTY',
+    'tc_pres'        => config('trustcert.credentials.presentation_signing_key') ? 'SET' : 'EMPTY',
+    'pp_enabled'     => config('privacy.privacy_pools.enabled') ? 'true' : 'false',
+    'zk_prov'        => config('privacy.zk.provider', ''),
+    'mk_prov'        => config('privacy.merkle.provider', ''),
+    'x402_on'        => config('x402.enabled') ? 'true' : 'false',
+    'x402_addr'      => config('x402.pay_to_address', ''),
+    'hsm_on'         => config('keymanagement.hsm.enabled') ? 'true' : 'false',
+    'hsm_prov'       => config('keymanagement.hsm.provider', ''),
+    'ondato_id'      => config('services.ondato.application_id', ''),
+    'marqeta_url'    => config('cardissuance.marqeta.base_url', ''),
 ];
-foreach ($vals as $k => $v) { echo "CFG:{$k}=" . ($v ?? "") . "\n"; }
-' 2>/dev/null || echo "CFG:app_version=FAIL")
+foreach (\$vals as \$k => \$v) { echo \"CFG:{\$k}=\" . (\$v ?? '') . PHP_EOL; }
+" 2>/dev/null || echo "CFG:app_version=FAIL")
 
 # Parse config values into bash variables
 cfg() { echo "$CONFIG_DUMP" | grep "^CFG:$1=" | head -1 | sed "s/^CFG:$1=//" ; }
@@ -122,7 +126,13 @@ fi
 section "2. Database (MariaDB)"
 # =============================================================================
 
-DB_CHECK=$(php artisan tinker --no-interaction --execute="try { \$pdo = DB::connection()->getPdo(); echo 'OK:' . DB::connection()->getDatabaseName(); } catch(Exception \$e) { echo 'FAIL:' . \$e->getMessage(); }" 2>/dev/null | tail -1 || echo "FAIL:unknown")
+DB_CHECK=$(php -r "
+require '${SCRIPT_DIR}/vendor/autoload.php';
+\$app = require '${SCRIPT_DIR}/bootstrap/app.php';
+\$app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+try { \$pdo = DB::connection()->getPdo(); echo 'OK:' . DB::connection()->getDatabaseName(); }
+catch(Exception \$e) { echo 'FAIL:' . \$e->getMessage(); }
+" 2>/dev/null | tail -1 || echo "FAIL:unknown")
 if [[ "$DB_CHECK" == *"OK:"* ]]; then
     DB_NAME=$(echo "$DB_CHECK" | grep -o 'OK:.*' | cut -d: -f2)
     pass "MariaDB connection (database: $DB_NAME)"
@@ -141,14 +151,26 @@ fi
 section "3. Redis"
 # =============================================================================
 
-REDIS_CHECK=$(php artisan tinker --no-interaction --execute="try { \Illuminate\Support\Facades\Redis::ping(); echo 'OK'; } catch(Exception \$e) { echo 'FAIL:' . \$e->getMessage(); }" 2>/dev/null | tail -1 || echo "FAIL")
+REDIS_CHECK=$(php -r "
+require '${SCRIPT_DIR}/vendor/autoload.php';
+\$app = require '${SCRIPT_DIR}/bootstrap/app.php';
+\$app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+try { \Illuminate\Support\Facades\Redis::ping(); echo 'OK'; }
+catch(Exception \$e) { echo 'FAIL:' . \$e->getMessage(); }
+" 2>/dev/null | tail -1 || echo "FAIL")
 if [[ "$REDIS_CHECK" == *"OK"* ]]; then
     pass "Redis connection"
 else
     fail "Redis connection: $REDIS_CHECK"
 fi
 
-CACHE_CHECK=$(php artisan tinker --no-interaction --execute="try { cache()->put('__verify__', 'ok', 10); echo cache()->get('__verify__'); cache()->forget('__verify__'); } catch(Exception \$e) { echo 'FAIL'; }" 2>/dev/null | tail -1 || echo "FAIL")
+CACHE_CHECK=$(php -r "
+require '${SCRIPT_DIR}/vendor/autoload.php';
+\$app = require '${SCRIPT_DIR}/bootstrap/app.php';
+\$app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+try { cache()->put('__verify__', 'ok', 10); echo cache()->get('__verify__'); cache()->forget('__verify__'); }
+catch(Exception \$e) { echo 'FAIL'; }
+" 2>/dev/null | tail -1 || echo "FAIL")
 if [[ "$CACHE_CHECK" == *"ok"* ]]; then
     pass "Cache read/write (Redis)"
 else
