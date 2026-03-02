@@ -478,7 +478,7 @@
                             </svg>
                         </div>
                         <h3 class="text-xl font-bold mb-2">GraphQL API</h3>
-                        <p class="text-pink-100 text-sm mb-4">34 domains, subscriptions, DataLoaders, and real-time queries</p>
+                        <p class="text-pink-100 text-sm mb-4">35 domains, subscriptions, DataLoaders, and real-time queries</p>
                         <a href="{{ route('features') }}" class="text-white font-semibold hover:underline">Learn more &rarr;</a>
                     </div>
 

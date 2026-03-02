@@ -5,7 +5,7 @@
 @section('seo')
     @include('partials.seo', [
         'title' => 'Contact Us - FinAegis Support',
-        'description' => 'Contact the FinAegis team for technical support, partnership inquiries, or to report issues. Community support for our open-source core banking platform with 42 domain modules.',
+        'description' => 'Contact the FinAegis team for technical support, partnership inquiries, or to report issues. Community support for our open-source core banking platform with 43 domain modules.',
     ])
 @endsection
 

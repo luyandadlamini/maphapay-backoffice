@@ -1250,8 +1250,8 @@ curl -H "Authorization: Bearer your_api_key" \
                         <h2 class="text-3xl font-bold text-gray-900 mb-8">GraphQL API</h2>
 
                         <div class="prose prose-lg max-w-none mb-8">
-                            <p>Schema-first GraphQL API powered by Lighthouse PHP. Provides queries, mutations, and subscriptions across 34 domain schemas with DataLoader-optimized resolvers and WebSocket-based real-time subscriptions.</p>
-                            <p class="text-sm text-gray-500">34 domain schemas &middot; Queries, Mutations, Subscriptions</p>
+                            <p>Schema-first GraphQL API powered by Lighthouse PHP. Provides queries, mutations, and subscriptions across 35 domain schemas with DataLoader-optimized resolvers and WebSocket-based real-time subscriptions.</p>
+                            <p class="text-sm text-gray-500">35 domain schemas &middot; Queries, Mutations, Subscriptions</p>
                         </div>
 
                         <div class="space-y-8">
@@ -1263,7 +1263,7 @@ curl -H "Authorization: Bearer your_api_key" \
                                         <span class="ml-2 font-mono text-sm">/graphql</span>
                                     </div>
                                 </div>
-                                <p class="text-gray-600 mb-4">Execute a GraphQL query or mutation against the unified schema. Supports all 34 domain schemas including Account, AgentProtocol, Basket, Batch, CardIssuance, Cgo, Compliance, CrossChain, DeFi, Exchange, FinancialInstitution, Product, Regulatory, User, Wallet, and more.</p>
+                                <p class="text-gray-600 mb-4">Execute a GraphQL query or mutation against the unified schema. Supports all 35 domain schemas including Account, AgentProtocol, Basket, Batch, CardIssuance, Cgo, Compliance, CrossChain, DeFi, Exchange, FinancialInstitution, Product, Regulatory, User, Wallet, and more.</p>
                                 <x-code-block language="bash">
 curl -X POST \
   -H "Authorization: Bearer your_api_key" \
@@ -1572,7 +1572,7 @@ if (response.status === 402) {
                                 <li><a href="#mobile-payment" class="text-violet-600 hover:text-violet-800 flex justify-between"><span>Mobile Payment</span><span class="text-gray-400">25+ routes</span></a></li>
                                 <li><a href="#partner-baas" class="text-rose-600 hover:text-rose-800 flex justify-between"><span>Partner BaaS</span><span class="text-gray-400">24 routes</span></a></li>
                                 <li><a href="#ai" class="text-gray-600 hover:text-gray-800 flex justify-between"><span>AI Query</span><span class="text-gray-400">2 routes</span></a></li>
-                                <li><a href="#graphql" class="text-sky-600 hover:text-sky-800 flex justify-between"><span>GraphQL</span><span class="text-gray-400">34 domains</span></a></li>
+                                <li><a href="#graphql" class="text-sky-600 hover:text-sky-800 flex justify-between"><span>GraphQL</span><span class="text-gray-400">35 domains</span></a></li>
                                 <li><a href="#event-streaming" class="text-lime-600 hover:text-lime-800 flex justify-between"><span>Event Streaming</span><span class="text-gray-400">5 endpoints</span></a></li>
                                 <li><a href="#x402" class="text-emerald-600 hover:text-emerald-800 flex justify-between"><span>x402 Protocol</span><span class="text-gray-400">15+ endpoints</span></a></li>
                             </ul>

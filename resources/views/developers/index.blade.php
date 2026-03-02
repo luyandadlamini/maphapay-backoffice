@@ -140,7 +140,7 @@
                 <div class="text-center">
                     <div class="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-sm mb-6">
                         <span class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
-                        <span>v5.4 Documentation — 42 Domains, 1,200+ Routes, GraphQL + REST + x402</span>
+                        <span>v5.11 Documentation — 43 Domains, 1,250+ Routes, GraphQL + REST + x402</span>
                     </div>
                     <h1 class="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200">
                         Built for Developers
@@ -180,8 +180,8 @@
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    <span class="font-medium">v5.4 Released:</span>
-                    <span class="ml-2">42 DDD domains, 1,200+ API routes, GraphQL (34 domains), x402 Protocol, Ondato KYC, Chainalysis, Marqeta, Event Streaming, Plugin Marketplace, and more.</span>
+                    <span class="font-medium">v5.11 Released:</span>
+                    <span class="ml-2">43 DDD domains, 1,250+ API routes, GraphQL (35 domains), x402 Protocol, Rewards Gamification, RAILGUN Privacy, Ondato KYC, Chainalysis, Marqeta, Event Streaming, Plugin Marketplace, and more.</span>
                 </div>
             </div>
         </section>
@@ -566,10 +566,10 @@
                                     </div>
                                     <div>
                                         <h4 class="text-lg font-semibold text-gray-900">GraphQL API</h4>
-                                        <span class="text-xs text-gray-500">34 domains</span>
+                                        <span class="text-xs text-gray-500">35 domains</span>
                                     </div>
                                 </div>
-                                <p class="text-gray-600 text-sm mb-3">Schema-first GraphQL via Lighthouse PHP with queries, mutations, subscriptions, and DataLoaders across 34 domain schemas.</p>
+                                <p class="text-gray-600 text-sm mb-3">Schema-first GraphQL via Lighthouse PHP with queries, mutations, subscriptions, and DataLoaders across 35 domain schemas.</p>
                                 <span class="text-sky-600 text-sm font-medium group-hover:text-sky-700">View endpoints &rarr;</span>
                             </div>
                         </a>
