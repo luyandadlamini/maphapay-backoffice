@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+[x-cloak] { display: none; }
+
+/* Foodo Insights — custom styles */
+.foodo-bg {
+    background-color: #F5F5F4;
+    background-image: radial-gradient(#D6D3D1 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.foodo-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.foodo-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.foodo-scrollbar::-webkit-scrollbar-thumb {
+    background: #D6D3D1;
+    border-radius: 10px;
+}
+.foodo-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #A8A29E;
+}
+
+/* Chat bubble shapes */
+.chat-bubble-ai {
+    border-radius: 12px 12px 12px 2px;
+}
+.chat-bubble-user {
+    border-radius: 12px 12px 2px 12px;
+}
+
+/* Material Symbols config */
+.foodo-icon {
+    font-variation-settings: "FILL" 1, "wght" 600, "GRAD" 0, "opsz" 24;
+}
+.foodo-icon-thin {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}

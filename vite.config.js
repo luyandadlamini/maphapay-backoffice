@@ -7,6 +7,9 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/js/app.js',
+                'resources/css/foodo.css',
+                'resources/js/foodo/charts.js',
+                'resources/js/foodo/chat.js',
             ],
             refresh: true,
         }),

@@ -787,6 +787,18 @@ Route::group([
         ->name('l5-swagger.default.asset');
 });
 
+// ---------------------------------------------------------------------------
+// Foodo Insights — Restaurant Analytics Dashboard (demo / prototype)
+// ---------------------------------------------------------------------------
+Route::prefix('foodo')->group(function () {
+    Route::get('/', [App\Http\Controllers\Foodo\FoodoDashboardController::class, 'index'])->name('foodo.dashboard');
+    Route::get('/chat', [App\Http\Controllers\Foodo\FoodoChatController::class, 'index'])->name('foodo.chat');
+    Route::post('/chat/message', [App\Http\Controllers\Foodo\FoodoChatController::class, 'send'])->name('foodo.chat.send');
+    Route::get('/dish/demo', [App\Http\Controllers\Foodo\FoodoDishAnalysisController::class, 'demo'])->name('foodo.dish.demo');
+    Route::get('/dish/{id}', [App\Http\Controllers\Foodo\FoodoDishAnalysisController::class, 'show'])->name('foodo.dish');
+    Route::post('/dish/{id}/verify', [App\Http\Controllers\Foodo\FoodoDishAnalysisController::class, 'verify'])->name('foodo.dish.verify');
+});
+
 // SEO routes - Sitemap and Robots.txt
 Route::get('/sitemap.xml', [App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
 Route::get('/robots.txt', [App\Http\Controllers\SitemapController::class, 'robots'])->name('robots');
