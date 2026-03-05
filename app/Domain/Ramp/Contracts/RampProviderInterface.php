@@ -7,10 +7,10 @@ namespace App\Domain\Ramp\Contracts;
 interface RampProviderInterface
 {
     /**
-     * Create a ramp session (returns provider widget URL or config).
+     * Create a ramp session via checkout API (not widget).
      *
-     * @param  array{type: string, fiat_currency: string, fiat_amount: float, crypto_currency: string, wallet_address: string}  $params
-     * @return array{session_id: string, redirect_url: string|null, widget_config: array<string, mixed>|null}
+     * @param  array{type: string, fiat_currency: string, fiat_amount: float, crypto_currency: string, wallet_address: string, quote_id: string|null}  $params
+     * @return array{session_id: string, checkout_url: string|null, metadata: array<string, mixed>}
      */
     public function createSession(array $params): array;
 
@@ -29,11 +29,11 @@ interface RampProviderInterface
     public function getSupportedCurrencies(): array;
 
     /**
-     * Get a quote for a ramp transaction.
+     * Get all quotes from aggregated providers for a ramp transaction.
      *
-     * @return array{fiat_amount: float, crypto_amount: float, exchange_rate: float, fee: float, fee_currency: string}
+     * @return array<int, array{provider_name: string, quote_id: string|null, fiat_amount: float, crypto_amount: float, exchange_rate: float, fee: float, network_fee: float, fee_currency: string, payment_methods: array<string>}>
      */
-    public function getQuote(string $type, string $fiatCurrency, float $fiatAmount, string $cryptoCurrency): array;
+    public function getQuotes(string $type, string $fiatCurrency, float $fiatAmount, string $cryptoCurrency): array;
 
     /**
      * Get the webhook validator for this provider.

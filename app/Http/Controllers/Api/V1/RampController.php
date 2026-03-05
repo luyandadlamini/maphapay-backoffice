@@ -21,10 +21,10 @@ class RampController extends Controller
     }
 
     #[OA\Get(
-        path: '/api/v1/ramp/quote',
-        operationId: 'v1RampQuote',
+        path: '/api/v1/ramp/quotes',
+        operationId: 'v1RampQuotes',
         tags: ['Ramp'],
-        summary: 'Get a ramp quote',
+        summary: 'Get quotes from all aggregated providers',
         security: [['sanctum' => []]],
         parameters: [
             new OA\Parameter(name: 'type', in: 'query', required: true, schema: new OA\Schema(type: 'string', enum: ['on', 'off'])),
@@ -35,23 +35,29 @@ class RampController extends Controller
     )]
     #[OA\Response(
         response: 200,
-        description: 'Ramp quote',
+        description: 'Provider quotes',
         content: new OA\JsonContent(
             properties: [
                 new OA\Property(property: 'data', type: 'object', properties: [
-                    new OA\Property(property: 'fiat_amount', type: 'number', example: 100),
-                    new OA\Property(property: 'crypto_amount', type: 'number', example: 98.5),
-                    new OA\Property(property: 'exchange_rate', type: 'number', example: 1.0),
-                    new OA\Property(property: 'fee', type: 'number', example: 1.5),
-                    new OA\Property(property: 'fee_currency', type: 'string', example: 'USD'),
-                    new OA\Property(property: 'provider', type: 'string', example: 'mock'),
+                    new OA\Property(property: 'quotes', type: 'array', items: new OA\Items(type: 'object', properties: [
+                        new OA\Property(property: 'provider_name', type: 'string', example: 'Simplex'),
+                        new OA\Property(property: 'quote_id', type: 'string', example: 'q_12345'),
+                        new OA\Property(property: 'fiat_amount', type: 'number', example: 100),
+                        new OA\Property(property: 'crypto_amount', type: 'number', example: 0.0025),
+                        new OA\Property(property: 'exchange_rate', type: 'number', example: 0.000026),
+                        new OA\Property(property: 'fee', type: 'number', example: 3.5),
+                        new OA\Property(property: 'network_fee', type: 'number', example: 0.5),
+                        new OA\Property(property: 'fee_currency', type: 'string', example: 'USD'),
+                        new OA\Property(property: 'payment_methods', type: 'array', items: new OA\Items(type: 'string')),
+                    ])),
+                    new OA\Property(property: 'provider', type: 'string', example: 'onramper'),
                     new OA\Property(property: 'valid_until', type: 'string', format: 'date-time'),
                 ]),
             ]
         )
     )]
     #[OA\Response(response: 422, description: 'Validation error')]
-    public function quote(Request $request): JsonResponse
+    public function quotes(Request $request): JsonResponse
     {
         $request->validate([
             'type'   => 'required|string|in:on,off',
@@ -61,14 +67,14 @@ class RampController extends Controller
         ]);
 
         try {
-            $quote = $this->rampService->getQuote(
+            $result = $this->rampService->getQuotes(
                 $request->input('type'),
                 strtoupper($request->input('fiat')),
                 (float) $request->input('amount'),
                 strtoupper($request->input('crypto'))
             );
 
-            return response()->json(['data' => $quote]);
+            return response()->json(['data' => $result]);
         } catch (RuntimeException $e) {
             return response()->json([
                 'error' => ['code' => 'QUOTE_ERROR', 'message' => $e->getMessage()],
@@ -80,7 +86,7 @@ class RampController extends Controller
         path: '/api/v1/ramp/session',
         operationId: 'v1CreateRampSession',
         tags: ['Ramp'],
-        summary: 'Create a ramp session',
+        summary: 'Create a ramp session with a selected quote',
         security: [['sanctum' => []]],
         requestBody: new OA\RequestBody(
             required: true,
@@ -92,11 +98,12 @@ class RampController extends Controller
                     new OA\Property(property: 'fiat_amount', type: 'number', example: 100),
                     new OA\Property(property: 'crypto_currency', type: 'string', example: 'USDC'),
                     new OA\Property(property: 'wallet_address', type: 'string', example: '0x...'),
+                    new OA\Property(property: 'quote_id', type: 'string', example: 'q_12345', description: 'Selected quote ID from GET /quotes'),
                 ]
             )
         )
     )]
-    #[OA\Response(response: 201, description: 'Session created')]
+    #[OA\Response(response: 201, description: 'Session created with checkout_url')]
     #[OA\Response(response: 422, description: 'Validation error')]
     public function createSession(Request $request): JsonResponse
     {
@@ -106,6 +113,7 @@ class RampController extends Controller
             'fiat_amount'     => 'required|numeric|min:1',
             'crypto_currency' => 'required|string',
             'wallet_address'  => 'required|string',
+            'quote_id'        => 'nullable|string',
         ]);
 
         try {
@@ -117,7 +125,8 @@ class RampController extends Controller
                 strtoupper($request->input('fiat_currency')),
                 (float) $request->input('fiat_amount'),
                 strtoupper($request->input('crypto_currency')),
-                $request->input('wallet_address')
+                $request->input('wallet_address'),
+                $request->input('quote_id')
             );
 
             return response()->json([

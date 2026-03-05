@@ -18,23 +18,25 @@ class RampService
     }
 
     /**
-     * Get a quote for a ramp transaction.
+     * Get all quotes from aggregated providers.
      *
-     * @return array{fiat_amount: float, crypto_amount: float, exchange_rate: float, fee: float, fee_currency: string, provider: string}
+     * @return array{quotes: array<int, array<string, mixed>>, provider: string, valid_until: string}
      */
-    public function getQuote(string $type, string $fiatCurrency, float $fiatAmount, string $cryptoCurrency): array
+    public function getQuotes(string $type, string $fiatCurrency, float $fiatAmount, string $cryptoCurrency): array
     {
         $this->validateRampParams($type, $fiatCurrency, $fiatAmount, $cryptoCurrency);
 
-        $quote = $this->provider->getQuote($type, $fiatCurrency, $fiatAmount, $cryptoCurrency);
-        $quote['provider'] = $this->provider->getName();
-        $quote['valid_until'] = now()->addSeconds(60)->toIso8601String();
+        $quotes = $this->provider->getQuotes($type, $fiatCurrency, $fiatAmount, $cryptoCurrency);
 
-        return $quote;
+        return [
+            'quotes'      => $quotes,
+            'provider'    => $this->provider->getName(),
+            'valid_until' => now()->addSeconds(60)->toIso8601String(),
+        ];
     }
 
     /**
-     * Create a ramp session.
+     * Create a ramp session using a selected quote.
      */
     public function createSession(
         User $user,
@@ -43,6 +45,7 @@ class RampService
         float $fiatAmount,
         string $cryptoCurrency,
         string $walletAddress,
+        ?string $quoteId = null,
     ): RampSession {
         $this->validateRampParams($type, $fiatCurrency, $fiatAmount, $cryptoCurrency);
 
@@ -52,6 +55,7 @@ class RampService
             'fiat_amount'     => $fiatAmount,
             'crypto_currency' => $cryptoCurrency,
             'wallet_address'  => $walletAddress,
+            'quote_id'        => $quoteId,
         ]);
 
         $session = RampSession::create([
@@ -64,8 +68,8 @@ class RampService
             'status'              => RampSession::STATUS_PENDING,
             'provider_session_id' => $providerResult['session_id'],
             'metadata'            => [
-                'redirect_url'  => $providerResult['redirect_url'],
-                'widget_config' => $providerResult['widget_config'],
+                'checkout_url' => $providerResult['checkout_url'],
+                'provider'     => $providerResult['metadata'] ?? [],
             ],
         ]);
 

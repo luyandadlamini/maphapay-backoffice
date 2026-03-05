@@ -30,7 +30,7 @@ class OnramperClient
     }
 
     /**
-     * Get quotes for a fiat → crypto (or crypto → fiat) conversion.
+     * Get quotes for a fiat-crypto conversion from all aggregated providers.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -63,10 +63,10 @@ class OnramperClient
     }
 
     /**
-     * Create a checkout intent (returns redirect URL for the user).
+     * Create a checkout intent via API (returns provider checkout URL).
      *
-     * @param  array<string, mixed>  $params
-     * @return array{transactionId: string, checkoutUrl: string}
+     * @param  array<string, mixed>  $params  Must include quoteId, walletAddress, redirectURL
+     * @return array<string, mixed>  Contains transactionId and checkoutUrl
      */
     public function createCheckoutIntent(array $params): array
     {
@@ -126,23 +126,7 @@ class OnramperClient
     }
 
     /**
-     * Build the Onramper widget URL for iframe embedding.
-     *
-     * @param  array<string, string|bool|int|float>  $params
-     */
-    public function buildWidgetUrl(array $params = []): string
-    {
-        $defaults = [
-            'apiKey' => $this->apiKey,
-        ];
-
-        $mergedParams = array_merge($defaults, $params);
-
-        return 'https://buy.onramper.com?' . http_build_query($mergedParams);
-    }
-
-    /**
-     * Generate HMAC-SHA256 signature for URL signing.
+     * Generate HMAC-SHA256 signature for request signing.
      */
     public function signPayload(string $payload): string
     {
