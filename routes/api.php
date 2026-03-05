@@ -242,7 +242,7 @@ Route::prefix('v1/ramp')->name('api.v1.ramp.')
     ->middleware(['auth:sanctum'])
     ->group(function () {
         Route::get('/supported', [App\Http\Controllers\Api\V1\RampController::class, 'supported'])->middleware('api.rate_limit:query')->name('supported');
-        Route::get('/quote', [App\Http\Controllers\Api\V1\RampController::class, 'quote'])->middleware('api.rate_limit:query')->name('quote');
+        Route::get('/quotes', [App\Http\Controllers\Api\V1\RampController::class, 'quotes'])->middleware('api.rate_limit:query')->name('quotes');
         Route::post('/session', [App\Http\Controllers\Api\V1\RampController::class, 'createSession'])->name('session.create');
         Route::get('/session/{id}', [App\Http\Controllers\Api\V1\RampController::class, 'getSession'])->name('session.show');
         Route::get('/sessions', [App\Http\Controllers\Api\V1\RampController::class, 'listSessions'])->name('sessions');

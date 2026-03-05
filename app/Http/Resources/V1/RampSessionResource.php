@@ -28,9 +28,7 @@ class RampSessionResource extends JsonResource
             'crypto_amount'   => $this->crypto_amount,
             'status'          => $this->status,
             'status_label'    => ucfirst($this->status),
-            'redirect_url'    => $metadata['redirect_url'] ?? null,
-            'widget_url'      => $metadata['widget_config']['widget_url'] ?? $metadata['redirect_url'] ?? null,
-            'widget_config'   => $metadata['widget_config'] ?? null,
+            'checkout_url'    => $metadata['checkout_url'] ?? null,
             'created_at'      => $this->created_at->toIso8601String(),
             'updated_at'      => $this->updated_at->toIso8601String(),
         ];

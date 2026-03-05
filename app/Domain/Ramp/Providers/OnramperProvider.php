@@ -17,60 +17,35 @@ class OnramperProvider implements RampProviderInterface
 
     public function createSession(array $params): array
     {
-        $type = $params['type'];
-        $fiatCurrency = strtolower($params['fiat_currency']);
-        $cryptoCurrency = strtolower($params['crypto_currency']);
-        $amount = $params['fiat_amount'];
+        $quoteId = $params['quote_id'] ?? null;
         $walletAddress = $params['wallet_address'];
 
-        // Build widget URL with appropriate parameters
-        $widgetParams = [
-            'defaultAmount' => $amount,
+        if (! $quoteId) {
+            throw new RuntimeException('A quote_id is required. Call GET /ramp/quotes first and select a provider.');
+        }
+
+        $successUrl = config('ramp.providers.onramper.success_redirect_url', '');
+        $failureUrl = config('ramp.providers.onramper.failure_redirect_url', '');
+        $redirectUrl = $successUrl ?: ($failureUrl ?: config('app.url') . '/ramp/complete');
+
+        $result = $this->client->createCheckoutIntent([
+            'quoteId'       => $quoteId,
             'walletAddress' => $walletAddress,
-        ];
+            'redirectURL'   => $redirectUrl,
+        ]);
 
-        if ($type === 'on') {
-            $widgetParams['mode'] = 'buy';
-            $widgetParams['defaultFiat'] = strtoupper($fiatCurrency);
-            $widgetParams['defaultCrypto'] = $cryptoCurrency;
-            $widgetParams['onlyCryptos'] = $cryptoCurrency;
-        } else {
-            $widgetParams['mode'] = 'sell';
-            $widgetParams['sell_defaultFiat'] = strtoupper($fiatCurrency);
-            $widgetParams['sell_defaultCrypto'] = $cryptoCurrency;
-            $widgetParams['sell_onlyCryptos'] = $cryptoCurrency;
-        }
-
-        // Add redirect URLs if configured
-        $successUrl = config('ramp.providers.onramper.success_redirect_url');
-        $failureUrl = config('ramp.providers.onramper.failure_redirect_url');
-
-        if ($successUrl) {
-            $widgetParams['successRedirectUrl'] = $successUrl;
-        }
-        if ($failureUrl) {
-            $widgetParams['failureRedirectUrl'] = $failureUrl;
-        }
-
-        // Add a partner context for webhook correlation
-        $partnerContext = 'finaegis_' . bin2hex(random_bytes(16));
-        $widgetParams['partnerContext'] = $partnerContext;
-
-        // Sign the widget URL (required when wallet addresses are present)
-        $widgetUrl = $this->client->buildWidgetUrl($widgetParams);
-        $queryString = (string) parse_url($widgetUrl, PHP_URL_QUERY);
-        $signature = $this->client->signPayload($queryString);
-        $widgetUrl .= '&signature=' . $signature;
+        $transactionId = $result['transactionId'] ?? $result['id'] ?? ('onr_' . bin2hex(random_bytes(16)));
+        $checkoutUrl = $result['checkoutUrl'] ?? $result['checkout_url'] ?? null;
 
         return [
-            'session_id'    => $partnerContext,
-            'redirect_url'  => $widgetUrl,
-            'widget_config' => [
-                'provider'        => 'onramper',
-                'widget_url'      => $widgetUrl,
-                'partner_context' => $partnerContext,
-                'type'            => $type,
-                'mode'            => $type === 'on' ? 'buy' : 'sell',
+            'session_id'   => $transactionId,
+            'checkout_url' => $checkoutUrl,
+            'metadata'     => [
+                'provider'       => 'onramper',
+                'transaction_id' => $transactionId,
+                'checkout_url'   => $checkoutUrl,
+                'quote_id'       => $quoteId,
+                'type'           => $params['type'],
             ],
         ];
     }
@@ -94,7 +69,6 @@ class OnramperProvider implements RampProviderInterface
                 ],
             ];
         } catch (RuntimeException) {
-            // If transaction not found, it's still pending (widget not completed yet)
             return [
                 'status'        => 'pending',
                 'fiat_amount'   => null,
@@ -119,40 +93,48 @@ class OnramperProvider implements RampProviderInterface
         return $pairs;
     }
 
-    public function getQuote(string $type, string $fiatCurrency, float $fiatAmount, string $cryptoCurrency): array
+    public function getQuotes(string $type, string $fiatCurrency, float $fiatAmount, string $cryptoCurrency): array
     {
         $source = strtolower($fiatCurrency);
         $destination = strtolower($cryptoCurrency);
 
         if ($type === 'off') {
-            // Off-ramp: selling crypto for fiat — swap source/destination
             [$source, $destination] = [$destination, $source];
         }
 
-        $quotes = $this->client->getQuotes($source, $destination, $fiatAmount);
+        $rawQuotes = $this->client->getQuotes($source, $destination, $fiatAmount);
 
-        if (empty($quotes)) {
-            throw new RuntimeException('No quotes available for this currency pair.');
+        if (empty($rawQuotes)) {
+            return [];
         }
 
-        // Pick the best quote (first one — Onramper returns sorted by best rate)
-        $best = is_array($quotes[0] ?? null) ? $quotes[0] : $quotes;
+        $normalized = [];
+        foreach ($rawQuotes as $q) {
+            if (! is_array($q)) {
+                continue;
+            }
 
-        $cryptoAmount = (float) ($best['cryptoAmount'] ?? $best['payout'] ?? 0);
-        $fiatFee = (float) ($best['fee']['fiatFee'] ?? $best['totalFee'] ?? 0);
-        $networkFee = (float) ($best['fee']['networkFee'] ?? 0);
-        $totalFee = $fiatFee + $networkFee;
-        $exchangeRate = $fiatAmount > 0 ? $cryptoAmount / ($fiatAmount - $totalFee) : 0;
+            $cryptoAmount = (float) ($q['cryptoAmount'] ?? $q['payout'] ?? 0);
+            $fiatFee = (float) ($q['fee']['fiatFee'] ?? $q['fiatFee'] ?? $q['totalFee'] ?? 0);
+            $networkFee = (float) ($q['fee']['networkFee'] ?? $q['networkFee'] ?? 0);
+            $totalFee = $fiatFee + $networkFee;
+            $netFiat = $fiatAmount - $totalFee;
+            $exchangeRate = $netFiat > 0 ? $cryptoAmount / $netFiat : 0;
 
-        return [
-            'fiat_amount'   => $fiatAmount,
-            'crypto_amount' => round($cryptoAmount, 8),
-            'exchange_rate' => round($exchangeRate, 8),
-            'fee'           => round($totalFee, 2),
-            'fee_currency'  => $fiatCurrency,
-            'provider_name' => $best['provider'] ?? 'onramper',
-            'quote_id'      => $best['quoteId'] ?? null,
-        ];
+            $normalized[] = [
+                'provider_name'   => $q['provider'] ?? 'unknown',
+                'quote_id'        => $q['quoteId'] ?? $q['id'] ?? null,
+                'fiat_amount'     => $fiatAmount,
+                'crypto_amount'   => round($cryptoAmount, 8),
+                'exchange_rate'   => round($exchangeRate, 8),
+                'fee'             => round($fiatFee, 2),
+                'network_fee'     => round($networkFee, 2),
+                'fee_currency'    => $fiatCurrency,
+                'payment_methods' => (array) ($q['paymentMethods'] ?? $q['paymentMethod'] ?? []),
+            ];
+        }
+
+        return $normalized;
     }
 
     public function getWebhookValidator(): callable
@@ -165,9 +147,6 @@ class OnramperProvider implements RampProviderInterface
         return 'onramper';
     }
 
-    /**
-     * Map Onramper transaction statuses to internal statuses.
-     */
     private function mapOnramperStatus(string $status): string
     {
         return match (strtolower($status)) {

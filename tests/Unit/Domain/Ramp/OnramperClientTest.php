@@ -6,6 +6,7 @@ namespace Tests\Unit\Domain\Ramp;
 
 use App\Domain\Ramp\Clients\OnramperClient;
 use Illuminate\Support\Facades\Http;
+use RuntimeException;
 use Tests\TestCase;
 
 class OnramperClientTest extends TestCase
@@ -18,9 +19,8 @@ class OnramperClientTest extends TestCase
 
         config([
             'ramp.providers.onramper.api_key'    => 'pk_test_12345',
-            'ramp.providers.onramper.secret_key'  => 'sk_test_secret',
-            'ramp.providers.onramper.base_url'    => 'https://api.onramper.com',
-            'ramp.providers.onramper.widget_url'  => 'https://buy.onramper.com',
+            'ramp.providers.onramper.secret_key' => 'sk_test_secret',
+            'ramp.providers.onramper.base_url'   => 'https://api.onramper.com',
         ]);
 
         $this->client = new OnramperClient();
@@ -30,7 +30,7 @@ class OnramperClientTest extends TestCase
     {
         config(['ramp.providers.onramper.api_key' => '']);
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('API key is not configured');
 
         new OnramperClient();
@@ -77,7 +77,7 @@ class OnramperClientTest extends TestCase
             'api.onramper.com/quotes/*' => Http::response(['message' => 'Invalid pair'], 400),
         ]);
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Onramper quote request failed');
 
         $this->client->getQuotes('xxx', 'yyy', 100.0);
@@ -132,21 +132,6 @@ class OnramperClientTest extends TestCase
 
         $this->assertArrayHasKey('crypto', $assets);
         $this->assertArrayHasKey('fiat', $assets);
-    }
-
-    public function test_build_widget_url(): void
-    {
-        $url = $this->client->buildWidgetUrl([
-            'mode'          => 'buy',
-            'defaultFiat'   => 'USD',
-            'defaultCrypto' => 'btc',
-            'defaultAmount' => 100,
-        ]);
-
-        $this->assertStringStartsWith('https://buy.onramper.com?', $url);
-        $this->assertStringContainsString('apiKey=pk_test_12345', $url);
-        $this->assertStringContainsString('mode=buy', $url);
-        $this->assertStringContainsString('defaultFiat=USD', $url);
     }
 
     public function test_sign_payload(): void
