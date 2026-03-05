@@ -10,6 +10,13 @@ use RuntimeException;
 
 class MockRampProvider implements RampProviderInterface
 {
+    public function __construct()
+    {
+        if (app()->environment('production')) {
+            throw new RuntimeException('Mock ramp provider must not be used in production.');
+        }
+    }
+
     public function createSession(array $params): array
     {
         $sessionId = 'mock_' . Str::uuid()->toString();
@@ -90,10 +97,6 @@ class MockRampProvider implements RampProviderInterface
 
     public function getWebhookValidator(): callable
     {
-        if (app()->environment('production')) {
-            throw new RuntimeException('Mock ramp provider must not be used in production.');
-        }
-
         return fn (string $payload, string $signature): bool => $signature !== '';
     }
 

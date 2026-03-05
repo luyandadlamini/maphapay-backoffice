@@ -14,6 +14,8 @@ class RampControllerTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
+    protected User $user;
+
     protected function setUp(): void
     {
         parent::setUp();

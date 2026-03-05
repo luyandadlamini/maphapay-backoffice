@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float|null $fiat_amount
  * @property string $crypto_currency
  * @property float|null $crypto_amount
+ * @property string|null $wallet_address
  * @property string $status
  * @property string|null $provider_session_id
  * @property array<string, mixed>|null $metadata
@@ -43,6 +44,7 @@ class RampSession extends Model
         'fiat_amount',
         'crypto_currency',
         'crypto_amount',
+        'wallet_address',
         'status',
         'provider_session_id',
         'metadata',

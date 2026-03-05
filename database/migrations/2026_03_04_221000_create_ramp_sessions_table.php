@@ -12,7 +12,7 @@ return new class () extends Migration {
         Schema::create('ramp_sessions', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('provider'); // mock, moonpay, transak
+            $table->string('provider'); // mock, onramper
             $table->string('type'); // on, off
             $table->string('fiat_currency', 3);
             $table->decimal('fiat_amount', 16, 2)->nullable();

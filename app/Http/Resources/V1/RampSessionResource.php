@@ -26,6 +26,7 @@ class RampSessionResource extends JsonResource
             'fiat_amount'     => $this->fiat_amount,
             'crypto_currency' => $this->crypto_currency,
             'crypto_amount'   => $this->crypto_amount,
+            'wallet_address'  => $this->wallet_address,
             'status'          => $this->status,
             'status_label'    => ucfirst($this->status),
             'checkout_url'    => $metadata['checkout_url'] ?? null,

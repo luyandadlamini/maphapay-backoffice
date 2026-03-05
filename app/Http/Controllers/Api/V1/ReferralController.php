@@ -46,7 +46,9 @@ class ReferralController extends Controller
     )]
     public function myCode(Request $request): JsonResponse
     {
-        $referralCode = $this->referralService->generateCode($request->user());
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $referralCode = $this->referralService->generateCode($user);
 
         $code = $referralCode->code;
 
@@ -54,7 +56,7 @@ class ReferralController extends Controller
             'data' => [
                 'code'       => $code,
                 'share_link' => url("/invite/{$code}"),
-                'share_text' => str_replace('{code}', $code, (string) config('ramp.referral_share_text')),
+                'share_text' => str_replace('{code}', $code, (string) config('referral.share_text')),
                 'uses_count' => $referralCode->uses_count,
                 'max_uses'   => $referralCode->max_uses,
                 'active'     => $referralCode->active,
@@ -89,8 +91,10 @@ class ReferralController extends Controller
         ]);
 
         try {
+            /** @var \App\Models\User $user */
+            $user = $request->user();
             $referral = $this->referralService->applyCode(
-                $request->user(),
+                $user,
                 strtoupper($request->input('code'))
             );
 
@@ -164,8 +168,11 @@ class ReferralController extends Controller
     )]
     public function stats(Request $request): JsonResponse
     {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+
         return response()->json([
-            'data' => $this->referralService->getUserStats($request->user()),
+            'data' => $this->referralService->getUserStats($user),
         ]);
     }
 }

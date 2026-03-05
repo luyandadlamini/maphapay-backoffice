@@ -28,9 +28,7 @@ return [
             'api_key'              => env('ONRAMPER_API_KEY'),
             'secret_key'           => env('ONRAMPER_SECRET_KEY'),
             'base_url'             => env('ONRAMPER_BASE_URL', 'https://api.onramper.com'),
-            'widget_url'           => env('ONRAMPER_WIDGET_URL', 'https://buy.onramper.com'),
             'success_redirect_url' => env('ONRAMPER_SUCCESS_REDIRECT_URL'),
-            'failure_redirect_url' => env('ONRAMPER_FAILURE_REDIRECT_URL'),
             'enabled'              => (bool) env('ONRAMPER_ENABLED', false),
         ],
     ],
@@ -56,15 +54,4 @@ return [
         'daily_limit'     => (float) env('RAMP_DAILY_LIMIT', 50000.00),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Referral Share Copy
-    |--------------------------------------------------------------------------
-    | Customizable by marketing. Use {code} placeholder for referral code.
-    */
-
-    'referral_share_text' => env(
-        'REFERRAL_SHARE_TEXT',
-        'Join FinAegis with my code {code} and earn free transactions!'
-    ),
 ];

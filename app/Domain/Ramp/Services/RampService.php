@@ -65,6 +65,7 @@ class RampService
             'fiat_currency'       => $fiatCurrency,
             'fiat_amount'         => $fiatAmount,
             'crypto_currency'     => $cryptoCurrency,
+            'wallet_address'      => $walletAddress,
             'status'              => RampSession::STATUS_PENDING,
             'provider_session_id' => $providerResult['session_id'],
             'metadata'            => [
@@ -132,6 +133,17 @@ class RampService
             return;
         }
 
+        // Verify the webhook provider matches the session provider
+        if ($session->provider !== $provider) {
+            Log::warning('Ramp webhook provider mismatch', [
+                'expected'   => $session->provider,
+                'received'   => $provider,
+                'session_id' => $session->id,
+            ]);
+
+            return;
+        }
+
         // Idempotency: don't overwrite terminal states
         if (in_array($session->status, [RampSession::STATUS_COMPLETED, RampSession::STATUS_FAILED], true)) {
             Log::info('Ramp webhook skipped — session already terminal', [
@@ -142,7 +154,7 @@ class RampService
             return;
         }
 
-        $status = $payload['status'] ?? 'processing';
+        $status = $this->normalizeWebhookStatus($payload['status'] ?? 'processing');
         $session->update([
             'status'        => $status,
             'crypto_amount' => $payload['crypto_amount'] ?? $session->crypto_amount,
@@ -190,5 +202,18 @@ class RampService
         if ($fiatAmount < $min || $fiatAmount > $max) {
             throw new RuntimeException("Amount must be between \${$min} and \${$max}.");
         }
+    }
+
+    /**
+     * Normalize webhook status to known session status constants.
+     */
+    private function normalizeWebhookStatus(string $status): string
+    {
+        return match (strtolower($status)) {
+            'completed', 'success', 'done' => RampSession::STATUS_COMPLETED,
+            'failed', 'error', 'cancelled', 'expired' => RampSession::STATUS_FAILED,
+            'pending', 'new', 'created' => RampSession::STATUS_PENDING,
+            default => RampSession::STATUS_PROCESSING,
+        };
     }
 }

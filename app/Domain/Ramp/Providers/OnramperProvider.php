@@ -24,9 +24,8 @@ class OnramperProvider implements RampProviderInterface
             throw new RuntimeException('A quote_id is required. Call GET /ramp/quotes first and select a provider.');
         }
 
-        $successUrl = config('ramp.providers.onramper.success_redirect_url', '');
-        $failureUrl = config('ramp.providers.onramper.failure_redirect_url', '');
-        $redirectUrl = $successUrl ?: ($failureUrl ?: config('app.url') . '/ramp/complete');
+        $redirectUrl = config('ramp.providers.onramper.success_redirect_url')
+            ?: config('app.url') . '/ramp/complete';
 
         $result = $this->client->createCheckoutIntent([
             'quoteId'       => $quoteId,

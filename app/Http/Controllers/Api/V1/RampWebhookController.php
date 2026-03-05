@@ -41,7 +41,7 @@ class RampWebhookController extends Controller
         try {
             $this->rampService->handleWebhook(
                 $provider,
-                $request->all(),
+                (array) $request->json()->all(),
                 $signature
             );
 
