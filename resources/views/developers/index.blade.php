@@ -17,7 +17,7 @@
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
     .dev-gradient {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+        background: linear-gradient(135deg, #0c1222 0%, #131b2e 50%, #1e293b 100%);
     }
     .hljs {
         background: transparent !important;

@@ -19,15 +19,13 @@
 
 @push('styles')
 <style>
-    .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
     .feature-card {
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .feature-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+        border-color: #cbd5e1;
     }
 </style>
 @endpush
@@ -35,15 +33,18 @@
 @section('content')
 
     <!-- Hero Section -->
-    <section class="pt-16 bg-gray-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <section class="bg-fa-navy relative overflow-hidden">
+        <div class="absolute inset-0 bg-grid-pattern"></div>
+        <div class="absolute top-1/3 -right-32 w-80 h-80 bg-blue-500/10 rounded-full blur-[100px]"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24">
             <div class="text-center">
-                <h1 class="text-5xl font-bold text-gray-900 mb-6">43 Domain Modules. One Platform.</h1>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    Every building block a modern fintech needs—from democratic currency governance to AI agent commerce, cross-chain DeFi, and privacy-preserving identity.
+                <h1 class="font-display text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-6">43 Domain Modules. <span class="text-gradient">One Platform.</span></h1>
+                <p class="text-lg text-slate-400 max-w-2xl mx-auto">
+                    Every building block a modern fintech needs — from democratic currency governance to AI agent commerce, cross-chain DeFi, and privacy-preserving identity.
                 </p>
             </div>
         </div>
+        <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
     </section>
 
 
@@ -549,17 +550,19 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="py-20 gradient-bg text-white">
-        <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold mb-6">Explore the Demo</h2>
-            <p class="text-xl mb-8 text-purple-100">
+    <section class="py-24 bg-fa-navy relative overflow-hidden">
+        <div class="absolute inset-0 bg-dot-pattern"></div>
+        <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
+        <div class="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+            <h2 class="font-display text-4xl font-bold text-white mb-6">Explore the Demo</h2>
+            <p class="text-lg mb-10 text-slate-400">
                 See these features in action. Try the demo or explore the source code on GitHub.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{{ route('register') }}" class="bg-white text-indigo-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition">
+                <a href="{{ route('register') }}" class="btn-primary !py-4 !px-10 !text-base !rounded-lg">
                     Explore the Platform
                 </a>
-                <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-indigo-600 transition">
+                <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="btn-outline !py-4 !px-10 !text-base !rounded-lg">
                     View Source
                 </a>
             </div>

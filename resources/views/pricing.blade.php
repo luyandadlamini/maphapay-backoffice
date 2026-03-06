@@ -17,39 +17,27 @@
     ]" />
 @endsection
 
-@push('styles')
-<style>
-    .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-</style>
-@endpush
-
 @section('content')
 
         <!-- Hero Section -->
-        <section class="gradient-bg text-white">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <section class="bg-fa-navy relative overflow-hidden">
+            <div class="absolute inset-0 bg-grid-pattern"></div>
+            <div class="absolute top-1/3 left-1/4 w-80 h-80 bg-blue-500/8 rounded-full blur-[100px]"></div>
+            <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24">
                 <div class="text-center">
-                    <h1 class="text-5xl md:text-6xl font-bold mb-6">
-                        Open Source & Enterprise Ready
+                    <h1 class="font-display text-5xl md:text-6xl font-extrabold text-white tracking-tight mb-6">
+                        Open Source & <span class="text-gradient">Enterprise Ready</span>
                     </h1>
-                    <p class="text-xl md:text-2xl text-purple-100 max-w-3xl mx-auto mb-8">
+                    <p class="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto">
                         Start with our community edition, scale with enterprise support when you're ready.
                     </p>
                 </div>
             </div>
-            
-            <!-- Wave SVG -->
-            <div class="relative">
-                <svg class="absolute bottom-0 w-full h-24 -mb-1 text-gray-50" preserveAspectRatio="none" viewBox="0 0 1440 74">
-                    <path fill="currentColor" d="M0,32L48,37.3C96,43,192,53,288,58.7C384,64,480,64,576,58.7C672,53,768,43,864,42.7C960,43,1056,53,1152,58.7C1248,64,1344,64,1392,64L1440,64L1440,74L1392,74C1344,74,1248,74,1152,74C1056,74,960,74,864,74C768,74,672,74,576,74C480,74,384,74,288,74C192,74,96,74,48,74L0,74Z"></path>
-                </svg>
-            </div>
+            <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
         </section>
 
         <!-- Pricing Options -->
-        <section class="py-20 bg-gray-50">
+        <section class="py-20 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     
@@ -105,8 +93,8 @@
                     </div>
 
                     <!-- Cloud Platform -->
-                    <div class="bg-white rounded-3xl shadow-xl overflow-hidden border-2 border-indigo-600 relative">
-                        <div class="absolute top-0 right-0 bg-indigo-600 text-white px-4 py-2 rounded-bl-lg text-sm font-semibold">
+                    <div class="bg-white rounded-3xl shadow-xl overflow-hidden border-2 border-blue-500 relative">
+                        <div class="absolute top-0 right-0 bg-blue-500 text-white px-4 py-2 rounded-bl-lg text-sm font-semibold">
                             Most Popular
                         </div>
                         <div class="p-8">
@@ -158,7 +146,7 @@
                                 </li>
                             </ul>
 
-                            <a href="{{ route('support.contact') }}" class="w-full bg-indigo-600 text-white rounded-lg py-3 font-semibold hover:bg-indigo-700 transition text-center block">
+                            <a href="{{ route('support.contact') }}" class="w-full btn-primary !rounded-lg !py-3 text-center block">
                                 Get a Quote
                             </a>
                         </div>

@@ -77,4 +77,24 @@ module.exports = [
   'bg-gradient-to-br',
   'from-blue-400',
   'to-indigo-600',
+
+  // Homepage feature cards (dynamic colors)
+  'bg-blue-50', 'bg-blue-100', 'text-blue-600', 'text-blue-700',
+  'bg-purple-50', 'text-purple-600', 'text-purple-700',
+  'bg-emerald-50', 'bg-emerald-100', 'text-emerald-600', 'text-emerald-700',
+  'bg-amber-50', 'bg-amber-100', 'text-amber-600', 'text-amber-700',
+  'bg-red-50', 'text-red-600', 'text-red-700',
+  'bg-sky-50', 'bg-sky-100', 'text-sky-600', 'text-sky-700',
+  'bg-violet-50', 'bg-violet-100', 'text-violet-600', 'text-violet-700',
+  'bg-orange-50', 'bg-orange-100', 'text-orange-600', 'text-orange-700',
+  'bg-teal-50', 'bg-teal-100', 'text-teal-600', 'text-teal-700',
+  'bg-pink-50', 'text-pink-600', 'text-pink-700',
+  'bg-yellow-50', 'bg-yellow-100', 'text-yellow-600', 'text-yellow-700',
+  'bg-indigo-50', 'bg-indigo-100', 'text-indigo-600', 'text-indigo-700',
+
+  // Architecture section dynamic colors
+  'bg-blue-500/10', 'text-blue-400',
+  'bg-emerald-500/10', 'text-emerald-400',
+  'bg-violet-500/10', 'text-violet-400',
+  'bg-amber-500/10', 'text-amber-400',
 ];

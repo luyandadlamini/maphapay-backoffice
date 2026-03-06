@@ -50,21 +50,24 @@
 
 @section('content')
     <!-- Hero Section -->
-    <section class="bg-gray-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <section class="bg-fa-navy relative overflow-hidden">
+        <div class="absolute inset-0 bg-grid-pattern"></div>
+        <div class="absolute bottom-1/4 -left-20 w-72 h-72 bg-blue-500/8 rounded-full blur-[100px]"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24">
             <div class="text-center">
-                <div class="inline-flex items-center bg-indigo-100 rounded-full px-4 py-2 mb-6">
-                    <svg class="w-5 h-5 mr-2 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-sm text-slate-400 mb-8">
+                    <svg class="w-4 h-4 text-fa-teal" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
                     </svg>
                     Open Source Project
                 </div>
-                <h1 class="text-5xl font-bold text-gray-900 mb-6">About FinAegis</h1>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    Open-source core banking infrastructure built with Laravel—43 domain modules covering everything from democratic currency governance to AI agent commerce.
+                <h1 class="font-display text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-6">About <span class="text-gradient">FinAegis</span></h1>
+                <p class="text-lg text-slate-400 max-w-2xl mx-auto">
+                    Open-source core banking infrastructure built with Laravel — 43 domain modules covering everything from democratic currency governance to AI agent commerce.
                 </p>
             </div>
         </div>
+        <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
     </section>
 
     <!-- What It Is Section -->

@@ -9,26 +9,20 @@
     ])
 @endsection
 
-@push('styles')
-<style>
-    .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-</style>
-@endpush
-
 @section('content')
 
     <!-- Hero Section -->
-    <section class="pb-20 gradient-bg text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section class="bg-fa-navy relative overflow-hidden">
+        <div class="absolute inset-0 bg-grid-pattern"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24">
             <div class="text-center">
-                <h1 class="text-5xl font-bold mb-6">Contact Us</h1>
-                <p class="text-xl text-purple-100 max-w-3xl mx-auto">
+                <h1 class="font-display text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-6">Contact Us</h1>
+                <p class="text-xl text-slate-400 max-w-3xl mx-auto">
                     Share your feedback, report issues, or ask questions about FinAegis. Our community and team are here to help.
                 </p>
             </div>
         </div>
+        <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
     </section>
 
     <!-- Contact Options -->

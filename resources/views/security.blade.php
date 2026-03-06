@@ -23,34 +23,35 @@
 
 @push('styles')
 <style>
-    .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
     .security-feature {
-        transition: transform 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .security-feature:hover {
-        transform: translateY(-5px);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.08);
     }
 </style>
 @endpush
 
 @section('content')
     <!-- Hero Section -->
-    <section class="pt-16 gradient-bg text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <section class="bg-fa-navy relative overflow-hidden">
+        <div class="absolute inset-0 bg-grid-pattern"></div>
+        <div class="absolute top-1/3 right-1/4 w-80 h-80 bg-teal-500/8 rounded-full blur-[100px]"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24">
             <div class="text-center">
-                <div class="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full mb-6">
-                    <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-white/[0.04] border border-white/[0.08] rounded-2xl mb-6">
+                    <svg class="w-8 h-8 text-teal-400" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
                     </svg>
                 </div>
-                <h1 class="text-5xl font-bold mb-6">Security Architecture</h1>
-                <p class="text-xl text-purple-100 max-w-3xl mx-auto">
+                <h1 class="font-display text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-6">Security <span class="text-gradient">Architecture</span></h1>
+                <p class="text-lg text-slate-400 max-w-2xl mx-auto">
                     Multi-layered security with HMAC integrity verification, HSM key management, Shamir secret sharing, and comprehensive audit trails.
                 </p>
             </div>
         </div>
+        <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
     </section>
 
     <!-- Development Notice -->

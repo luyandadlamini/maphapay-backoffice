@@ -12,50 +12,45 @@
 
 @push('styles')
 <style>
-    .gradient-bg {
-        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-    }
     .support-card {
-        transition: all 0.3s ease;
-        border: 2px solid transparent;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .support-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 24px rgba(0,0,0,0.1);
-                border-color: #4f46e5;
-            }
-            .status-badge {
-                animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-            }
-            @keyframes pulse {
-                0%, 100% {
-                    opacity: 1;
-                }
-                50% {
-                    opacity: .7;
-                }
-            }
-        </style>
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+        border-color: #3b82f6;
+    }
+    .status-badge {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: .7; }
+    }
+</style>
 @endpush
 
 @section('content')
 
         <!-- Hero Section -->
-        <section class="py-20 gradient-bg text-white">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section class="bg-fa-navy relative overflow-hidden">
+            <div class="absolute inset-0 bg-grid-pattern"></div>
+            <div class="absolute top-1/4 right-1/3 w-72 h-72 bg-blue-500/8 rounded-full blur-[100px]"></div>
+            <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24">
                 <div class="text-center">
-                    <h1 class="text-5xl md:text-6xl font-bold mb-6">
-                        Support Center
+                    <h1 class="font-display text-5xl md:text-6xl font-extrabold text-white tracking-tight mb-6">
+                        Support <span class="text-gradient">Center</span>
                     </h1>
-                    <p class="text-xl md:text-2xl mb-8 text-purple-100 max-w-4xl mx-auto">
+                    <p class="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-8">
                         Get help with FinAegis. From documentation to community support, we're here to assist.
                     </p>
-                    <div class="inline-flex items-center px-4 py-2 bg-white/20 rounded-full backdrop-blur-sm">
-                        <div class="w-3 h-3 bg-green-400 rounded-full status-badge mr-3"></div>
-                        <span class="text-sm font-medium">Community Support Available</span>
+                    <div class="inline-flex items-center px-4 py-2 bg-white/[0.04] border border-white/[0.08] rounded-full">
+                        <div class="w-2.5 h-2.5 bg-emerald-400 rounded-full status-badge mr-3"></div>
+                        <span class="text-sm font-medium text-slate-300">Community Support Available</span>
                     </div>
                 </div>
             </div>
+            <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
         </section>
 
         <!-- Quick Help Section -->

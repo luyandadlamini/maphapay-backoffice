@@ -13,33 +13,35 @@
 @section('content')
 
     <!-- Hero Section -->
-    <section class="pt-16 bg-gradient-to-br from-indigo-600 to-purple-700 text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+    <section class="bg-fa-navy relative overflow-hidden">
+        <div class="absolute inset-0 bg-grid-pattern"></div>
+        <div class="absolute top-1/3 -right-20 w-80 h-80 bg-amber-500/6 rounded-full blur-[100px]"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24">
             <div class="text-center">
-                <div class="inline-flex items-center bg-amber-500/30 backdrop-blur rounded-full px-4 py-2 mb-6">
-                    <svg class="w-5 h-5 mr-2 text-amber-300" fill="currentColor" viewBox="0 0 20 20">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-sm text-amber-400 mb-8">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                     </svg>
                     Conceptual Model Only
                 </div>
-                <h1 class="text-5xl md:text-6xl font-bold mb-6 text-white">
-                    Continuous Growth Offering
+                <h1 class="font-display text-5xl md:text-6xl font-extrabold text-white tracking-tight mb-6">
+                    Continuous Growth <span class="text-gradient-gold">Offering</span>
                 </h1>
-                <p class="text-xl md:text-2xl mb-8 text-purple-100 max-w-3xl mx-auto">
-                    A conceptual funding model for open-source financial platforms. This is <strong>not</strong> an active investment opportunity.
+                <p class="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10">
+                    A conceptual funding model for open-source financial platforms. This is <strong class="text-slate-300">not</strong> an active investment opportunity.
                 </p>
 
                 <!-- Important Notice -->
-                <div class="bg-amber-500/20 backdrop-blur-sm border-2 border-amber-400 rounded-2xl p-6 max-w-2xl mx-auto mb-8">
-                    <div class="flex items-start">
-                        <svg class="w-6 h-6 text-amber-300 mr-3 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <div class="card-dark !bg-amber-500/[0.05] !border-amber-500/20 p-6 max-w-2xl mx-auto">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                         </svg>
                         <div class="text-left">
-                            <h3 class="text-lg font-bold text-white mb-2">Demonstration Only</h3>
-                            <p class="text-amber-100 text-sm">
+                            <h3 class="text-sm font-bold text-amber-300 mb-1">Demonstration Only</h3>
+                            <p class="text-slate-500 text-sm">
                                 This page demonstrates the CGO concept as part of the FinAegis platform.
-                                <strong>No real money is being collected.</strong> This is purely a conceptual exploration
+                                <strong class="text-slate-400">No real money is being collected.</strong> This is purely a conceptual exploration
                                 of alternative funding models for open-source financial platforms.
                             </p>
                         </div>
@@ -47,6 +49,7 @@
                 </div>
             </div>
         </div>
+        <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/20 to-transparent"></div>
     </section>
 
     <!-- What is CGO Section -->

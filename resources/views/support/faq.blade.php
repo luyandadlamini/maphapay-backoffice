@@ -43,9 +43,6 @@
 
 @push('styles')
 <style>
-    .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
     .faq-item {
         transition: all 0.3s ease;
     }
@@ -63,18 +60,19 @@
 @section('content')
 
     <!-- Hero Section -->
-    <section class="pb-20 gradient-bg text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section class="bg-fa-navy relative overflow-hidden">
+        <div class="absolute inset-0 bg-grid-pattern"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24">
             <div class="text-center">
-                <h1 class="text-5xl font-bold mb-6">Frequently Asked Questions</h1>
-                <p class="text-xl text-purple-100 max-w-3xl mx-auto">
+                <h1 class="font-display text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-6">Frequently Asked Questions</h1>
+                <p class="text-xl text-slate-400 max-w-3xl mx-auto">
                     Find answers to common questions about the FinAegis platform and the Global Currency Unit concept.
                 </p>
-                
+
                 <!-- Search Bar -->
                 <div class="mt-8 max-w-xl mx-auto">
                     <div class="relative">
-                        <input type="text" id="faq-search" placeholder="Search for answers..." 
+                        <input type="text" id="faq-search" placeholder="Search for answers..."
                             class="w-full px-6 py-3 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white">
                         <svg class="absolute right-4 top-3.5 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -83,6 +81,7 @@
                 </div>
             </div>
         </div>
+        <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
     </section>
 
     <!-- Category Filter -->

@@ -20,19 +20,12 @@
 
 @push('styles')
 <style>
-    .gradient-bg-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
     .feature-card {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .feature-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-    }
-    .gcu-symbol {
-        font-family: 'Inter', sans-serif;
-        font-weight: 700;
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.08);
     }
 </style>
 @endpush
@@ -40,18 +33,21 @@
 @section('content')
 
     <!-- Hero Section -->
-    <section class="pt-16 bg-gray-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <section class="bg-fa-navy relative overflow-hidden">
+        <div class="absolute inset-0 bg-grid-pattern"></div>
+        <div class="absolute top-1/4 left-1/4 w-80 h-80 bg-amber-500/6 rounded-full blur-[100px]"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24">
             <div class="text-center">
-                <div class="inline-flex items-center px-4 py-2 bg-indigo-100 rounded-full mb-6">
-                    <span class="text-indigo-600 font-semibold">Flagship Product</span>
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-sm text-amber-400 mb-8">
+                    Flagship Product
                 </div>
-                <h1 class="text-5xl font-bold text-gray-900 mb-6">Global Currency Unit (GCU)</h1>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    A democratically governed basket currency backed by six reserve assets—USD, EUR, GBP, CHF, JPY, and gold—with stake-weighted governance and event-sourced audit trails.
+                <h1 class="font-display text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-6">Global Currency <span class="text-gradient">Unit (GCU)</span></h1>
+                <p class="text-lg text-slate-400 max-w-2xl mx-auto">
+                    A democratically governed basket currency backed by six reserve assets — USD, EUR, GBP, CHF, JPY, and gold — with stake-weighted governance and event-sourced audit trails.
                 </p>
             </div>
         </div>
+        <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
     </section>
 
     <!-- Overview Section -->

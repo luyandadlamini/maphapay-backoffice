@@ -12,9 +12,6 @@
 
 @push('styles')
 <style>
-    .gradient-bg {
-        background: linear-gradient(135deg, #22c55e 0%, #3b82f6 100%);
-    }
     .guide-card {
         transition: all 0.3s ease;
     }
@@ -27,18 +24,19 @@
 @section('content')
 
         <!-- Hero Section -->
-        <section class="pb-20 gradient-bg text-white">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section class="bg-fa-navy relative overflow-hidden">
+            <div class="absolute inset-0 bg-grid-pattern"></div>
+            <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24">
                 <div class="text-center">
-                    <h1 class="text-5xl md:text-6xl font-bold mb-6">
+                    <h1 class="font-display text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-6">
                         Platform Guides
                     </h1>
-                    <p class="text-xl md:text-2xl mb-8 text-green-100 max-w-4xl mx-auto">
+                    <p class="text-xl md:text-2xl mb-8 text-slate-400 max-w-4xl mx-auto">
                         Learn how to explore the FinAegis platform and contribute to our open-source project.
                     </p>
                     <div class="max-w-2xl mx-auto">
                         <div class="relative">
-                            <input type="text" id="guide-search" placeholder="Search guides..." 
+                            <input type="text" id="guide-search" placeholder="Search guides..."
                                 class="w-full px-6 py-3 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white pl-12">
                             <svg class="absolute left-4 top-3.5 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -47,6 +45,7 @@
                     </div>
                 </div>
             </div>
+            <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
         </section>
 
         <!-- Quick Links -->
