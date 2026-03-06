@@ -24,7 +24,7 @@
                     <h1 class="text-5xl md:text-6xl font-bold mb-6">
                         FinAegis Treasury
                     </h1>
-                    <p class="text-xl md:text-2xl text-purple-100 max-w-3xl mx-auto mb-8">
+                    <p class="text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto mb-8">
                         Enterprise-grade treasury management across multiple banks and currencies
                     </p>
                 </div>

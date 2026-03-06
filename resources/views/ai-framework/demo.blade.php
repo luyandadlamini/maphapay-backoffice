@@ -32,7 +32,7 @@
                 Sandbox Mode &mdash; Safe to Explore
             </div>
             <h1 class="text-5xl font-bold mb-6">AI Framework Demo</h1>
-            <p class="text-xl text-purple-100 max-w-3xl mx-auto mb-8">
+            <p class="text-xl text-slate-400 max-w-3xl mx-auto mb-8">
                 Explore how AI agents interact with the FinAegis banking platform. Run natural language queries, trigger MCP tools, and see autonomous agent workflows in action.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">

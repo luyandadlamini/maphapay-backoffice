@@ -27,7 +27,7 @@
                     <h1 class="text-4xl md:text-5xl font-bold mb-6">
                         Partner Institution Application
                     </h1>
-                    <p class="text-xl text-purple-100 max-w-3xl mx-auto">
+                    <p class="text-xl text-slate-400 max-w-3xl mx-auto">
                         Join the FinAegis network and help us build the future of democratic banking
                     </p>
                 </div>
