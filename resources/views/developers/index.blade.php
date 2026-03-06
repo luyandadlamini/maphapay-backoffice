@@ -13,9 +13,6 @@
 @push('styles')
 <link href="https://fonts.bunny.net/css?family=fira-code:400,500&display=swap" rel="stylesheet" />
 <style>
-    .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
     .dev-gradient {
         background: linear-gradient(135deg, #0c1222 0%, #131b2e 50%, #1e293b 100%);
     }
@@ -149,13 +146,13 @@
                         Open source banking infrastructure with comprehensive APIs, SDKs, and documentation.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                        <a href="#quickstart" class="group bg-white text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition shadow-lg hover:shadow-xl inline-flex items-center justify-center">
+                        <a href="#quickstart" class="group bg-white text-slate-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition shadow-lg hover:shadow-xl inline-flex items-center justify-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                             </svg>
                             Quick Start
                         </a>
-                        <a href="{{ route('developers.show', 'api-docs') }}" class="group border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-gray-900 transition inline-flex items-center justify-center">
+                        <a href="{{ route('developers.show', 'api-docs') }}" class="group border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-slate-900 transition inline-flex items-center justify-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                             </svg>
@@ -187,11 +184,11 @@
         </section>
 
         <!-- Quick Start Section -->
-        <section id="quickstart" class="py-20 bg-gray-50">
+        <section id="quickstart" class="py-20 bg-slate-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Quick Start Guide</h2>
-                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-4">Quick Start Guide</h2>
+                    <p class="text-xl text-slate-500 max-w-3xl mx-auto">
                         Get up and running with FinAegis in three simple steps
                     </p>
                 </div>
@@ -202,7 +199,7 @@
                         <div class="text-center mb-6">
                             <div class="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto shadow-lg">1</div>
                             <h3 class="text-xl font-semibold mt-4 mb-2">Clone Repository</h3>
-                            <p class="text-gray-600">Get the source code from GitHub</p>
+                            <p class="text-slate-500">Get the source code from GitHub</p>
                         </div>
                         <div class="code-container flex-1">
                             <div class="code-header">
@@ -233,7 +230,7 @@
                         <div class="text-center mb-6">
                             <div class="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto shadow-lg">2</div>
                             <h3 class="text-xl font-semibold mt-4 mb-2">Install & Configure</h3>
-                            <p class="text-gray-600">Set up your development environment</p>
+                            <p class="text-slate-500">Set up your development environment</p>
                         </div>
                         <div class="code-container flex-1">
                             <div class="code-header">
@@ -266,7 +263,7 @@
                         <div class="text-center mb-6">
                             <div class="w-20 h-20 bg-gradient-to-br from-pink-500 to-orange-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto shadow-lg">3</div>
                             <h3 class="text-xl font-semibold mt-4 mb-2">Start Building</h3>
-                            <p class="text-gray-600">Create your first API request</p>
+                            <p class="text-slate-500">Create your first API request</p>
                         </div>
                         <div class="code-container flex-1">
                             <div class="code-header">
@@ -300,8 +297,8 @@
         <section class="py-20 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">API Overview</h2>
-                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-4">API Overview</h2>
+                    <p class="text-xl text-slate-500 max-w-3xl mx-auto">
                         RESTful API built on modern standards with comprehensive documentation
                     </p>
                 </div>
@@ -318,7 +315,7 @@
                                 </div>
                                 <h3 class="text-xl font-semibold">Authentication</h3>
                             </div>
-                            <p class="text-gray-600 mb-6">
+                            <p class="text-slate-500 mb-6">
                                 Secure API authentication using Bearer tokens. Get your API key from the dashboard after registration.
                             </p>
                             <div class="code-container">
@@ -368,24 +365,24 @@
                                 </div>
                                 <h3 class="text-xl font-semibold">Rate Limiting</h3>
                             </div>
-                            <p class="text-gray-600 mb-6">
+                            <p class="text-slate-500 mb-6">
                                 API requests are limited to ensure fair usage and platform stability.
                             </p>
-                            <div class="bg-gray-50 rounded-lg p-6 space-y-4">
+                            <div class="bg-slate-50 rounded-lg p-6 space-y-4">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-gray-700 font-medium">Per Hour</span>
+                                    <span class="text-slate-600 font-medium">Per Hour</span>
                                     <span class="text-2xl font-bold text-indigo-600">1,000</span>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-gray-700 font-medium">Per Day</span>
+                                    <span class="text-slate-600 font-medium">Per Day</span>
                                     <span class="text-2xl font-bold text-indigo-600">10,000</span>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-gray-700 font-medium">Burst Rate</span>
+                                    <span class="text-slate-600 font-medium">Burst Rate</span>
                                     <span class="text-2xl font-bold text-indigo-600">100/min</span>
                                 </div>
                             </div>
-                            <p class="text-sm text-gray-500 mt-4">
+                            <p class="text-sm text-slate-400 mt-4">
                                 Rate limit headers are included in all API responses for monitoring.
                             </p>
                         </div>
@@ -401,8 +398,8 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
                             </svg>
                         </div>
-                        <h4 class="text-lg font-semibold text-gray-900 mb-2">API Versioning</h4>
-                        <p class="text-gray-600 text-sm">
+                        <h4 class="text-lg font-semibold text-slate-900 mb-2">API Versioning</h4>
+                        <p class="text-slate-500 text-sm">
                             All endpoints are versioned (v1, v2) to ensure backward compatibility as we evolve the API.
                         </p>
                     </div>
@@ -414,8 +411,8 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                             </svg>
                         </div>
-                        <h4 class="text-lg font-semibold text-gray-900 mb-2">Webhooks</h4>
-                        <p class="text-gray-600 text-sm">
+                        <h4 class="text-lg font-semibold text-slate-900 mb-2">Webhooks</h4>
+                        <p class="text-slate-500 text-sm">
                             Real-time event notifications for transactions, account updates, and system events.
                         </p>
                     </div>
@@ -427,8 +424,8 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
                             </svg>
                         </div>
-                        <h4 class="text-lg font-semibold text-gray-900 mb-2">Official SDKs</h4>
-                        <p class="text-gray-600 text-sm">
+                        <h4 class="text-lg font-semibold text-slate-900 mb-2">Official SDKs</h4>
+                        <p class="text-slate-500 text-sm">
                             Native SDKs for JavaScript, Python, PHP, and more are in development.
                         </p>
                     </div>
@@ -436,8 +433,8 @@
 
                 <!-- Platform API Area Cards -->
                 <div class="mt-16">
-                    <h3 class="text-2xl font-bold text-gray-900 mb-2 text-center">Platform API Areas</h3>
-                    <p class="text-gray-600 text-center mb-8">Explore the full breadth of the FinAegis platform across 43 DDD domains</p>
+                    <h3 class="text-2xl font-bold text-slate-900 mb-2 text-center">Platform API Areas</h3>
+                    <p class="text-slate-500 text-center mb-8">Explore the full breadth of the FinAegis platform across 43 DDD domains</p>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
                         <!-- CrossChain -->
@@ -450,11 +447,11 @@
                                         </svg>
                                     </div>
                                     <div>
-                                        <h4 class="text-lg font-semibold text-gray-900">CrossChain</h4>
-                                        <span class="text-xs text-gray-500">7 routes</span>
+                                        <h4 class="text-lg font-semibold text-slate-900">CrossChain</h4>
+                                        <span class="text-xs text-slate-400">7 routes</span>
                                     </div>
                                 </div>
-                                <p class="text-gray-600 text-sm mb-3">Bridge protocols (Wormhole, LayerZero, Axelar), cross-chain swaps, fee comparison, and multi-chain portfolio tracking.</p>
+                                <p class="text-slate-500 text-sm mb-3">Bridge protocols (Wormhole, LayerZero, Axelar), cross-chain swaps, fee comparison, and multi-chain portfolio tracking.</p>
                                 <span class="text-cyan-600 text-sm font-medium group-hover:text-cyan-700">View endpoints &rarr;</span>
                             </div>
                         </a>
@@ -469,11 +466,11 @@
                                         </svg>
                                     </div>
                                     <div>
-                                        <h4 class="text-lg font-semibold text-gray-900">DeFi</h4>
-                                        <span class="text-xs text-gray-500">8 routes</span>
+                                        <h4 class="text-lg font-semibold text-slate-900">DeFi</h4>
+                                        <span class="text-xs text-slate-400">8 routes</span>
                                     </div>
                                 </div>
-                                <p class="text-gray-600 text-sm mb-3">DEX aggregation (Uniswap, Curve), lending (Aave), staking (Lido), yield optimization, flash loans, and portfolio management.</p>
+                                <p class="text-slate-500 text-sm mb-3">DEX aggregation (Uniswap, Curve), lending (Aave), staking (Lido), yield optimization, flash loans, and portfolio management.</p>
                                 <span class="text-emerald-600 text-sm font-medium group-hover:text-emerald-700">View endpoints &rarr;</span>
                             </div>
                         </a>
@@ -488,11 +485,11 @@
                                         </svg>
                                     </div>
                                     <div>
-                                        <h4 class="text-lg font-semibold text-gray-900">RegTech</h4>
-                                        <span class="text-xs text-gray-500">12 routes</span>
+                                        <h4 class="text-lg font-semibold text-slate-900">RegTech</h4>
+                                        <span class="text-xs text-slate-400">12 routes</span>
                                     </div>
                                 </div>
-                                <p class="text-gray-600 text-sm mb-3">MiFID II reporting, MiCA compliance, Travel Rule enforcement, jurisdiction adapters, and regulatory orchestration.</p>
+                                <p class="text-slate-500 text-sm mb-3">MiFID II reporting, MiCA compliance, Travel Rule enforcement, jurisdiction adapters, and regulatory orchestration.</p>
                                 <span class="text-amber-600 text-sm font-medium group-hover:text-amber-700">View endpoints &rarr;</span>
                             </div>
                         </a>
@@ -507,11 +504,11 @@
                                         </svg>
                                     </div>
                                     <div>
-                                        <h4 class="text-lg font-semibold text-gray-900">Mobile Payment</h4>
-                                        <span class="text-xs text-gray-500">25+ routes</span>
+                                        <h4 class="text-lg font-semibold text-slate-900">Mobile Payment</h4>
+                                        <span class="text-xs text-slate-400">25+ routes</span>
                                     </div>
                                 </div>
-                                <p class="text-gray-600 text-sm mb-3">Payment intents, receipts, activity feeds, receive addresses, P2P transfers, passkey auth, and biometric JWT.</p>
+                                <p class="text-slate-500 text-sm mb-3">Payment intents, receipts, activity feeds, receive addresses, P2P transfers, passkey auth, and biometric JWT.</p>
                                 <span class="text-violet-600 text-sm font-medium group-hover:text-violet-700">View endpoints &rarr;</span>
                             </div>
                         </a>
@@ -526,11 +523,11 @@
                                         </svg>
                                     </div>
                                     <div>
-                                        <h4 class="text-lg font-semibold text-gray-900">Partner / BaaS</h4>
-                                        <span class="text-xs text-gray-500">24 routes</span>
+                                        <h4 class="text-lg font-semibold text-slate-900">Partner / BaaS</h4>
+                                        <span class="text-xs text-slate-400">24 routes</span>
                                     </div>
                                 </div>
-                                <p class="text-gray-600 text-sm mb-3">Banking-as-a-Service partner onboarding, SDK generation, white-label configuration, and tenant provisioning.</p>
+                                <p class="text-slate-500 text-sm mb-3">Banking-as-a-Service partner onboarding, SDK generation, white-label configuration, and tenant provisioning.</p>
                                 <span class="text-rose-600 text-sm font-medium group-hover:text-rose-700">View endpoints &rarr;</span>
                             </div>
                         </a>
@@ -545,12 +542,12 @@
                                         </svg>
                                     </div>
                                     <div>
-                                        <h4 class="text-lg font-semibold text-gray-900">AI Query</h4>
-                                        <span class="text-xs text-gray-500">2 routes</span>
+                                        <h4 class="text-lg font-semibold text-slate-900">AI Query</h4>
+                                        <span class="text-xs text-slate-400">2 routes</span>
                                     </div>
                                 </div>
-                                <p class="text-gray-600 text-sm mb-3">Natural language transaction queries and AI-powered financial insights via the intelligent query interface.</p>
-                                <span class="text-gray-600 text-sm font-medium group-hover:text-gray-800">View endpoints &rarr;</span>
+                                <p class="text-slate-500 text-sm mb-3">Natural language transaction queries and AI-powered financial insights via the intelligent query interface.</p>
+                                <span class="text-slate-500 text-sm font-medium group-hover:text-slate-800">View endpoints &rarr;</span>
                             </div>
                         </a>
 
@@ -565,11 +562,11 @@
                                         </svg>
                                     </div>
                                     <div>
-                                        <h4 class="text-lg font-semibold text-gray-900">GraphQL API</h4>
-                                        <span class="text-xs text-gray-500">35 domains</span>
+                                        <h4 class="text-lg font-semibold text-slate-900">GraphQL API</h4>
+                                        <span class="text-xs text-slate-400">35 domains</span>
                                     </div>
                                 </div>
-                                <p class="text-gray-600 text-sm mb-3">Schema-first GraphQL via Lighthouse PHP with queries, mutations, subscriptions, and DataLoaders across 35 domain schemas.</p>
+                                <p class="text-slate-500 text-sm mb-3">Schema-first GraphQL via Lighthouse PHP with queries, mutations, subscriptions, and DataLoaders across 35 domain schemas.</p>
                                 <span class="text-sky-600 text-sm font-medium group-hover:text-sky-700">View endpoints &rarr;</span>
                             </div>
                         </a>
@@ -584,11 +581,11 @@
                                         </svg>
                                     </div>
                                     <div>
-                                        <h4 class="text-lg font-semibold text-gray-900">Event Streaming</h4>
-                                        <span class="text-xs text-gray-500">5 endpoints</span>
+                                        <h4 class="text-lg font-semibold text-slate-900">Event Streaming</h4>
+                                        <span class="text-xs text-slate-400">5 endpoints</span>
                                     </div>
                                 </div>
-                                <p class="text-gray-600 text-sm mb-3">Redis Streams-based event publishing, consumer groups, live metrics dashboard with projector lag and throughput monitoring.</p>
+                                <p class="text-slate-500 text-sm mb-3">Redis Streams-based event publishing, consumer groups, live metrics dashboard with projector lag and throughput monitoring.</p>
                                 <span class="text-lime-600 text-sm font-medium group-hover:text-lime-700">View endpoints &rarr;</span>
                             </div>
                         </a>
@@ -603,11 +600,11 @@
                                         </svg>
                                     </div>
                                     <div>
-                                        <h4 class="text-lg font-semibold text-gray-900">x402 Protocol</h4>
-                                        <span class="text-xs text-gray-500">15+ endpoints</span>
+                                        <h4 class="text-lg font-semibold text-slate-900">x402 Protocol</h4>
+                                        <span class="text-xs text-slate-400">15+ endpoints</span>
                                     </div>
                                 </div>
-                                <p class="text-gray-600 text-sm mb-3">HTTP-native micropayments. Monetize APIs with USDC on Base. GraphQL + REST with AI agent payment support.</p>
+                                <p class="text-slate-500 text-sm mb-3">HTTP-native micropayments. Monetize APIs with USDC on Base. GraphQL + REST with AI agent payment support.</p>
                                 <span class="text-emerald-600 text-sm font-medium group-hover:text-emerald-700">View endpoints &rarr;</span>
                             </div>
                         </a>
@@ -621,8 +618,8 @@
         <section class="py-20 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Developer Resources</h2>
-                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-4">Developer Resources</h2>
+                    <p class="text-xl text-slate-500 max-w-3xl mx-auto">
                         Everything you need to build amazing financial applications
                     </p>
                 </div>
@@ -641,7 +638,7 @@
                                 </svg>
                                 API Documentation
                             </h3>
-                            <p class="text-gray-600 mb-4">Complete reference for all API endpoints</p>
+                            <p class="text-slate-500 mb-4">Complete reference for all API endpoints</p>
                             <span class="text-indigo-600 font-medium group-hover:text-indigo-700">Explore API →</span>
                         </div>
                     </a>
@@ -659,7 +656,7 @@
                                 </svg>
                                 SDKs & Libraries
                             </h3>
-                            <p class="text-gray-600 mb-4">Official SDKs for popular languages</p>
+                            <p class="text-slate-500 mb-4">Official SDKs for popular languages</p>
                             <span class="text-purple-600 font-medium group-hover:text-purple-700">View SDKs →</span>
                         </div>
                     </a>
@@ -677,7 +674,7 @@
                                 </svg>
                                 Code Examples
                             </h3>
-                            <p class="text-gray-600 mb-4">Real-world integration examples</p>
+                            <p class="text-slate-500 mb-4">Real-world integration examples</p>
                             <span class="text-green-600 font-medium group-hover:text-green-700">See Examples →</span>
                         </div>
                     </a>
@@ -742,8 +739,8 @@
         <section id="partner-auth" class="py-20 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Partner API Authentication</h2>
-                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-4">Partner API Authentication</h2>
+                    <p class="text-xl text-slate-500 max-w-3xl mx-auto">
                         BaaS partners and third-party integrators use dedicated Partner API keys with scoped permissions
                     </p>
                 </div>
@@ -760,25 +757,25 @@
                                 </div>
                                 <h3 class="text-xl font-semibold">Partner API Keys</h3>
                             </div>
-                            <p class="text-gray-600 mb-6">
+                            <p class="text-slate-500 mb-6">
                                 Partner keys provide scoped access to BaaS endpoints, tenant provisioning, SDK generation, and white-label configuration. Keys are issued during partner onboarding.
                             </p>
-                            <div class="bg-gray-50 rounded-lg p-6 space-y-3">
+                            <div class="bg-slate-50 rounded-lg p-6 space-y-3">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-gray-700 font-medium">Key Prefix</span>
-                                    <code class="text-sm bg-gray-200 px-2 py-1 rounded">fpk_</code>
+                                    <span class="text-slate-600 font-medium">Key Prefix</span>
+                                    <code class="text-sm bg-slate-200 px-2 py-1 rounded">fpk_</code>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-gray-700 font-medium">Scopes</span>
-                                    <span class="text-sm text-gray-600">baas, tenants, sdk, config</span>
+                                    <span class="text-slate-600 font-medium">Scopes</span>
+                                    <span class="text-sm text-slate-500">baas, tenants, sdk, config</span>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-gray-700 font-medium">Rate Limit</span>
-                                    <span class="text-sm text-gray-600">5,000 req/hour</span>
+                                    <span class="text-slate-600 font-medium">Rate Limit</span>
+                                    <span class="text-sm text-slate-500">5,000 req/hour</span>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-gray-700 font-medium">IP Whitelist</span>
-                                    <span class="text-sm text-gray-600">Required</span>
+                                    <span class="text-slate-600 font-medium">IP Whitelist</span>
+                                    <span class="text-sm text-slate-500">Required</span>
                                 </div>
                             </div>
                         </div>
@@ -795,8 +792,8 @@
                                 </div>
                                 <h3 class="text-xl font-semibold">Partner Request Example</h3>
                             </div>
-                            <p class="text-gray-600 mb-6">
-                                Include the Partner API key in the <code class="bg-gray-100 px-1 rounded">X-Partner-Key</code> header alongside your standard Bearer token.
+                            <p class="text-slate-500 mb-6">
+                                Include the Partner API key in the <code class="bg-slate-100 px-1 rounded">X-Partner-Key</code> header alongside your standard Bearer token.
                             </p>
                             <div class="code-container">
                                 <div class="code-header">
@@ -830,17 +827,17 @@
         </section>
 
         <!-- CTA -->
-        <section class="py-20 bg-gray-50">
+        <section class="py-20 bg-slate-50">
             <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Ready to Build?</h2>
-                <p class="text-xl text-gray-600 mb-8">
+                <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-6">Ready to Build?</h2>
+                <p class="text-xl text-slate-500 mb-8">
                     Join our developer community and start building the future of finance
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="{{ route('register') }}" class="bg-indigo-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-indigo-700 transition shadow-lg hover:shadow-xl">
+                    <a href="{{ route('register') }}" class="btn-primary !py-4 !px-10 !text-base !rounded-lg">
                         Get API Key
                     </a>
-                    <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="border-2 border-indigo-600 text-indigo-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-indigo-50 transition">
+                    <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="btn-outline-dark !py-4 !px-10 !text-base !rounded-lg">
                         View on GitHub
                     </a>
                 </div>
@@ -848,11 +845,11 @@
         </section>
 
         <!-- Code Examples Section -->
-        <section class="py-20 bg-gray-50">
+        <section class="py-20 bg-slate-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Code Examples</h2>
-                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-4">Code Examples</h2>
+                    <p class="text-xl text-slate-500 max-w-3xl mx-auto">
                         Real-world examples to get you started quickly
                     </p>
                 </div>
@@ -861,8 +858,8 @@
                     <!-- Create Account Example -->
                     <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
                         <div class="p-6 border-b border-gray-200">
-                            <h3 class="text-lg font-semibold text-gray-900">Create a New Account</h3>
-                            <p class="text-gray-600 text-sm mt-1">Initialize a new bank account with initial deposit</p>
+                            <h3 class="text-lg font-semibold text-slate-900">Create a New Account</h3>
+                            <p class="text-slate-500 text-sm mt-1">Initialize a new bank account with initial deposit</p>
                         </div>
                         <div class="code-container">
                             <div class="code-header">
@@ -903,8 +900,8 @@
                     <!-- Transfer Funds Example -->
                     <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
                         <div class="p-6 border-b border-gray-200">
-                            <h3 class="text-lg font-semibold text-gray-900">Transfer Funds</h3>
-                            <p class="text-gray-600 text-sm mt-1">Execute a transfer between two accounts</p>
+                            <h3 class="text-lg font-semibold text-slate-900">Transfer Funds</h3>
+                            <p class="text-slate-500 text-sm mt-1">Execute a transfer between two accounts</p>
                         </div>
                         <div class="code-container">
                             <div class="code-header">
@@ -950,8 +947,8 @@
                     <!-- GCU Exchange Example -->
                     <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
                         <div class="p-6 border-b border-gray-200">
-                            <h3 class="text-lg font-semibold text-gray-900">Exchange to GCU</h3>
-                            <p class="text-gray-600 text-sm mt-1">Convert traditional currency to Global Currency Units</p>
+                            <h3 class="text-lg font-semibold text-slate-900">Exchange to GCU</h3>
+                            <p class="text-slate-500 text-sm mt-1">Convert traditional currency to Global Currency Units</p>
                         </div>
                         <div class="code-container">
                             <div class="code-header">
@@ -998,8 +995,8 @@
                     <!-- Webhook Example -->
                     <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
                         <div class="p-6 border-b border-gray-200">
-                            <h3 class="text-lg font-semibold text-gray-900">Handle Webhooks</h3>
-                            <p class="text-gray-600 text-sm mt-1">Process real-time transaction notifications</p>
+                            <h3 class="text-lg font-semibold text-slate-900">Handle Webhooks</h3>
+                            <p class="text-slate-500 text-sm mt-1">Process real-time transaction notifications</p>
                         </div>
                         <div class="code-container">
                             <div class="code-header">
