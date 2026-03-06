@@ -20,15 +20,15 @@
 
 @push('styles')
 <style>
+    .feature-card {
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .feature-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+    }
     .gradient-bg {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    .ai-card {
-        transition: all 0.3s ease;
-    }
-    .ai-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
     }
 </style>
 @endpush
@@ -36,15 +36,17 @@
 @section('content')
 
     <!-- Hero Section -->
-    <section class="gradient-bg text-white pt-24 pb-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section class="bg-fa-navy relative overflow-hidden">
+        <div class="absolute inset-0 bg-grid-pattern"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24">
             <div class="text-center">
-                <h1 class="text-5xl font-bold mb-6">AI Framework</h1>
-                <p class="text-xl text-purple-100 max-w-3xl mx-auto">
+                <h1 class="font-display text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-6">AI Framework</h1>
+                <p class="text-lg text-slate-400 max-w-3xl mx-auto">
                     Intelligence woven into every layer of banking. Query transactions in plain English, detect anomalies with machine learning, and let AI agents handle complex financial operations autonomously.
                 </p>
             </div>
         </div>
+        <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
     </section>
 
     <!-- Overview Cards -->

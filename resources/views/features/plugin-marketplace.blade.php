@@ -20,15 +20,12 @@
 
 @push('styles')
 <style>
-    .plugin-gradient {
-        background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #6366f1 100%);
+    .feature-card {
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .plugin-card {
-        transition: all 0.3s ease;
-    }
-    .plugin-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    .feature-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.08);
     }
     .hook-badge {
         font-family: 'JetBrains Mono', 'Fira Code', monospace;
@@ -39,15 +36,17 @@
 @section('content')
 
     <!-- Hero Section -->
-    <section class="plugin-gradient text-white pt-24 pb-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section class="bg-fa-navy relative overflow-hidden">
+        <div class="absolute inset-0 bg-grid-pattern"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24">
             <div class="text-center">
-                <h1 class="text-5xl font-bold mb-6">Plugin Marketplace</h1>
-                <p class="text-xl text-purple-100 max-w-3xl mx-auto">
+                <h1 class="font-display text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-6">Plugin Marketplace</h1>
+                <p class="text-lg text-slate-400 max-w-3xl mx-auto">
                     Extend FinAegis with a secure, sandboxed plugin system. Discover, install, and manage plugins with built-in security scanning and permission enforcement.
                 </p>
             </div>
         </div>
+        <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
     </section>
 
     <!-- Core Capabilities -->

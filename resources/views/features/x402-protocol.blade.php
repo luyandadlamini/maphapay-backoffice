@@ -20,13 +20,15 @@
 
 @push('styles')
 <style>
-    .x402-gradient { background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%); }
     .feature-card {
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .feature-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+    }
+    .x402-gradient {
+        background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
     }
 </style>
 @endpush
@@ -34,22 +36,23 @@
 @section('content')
 
     <!-- Hero -->
-    <section class="x402-gradient text-white pt-24 pb-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section class="bg-fa-navy relative overflow-hidden">
+        <div class="absolute inset-0 bg-grid-pattern"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24">
             <div class="text-center">
                 <div class="flex justify-center mb-6">
-                    <div class="w-20 h-20 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center">
+                    <div class="w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center">
                         <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                     </div>
                 </div>
-                <div class="inline-flex items-center px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm mb-6">
-                    <span class="w-2 h-2 bg-white rounded-full mr-2"></span>
+                <div class="inline-flex items-center px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm text-slate-300 mb-6">
+                    <span class="w-2 h-2 bg-emerald-400 rounded-full mr-2"></span>
                     v5.2.0 &middot; Production Ready
                 </div>
-                <h1 class="text-5xl font-bold mb-6">x402 Protocol</h1>
-                <p class="text-xl text-emerald-100 max-w-3xl mx-auto mb-8">
+                <h1 class="font-display text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-6">x402 Protocol</h1>
+                <p class="text-lg text-slate-400 max-w-3xl mx-auto mb-8">
                     HTTP-native micropayments for APIs. Return a 402, get paid in USDC, deliver data. No subscriptions, no API keys to manage &mdash; just pay-per-request built into HTTP.
                 </p>
                 <div class="flex flex-wrap gap-4 justify-center">
@@ -62,6 +65,7 @@
                 </div>
             </div>
         </div>
+        <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
     </section>
 
     <!-- How It Works — Protocol Flow -->
