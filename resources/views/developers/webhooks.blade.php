@@ -13,9 +13,6 @@
 @push('styles')
 <link href="https://fonts.bunny.net/css?family=fira-code:400,500&display=swap" rel="stylesheet" />
 <style>
-    .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
     .code-font {
         font-family: 'Fira Code', monospace;
     }
@@ -79,8 +76,8 @@
         <section class="py-20 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">How Webhooks Work</h2>
-                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-4">How Webhooks Work</h2>
+                    <p class="text-xl text-slate-500 max-w-3xl mx-auto">
                         Never miss an important event. Get instant HTTP POST notifications when things happen in your FinAegis account.
                     </p>
                 </div>
@@ -112,7 +109,7 @@
                                 @endif
                             </div>
                             <h3 class="text-lg font-semibold mt-4 mb-2">{{ $step['title'] }}</h3>
-                            <p class="text-gray-600 text-sm">{{ $step['description'] }}</p>
+                            <p class="text-slate-500 text-sm">{{ $step['description'] }}</p>
                         </div>
                         @endforeach
                     </div>
@@ -120,7 +117,7 @@
 
                 <!-- Quick Setup -->
                 <div class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-3xl p-8 text-center">
-                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Quick Setup</h3>
+                    <h3 class="text-2xl font-bold text-slate-900 mb-4">Quick Setup</h3>
                     <x-code-block language="bash">
 curl -X POST https://api.finaegis.org/v2/webhooks \
   -H "Authorization: Bearer YOUR_API_KEY" \
@@ -134,8 +131,8 @@ curl -X POST https://api.finaegis.org/v2/webhooks \
         <section class="py-20 bg-gray-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Available Events</h2>
-                    <p class="text-xl text-gray-600">Subscribe to exactly what you need</p>
+                    <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-4">Available Events</h2>
+                    <p class="text-xl text-slate-500">Subscribe to exactly what you need</p>
                 </div>
 
                 <div class="grid lg:grid-cols-2 gap-8">
@@ -265,7 +262,7 @@ curl -X POST https://api.finaegis.org/v2/webhooks \
                                 @foreach($category['events'] as $event)
                                 <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
                                     <code class="code-font text-sm bg-gray-100 px-3 py-1 rounded text-{{ $category['color'] }}-700">{{ $event['name'] }}</code>
-                                    <span class="text-sm text-gray-600">{{ $event['desc'] }}</span>
+                                    <span class="text-sm text-slate-500">{{ $event['desc'] }}</span>
                                 </div>
                                 @endforeach
                             </div>
@@ -280,8 +277,8 @@ curl -X POST https://api.finaegis.org/v2/webhooks \
         <section class="py-20 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Implementation Guide</h2>
-                    <p class="text-xl text-gray-600 mb-8">Get up and running in minutes</p>
+                    <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-4">Implementation Guide</h2>
+                    <p class="text-xl text-slate-500 mb-8">Get up and running in minutes</p>
                     <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 max-w-3xl mx-auto">
                         <div class="flex items-center justify-center mb-6">
                             <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -290,8 +287,8 @@ curl -X POST https://api.finaegis.org/v2/webhooks \
                                 </svg>
                             </div>
                         </div>
-                        <h3 class="text-2xl font-bold text-gray-900 mb-4">Complete Code Examples Available</h3>
-                        <p class="text-gray-600 mb-6">We have comprehensive webhook implementation examples with signature verification, error handling, and idempotency patterns ready for you to use.</p>
+                        <h3 class="text-2xl font-bold text-slate-900 mb-4">Complete Code Examples Available</h3>
+                        <p class="text-slate-500 mb-6">We have comprehensive webhook implementation examples with signature verification, error handling, and idempotency patterns ready for you to use.</p>
                         <a href="{{ route('developers.show', 'examples') }}#webhooks" class="inline-flex items-center bg-indigo-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition duration-200">
                             View Webhook Examples
                             <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -306,20 +303,18 @@ curl -X POST https://api.finaegis.org/v2/webhooks \
 
 
         <!-- CTA -->
-        <section class="py-20 webhook-gradient text-white">
-            <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-                <h2 class="text-3xl md:text-4xl font-bold mb-6">Ready to receive real-time events?</h2>
-                <p class="text-xl text-yellow-100 mb-8">
+        <section class="bg-fa-navy relative overflow-hidden">
+            <div class="absolute inset-0 bg-dot-pattern"></div>
+            <div class="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 py-20">
+                <h2 class="font-display text-3xl md:text-4xl font-bold text-white mb-4">Ready to receive real-time events?</h2>
+                <p class="text-lg text-slate-400 mb-10 max-w-2xl mx-auto">
                     Set up your first webhook in minutes
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="{{ route('developers') }}" class="inline-flex items-center justify-center px-8 py-4 bg-white text-orange-600 rounded-lg font-semibold hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg">
+                    <a href="{{ route('developers') }}" class="btn-primary px-8 py-4 text-lg">
                         View Documentation
-                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
                     </a>
-                    <a href="{{ route('developers.show', 'api-docs') }}" class="inline-flex items-center justify-center px-8 py-4 border-2 border-white text-white rounded-lg font-semibold hover:bg-white hover:text-orange-600 transition">
+                    <a href="{{ route('developers.show', 'api-docs') }}" class="btn-outline px-8 py-4 text-lg">
                         API Reference
                     </a>
                 </div>

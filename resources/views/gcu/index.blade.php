@@ -30,9 +30,6 @@
         
         <!-- Custom Styles -->
         <style>
-            .gradient-bg {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            }
             .gcu-gradient {
                 background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
             }
@@ -124,12 +121,12 @@
                                 <div class="text-6xl md:text-7xl font-bold gcu-symbol mb-4">
                                     Ǥ
                                 </div>
-                                <h3 class="text-2xl font-bold text-gray-900 mb-2">Global Currency Unit</h3>
-                                <p class="text-gray-600">The future of democratic finance</p>
+                                <h3 class="text-2xl font-bold text-slate-900 mb-2">Global Currency Unit</h3>
+                                <p class="text-slate-500">The future of democratic finance</p>
                             </div>
                             <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4">
                                 <div class="text-center">
-                                    <p class="text-sm text-gray-600 mb-1">Current Exchange Rate</p>
+                                    <p class="text-sm text-slate-500 mb-1">Current Exchange Rate</p>
                                     @php
                                         /* GCU Exchange Rate Calculation:
                                          * 1. GCU is a basket currency composed of: USD (35%), EUR (30%), GBP (20%), CHF (10%), JPY (3%), XAU (2%)
@@ -164,8 +161,8 @@
         <section id="composition" class="py-20 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Current Basket Composition</h2>
-                    <p class="text-xl text-gray-600">Optimized for stability through community governance</p>
+                    <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-4">Current Basket Composition</h2>
+                    <p class="text-xl text-slate-500">Optimized for stability through community governance</p>
                 </div>
                 
                 <!-- Performance Metrics -->
@@ -174,23 +171,23 @@
                     <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-6">
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
                             <div>
-                                <div class="text-sm text-gray-600 mb-1">Current Value</div>
-                                <div class="text-2xl font-bold text-gray-900">Ǥ{{ number_format($compositionData['performance']['value'], 4) }}</div>
+                                <div class="text-sm text-slate-500 mb-1">Current Value</div>
+                                <div class="text-2xl font-bold text-slate-900">Ǥ{{ number_format($compositionData['performance']['value'], 4) }}</div>
                             </div>
                             <div>
-                                <div class="text-sm text-gray-600 mb-1">24h Change</div>
+                                <div class="text-sm text-slate-500 mb-1">24h Change</div>
                                 <div class="text-2xl font-bold {{ $compositionData['performance']['change_24h'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                     {{ $compositionData['performance']['change_24h'] >= 0 ? '+' : '' }}{{ number_format($compositionData['performance']['change_24h'], 2) }}%
                                 </div>
                             </div>
                             <div>
-                                <div class="text-sm text-gray-600 mb-1">7d Change</div>
+                                <div class="text-sm text-slate-500 mb-1">7d Change</div>
                                 <div class="text-2xl font-bold {{ $compositionData['performance']['change_7d'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                     {{ $compositionData['performance']['change_7d'] >= 0 ? '+' : '' }}{{ number_format($compositionData['performance']['change_7d'], 2) }}%
                                 </div>
                             </div>
                             <div>
-                                <div class="text-sm text-gray-600 mb-1">30d Change</div>
+                                <div class="text-sm text-slate-500 mb-1">30d Change</div>
                                 <div class="text-2xl font-bold {{ $compositionData['performance']['change_30d'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                     {{ $compositionData['performance']['change_30d'] >= 0 ? '+' : '' }}{{ number_format($compositionData['performance']['change_30d'], 2) }}%
                                 </div>
@@ -252,7 +249,7 @@
                                     <circle cx="100" cy="100" r="50" fill="white" />
                                     <text x="100" y="100" text-anchor="middle" dominant-baseline="middle" class="text-3xl font-bold fill-gray-900">Ǥ</text>
                                 </svg>
-                                <p class="text-center text-gray-600 mt-4">Optimized Currency Basket</p>
+                                <p class="text-center text-slate-500 mt-4">Optimized Currency Basket</p>
                             </div>
                         </div>
                         
@@ -269,12 +266,12 @@
                                     <div class="flex items-center space-x-3">
                                         <span class="text-3xl">{{ $flags[$currency] }}</span>
                                         <div>
-                                            <h4 class="font-semibold text-gray-900">{{ $names[$currency] }}</h4>
-                                            <p class="text-sm text-gray-600">{{ $currency }}</p>
+                                            <h4 class="font-semibold text-slate-900">{{ $names[$currency] }}</h4>
+                                            <p class="text-sm text-slate-500">{{ $currency }}</p>
                                         </div>
                                     </div>
                                     <div class="text-right">
-                                        <span class="text-2xl font-bold text-gray-900">{{ $percentage }}%</span>
+                                        <span class="text-2xl font-bold text-slate-900">{{ $percentage }}%</span>
                                         <p class="text-sm text-gray-500">{{ number_format($percentage * 10, 2) }}Ǥ per 1000Ǥ</p>
                                         @if(isset($compositionData['assets']) && isset($compositionData['assets'][$currency]['price_change']))
                                         <p class="text-xs {{ $compositionData['assets'][$currency]['price_change'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
@@ -299,19 +296,19 @@
                                 $nextVoting = \Carbon\Carbon::parse(config('platform.gcu.next_voting_date'));
                                 $daysUntil = now()->diffInDays($nextVoting);
                             @endphp
-                            <h3 class="text-2xl font-bold text-gray-900 mb-4">Next Composition Vote</h3>
+                            <h3 class="text-2xl font-bold text-slate-900 mb-4">Next Composition Vote</h3>
                             <div class="flex justify-center space-x-8 mb-6">
                                 <div>
                                     <div class="text-4xl font-bold text-indigo-600">{{ $daysUntil }}</div>
-                                    <div class="text-gray-600">Days</div>
+                                    <div class="text-slate-500">Days</div>
                                 </div>
                                 <div>
                                     <div class="text-4xl font-bold text-indigo-600">{{ now()->diffInHours($nextVoting) % 24 }}</div>
-                                    <div class="text-gray-600">Hours</div>
+                                    <div class="text-slate-500">Hours</div>
                                 </div>
                                 <div>
                                     <div class="text-4xl font-bold text-indigo-600">{{ now()->diffInMinutes($nextVoting) % 60 }}</div>
-                                    <div class="text-gray-600">Minutes</div>
+                                    <div class="text-slate-500">Minutes</div>
                                 </div>
                             </div>
                             <a href="{{ route('gcu.voting.index') }}" class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">
@@ -322,15 +319,15 @@
                             </a>
                         @else
                             <div class="bg-white rounded-2xl p-8 shadow-lg">
-                                <h3 class="text-2xl font-bold text-gray-900 mb-4">Democratic Voting — Planned</h3>
+                                <h3 class="text-2xl font-bold text-slate-900 mb-4">Democratic Voting — Planned</h3>
                                 <div class="space-y-4 text-left">
                                     <div class="flex items-start">
                                         <svg class="w-5 h-5 text-indigo-600 mt-1 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
                                         </svg>
                                         <div>
-                                            <h4 class="font-semibold text-gray-900">Monthly Composition Votes</h4>
-                                            <p class="text-gray-600 text-sm">Vote on optimal currency weights every month based on global economic conditions</p>
+                                            <h4 class="font-semibold text-slate-900">Monthly Composition Votes</h4>
+                                            <p class="text-slate-500 text-sm">Vote on optimal currency weights every month based on global economic conditions</p>
                                         </div>
                                     </div>
                                     <div class="flex items-start">
@@ -338,8 +335,8 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                                         </svg>
                                         <div>
-                                            <h4 class="font-semibold text-gray-900">Asset-Weighted Voting Power</h4>
-                                            <p class="text-gray-600 text-sm">1 GCU = 1 vote. Your influence scales with your holdings to ensure aligned incentives</p>
+                                            <h4 class="font-semibold text-slate-900">Asset-Weighted Voting Power</h4>
+                                            <p class="text-slate-500 text-sm">1 GCU = 1 vote. Your influence scales with your holdings to ensure aligned incentives</p>
                                         </div>
                                     </div>
                                     <div class="flex items-start">
@@ -347,8 +344,8 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                                         </svg>
                                         <div>
-                                            <h4 class="font-semibold text-gray-900">Transparent Vote Verification</h4>
-                                            <p class="text-gray-600 text-sm">All votes cryptographically signed and publicly verifiable while maintaining voter privacy</p>
+                                            <h4 class="font-semibold text-slate-900">Transparent Vote Verification</h4>
+                                            <p class="text-slate-500 text-sm">All votes cryptographically signed and publicly verifiable while maintaining voter privacy</p>
                                         </div>
                                     </div>
                                     <div class="flex items-start">
@@ -356,8 +353,8 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                                         </svg>
                                         <div>
-                                            <h4 class="font-semibold text-gray-900">Automatic Rebalancing</h4>
-                                            <p class="text-gray-600 text-sm">Winning proposals executed automatically across all partner banks on the 1st of each month</p>
+                                            <h4 class="font-semibold text-slate-900">Automatic Rebalancing</h4>
+                                            <p class="text-slate-500 text-sm">Winning proposals executed automatically across all partner banks on the 1st of each month</p>
                                         </div>
                                     </div>
                                 </div>
@@ -380,8 +377,8 @@
         <section id="how-it-works" class="py-20 bg-gray-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">How GCU Works</h2>
-                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-4">How GCU Works</h2>
+                    <p class="text-xl text-slate-500 max-w-3xl mx-auto">
                         A revolutionary approach to global currency that puts power in the hands of the people
                     </p>
                 </div>
@@ -401,7 +398,7 @@
                                 <div class="absolute inset-0 bg-indigo-100 rounded-full scale-0 group-hover:scale-110 transition-transform"></div>
                             </div>
                             <h3 class="text-lg font-semibold mb-2">Deposit Funds</h3>
-                            <p class="text-gray-600 text-sm">Convert any currency to GCU at transparent exchange rates</p>
+                            <p class="text-slate-500 text-sm">Convert any currency to GCU at transparent exchange rates</p>
                         </div>
 
                         <div class="text-center group">
@@ -412,7 +409,7 @@
                                 <div class="absolute inset-0 bg-purple-100 rounded-full scale-0 group-hover:scale-110 transition-transform"></div>
                             </div>
                             <h3 class="text-lg font-semibold mb-2">Bank Storage</h3>
-                            <p class="text-gray-600 text-sm">Funds distributed across {{ config('platform.statistics.banking_partners') }} insured banks</p>
+                            <p class="text-slate-500 text-sm">Funds distributed across {{ config('platform.statistics.banking_partners') }} insured banks</p>
                         </div>
 
                         <div class="text-center group">
@@ -423,7 +420,7 @@
                                 <div class="absolute inset-0 bg-pink-100 rounded-full scale-0 group-hover:scale-110 transition-transform"></div>
                             </div>
                             <h3 class="text-lg font-semibold mb-2">Use Globally</h3>
-                            <p class="text-gray-600 text-sm">Send, receive, and spend anywhere in the world</p>
+                            <p class="text-slate-500 text-sm">Send, receive, and spend anywhere in the world</p>
                         </div>
 
                         <div class="text-center group">
@@ -434,7 +431,7 @@
                                 <div class="absolute inset-0 bg-green-100 rounded-full scale-0 group-hover:scale-110 transition-transform"></div>
                             </div>
                             <h3 class="text-lg font-semibold mb-2">Vote Monthly</h3>
-                            <p class="text-gray-600 text-sm">Shape the currency composition with your vote</p>
+                            <p class="text-slate-500 text-sm">Shape the currency composition with your vote</p>
                         </div>
                     </div>
                 </div>
@@ -442,7 +439,7 @@
                 <!-- Detailed Process -->
                 <div class="mt-20 grid lg:grid-cols-2 gap-12">
                     <div class="bg-white rounded-3xl shadow-xl p-8">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-6">The Banking Layer</h3>
+                        <h3 class="text-2xl font-bold text-slate-900 mb-6">The Banking Layer</h3>
                         <div class="space-y-6">
                             <div class="flex items-start">
                                 <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mr-4 mt-0.5">
@@ -452,7 +449,7 @@
                                 </div>
                                 <div>
                                     <h4 class="font-semibold mb-1">Multi-Bank Distribution</h4>
-                                    <p class="text-gray-600 text-sm">Your funds are distributed across {{ config('platform.statistics.banking_partners') }} regulated European banks, each providing €100,000 deposit insurance.</p>
+                                    <p class="text-slate-500 text-sm">Your funds are distributed across {{ config('platform.statistics.banking_partners') }} regulated European banks, each providing €100,000 deposit insurance.</p>
                                 </div>
                             </div>
                             <div class="flex items-start">
@@ -463,7 +460,7 @@
                                 </div>
                                 <div>
                                     <h4 class="font-semibold mb-1">Government Protection</h4>
-                                    <p class="text-gray-600 text-sm">Each bank partner is regulated and provides government-backed deposit insurance, ensuring your funds are protected.</p>
+                                    <p class="text-slate-500 text-sm">Each bank partner is regulated and provides government-backed deposit insurance, ensuring your funds are protected.</p>
                                 </div>
                             </div>
                             <div class="flex items-start">
@@ -474,14 +471,14 @@
                                 </div>
                                 <div>
                                     <h4 class="font-semibold mb-1">Real-Time Reporting</h4>
-                                    <p class="text-gray-600 text-sm">Full transparency with real-time reporting of reserves, allocations, and bank balances.</p>
+                                    <p class="text-slate-500 text-sm">Full transparency with real-time reporting of reserves, allocations, and bank balances.</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="bg-white rounded-3xl shadow-xl p-8">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-6">The Voting System</h3>
+                        <h3 class="text-2xl font-bold text-slate-900 mb-6">The Voting System</h3>
                         <div class="space-y-6">
                             <div class="flex items-start">
                                 <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mr-4 mt-0.5">
@@ -491,7 +488,7 @@
                                 </div>
                                 <div>
                                     <h4 class="font-semibold mb-1">One GCU, One Vote</h4>
-                                    <p class="text-gray-600 text-sm">Your voting power is proportional to your GCU holdings, ensuring those with skin in the game make decisions.</p>
+                                    <p class="text-slate-500 text-sm">Your voting power is proportional to your GCU holdings, ensuring those with skin in the game make decisions.</p>
                                 </div>
                             </div>
                             <div class="flex items-start">
@@ -502,7 +499,7 @@
                                 </div>
                                 <div>
                                     <h4 class="font-semibold mb-1">Expert Proposals</h4>
-                                    <p class="text-gray-600 text-sm">Economic experts submit data-driven proposals for optimal currency composition based on global conditions.</p>
+                                    <p class="text-slate-500 text-sm">Economic experts submit data-driven proposals for optimal currency composition based on global conditions.</p>
                                 </div>
                             </div>
                             <div class="flex items-start">
@@ -513,7 +510,7 @@
                                 </div>
                                 <div>
                                     <h4 class="font-semibold mb-1">Automatic Execution</h4>
-                                    <p class="text-gray-600 text-sm">Winning proposals are automatically executed, rebalancing the currency basket across all partner banks.</p>
+                                    <p class="text-slate-500 text-sm">Winning proposals are automatically executed, rebalancing the currency basket across all partner banks.</p>
                                 </div>
                             </div>
                         </div>
@@ -526,8 +523,8 @@
         <section class="py-20 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why Choose GCU?</h2>
-                    <p class="text-xl text-gray-600">Built for the future, secured by tradition</p>
+                    <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-4">Why Choose GCU?</h2>
+                    <p class="text-xl text-slate-500">Built for the future, secured by tradition</p>
                 </div>
 
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -581,7 +578,7 @@
                                 </svg>
                             </div>
                             <h3 class="text-xl font-semibold mb-3">{{ $benefit['title'] }}</h3>
-                            <p class="text-gray-600">{{ $benefit['description'] }}</p>
+                            <p class="text-slate-500">{{ $benefit['description'] }}</p>
                         </div>
                     </div>
                     @endforeach
@@ -593,8 +590,8 @@
         <section class="py-20 bg-gray-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Use GCU For Everything</h2>
-                    <p class="text-xl text-gray-600">From daily transactions to international business</p>
+                    <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-4">Use GCU For Everything</h2>
+                    <p class="text-xl text-slate-500">From daily transactions to international business</p>
                 </div>
 
                 <div class="grid lg:grid-cols-3 gap-8">
@@ -606,8 +603,8 @@
                         </div>
                         <div class="p-6">
                             <h3 class="text-xl font-semibold mb-2">Personal Banking</h3>
-                            <p class="text-gray-600 mb-4">Use GCU for everyday purchases, savings, and personal transfers with minimal fees.</p>
-                            <ul class="space-y-2 text-sm text-gray-600">
+                            <p class="text-slate-500 mb-4">Use GCU for everyday purchases, savings, and personal transfers with minimal fees.</p>
+                            <ul class="space-y-2 text-sm text-slate-500">
                                 <li class="flex items-center">
                                     <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -638,8 +635,8 @@
                         </div>
                         <div class="p-6">
                             <h3 class="text-xl font-semibold mb-2">International Trade</h3>
-                            <p class="text-gray-600 mb-4">Eliminate currency risk in global business with a stable, multi-currency unit.</p>
-                            <ul class="space-y-2 text-sm text-gray-600">
+                            <p class="text-slate-500 mb-4">Eliminate currency risk in global business with a stable, multi-currency unit.</p>
+                            <ul class="space-y-2 text-sm text-slate-500">
                                 <li class="flex items-center">
                                     <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -670,8 +667,8 @@
                         </div>
                         <div class="p-6">
                             <h3 class="text-xl font-semibold mb-2">Treasury Management</h3>
-                            <p class="text-gray-600 mb-4">Optimize corporate treasuries with a naturally hedged global currency.</p>
-                            <ul class="space-y-2 text-sm text-gray-600">
+                            <p class="text-slate-500 mb-4">Optimize corporate treasuries with a naturally hedged global currency.</p>
+                            <ul class="space-y-2 text-sm text-slate-500">
                                 <li class="flex items-center">
                                     <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -701,23 +698,23 @@
         <section class="py-20 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-12">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Trusted Banking Partners</h2>
-                    <p class="text-xl text-gray-600">Your funds secured with Europe's most trusted institutions</p>
+                    <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-4">Trusted Banking Partners</h2>
+                    <p class="text-xl text-slate-500">Your funds secured with Europe's most trusted institutions</p>
                 </div>
                 
                 <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-3xl p-12">
                     <div class="grid md:grid-cols-3 gap-8 mb-12">
                         <div class="text-center">
                             <div class="text-4xl font-bold text-indigo-600 mb-2">{{ config('platform.statistics.banking_partners') }}</div>
-                            <p class="text-gray-600">Partner Banks</p>
+                            <p class="text-slate-500">Partner Banks</p>
                         </div>
                         <div class="text-center">
                             <div class="text-4xl font-bold text-purple-600 mb-2">€300k</div>
-                            <p class="text-gray-600">Total Insurance Coverage</p>
+                            <p class="text-slate-500">Total Insurance Coverage</p>
                         </div>
                         <div class="text-center">
                             <div class="text-4xl font-bold text-pink-600 mb-2">100%</div>
-                            <p class="text-gray-600">Regulatory Compliance</p>
+                            <p class="text-slate-500">Regulatory Compliance</p>
                         </div>
                     </div>
                     
@@ -728,25 +725,25 @@
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                <span class="text-gray-700">€100,000 deposit insurance per bank</span>
+                                <span class="text-slate-600">€100,000 deposit insurance per bank</span>
                             </div>
                             <div class="flex items-center">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                <span class="text-gray-700">PSD2 compliant infrastructure</span>
+                                <span class="text-slate-600">PSD2 compliant infrastructure</span>
                             </div>
                             <div class="flex items-center">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                <span class="text-gray-700">Real-time transaction monitoring</span>
+                                <span class="text-slate-600">Real-time transaction monitoring</span>
                             </div>
                             <div class="flex items-center">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                <span class="text-gray-700">Multi-factor authentication</span>
+                                <span class="text-slate-600">Multi-factor authentication</span>
                             </div>
                         </div>
                     </div>
@@ -755,28 +752,23 @@
         </section>
 
         <!-- CTA -->
-        <section class="py-20 gcu-gradient text-white">
-            <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-                <h2 class="text-3xl md:text-4xl font-bold mb-6">Ready to Join the Revolution?</h2>
-                <p class="text-xl text-purple-100 mb-8">
+        <section class="bg-fa-navy relative overflow-hidden">
+            <div class="absolute inset-0 bg-dot-pattern"></div>
+            <div class="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 py-20">
+                <h2 class="font-display text-3xl md:text-4xl font-bold text-white mb-4">Ready to Join the Revolution?</h2>
+                <p class="text-lg text-slate-400 mb-10 max-w-2xl mx-auto">
                     Be part of the first truly democratic global currency
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="{{ route('register') }}" class="inline-flex items-center justify-center px-8 py-4 bg-white text-indigo-600 rounded-lg font-semibold hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg">
+                    <a href="{{ route('register') }}" class="btn-primary px-8 py-4 text-lg">
                         Create Free Account
-                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                        </svg>
                     </a>
-                    <a href="{{ route('platform') }}" class="inline-flex items-center justify-center px-8 py-4 border-2 border-white text-white rounded-lg font-semibold hover:bg-white hover:text-indigo-600 transition">
+                    <a href="{{ route('platform') }}" class="btn-outline px-8 py-4 text-lg">
                         Learn About Platform
-                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
                     </a>
                 </div>
-                
-                <div class="mt-12 text-sm text-purple-200">
+
+                <div class="mt-12 text-sm text-slate-500">
                     <p>Questions? Contact our team at <a href="mailto:info@finaegis.org" class="underline">info@finaegis.org</a></p>
                 </div>
             </div>

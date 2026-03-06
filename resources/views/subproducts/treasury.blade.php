@@ -10,18 +10,11 @@
     ])
 @endsection
 
-@push('styles')
-<style>
-    .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-</style>
-@endpush
 
 @section('content')
 
         <!-- Hero Section -->
-        <section class="pt-16 gradient-bg text-white">
+        <section class="pt-16 bg-fa-navy text-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
                 <div class="text-center">
                     <div class="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-sm mb-6">
@@ -49,8 +42,8 @@
         <section class="py-20 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Optimize Cash, Minimize Risk</h2>
-                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-4">Optimize Cash, Minimize Risk</h2>
+                    <p class="text-xl text-slate-500 max-w-3xl mx-auto">
                         Intelligent treasury management that works across all your banking relationships
                     </p>
                 </div>
@@ -62,8 +55,8 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                             </svg>
                         </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-4">Multi-Bank Management</h3>
-                        <ul class="space-y-2 text-gray-700">
+                        <h3 class="text-xl font-bold text-slate-900 mb-4">Multi-Bank Management</h3>
+                        <ul class="space-y-2 text-slate-600">
                             <li class="flex items-start">
                                 <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -91,8 +84,8 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
                             </svg>
                         </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-4">FX Optimization</h3>
-                        <ul class="space-y-2 text-gray-700">
+                        <h3 class="text-xl font-bold text-slate-900 mb-4">FX Optimization</h3>
+                        <ul class="space-y-2 text-slate-600">
                             <li class="flex items-start">
                                 <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -120,8 +113,8 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                             </svg>
                         </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-4">Analytics & Reporting</h3>
-                        <ul class="space-y-2 text-gray-700">
+                        <h3 class="text-xl font-bold text-slate-900 mb-4">Analytics & Reporting</h3>
+                        <ul class="space-y-2 text-slate-600">
                             <li class="flex items-start">
                                 <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -151,8 +144,8 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="bg-gradient-to-r from-orange-50 to-teal-50 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between">
                     <div>
-                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Cross-Chain Yield & Multi-Chain Portfolio</h3>
-                        <p class="text-gray-600 max-w-xl">
+                        <h3 class="text-2xl font-bold text-slate-900 mb-2">Cross-Chain Yield & Multi-Chain Portfolio</h3>
+                        <p class="text-slate-500 max-w-xl">
                             Optimize treasury yields across multiple blockchains. Access DeFi lending, staking, and yield farming with automated cross-chain portfolio rebalancing.
                         </p>
                     </div>
@@ -167,21 +160,21 @@
         </section>
 
         <!-- CTA Section -->
-        <section class="py-20 bg-gray-50">
-            <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-                <h2 class="text-3xl font-bold text-gray-900 mb-6">Transform Your Treasury Operations</h2>
-                <p class="text-xl text-gray-600 mb-8">
+        <section class="bg-fa-navy relative overflow-hidden">
+            <div class="absolute inset-0 bg-dot-pattern"></div>
+            <div class="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 py-20">
+                <h2 class="font-display text-3xl md:text-4xl font-bold text-white mb-4">Transform Your Treasury Operations</h2>
+                <p class="text-lg text-slate-400 mb-10 max-w-2xl mx-auto">
                     Explore multi-bank cash management, yield optimization, and FX strategies in the sandbox
                 </p>
-                <a href="{{ route('dashboard') }}" class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                    </svg>
-                    Explore Treasury
-                </a>
-                <p class="text-gray-500 mt-4">
-                    Pair with <a href="{{ route('gcu') }}" class="text-indigo-600 hover:text-indigo-700">Global Currency Unit (GCU)</a> for multi-currency treasury management
-                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="{{ route('dashboard') }}" class="btn-primary px-8 py-4 text-lg">
+                        Explore Treasury
+                    </a>
+                    <a href="{{ route('gcu') }}" class="btn-outline px-8 py-4 text-lg">
+                        Global Currency Unit
+                    </a>
+                </div>
             </div>
         </section>
 

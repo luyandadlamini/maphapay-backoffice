@@ -20,9 +20,6 @@
 @push('styles')
 <link href="https://fonts.bunny.net/css?family=fira-code:400,500&display=swap" rel="stylesheet" />
 <style>
-    .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
     .terminal-gradient {
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     }
@@ -200,8 +197,8 @@
         <section class="py-16 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-12">
-                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Get Started in 3 Commands</h2>
-                    <p class="text-xl text-gray-600">From zero to running banking API in under 5 minutes</p>
+                    <h2 class="font-display text-3xl font-bold text-slate-900 mb-4">Get Started in 3 Commands</h2>
+                    <p class="text-xl text-slate-500">From zero to running banking API in under 5 minutes</p>
                 </div>
                 
                 <div class="grid md:grid-cols-3 gap-8">
@@ -245,8 +242,8 @@
         <section class="py-16 bg-gray-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-12">
-                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Built for Developers, By Developers</h2>
-                    <p class="text-xl text-gray-600">Every feature designed with DX in mind</p>
+                    <h2 class="font-display text-3xl font-bold text-slate-900 mb-4">Built for Developers, By Developers</h2>
+                    <p class="text-xl text-slate-500">Every feature designed with DX in mind</p>
                 </div>
                 
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -258,7 +255,7 @@
                             </svg>
                         </div>
                         <h3 class="text-xl font-semibold mb-2">RESTful APIs</h3>
-                        <p class="text-gray-600 mb-4">Clean, intuitive API design following REST principles</p>
+                        <p class="text-slate-500 mb-4">Clean, intuitive API design following REST principles</p>
                         <div class="code-font text-sm bg-gray-100 rounded p-3">
                             <span class="text-blue-600">GET</span> /api/v1/accounts<br>
                             <span class="text-green-600">POST</span> /api/v1/transfers<br>
@@ -274,7 +271,7 @@
                             </svg>
                         </div>
                         <h3 class="text-xl font-semibold mb-2">SDK Everything</h3>
-                        <p class="text-gray-600 mb-4">Official SDKs for your favorite language</p>
+                        <p class="text-slate-500 mb-4">Official SDKs for your favorite language</p>
                         <div class="flex flex-wrap gap-2">
                             <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">JavaScript</span>
                             <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">Python</span>
@@ -293,7 +290,7 @@
                             </svg>
                         </div>
                         <h3 class="text-xl font-semibold mb-2">Container First</h3>
-                        <p class="text-gray-600 mb-4">Docker & Kubernetes ready out of the box</p>
+                        <p class="text-slate-500 mb-4">Docker & Kubernetes ready out of the box</p>
                         <div class="code-font text-sm bg-gray-100 rounded p-3">
                             <span class="text-gray-500">$</span> docker-compose up -d
                         </div>
@@ -307,17 +304,17 @@
                             </svg>
                         </div>
                         <h3 class="text-xl font-semibold mb-2">Real-time Events</h3>
-                        <p class="text-gray-600 mb-4">Webhooks for every important event</p>
+                        <p class="text-slate-500 mb-4">Webhooks for every important event</p>
                         <div class="space-y-1 text-sm">
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
                                 transaction.completed
                             </div>
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <div class="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
                                 account.created
                             </div>
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <div class="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
                                 kyc.verified
                             </div>
@@ -332,7 +329,7 @@
                             </svg>
                         </div>
                         <h3 class="text-xl font-semibold mb-2">Test Everything</h3>
-                        <p class="text-gray-600 mb-4">Comprehensive test suite included</p>
+                        <p class="text-slate-500 mb-4">Comprehensive test suite included</p>
                         <div class="code-font text-sm bg-gray-100 rounded p-3">
                             <span class="text-gray-500">$</span> <span class="text-green-400">./vendor/bin/pest</span><br>
                             <span class="text-green-500">✓</span> All tests passed
@@ -347,7 +344,7 @@
                             </svg>
                         </div>
                         <h3 class="text-xl font-semibold mb-2">Developer-First Docs</h3>
-                        <p class="text-gray-600 mb-4">OpenAPI specs, GraphQL playground, and example-driven guides</p>
+                        <p class="text-slate-500 mb-4">OpenAPI specs, GraphQL playground, and example-driven guides</p>
                         <div class="flex items-center justify-between text-sm">
                             <span class="text-gray-500">API Reference</span>
                             <span class="text-indigo-600 font-semibold">View →</span>
@@ -361,8 +358,8 @@
         <section id="architecture" class="py-20 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Modular Architecture</h2>
-                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-4">Modular Architecture</h2>
+                    <p class="text-xl text-slate-500 max-w-3xl mx-auto">
                         Pick what you need, leave what you don't. Every module works independently.
                     </p>
                 </div>
@@ -519,24 +516,24 @@
         <section class="py-20 bg-gray-900 text-white">
             <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
                 <div class="inline-flex items-center justify-center w-20 h-20 bg-white rounded-full mb-8">
-                    <svg class="w-12 h-12 text-gray-900" fill="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-12 h-12 text-slate-900" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                     </svg>
                 </div>
                 
-                <h2 class="text-4xl font-bold mb-6">Start Building Today</h2>
+                <h2 class="font-display text-4xl font-bold mb-6">Start Building Today</h2>
                 <p class="text-xl text-gray-300 mb-8">
                     Fork the repo, explore the architecture, and ship your fintech product on production-grade infrastructure
                 </p>
                 
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="inline-flex items-center justify-center px-8 py-4 bg-white text-gray-900 rounded-lg text-lg font-semibold hover:bg-gray-100 transition">
+                    <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="inline-flex items-center justify-center px-8 py-4 bg-white text-slate-900 rounded-lg text-lg font-semibold hover:bg-gray-100 transition">
                         <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
                         </svg>
                         Fork on GitHub
                     </a>
-                    <a href="{{ route('developers') }}" class="inline-flex items-center justify-center px-8 py-4 border-2 border-white text-white rounded-lg text-lg font-semibold hover:bg-white hover:text-gray-900 transition">
+                    <a href="{{ route('developers') }}" class="inline-flex items-center justify-center px-8 py-4 border-2 border-white text-white rounded-lg text-lg font-semibold hover:bg-white hover:text-slate-900 transition">
                         Read the Docs
                     </a>
                 </div>

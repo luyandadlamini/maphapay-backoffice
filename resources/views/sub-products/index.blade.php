@@ -25,9 +25,6 @@
         
         <!-- Custom Styles -->
         <style>
-            .gradient-bg {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            }
             .product-card {
                 transition: all 0.3s ease;
                 border: 2px solid transparent;
@@ -74,20 +71,20 @@
         <x-main-navigation />
 
         <!-- Hero Section -->
-        <section class="pt-16 gradient-bg text-white">
+        <section class="pt-16 bg-fa-navy text-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
                 <div class="text-center">
                     <h1 class="text-5xl md:text-6xl font-bold mb-6">
                         Optional Sub-Products
                     </h1>
-                    <p class="text-xl md:text-2xl mb-8 text-purple-100 max-w-4xl mx-auto">
+                    <p class="text-xl md:text-2xl mb-8 text-slate-400 max-w-4xl mx-auto">
                         Extend your GCU account with professional financial services. Enable only what you need, when you need it.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                        <a href="{{ route('dashboard') }}" class="bg-white text-indigo-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition shadow-lg hover:shadow-xl">
+                        <a href="{{ route('dashboard') }}" class="btn-primary px-8 py-4 text-lg">
                             Manage Sub-Products
                         </a>
-                        <a href="#products" class="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-indigo-600 transition">
+                        <a href="#products" class="btn-outline px-8 py-4 text-lg">
                             Explore Services
                         </a>
                     </div>
@@ -106,8 +103,8 @@
         <section id="products" class="py-20 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-4xl font-bold text-gray-900 mb-4">Professional Financial Services</h2>
-                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    <h2 class="font-display text-4xl font-bold text-slate-900 mb-4">Professional Financial Services</h2>
+                    <p class="text-xl text-slate-500 max-w-3xl mx-auto">
                         Each sub-product integrates seamlessly with your GCU account. Enable services through your dashboard with a single click.
                     </p>
                 </div>
@@ -124,31 +121,31 @@
                             <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-semibold">Available</span>
                         </div>
                         
-                        <h3 class="text-2xl font-bold text-gray-900 mb-4">FinAegis Exchange</h3>
-                        <p class="text-gray-600 mb-6">
+                        <h3 class="text-2xl font-bold text-slate-900 mb-4">FinAegis Exchange</h3>
+                        <p class="text-slate-500 mb-6">
                             Professional trading platform for crypto and fiat currencies. Institutional-grade security with advanced trading features.
                         </p>
                         
                         <div class="space-y-3 mb-6">
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                                 <span>Spot & derivatives trading</span>
                             </div>
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                                 <span>50+ trading pairs</span>
                             </div>
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                                 <span>Institutional custody</span>
                             </div>
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
@@ -175,31 +172,31 @@
                             <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">Available</span>
                         </div>
                         
-                        <h3 class="text-2xl font-bold text-gray-900 mb-4">FinAegis Lending</h3>
-                        <p class="text-gray-600 mb-6">
+                        <h3 class="text-2xl font-bold text-slate-900 mb-4">FinAegis Lending</h3>
+                        <p class="text-slate-500 mb-6">
                             P2P lending marketplace connecting capital with opportunity. Earn yield or access working capital.
                         </p>
                         
                         <div class="space-y-3 mb-6">
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                                 <span>SME business loans</span>
                             </div>
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                                 <span>Invoice financing</span>
                             </div>
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                                 <span>Automated credit scoring</span>
                             </div>
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
@@ -226,31 +223,31 @@
                             <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm font-semibold">Available</span>
                         </div>
 
-                        <h3 class="text-2xl font-bold text-gray-900 mb-4">FinAegis Stablecoins</h3>
-                        <p class="text-gray-600 mb-6">
+                        <h3 class="text-2xl font-bold text-slate-900 mb-4">FinAegis Stablecoins</h3>
+                        <p class="text-slate-500 mb-6">
                             Issue and manage stable tokens backed by real assets. Multi-chain support with cross-chain bridges and instant redemption.
                         </p>
 
                         <div class="space-y-3 mb-6">
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                                 <span>EUR, USD, GBP stables</span>
                             </div>
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                                 <span>Full reserve backing</span>
                             </div>
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                                 <span>Cross-chain bridges</span>
                             </div>
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
@@ -277,31 +274,31 @@
                             <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">Available</span>
                         </div>
 
-                        <h3 class="text-2xl font-bold text-gray-900 mb-4">FinAegis Treasury</h3>
-                        <p class="text-gray-600 mb-6">
+                        <h3 class="text-2xl font-bold text-slate-900 mb-4">FinAegis Treasury</h3>
+                        <p class="text-slate-500 mb-6">
                             Advanced cash management across multiple banks. Optimize yields and minimize risk with automated portfolio rebalancing.
                         </p>
 
                         <div class="space-y-3 mb-6">
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                                 <span>Multi-bank allocation</span>
                             </div>
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                                 <span>Automated rebalancing</span>
                             </div>
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
                                 <span>Risk optimization</span>
                             </div>
-                            <div class="flex items-center text-gray-700">
+                            <div class="flex items-center text-slate-600">
                                 <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
@@ -324,8 +321,8 @@
         <section class="py-20 bg-gray-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-4xl font-bold text-gray-900 mb-4">Simple Activation Process</h2>
-                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    <h2 class="font-display text-4xl font-bold text-slate-900 mb-4">Simple Activation Process</h2>
+                    <p class="text-xl text-slate-500 max-w-3xl mx-auto">
                         Enable sub-products instantly from your dashboard. No complex setup or migration required.
                     </p>
                 </div>
@@ -334,25 +331,25 @@
                     <div class="text-center">
                         <div class="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">1</div>
                         <h3 class="font-semibold mb-2">Choose Service</h3>
-                        <p class="text-gray-600 text-sm">Select the sub-product you want to enable</p>
+                        <p class="text-slate-500 text-sm">Select the sub-product you want to enable</p>
                     </div>
                     
                     <div class="text-center">
                         <div class="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">2</div>
                         <h3 class="font-semibold mb-2">Review Terms</h3>
-                        <p class="text-gray-600 text-sm">Check pricing and accept service terms</p>
+                        <p class="text-slate-500 text-sm">Check pricing and accept service terms</p>
                     </div>
                     
                     <div class="text-center">
                         <div class="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">3</div>
                         <h3 class="font-semibold mb-2">One-Click Enable</h3>
-                        <p class="text-gray-600 text-sm">Activate with a single click</p>
+                        <p class="text-slate-500 text-sm">Activate with a single click</p>
                     </div>
                     
                     <div class="text-center">
                         <div class="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">4</div>
                         <h3 class="font-semibold mb-2">Start Using</h3>
-                        <p class="text-gray-600 text-sm">Access immediately from your dashboard</p>
+                        <p class="text-slate-500 text-sm">Access immediately from your dashboard</p>
                     </div>
                 </div>
             </div>
@@ -363,8 +360,8 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="grid lg:grid-cols-2 gap-12 items-center">
                     <div>
-                        <h2 class="text-4xl font-bold text-gray-900 mb-6">Seamless Integration Benefits</h2>
-                        <p class="text-lg text-gray-600 mb-8">
+                        <h2 class="font-display text-4xl font-bold text-slate-900 mb-6">Seamless Integration Benefits</h2>
+                        <p class="text-lg text-slate-500 mb-8">
                             All sub-products are designed to work perfectly with your GCU account and each other.
                         </p>
                         
@@ -377,7 +374,7 @@
                                 </div>
                                 <div>
                                     <h3 class="text-xl font-semibold mb-2">Instant Transfers</h3>
-                                    <p class="text-gray-600">Move funds between GCU and sub-products instantly with no fees.</p>
+                                    <p class="text-slate-500">Move funds between GCU and sub-products instantly with no fees.</p>
                                 </div>
                             </div>
                             
@@ -389,7 +386,7 @@
                                 </div>
                                 <div>
                                     <h3 class="text-xl font-semibold mb-2">Unified Dashboard</h3>
-                                    <p class="text-gray-600">Manage everything from one place. No separate logins or accounts.</p>
+                                    <p class="text-slate-500">Manage everything from one place. No separate logins or accounts.</p>
                                 </div>
                             </div>
                             
@@ -401,34 +398,34 @@
                                 </div>
                                 <div>
                                     <h3 class="text-xl font-semibold mb-2">Single Compliance</h3>
-                                    <p class="text-gray-600">Complete KYC once. All sub-products share your verification status.</p>
+                                    <p class="text-slate-500">Complete KYC once. All sub-products share your verification status.</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
                     <div class="bg-gray-50 rounded-2xl p-8">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-6">Integration Examples</h3>
+                        <h3 class="text-2xl font-bold text-slate-900 mb-6">Integration Examples</h3>
                         
                         <div class="space-y-4">
                             <div class="bg-white rounded-lg p-4 border border-gray-200">
-                                <h4 class="font-semibold text-gray-900 mb-2">Exchange + GCU</h4>
-                                <p class="text-gray-600 text-sm">Trade directly from your GCU balance. Profits settle back to GCU automatically.</p>
+                                <h4 class="font-semibold text-slate-900 mb-2">Exchange + GCU</h4>
+                                <p class="text-slate-500 text-sm">Trade directly from your GCU balance. Profits settle back to GCU automatically.</p>
                             </div>
                             
                             <div class="bg-white rounded-lg p-4 border border-gray-200">
-                                <h4 class="font-semibold text-gray-900 mb-2">Lending + Treasury</h4>
-                                <p class="text-gray-600 text-sm">Excess treasury funds automatically allocated to lending for yield optimization.</p>
+                                <h4 class="font-semibold text-slate-900 mb-2">Lending + Treasury</h4>
+                                <p class="text-slate-500 text-sm">Excess treasury funds automatically allocated to lending for yield optimization.</p>
                             </div>
                             
                             <div class="bg-white rounded-lg p-4 border border-gray-200">
-                                <h4 class="font-semibold text-gray-900 mb-2">Stablecoins + Exchange</h4>
-                                <p class="text-gray-600 text-sm">Mint stablecoins from GCU balance. Trade stable pairs with zero slippage.</p>
+                                <h4 class="font-semibold text-slate-900 mb-2">Stablecoins + Exchange</h4>
+                                <p class="text-slate-500 text-sm">Mint stablecoins from GCU balance. Trade stable pairs with zero slippage.</p>
                             </div>
                             
                             <div class="bg-white rounded-lg p-4 border border-gray-200">
-                                <h4 class="font-semibold text-gray-900 mb-2">All Products</h4>
-                                <p class="text-gray-600 text-sm">Complete financial ecosystem. One account, unlimited possibilities.</p>
+                                <h4 class="font-semibold text-slate-900 mb-2">All Products</h4>
+                                <p class="text-slate-500 text-sm">Complete financial ecosystem. One account, unlimited possibilities.</p>
                             </div>
                         </div>
                     </div>
@@ -440,18 +437,18 @@
         <section class="py-20 bg-gray-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-12">
-                    <h2 class="text-4xl font-bold text-gray-900 mb-4">Transparent Pricing</h2>
-                    <p class="text-xl text-gray-600">Pay only for what you use. No hidden fees.</p>
+                    <h2 class="font-display text-4xl font-bold text-slate-900 mb-4">Transparent Pricing</h2>
+                    <p class="text-xl text-slate-500">Pay only for what you use. No hidden fees.</p>
                 </div>
                 
                 <div class="bg-white rounded-2xl shadow-xl overflow-hidden max-w-4xl mx-auto">
                     <table class="w-full">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Service</th>
-                                <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900">Monthly Fee</th>
-                                <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900">Transaction Fees</th>
-                                <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900">Status</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900">Service</th>
+                                <th class="px-6 py-4 text-center text-sm font-semibold text-slate-900">Monthly Fee</th>
+                                <th class="px-6 py-4 text-center text-sm font-semibold text-slate-900">Transaction Fees</th>
+                                <th class="px-6 py-4 text-center text-sm font-semibold text-slate-900">Status</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
@@ -467,7 +464,7 @@
                                 <td class="px-6 py-4 text-center">
                                     <span class="text-green-600 font-semibold">Free</span>
                                 </td>
-                                <td class="px-6 py-4 text-center text-gray-600">0.5% conversion</td>
+                                <td class="px-6 py-4 text-center text-slate-500">0.5% conversion</td>
                                 <td class="px-6 py-4 text-center">
                                     <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">Active</span>
                                 </td>
@@ -484,7 +481,7 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 text-center">€9.99</td>
-                                <td class="px-6 py-4 text-center text-gray-600">0.1% - 0.25%</td>
+                                <td class="px-6 py-4 text-center text-slate-500">0.1% - 0.25%</td>
                                 <td class="px-6 py-4 text-center">
                                     <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">Available</span>
                                 </td>
@@ -503,7 +500,7 @@
                                 <td class="px-6 py-4 text-center">
                                     <span class="text-green-600 font-semibold">Free</span>
                                 </td>
-                                <td class="px-6 py-4 text-center text-gray-600">0.5% origination</td>
+                                <td class="px-6 py-4 text-center text-slate-500">0.5% origination</td>
                                 <td class="px-6 py-4 text-center">
                                     <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">Available</span>
                                 </td>
@@ -520,7 +517,7 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 text-center">€4.99</td>
-                                <td class="px-6 py-4 text-center text-gray-600">0.1% mint/redeem</td>
+                                <td class="px-6 py-4 text-center text-slate-500">0.1% mint/redeem</td>
                                 <td class="px-6 py-4 text-center">
                                     <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">Available</span>
                                 </td>
@@ -537,7 +534,7 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 text-center">Custom</td>
-                                <td class="px-6 py-4 text-center text-gray-600">Volume-based</td>
+                                <td class="px-6 py-4 text-center text-slate-500">Volume-based</td>
                                 <td class="px-6 py-4 text-center">
                                     <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">Available</span>
                                 </td>
@@ -555,17 +552,18 @@
         </section>
 
         <!-- CTA Section -->
-        <section class="py-20 gradient-bg text-white">
-            <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-                <h2 class="text-4xl font-bold mb-6">Start with GCU, Grow with Sub-Products</h2>
-                <p class="text-xl mb-8 text-purple-100">
+        <section class="bg-fa-navy relative overflow-hidden">
+            <div class="absolute inset-0 bg-dot-pattern"></div>
+            <div class="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 py-20">
+                <h2 class="font-display text-3xl md:text-4xl font-bold text-white mb-4">Start with GCU, Grow with Sub-Products</h2>
+                <p class="text-lg text-slate-400 mb-10 max-w-2xl mx-auto">
                     Open your free GCU account today and enable sub-products as your needs evolve
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="{{ route('register') }}" class="bg-white text-indigo-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition inline-block">
+                    <a href="{{ route('register') }}" class="btn-primary px-8 py-4 text-lg">
                         Get Started Free
                     </a>
-                    <a href="{{ route('platform') }}" class="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-indigo-600 transition inline-block">
+                    <a href="{{ route('platform') }}" class="btn-outline px-8 py-4 text-lg">
                         Platform Overview
                     </a>
                 </div>

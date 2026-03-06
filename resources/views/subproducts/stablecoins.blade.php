@@ -10,18 +10,11 @@
     ])
 @endsection
 
-@push('styles')
-<style>
-    .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-</style>
-@endpush
 
 @section('content')
 
         <!-- Hero Section -->
-        <section class="pt-16 gradient-bg text-white">
+        <section class="pt-16 bg-fa-navy text-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
                 <div class="text-center">
                     <div class="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-sm mb-6">
@@ -49,8 +42,8 @@
         <section class="py-20 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">The Future of Stable Value</h2>
-                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-4">The Future of Stable Value</h2>
+                    <p class="text-xl text-slate-500 max-w-3xl mx-auto">
                         EUR-pegged digital currency with full transparency and regulatory compliance
                     </p>
                 </div>
@@ -62,8 +55,8 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-4">EUR Stablecoin</h3>
-                        <ul class="space-y-2 text-gray-700">
+                        <h3 class="text-xl font-bold text-slate-900 mb-4">EUR Stablecoin</h3>
+                        <ul class="space-y-2 text-slate-600">
                             <li class="flex items-start">
                                 <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -91,8 +84,8 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                             </svg>
                         </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-4">Transparent Reserves</h3>
-                        <ul class="space-y-2 text-gray-700">
+                        <h3 class="text-xl font-bold text-slate-900 mb-4">Transparent Reserves</h3>
+                        <ul class="space-y-2 text-slate-600">
                             <li class="flex items-start">
                                 <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -120,8 +113,8 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                             </svg>
                         </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-4">White Label Solution</h3>
-                        <ul class="space-y-2 text-gray-700">
+                        <h3 class="text-xl font-bold text-slate-900 mb-4">White Label Solution</h3>
+                        <ul class="space-y-2 text-slate-600">
                             <li class="flex items-start">
                                 <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -147,21 +140,21 @@
         </section>
 
         <!-- CTA Section -->
-        <section class="py-20 bg-gray-50">
-            <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-                <h2 class="text-3xl font-bold text-gray-900 mb-6">Start Using EUR Stablecoins</h2>
-                <p class="text-xl text-gray-600 mb-8">
+        <section class="bg-fa-navy relative overflow-hidden">
+            <div class="absolute inset-0 bg-dot-pattern"></div>
+            <div class="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 py-20">
+                <h2 class="font-display text-3xl md:text-4xl font-bold text-white mb-4">Start Using EUR Stablecoins</h2>
+                <p class="text-lg text-slate-400 mb-10 max-w-2xl mx-auto">
                     Experience transparent, asset-backed digital currency today
                 </p>
-                <a href="{{ route('dashboard') }}" class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    Get Started with EURS
-                </a>
-                <p class="text-gray-500 mt-4">
-                    Powered by <a href="{{ route('gcu') }}" class="text-indigo-600 hover:text-indigo-700">Global Currency Unit (GCU)</a> technology
-                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="{{ route('dashboard') }}" class="btn-primary px-8 py-4 text-lg">
+                        Get Started with EURS
+                    </a>
+                    <a href="{{ route('gcu') }}" class="btn-outline px-8 py-4 text-lg">
+                        Global Currency Unit
+                    </a>
+                </div>
             </div>
         </section>
 
