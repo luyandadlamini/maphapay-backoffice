@@ -18,20 +18,6 @@
     ]" />
 @endsection
 
-@push('styles')
-<style>
-    .feature-card {
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .feature-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 30px rgba(0,0,0,0.08);
-    }
-    .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-</style>
-@endpush
 
 @section('content')
 
@@ -53,34 +39,34 @@
     <section class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="ai-card bg-white rounded-xl p-8 shadow-md text-center">
-                    <div class="w-16 h-16 bg-indigo-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                <div class="ai-card card-feature !p-8 text-center">
+                    <div class="w-16 h-16 bg-indigo-50 rounded-lg flex items-center justify-center mx-auto mb-6">
                         <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold mb-3">Natural Language Queries</h3>
-                    <p class="text-gray-600">Ask questions about your transactions in plain English. The AI translates your intent into precise database queries and returns structured results.</p>
+                    <p class="text-slate-500">Ask questions about your transactions in plain English. The AI translates your intent into precise database queries and returns structured results.</p>
                 </div>
 
-                <div class="ai-card bg-white rounded-xl p-8 shadow-md text-center">
-                    <div class="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                <div class="ai-card card-feature !p-8 text-center">
+                    <div class="w-16 h-16 bg-purple-50 rounded-lg flex items-center justify-center mx-auto mb-6">
                         <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold mb-3">Spending Analysis</h3>
-                    <p class="text-gray-600">AI-powered categorization and trend analysis of spending patterns. Get actionable insights about your financial behavior automatically.</p>
+                    <p class="text-slate-500">AI-powered categorization and trend analysis of spending patterns. Get actionable insights about your financial behavior automatically.</p>
                 </div>
 
-                <div class="ai-card bg-white rounded-xl p-8 shadow-md text-center">
-                    <div class="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                <div class="ai-card card-feature !p-8 text-center">
+                    <div class="w-16 h-16 bg-green-50 rounded-lg flex items-center justify-center mx-auto mb-6">
                         <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold mb-3">ML Anomaly Detection</h3>
-                    <p class="text-gray-600">Multi-model detection using statistical, behavioral, velocity, and geo-based analysis to catch suspicious activity before it causes harm.</p>
+                    <p class="text-slate-500">Multi-model detection using statistical, behavioral, velocity, and geo-based analysis to catch suspicious activity before it causes harm.</p>
                 </div>
             </div>
         </div>
@@ -89,46 +75,46 @@
     <!-- AI Capabilities Detail -->
     <section class="py-20 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">AI-Powered Banking Operations</h2>
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-center text-slate-900 mb-12">AI-Powered Banking Operations</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                 <div>
-                    <p class="text-lg text-gray-600 mb-6">
+                    <p class="text-lg text-slate-500 mb-6">
                         The FinAegis AI Framework integrates large language models and machine learning pipelines directly into the banking infrastructure. From conversational interfaces to autonomous agents, AI augments every aspect of financial operations.
                     </p>
                     <div class="space-y-4">
                         <div class="flex items-start">
-                            <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-4">
+                            <div class="flex-shrink-0 w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center mr-4">
                                 <span class="text-indigo-600 font-bold">1</span>
                             </div>
                             <div>
                                 <h4 class="font-semibold mb-1">Transaction Query Tool</h4>
-                                <p class="text-gray-600">Users ask questions like "Show my largest purchases last month" and receive structured, accurate results instantly.</p>
+                                <p class="text-slate-500">Users ask questions like "Show my largest purchases last month" and receive structured, accurate results instantly.</p>
                             </div>
                         </div>
                         <div class="flex items-start">
-                            <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+                            <div class="flex-shrink-0 w-10 h-10 bg-purple-50 rounded-full flex items-center justify-center mr-4">
                                 <span class="text-purple-600 font-bold">2</span>
                             </div>
                             <div>
                                 <h4 class="font-semibold mb-1">Model Context Protocol</h4>
-                                <p class="text-gray-600">MCP tools enable external AI agents to securely perform banking operations such as transfers, balance checks, and reporting.</p>
+                                <p class="text-slate-500">MCP tools enable external AI agents to securely perform banking operations such as transfers, balance checks, and reporting.</p>
                             </div>
                         </div>
                         <div class="flex items-start">
-                            <div class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                            <div class="flex-shrink-0 w-10 h-10 bg-green-50 rounded-full flex items-center justify-center mr-4">
                                 <span class="text-green-600 font-bold">3</span>
                             </div>
                             <div>
                                 <h4 class="font-semibold mb-1">Conversation Management</h4>
-                                <p class="text-gray-600">Context-aware sessions that remember previous queries, enabling natural follow-up questions and progressive analysis.</p>
+                                <p class="text-slate-500">Context-aware sessions that remember previous queries, enabling natural follow-up questions and progressive analysis.</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-2xl p-8 shadow-lg">
-                    <h3 class="text-2xl font-bold mb-6 text-gray-900">ML Detection Models</h3>
+                <div class="card-feature !p-8 rounded-2xl">
+                    <h3 class="text-2xl font-bold mb-6 text-slate-900">ML Detection Models</h3>
                     <div class="space-y-4">
                         <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                             <div>
@@ -167,10 +153,10 @@
     <!-- Agent Operations -->
     <section class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">AI Agent Banking Operations</h2>
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-center text-slate-900 mb-12">AI Agent Banking Operations</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-indigo-50 rounded-xl p-8">
+                <div class="card-feature !p-8">
                     <h3 class="text-2xl font-bold mb-6 text-indigo-900">MCP Tool Capabilities</h3>
                     <ul class="space-y-4">
                         <li class="flex items-start">
@@ -179,7 +165,7 @@
                             </svg>
                             <div>
                                 <h4 class="font-semibold mb-1">Balance Inquiries</h4>
-                                <p class="text-gray-700">AI agents query real-time balances across accounts, wallets, and tokens</p>
+                                <p class="text-slate-600">AI agents query real-time balances across accounts, wallets, and tokens</p>
                             </div>
                         </li>
                         <li class="flex items-start">
@@ -188,7 +174,7 @@
                             </svg>
                             <div>
                                 <h4 class="font-semibold mb-1">Transaction Execution</h4>
-                                <p class="text-gray-700">Authorized agents can initiate transfers with configurable spending limits</p>
+                                <p class="text-slate-600">Authorized agents can initiate transfers with configurable spending limits</p>
                             </div>
                         </li>
                         <li class="flex items-start">
@@ -197,13 +183,13 @@
                             </svg>
                             <div>
                                 <h4 class="font-semibold mb-1">Report Generation</h4>
-                                <p class="text-gray-700">Automated financial reports, tax summaries, and compliance documentation</p>
+                                <p class="text-slate-600">Automated financial reports, tax summaries, and compliance documentation</p>
                             </div>
                         </li>
                     </ul>
                 </div>
 
-                <div class="bg-purple-50 rounded-xl p-8">
+                <div class="card-feature !p-8">
                     <h3 class="text-2xl font-bold mb-6 text-purple-900">Conversation Intelligence</h3>
                     <ul class="space-y-4">
                         <li class="flex items-start">
@@ -212,7 +198,7 @@
                             </svg>
                             <div>
                                 <h4 class="font-semibold mb-1">Context Persistence</h4>
-                                <p class="text-gray-700">Conversations remember context across sessions for natural follow-ups</p>
+                                <p class="text-slate-600">Conversations remember context across sessions for natural follow-ups</p>
                             </div>
                         </li>
                         <li class="flex items-start">
@@ -221,7 +207,7 @@
                             </svg>
                             <div>
                                 <h4 class="font-semibold mb-1">Multi-Turn Reasoning</h4>
-                                <p class="text-gray-700">Complex financial questions resolved through progressive query refinement</p>
+                                <p class="text-slate-600">Complex financial questions resolved through progressive query refinement</p>
                             </div>
                         </li>
                         <li class="flex items-start">
@@ -230,7 +216,7 @@
                             </svg>
                             <div>
                                 <h4 class="font-semibold mb-1">Intent Classification</h4>
-                                <p class="text-gray-700">Automatic routing of user requests to the appropriate banking tool or service</p>
+                                <p class="text-slate-600">Automatic routing of user requests to the appropriate banking tool or service</p>
                             </div>
                         </li>
                     </ul>
@@ -242,10 +228,10 @@
     <!-- Technical Features Checklist -->
     <section class="py-20 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">Technical Capabilities</h2>
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-center text-slate-900 mb-12">Technical Capabilities</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-white rounded-xl p-8">
+                <div class="card-feature !p-8">
                     <h3 class="text-2xl font-bold mb-6">Natural Language Processing</h3>
                     <ul class="space-y-3">
                         <li class="flex items-start">
@@ -287,7 +273,7 @@
                     </ul>
                 </div>
 
-                <div class="bg-white rounded-xl p-8">
+                <div class="card-feature !p-8">
                     <h3 class="text-2xl font-bold mb-6">Anomaly Detection Pipeline</h3>
                     <ul class="space-y-3">
                         <li class="flex items-start">
@@ -332,18 +318,19 @@
         </div>
     </section>
 
-    <!-- CTA Section -->
-    <section class="py-20 gradient-bg text-white">
-        <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold mb-6">Experience Intelligent Banking</h2>
-            <p class="text-xl mb-8 text-purple-100">
+    <!-- CTA -->
+    <section class="bg-fa-navy relative overflow-hidden">
+        <div class="absolute inset-0 bg-dot-pattern"></div>
+        <div class="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 py-20">
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-white mb-4">Experience Intelligent Banking</h2>
+            <p class="text-lg text-slate-400 mb-10 max-w-2xl mx-auto">
                 Let AI handle the complexity while you focus on what matters. From transaction queries to fraud detection, intelligence is built into every interaction.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{{ route('register') }}" class="bg-white text-indigo-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition">
+                <a href="{{ route('register') }}" class="btn-primary px-8 py-4 text-lg">
                     Try AI Banking
                 </a>
-                <a href="{{ route('developers') }}" class="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-indigo-600 transition">
+                <a href="{{ route('developers') }}" class="btn-outline px-8 py-4 text-lg">
                     AI API Reference
                 </a>
             </div>

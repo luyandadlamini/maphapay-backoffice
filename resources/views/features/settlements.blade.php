@@ -20,16 +20,6 @@
 
 @push('styles')
 <style>
-    .feature-card {
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .feature-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 30px rgba(0,0,0,0.08);
-    }
-    .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
     .timeline-item {
         position: relative;
         padding-left: 2rem;
@@ -78,7 +68,7 @@
     <!-- Speed Comparison -->
     <section class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">Speed That Matters</h2>
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-center text-slate-900 mb-12">Speed That Matters</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                 <div>
@@ -130,19 +120,19 @@
                     <div class="grid grid-cols-2 gap-6">
                         <div class="text-center">
                             <div class="text-4xl font-bold text-indigo-600 mb-2">< 100ms</div>
-                            <p class="text-gray-600">Average Settlement Time</p>
+                            <p class="text-slate-500">Average Settlement Time</p>
                         </div>
                         <div class="text-center">
                             <div class="text-4xl font-bold text-purple-600 mb-2">99.99%</div>
-                            <p class="text-gray-600">Success Rate</p>
+                            <p class="text-slate-500">Success Rate</p>
                         </div>
                         <div class="text-center">
                             <div class="text-4xl font-bold text-green-600 mb-2">10K+</div>
-                            <p class="text-gray-600">TPS Capacity</p>
+                            <p class="text-slate-500">TPS Capacity</p>
                         </div>
                         <div class="text-center">
                             <div class="text-4xl font-bold text-pink-600 mb-2">24/7</div>
-                            <p class="text-gray-600">Availability</p>
+                            <p class="text-slate-500">Availability</p>
                         </div>
                     </div>
                 </div>
@@ -153,7 +143,7 @@
     <!-- How It Works -->
     <section class="py-20 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">How Instant Settlement Works</h2>
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-center text-slate-900 mb-12">How Instant Settlement Works</h2>
             
             <div class="max-w-3xl mx-auto">
                 <div class="space-y-8">
@@ -161,7 +151,7 @@
                         <div class="timeline-dot"></div>
                         <div class="bg-white rounded-lg p-6 shadow-md">
                             <h4 class="font-bold text-lg mb-2">1. Transaction Initiated</h4>
-                            <p class="text-gray-600">User initiates transfer through API or interface with full validation.</p>
+                            <p class="text-slate-500">User initiates transfer through API or interface with full validation.</p>
                             <p class="text-sm text-green-600 mt-2">Time: < 10ms</p>
                         </div>
                     </div>
@@ -170,7 +160,7 @@
                         <div class="timeline-dot"></div>
                         <div class="bg-white rounded-lg p-6 shadow-md">
                             <h4 class="font-bold text-lg mb-2">2. Instant Validation</h4>
-                            <p class="text-gray-600">Balance checks, compliance screening, and fraud detection in parallel.</p>
+                            <p class="text-slate-500">Balance checks, compliance screening, and fraud detection in parallel.</p>
                             <p class="text-sm text-green-600 mt-2">Time: < 20ms</p>
                         </div>
                     </div>
@@ -179,7 +169,7 @@
                         <div class="timeline-dot"></div>
                         <div class="bg-white rounded-lg p-6 shadow-md">
                             <h4 class="font-bold text-lg mb-2">3. Atomic Processing</h4>
-                            <p class="text-gray-600">Event sourcing ensures transaction atomicity with immediate consistency.</p>
+                            <p class="text-slate-500">Event sourcing ensures transaction atomicity with immediate consistency.</p>
                             <p class="text-sm text-green-600 mt-2">Time: < 30ms</p>
                         </div>
                     </div>
@@ -188,7 +178,7 @@
                         <div class="timeline-dot"></div>
                         <div class="bg-white rounded-lg p-6 shadow-md">
                             <h4 class="font-bold text-lg mb-2">4. Real-time Notification</h4>
-                            <p class="text-gray-600">Instant webhook notifications and balance updates to all parties.</p>
+                            <p class="text-slate-500">Instant webhook notifications and balance updates to all parties.</p>
                             <p class="text-sm text-green-600 mt-2">Time: < 40ms</p>
                         </div>
                     </div>
@@ -209,37 +199,37 @@
     <!-- Features -->
     <section class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">Settlement Features</h2>
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-center text-slate-900 mb-12">Settlement Features</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div class="text-center">
-                    <div class="w-16 h-16 bg-indigo-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                    <div class="w-16 h-16 bg-indigo-50 rounded-lg flex items-center justify-center mx-auto mb-6">
                         <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold mb-3">Guaranteed Finality</h3>
-                    <p class="text-gray-600">Once confirmed, transactions are irreversible and immediately final.</p>
+                    <p class="text-slate-500">Once confirmed, transactions are irreversible and immediately final.</p>
                 </div>
                 
                 <div class="text-center">
-                    <div class="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                    <div class="w-16 h-16 bg-purple-50 rounded-lg flex items-center justify-center mx-auto mb-6">
                         <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold mb-3">Global Reach</h3>
-                    <p class="text-gray-600">Send money anywhere in the world at the same lightning speed.</p>
+                    <p class="text-slate-500">Send money anywhere in the world at the same lightning speed.</p>
                 </div>
                 
                 <div class="text-center">
-                    <div class="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                    <div class="w-16 h-16 bg-green-50 rounded-lg flex items-center justify-center mx-auto mb-6">
                         <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold mb-3">24/7 Operations</h3>
-                    <p class="text-gray-600">No banking hours, no weekends, no holidays. Always instant.</p>
+                    <p class="text-slate-500">No banking hours, no weekends, no holidays. Always instant.</p>
                 </div>
             </div>
         </div>
@@ -248,12 +238,12 @@
     <!-- Technology Stack -->
     <section class="py-20 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">Powered by Advanced Technology</h2>
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-center text-slate-900 mb-12">Powered by Advanced Technology</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div>
                     <h3 class="text-2xl font-bold mb-6">Event Sourcing Architecture</h3>
-                    <ul class="space-y-3 text-gray-600">
+                    <ul class="space-y-3 text-slate-500">
                         <li class="flex items-start">
                             <span class="text-green-500 mr-2">•</span>
                             Complete audit trail of all financial operations
@@ -275,7 +265,7 @@
                 
                 <div>
                     <h3 class="text-2xl font-bold mb-6">Performance Optimization</h3>
-                    <ul class="space-y-3 text-gray-600">
+                    <ul class="space-y-3 text-slate-500">
                         <li class="flex items-start">
                             <span class="text-green-500 mr-2">•</span>
                             Redis caching for sub-millisecond data access
@@ -301,41 +291,42 @@
     <!-- Use Cases -->
     <section class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">Perfect For</h2>
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-center text-slate-900 mb-12">Perfect For</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 <div class="bg-gray-50 rounded-xl p-6">
                     <h4 class="font-bold text-lg mb-3">E-commerce</h4>
-                    <p class="text-gray-600">Instant payment confirmation for better customer experience.</p>
+                    <p class="text-slate-500">Instant payment confirmation for better customer experience.</p>
                 </div>
                 <div class="bg-gray-50 rounded-xl p-6">
                     <h4 class="font-bold text-lg mb-3">Payroll</h4>
-                    <p class="text-gray-600">Pay employees instantly, any day of the week.</p>
+                    <p class="text-slate-500">Pay employees instantly, any day of the week.</p>
                 </div>
                 <div class="bg-gray-50 rounded-xl p-6">
                     <h4 class="font-bold text-lg mb-3">Trading</h4>
-                    <p class="text-gray-600">Execute trades and settle funds in real-time.</p>
+                    <p class="text-slate-500">Execute trades and settle funds in real-time.</p>
                 </div>
                 <div class="bg-gray-50 rounded-xl p-6">
                     <h4 class="font-bold text-lg mb-3">Remittances</h4>
-                    <p class="text-gray-600">Send money home instantly at low cost.</p>
+                    <p class="text-slate-500">Send money home instantly at low cost.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- CTA Section -->
-    <section class="py-20 gradient-bg text-white">
-        <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold mb-6">Experience Instant Settlements</h2>
-            <p class="text-xl mb-8 text-purple-100">
+    <!-- CTA -->
+    <section class="bg-fa-navy relative overflow-hidden">
+        <div class="absolute inset-0 bg-dot-pattern"></div>
+        <div class="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 py-20">
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-white mb-4">Experience Instant Settlements</h2>
+            <p class="text-lg text-slate-400 mb-10 max-w-2xl mx-auto">
                 Join the future of banking where waiting is a thing of the past
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{{ route('register') }}" class="bg-white text-indigo-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition">
+                <a href="{{ route('register') }}" class="btn-primary px-8 py-4 text-lg">
                     Start Now
                 </a>
-                <a href="{{ route('developers') }}" class="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-indigo-600 transition">
+                <a href="{{ route('developers') }}" class="btn-outline px-8 py-4 text-lg">
                     Developer Docs
                 </a>
             </div>

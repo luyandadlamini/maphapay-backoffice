@@ -97,4 +97,11 @@ module.exports = [
   'bg-emerald-500/10', 'text-emerald-400',
   'bg-violet-500/10', 'text-violet-400',
   'bg-amber-500/10', 'text-amber-400',
+
+  // Security & feature page dynamic icon/badge colors
+  'bg-slate-50', 'bg-slate-100', 'text-slate-600', 'text-slate-700',
+  'bg-red-50', 'bg-red-100', 'text-red-600',
+  'bg-amber-50', 'text-amber-600',
+  'bg-cyan-50', 'bg-cyan-100', 'text-cyan-600',
+  'bg-rose-50', 'bg-rose-100', 'text-rose-600',
 ];

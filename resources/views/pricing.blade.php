@@ -36,226 +36,138 @@
             <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
         </section>
 
-        <!-- Pricing Options -->
-        <section class="py-20 bg-white">
+        <!-- Pricing Tiers -->
+        <section class="py-24 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+
                     <!-- Community Edition -->
-                    <div class="bg-white rounded-3xl shadow-xl overflow-hidden border-2 border-gray-200">
-                        <div class="p-8">
-                            <div class="text-center">
-                                <h3 class="text-2xl font-bold text-gray-900 mb-2">Community Edition</h3>
-                                <p class="text-gray-600 mb-6">Perfect for developers and small teams</p>
-                                <div class="mb-8">
-                                    <span class="text-5xl font-bold text-gray-900">Free</span>
-                                    <span class="text-xl text-gray-600">Open Source</span>
-                                </div>
+                    <div class="card-pricing animate-on-scroll">
+                        <div class="mb-8">
+                            <div class="icon-box bg-slate-100 mb-4">
+                                <svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
                             </div>
-
-                            <ul class="space-y-4 mb-8">
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="text-gray-700">Full source code access</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="text-gray-700">MIT License</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="text-gray-700">All core features</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="text-gray-700">Community support</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="text-gray-700">Self-hosted deployment</span>
-                                </li>
-                            </ul>
-
-                            <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="w-full bg-gray-900 text-white rounded-lg py-3 font-semibold hover:bg-gray-800 transition text-center block">
-                                Get Started on GitHub
-                            </a>
+                            <h3 class="font-display text-xl font-bold text-slate-900 mb-1">Community</h3>
+                            <p class="text-sm text-slate-500">For developers and small teams</p>
                         </div>
+                        <div class="mb-8">
+                            <span class="font-display text-5xl font-extrabold text-slate-900">Free</span>
+                            <span class="text-slate-500 ml-2">Open Source</span>
+                        </div>
+                        <ul class="space-y-3 mb-8 text-sm text-slate-600">
+                            <li class="list-check">Full source code access</li>
+                            <li class="list-check">MIT License</li>
+                            <li class="list-check">All 43 domain modules</li>
+                            <li class="list-check">Community support</li>
+                            <li class="list-check">Self-hosted deployment</li>
+                        </ul>
+                        <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="btn-secondary w-full text-center">
+                            Get Started on GitHub
+                        </a>
                     </div>
 
-                    <!-- Cloud Platform -->
-                    <div class="bg-white rounded-3xl shadow-xl overflow-hidden border-2 border-blue-500 relative">
-                        <div class="absolute top-0 right-0 bg-blue-500 text-white px-4 py-2 rounded-bl-lg text-sm font-semibold">
-                            Most Popular
+                    <!-- Cloud Platform (Featured) -->
+                    <div class="card-pricing is-featured animate-on-scroll stagger-1 relative">
+                        <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+                            <span class="badge badge-accent">Most Popular</span>
                         </div>
-                        <div class="p-8">
-                            <div class="text-center">
-                                <h3 class="text-2xl font-bold text-gray-900 mb-2">Cloud Platform</h3>
-                                <p class="text-gray-600 mb-6">Managed infrastructure for growing businesses</p>
-                                <div class="mb-8">
-                                    <span class="text-4xl font-bold text-gray-900">Custom</span>
-                                    <p class="text-sm text-gray-500 mt-1">Based on usage and scale</p>
-                                </div>
+                        <div class="mb-8">
+                            <div class="icon-box bg-blue-50 mb-4">
+                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
                             </div>
-
-                            <ul class="space-y-4 mb-8">
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="text-gray-700">Everything in Community</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="text-gray-700">Managed hosting</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="text-gray-700">99.9% uptime SLA</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="text-gray-700">Priority support</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="text-gray-700">Automatic updates</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="text-gray-700">Daily backups</span>
-                                </li>
-                            </ul>
-
-                            <a href="{{ route('support.contact') }}" class="w-full btn-primary !rounded-lg !py-3 text-center block">
-                                Get a Quote
-                            </a>
+                            <h3 class="font-display text-xl font-bold text-slate-900 mb-1">Cloud Platform</h3>
+                            <p class="text-sm text-slate-500">Managed infrastructure for growing businesses</p>
                         </div>
+                        <div class="mb-8">
+                            <span class="font-display text-5xl font-extrabold text-slate-900">Custom</span>
+                            <p class="text-sm text-slate-500 mt-1">Based on usage and scale</p>
+                        </div>
+                        <ul class="space-y-3 mb-8 text-sm text-slate-600">
+                            <li class="list-check">Everything in Community</li>
+                            <li class="list-check">Managed hosting</li>
+                            <li class="list-check">99.9% uptime SLA</li>
+                            <li class="list-check">Priority support</li>
+                            <li class="list-check">Automatic updates</li>
+                            <li class="list-check">Daily backups</li>
+                        </ul>
+                        <a href="{{ route('support.contact') }}" class="btn-primary w-full text-center">
+                            Get a Quote
+                        </a>
                     </div>
 
                     <!-- Enterprise -->
-                    <div class="bg-white rounded-3xl shadow-xl overflow-hidden border-2 border-gray-200">
-                        <div class="p-8">
-                            <div class="text-center">
-                                <h3 class="text-2xl font-bold text-gray-900 mb-2">Enterprise</h3>
-                                <p class="text-gray-600 mb-6">Custom solutions for large organizations</p>
-                                <div class="mb-8">
-                                    <span class="text-4xl font-bold text-gray-900">Custom</span>
-                                    <p class="text-sm text-gray-500 mt-1">Tailored to your requirements</p>
-                                </div>
+                    <div class="card-pricing animate-on-scroll stagger-2">
+                        <div class="mb-8">
+                            <div class="icon-box bg-slate-100 mb-4">
+                                <svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                             </div>
-
-                            <ul class="space-y-4 mb-8">
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="text-gray-700">Everything in Cloud</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="text-gray-700">On-premise deployment</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="text-gray-700">Custom integrations</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="text-gray-700">Dedicated support team</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="text-gray-700">Service level agreements</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="text-gray-700">Compliance assistance</span>
-                                </li>
-                            </ul>
-
-                            <a href="{{ route('support.contact') }}" class="w-full bg-gray-900 text-white rounded-lg py-3 font-semibold hover:bg-gray-800 transition text-center block">
-                                Contact Enterprise Sales
-                            </a>
+                            <h3 class="font-display text-xl font-bold text-slate-900 mb-1">Enterprise</h3>
+                            <p class="text-sm text-slate-500">Custom solutions for large organizations</p>
                         </div>
+                        <div class="mb-8">
+                            <span class="font-display text-5xl font-extrabold text-slate-900">Custom</span>
+                            <p class="text-sm text-slate-500 mt-1">Tailored to your requirements</p>
+                        </div>
+                        <ul class="space-y-3 mb-8 text-sm text-slate-600">
+                            <li class="list-check">Everything in Cloud</li>
+                            <li class="list-check">On-premise deployment</li>
+                            <li class="list-check">Custom integrations</li>
+                            <li class="list-check">Dedicated support team</li>
+                            <li class="list-check">Service level agreements</li>
+                            <li class="list-check">Compliance assistance</li>
+                        </ul>
+                        <a href="{{ route('support.contact') }}" class="btn-secondary w-full text-center">
+                            Contact Enterprise Sales
+                        </a>
                     </div>
                 </div>
             </div>
         </section>
 
         <!-- FAQ Section -->
-        <section class="py-20 bg-white">
-            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h2>
-                    <p class="text-xl text-gray-600">Everything you need to know about our pricing</p>
+        <section class="py-24 bg-slate-50/50">
+            <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-14">
+                    <h2 class="font-display text-3xl md:text-4xl font-bold text-slate-900 mb-4">Frequently Asked Questions</h2>
+                    <p class="text-slate-500 text-lg">Everything you need to know about our pricing</p>
                 </div>
 
-                <div class="space-y-6">
-                    <div class="bg-gray-50 rounded-xl p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Is the community edition really free?</h3>
-                        <p class="text-gray-600">Yes! Our community edition is completely free and open source under the MIT license. You can use it for any purpose, including commercial projects.</p>
-                    </div>
+                <div class="space-y-4">
+                    @php
+                        $faqs = [
+                            ['q' => 'Is the community edition really free?', 'a' => 'Yes! Our community edition is completely free and open source under the MIT license. You can use it for any purpose, including commercial projects.'],
+                            ['q' => "What's included in the Cloud Platform?", 'a' => 'The Cloud Platform includes managed hosting, automatic updates, daily backups, 99.9% uptime SLA, and priority support. We handle all the infrastructure so you can focus on your business.'],
+                            ['q' => 'Can I switch between plans?', 'a' => "Absolutely! You can start with the community edition and upgrade to Cloud or Enterprise plans at any time. We'll help you migrate your data seamlessly."],
+                            ['q' => 'Do you offer discounts for non-profits?', 'a' => 'Yes, we offer special pricing for non-profit organizations and educational institutions. Contact our sales team for more information.'],
+                        ];
+                    @endphp
 
-                    <div class="bg-gray-50 rounded-xl p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">What's included in the Cloud Platform?</h3>
-                        <p class="text-gray-600">The Cloud Platform includes managed hosting, automatic updates, daily backups, 99.9% uptime SLA, and priority support. We handle all the infrastructure so you can focus on your business.</p>
-                    </div>
-
-                    <div class="bg-gray-50 rounded-xl p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Can I switch between plans?</h3>
-                        <p class="text-gray-600">Absolutely! You can start with the community edition and upgrade to Cloud or Enterprise plans at any time. We'll help you migrate your data seamlessly.</p>
-                    </div>
-
-                    <div class="bg-gray-50 rounded-xl p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Do you offer discounts for non-profits?</h3>
-                        <p class="text-gray-600">Yes, we offer special pricing for non-profit organizations and educational institutions. Contact our sales team for more information.</p>
-                    </div>
+                    @foreach($faqs as $i => $faq)
+                    <details class="card-feature group animate-on-scroll stagger-{{ $i + 1 }}" {{ $i === 0 ? 'open' : '' }}>
+                        <summary class="flex items-center justify-between cursor-pointer list-none font-display font-semibold text-slate-900">
+                            {{ $faq['q'] }}
+                            <svg class="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform flex-shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </summary>
+                        <p class="mt-4 text-slate-600 text-sm leading-relaxed">{{ $faq['a'] }}</p>
+                    </details>
+                    @endforeach
                 </div>
             </div>
         </section>
 
         <!-- CTA -->
-        <section class="py-20 bg-gray-50">
-            <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Ready to Get Started?</h2>
-                <p class="text-xl text-gray-600 mb-8">
-                    Start free with the Community Edition, or talk to us about managed and enterprise options
+        <section class="bg-fa-navy relative overflow-hidden">
+            <div class="absolute inset-0 bg-dot-pattern"></div>
+            <div class="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 py-20">
+                <h2 class="font-display text-3xl md:text-4xl font-bold text-white mb-4">Ready to Get Started?</h2>
+                <p class="text-lg text-slate-400 mb-10 max-w-2xl mx-auto">
+                    Start free with the Community Edition, or talk to us about managed and enterprise options.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="https://github.com/FinAegis" target="_blank" class="bg-gray-900 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-800 transition shadow-lg hover:shadow-xl">
+                    <a href="https://github.com/FinAegis" target="_blank" class="btn-primary px-8 py-4 text-lg">
                         Start with Community Edition
                     </a>
-                    <a href="{{ route('support.contact') }}" class="border-2 border-gray-900 text-gray-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition">
+                    <a href="{{ route('support.contact') }}" class="btn-outline px-8 py-4 text-lg">
                         Talk to Sales
                     </a>
                 </div>

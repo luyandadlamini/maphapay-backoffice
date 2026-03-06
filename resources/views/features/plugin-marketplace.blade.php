@@ -20,13 +20,6 @@
 
 @push('styles')
 <style>
-    .feature-card {
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .feature-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 30px rgba(0,0,0,0.08);
-    }
     .hook-badge {
         font-family: 'JetBrains Mono', 'Fira Code', monospace;
     }
@@ -54,32 +47,32 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 class="text-3xl font-bold text-center mb-12">Core Capabilities</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="plugin-card bg-white rounded-xl p-8 shadow-md text-center">
-                    <div class="w-16 h-16 bg-violet-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                <div class="plugin-card card-feature !p-8 text-center">
+                    <div class="w-16 h-16 bg-violet-50 rounded-lg flex items-center justify-center mx-auto mb-6">
                         <svg class="w-8 h-8 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold mb-3">Plugin Manager</h3>
-                    <p class="text-gray-600">Install, enable, disable, update, and remove plugins with semver-aware dependency resolution. Full lifecycle management via API or admin UI.</p>
+                    <p class="text-slate-500">Install, enable, disable, update, and remove plugins with semver-aware dependency resolution. Full lifecycle management via API or admin UI.</p>
                 </div>
-                <div class="plugin-card bg-white rounded-xl p-8 shadow-md text-center">
-                    <div class="w-16 h-16 bg-amber-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                <div class="plugin-card card-feature !p-8 text-center">
+                    <div class="w-16 h-16 bg-amber-50 rounded-lg flex items-center justify-center mx-auto mb-6">
                         <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold mb-3">Sandbox Execution</h3>
-                    <p class="text-gray-600">Plugins run in a permission-enforced sandbox. Each plugin declares required permissions and is restricted from accessing unauthorized resources.</p>
+                    <p class="text-slate-500">Plugins run in a permission-enforced sandbox. Each plugin declares required permissions and is restricted from accessing unauthorized resources.</p>
                 </div>
-                <div class="plugin-card bg-white rounded-xl p-8 shadow-md text-center">
-                    <div class="w-16 h-16 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                <div class="plugin-card card-feature !p-8 text-center">
+                    <div class="w-16 h-16 bg-red-50 rounded-lg flex items-center justify-center mx-auto mb-6">
                         <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold mb-3">Security Scanner</h3>
-                    <p class="text-gray-600">Static analysis scans plugin code for dangerous patterns before activation. Severity classification (critical, high, medium, low) with detailed reporting.</p>
+                    <p class="text-slate-500">Static analysis scans plugin code for dangerous patterns before activation. Severity classification (critical, high, medium, low) with detailed reporting.</p>
                 </div>
             </div>
         </div>
@@ -91,29 +84,29 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 <div>
                     <h2 class="text-3xl font-bold mb-6">17 Integration Hooks</h2>
-                    <p class="text-gray-600 mb-6">
+                    <p class="text-slate-500 mb-6">
                         Plugins integrate via a hook-based system that fires at key points in the platform lifecycle. Hooks are type-safe and support priority ordering.
                     </p>
                     <div class="space-y-3">
                         <div class="flex items-center gap-3">
                             <span class="hook-badge bg-violet-100 text-violet-700 text-xs px-2.5 py-1 rounded-full font-medium">account.*</span>
-                            <span class="text-gray-600 text-sm">Account creation, updates, deletion</span>
+                            <span class="text-slate-500 text-sm">Account creation, updates, deletion</span>
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="hook-badge bg-blue-100 text-blue-700 text-xs px-2.5 py-1 rounded-full font-medium">transaction.*</span>
-                            <span class="text-gray-600 text-sm">Pre/post transaction processing</span>
+                            <span class="text-slate-500 text-sm">Pre/post transaction processing</span>
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="hook-badge bg-green-100 text-green-700 text-xs px-2.5 py-1 rounded-full font-medium">compliance.*</span>
-                            <span class="text-gray-600 text-sm">KYC/AML verification triggers</span>
+                            <span class="text-slate-500 text-sm">KYC/AML verification triggers</span>
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="hook-badge bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-full font-medium">wallet.*</span>
-                            <span class="text-gray-600 text-sm">Wallet operations and balance changes</span>
+                            <span class="text-slate-500 text-sm">Wallet operations and balance changes</span>
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="hook-badge bg-red-100 text-red-700 text-xs px-2.5 py-1 rounded-full font-medium">security.*</span>
-                            <span class="text-gray-600 text-sm">Authentication and authorization events</span>
+                            <span class="text-slate-500 text-sm">Authentication and authorization events</span>
                         </div>
                     </div>
                 </div>
@@ -145,46 +138,46 @@
                     <table class="w-full text-sm">
                         <thead>
                             <tr class="bg-gray-100 text-left">
-                                <th class="px-6 py-3 font-semibold text-gray-700">Method</th>
-                                <th class="px-6 py-3 font-semibold text-gray-700">Endpoint</th>
-                                <th class="px-6 py-3 font-semibold text-gray-700">Description</th>
+                                <th class="px-6 py-3 font-semibold text-slate-600">Method</th>
+                                <th class="px-6 py-3 font-semibold text-slate-600">Endpoint</th>
+                                <th class="px-6 py-3 font-semibold text-slate-600">Description</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
                             <tr>
                                 <td class="px-6 py-3"><span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">GET</span></td>
                                 <td class="px-6 py-3 font-mono text-xs">/api/v2/plugins</td>
-                                <td class="px-6 py-3 text-gray-600">List all plugins</td>
+                                <td class="px-6 py-3 text-slate-500">List all plugins</td>
                             </tr>
                             <tr>
                                 <td class="px-6 py-3"><span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">GET</span></td>
                                 <td class="px-6 py-3 font-mono text-xs">/api/v2/plugins/{id}</td>
-                                <td class="px-6 py-3 text-gray-600">Show plugin details</td>
+                                <td class="px-6 py-3 text-slate-500">Show plugin details</td>
                             </tr>
                             <tr>
                                 <td class="px-6 py-3"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">POST</span></td>
                                 <td class="px-6 py-3 font-mono text-xs">/api/v2/plugins/{id}/enable</td>
-                                <td class="px-6 py-3 text-gray-600">Enable a plugin</td>
+                                <td class="px-6 py-3 text-slate-500">Enable a plugin</td>
                             </tr>
                             <tr>
                                 <td class="px-6 py-3"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">POST</span></td>
                                 <td class="px-6 py-3 font-mono text-xs">/api/v2/plugins/{id}/disable</td>
-                                <td class="px-6 py-3 text-gray-600">Disable a plugin</td>
+                                <td class="px-6 py-3 text-slate-500">Disable a plugin</td>
                             </tr>
                             <tr>
                                 <td class="px-6 py-3"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">POST</span></td>
                                 <td class="px-6 py-3 font-mono text-xs">/api/v2/plugins/{id}/scan</td>
-                                <td class="px-6 py-3 text-gray-600">Run security scan</td>
+                                <td class="px-6 py-3 text-slate-500">Run security scan</td>
                             </tr>
                             <tr>
                                 <td class="px-6 py-3"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">POST</span></td>
                                 <td class="px-6 py-3 font-mono text-xs">/api/v2/plugins/discover</td>
-                                <td class="px-6 py-3 text-gray-600">Discover new plugins</td>
+                                <td class="px-6 py-3 text-slate-500">Discover new plugins</td>
                             </tr>
                             <tr>
                                 <td class="px-6 py-3"><span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold">DELETE</span></td>
                                 <td class="px-6 py-3 font-mono text-xs">/api/v2/plugins/{id}</td>
-                                <td class="px-6 py-3 text-gray-600">Remove a plugin</td>
+                                <td class="px-6 py-3 text-slate-500">Remove a plugin</td>
                             </tr>
                         </tbody>
                     </table>
@@ -218,7 +211,7 @@
     <section class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 class="text-3xl font-bold text-center mb-4">Built-in Plugins</h2>
-            <p class="text-gray-600 text-center mb-12 max-w-2xl mx-auto">FinAegis ships with reference plugins that demonstrate the hook system and serve as templates for custom development.</p>
+            <p class="text-slate-500 text-center mb-12 max-w-2xl mx-auto">FinAegis ships with reference plugins that demonstrate the hook system and serve as templates for custom development.</p>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
                 <div class="plugin-card border border-gray-200 rounded-xl p-8">
                     <div class="flex items-center gap-3 mb-4">
@@ -232,7 +225,7 @@
                             <span class="text-xs text-gray-500">webhook-notifier</span>
                         </div>
                     </div>
-                    <p class="text-gray-600 text-sm">Sends HTTP webhooks on platform events. Supports configurable endpoints, retry logic, and payload signing.</p>
+                    <p class="text-slate-500 text-sm">Sends HTTP webhooks on platform events. Supports configurable endpoints, retry logic, and payload signing.</p>
                 </div>
                 <div class="plugin-card border border-gray-200 rounded-xl p-8">
                     <div class="flex items-center gap-3 mb-4">
@@ -246,7 +239,7 @@
                             <span class="text-xs text-gray-500">audit-exporter</span>
                         </div>
                     </div>
-                    <p class="text-gray-600 text-sm">Exports audit trail events to external systems. Supports CSV, JSON, and direct database export with scheduled runs.</p>
+                    <p class="text-slate-500 text-sm">Exports audit trail events to external systems. Supports CSV, JSON, and direct database export with scheduled runs.</p>
                 </div>
             </div>
         </div>

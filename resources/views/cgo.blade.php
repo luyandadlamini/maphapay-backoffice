@@ -56,8 +56,8 @@
     <section class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <h2 class="text-4xl font-bold text-gray-900 mb-4">What is a Continuous Growth Offering?</h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                <h2 class="font-display text-4xl font-bold text-slate-900 mb-4">What is a Continuous Growth Offering?</h2>
+                <p class="text-xl text-slate-500 max-w-3xl mx-auto">
                     A theoretical model that explores how open-source financial platforms could sustain development through continuous community participation.
                 </p>
             </div>
@@ -70,7 +70,7 @@
                         </svg>
                     </div>
                     <h3 class="text-xl font-semibold mb-3">Conceptual Model</h3>
-                    <p class="text-gray-600">Unlike traditional one-time funding rounds, CGO imagines continuous, small-scale participation from the community over time.</p>
+                    <p class="text-slate-500">Unlike traditional one-time funding rounds, CGO imagines continuous, small-scale participation from the community over time.</p>
                 </div>
 
                 <div class="text-center">
@@ -80,7 +80,7 @@
                         </svg>
                     </div>
                     <h3 class="text-xl font-semibold mb-3">Democratic Participation</h3>
-                    <p class="text-gray-600">The model explores how supporters could have voice in development priorities proportional to their participation.</p>
+                    <p class="text-slate-500">The model explores how supporters could have voice in development priorities proportional to their participation.</p>
                 </div>
 
                 <div class="text-center">
@@ -90,18 +90,18 @@
                         </svg>
                     </div>
                     <h3 class="text-xl font-semibold mb-3">Sustainable Funding</h3>
-                    <p class="text-gray-600">Explores alternatives to traditional VC funding that align incentives between developers and users.</p>
+                    <p class="text-slate-500">Explores alternatives to traditional VC funding that align incentives between developers and users.</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Theoretical Tiers -->
-    <section class="py-20 bg-gray-50">
+    <section class="py-20 bg-slate-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <h2 class="text-4xl font-bold text-gray-900 mb-4">Conceptual Participation Tiers</h2>
-                <p class="text-xl text-gray-600">How a CGO <em>might</em> structure community participation (theoretical)</p>
+                <h2 class="font-display text-4xl font-bold text-slate-900 mb-4">Conceptual Participation Tiers</h2>
+                <p class="text-xl text-slate-500">How a CGO <em>might</em> structure community participation (theoretical)</p>
             </div>
 
             <div class="bg-amber-50 border-l-4 border-amber-400 p-4 mb-8 max-w-3xl mx-auto">
@@ -112,12 +112,12 @@
 
             <div class="grid md:grid-cols-3 gap-8 opacity-75">
                 <!-- Bronze Tier -->
-                <div class="bg-white rounded-2xl shadow-lg p-8 border-2 border-gray-200">
+                <div class="card-feature">
                     <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
                         <span class="bg-gray-400 text-white px-4 py-1 rounded-full text-sm font-semibold">CONCEPTUAL</span>
                     </div>
                     <div class="text-center mb-6">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Supporter</h3>
+                        <h3 class="text-2xl font-bold text-slate-900 mb-2">Supporter</h3>
                         <p class="text-4xl font-bold text-gray-400">Small</p>
                         <p class="text-sm text-gray-500">Contributions</p>
                     </div>
@@ -144,9 +144,9 @@
                 </div>
 
                 <!-- Silver Tier -->
-                <div class="bg-white rounded-2xl shadow-lg p-8 border-2 border-gray-200">
+                <div class="card-feature">
                     <div class="text-center mb-6">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Contributor</h3>
+                        <h3 class="text-2xl font-bold text-slate-900 mb-2">Contributor</h3>
                         <p class="text-4xl font-bold text-gray-400">Medium</p>
                         <p class="text-sm text-gray-500">Contributions</p>
                     </div>
@@ -173,9 +173,9 @@
                 </div>
 
                 <!-- Gold Tier -->
-                <div class="bg-white rounded-2xl shadow-lg p-8 border-2 border-gray-200">
+                <div class="card-feature">
                     <div class="text-center mb-6">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Sponsor</h3>
+                        <h3 class="text-2xl font-bold text-slate-900 mb-2">Sponsor</h3>
                         <p class="text-4xl font-bold text-gray-400">Large</p>
                         <p class="text-sm text-gray-500">Contributions</p>
                     </div>
@@ -203,7 +203,7 @@
             </div>
 
             <div class="text-center mt-12">
-                <p class="text-gray-600 mb-4">This is a demonstration of concepts only. No real funding is being collected.</p>
+                <p class="text-slate-500 mb-4">This is a demonstration of concepts only. No real funding is being collected.</p>
             </div>
         </div>
     </section>
@@ -212,83 +212,84 @@
     <section class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
-                <h2 class="text-3xl font-bold text-gray-900 mb-4">Want to Support FinAegis?</h2>
-                <p class="text-xl text-gray-600">Here's how you can actually contribute to this open-source project</p>
+                <h2 class="font-display text-3xl font-bold text-slate-900 mb-4">Want to Support FinAegis?</h2>
+                <p class="text-xl text-slate-500">Here's how you can actually contribute to this open-source project</p>
             </div>
 
             <div class="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-                <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="block bg-gray-50 rounded-xl p-6 hover:bg-gray-100 transition text-center">
+                <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="block bg-slate-50 rounded-xl p-6 hover:bg-gray-100 transition text-center">
                     <div class="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-4">
                         <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
                         </svg>
                     </div>
                     <h3 class="text-xl font-semibold mb-2">Contribute Code</h3>
-                    <p class="text-gray-600">Submit PRs, fix bugs, or add features</p>
+                    <p class="text-slate-500">Submit PRs, fix bugs, or add features</p>
                 </a>
 
-                <a href="https://github.com/FinAegis/core-banking-prototype-laravel/issues" target="_blank" class="block bg-gray-50 rounded-xl p-6 hover:bg-gray-100 transition text-center">
+                <a href="https://github.com/FinAegis/core-banking-prototype-laravel/issues" target="_blank" class="block bg-slate-50 rounded-xl p-6 hover:bg-gray-100 transition text-center">
                     <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                         <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
                         </svg>
                     </div>
                     <h3 class="text-xl font-semibold mb-2">Report Issues</h3>
-                    <p class="text-gray-600">Help improve by reporting bugs</p>
+                    <p class="text-slate-500">Help improve by reporting bugs</p>
                 </a>
 
-                <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="block bg-gray-50 rounded-xl p-6 hover:bg-gray-100 transition text-center">
+                <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="block bg-slate-50 rounded-xl p-6 hover:bg-gray-100 transition text-center">
                     <div class="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
                         <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                         </svg>
                     </div>
                     <h3 class="text-xl font-semibold mb-2">Star the Repo</h3>
-                    <p class="text-gray-600">Show your support with a GitHub star</p>
+                    <p class="text-slate-500">Show your support with a GitHub star</p>
                 </a>
             </div>
         </div>
     </section>
 
     <!-- Learn More Section -->
-    <section class="py-20 bg-gray-50">
+    <section class="py-20 bg-slate-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
-                <h2 class="text-3xl font-bold text-gray-900 mb-4">Learn More About FinAegis</h2>
-                <p class="text-xl text-gray-600">Explore the concepts and technology behind the platform</p>
+                <h2 class="font-display text-3xl font-bold text-slate-900 mb-4">Learn More About FinAegis</h2>
+                <p class="text-xl text-slate-500">Explore the concepts and technology behind the platform</p>
             </div>
 
             <div class="grid md:grid-cols-3 gap-6">
-                <a href="{{ route('about') }}" class="block bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition">
+                <a href="{{ route('about') }}" class="block card-feature hover:shadow-lg transition">
                     <h3 class="text-xl font-semibold mb-2">About the Project</h3>
-                    <p class="text-gray-600">Learn what FinAegis is and why it was built</p>
+                    <p class="text-slate-500">Learn what FinAegis is and why it was built</p>
                 </a>
 
-                <a href="{{ route('features.show', 'gcu') }}" class="block bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition">
+                <a href="{{ route('features.show', 'gcu') }}" class="block card-feature hover:shadow-lg transition">
                     <h3 class="text-xl font-semibold mb-2">GCU Concept</h3>
-                    <p class="text-gray-600">Explore the Global Currency Unit idea</p>
+                    <p class="text-slate-500">Explore the Global Currency Unit idea</p>
                 </a>
 
-                <a href="{{ route('developers') }}" class="block bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition">
+                <a href="{{ route('developers') }}" class="block card-feature hover:shadow-lg transition">
                     <h3 class="text-xl font-semibold mb-2">Developer Docs</h3>
-                    <p class="text-gray-600">Technical documentation and API reference</p>
+                    <p class="text-slate-500">Technical documentation and API reference</p>
                 </a>
             </div>
         </div>
     </section>
 
     <!-- CTA Section -->
-    <section class="py-20 bg-indigo-600">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 class="text-4xl font-bold text-white mb-6">Explore the Demo</h2>
-            <p class="text-xl text-indigo-100 mb-8 max-w-3xl mx-auto">
+    <section class="bg-fa-navy relative overflow-hidden">
+        <div class="absolute inset-0 bg-dot-pattern"></div>
+        <div class="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 py-20">
+            <h2 class="font-display text-4xl font-bold text-white mb-6">Explore the Demo</h2>
+            <p class="text-lg mb-10 text-slate-400 max-w-3xl mx-auto">
                 See the GCU, governance, and all banking features in action. Create a demo account to explore everything—all simulated, all safe.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{{ route('register') }}" class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-white hover:bg-indigo-50">
+                <a href="{{ route('register') }}" class="btn-primary !py-4 !px-10 !text-base !rounded-lg">
                     Explore the Platform
                 </a>
-                <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="inline-flex items-center justify-center px-8 py-3 border border-white text-base font-medium rounded-md text-white hover:bg-indigo-700">
+                <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="btn-outline !py-4 !px-10 !text-base !rounded-lg">
                     View on GitHub
                 </a>
             </div>

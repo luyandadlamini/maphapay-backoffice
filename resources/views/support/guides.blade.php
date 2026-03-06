@@ -37,7 +37,7 @@
                     <div class="max-w-2xl mx-auto">
                         <div class="relative">
                             <input type="text" id="guide-search" placeholder="Search guides..."
-                                class="w-full px-6 py-3 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white pl-12">
+                                class="w-full px-6 py-3 rounded-lg text-slate-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white pl-12">
                             <svg class="absolute left-4 top-3.5 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                             </svg>
@@ -52,69 +52,69 @@
         <section class="py-16 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-12">
-                    <h2 class="text-3xl font-bold text-gray-900">Popular Guides</h2>
-                    <p class="mt-4 text-xl text-gray-600">Start with these essential guides to get up and running</p>
+                    <h2 class="font-display text-3xl font-bold text-slate-900">Popular Guides</h2>
+                    <p class="mt-4 text-xl text-slate-500">Start with these essential guides to get up and running</p>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <a href="#getting-started" class="guide-card bg-white rounded-lg shadow-md border border-gray-200 p-6">
+                    <a href="#getting-started" class="card-feature">
                         <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                             <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                             </svg>
                         </div>
-                        <h3 class="font-semibold text-gray-900 mb-2">Getting Started</h3>
-                        <p class="text-gray-600 text-sm">Platform overview</p>
+                        <h3 class="font-semibold text-slate-900 mb-2">Getting Started</h3>
+                        <p class="text-slate-500 text-sm">Platform overview</p>
                     </a>
 
-                    <a href="#development" class="guide-card bg-white rounded-lg shadow-md border border-gray-200 p-6">
+                    <a href="#development" class="card-feature">
                         <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
                             <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
                             </svg>
                         </div>
-                        <h3 class="font-semibold text-gray-900 mb-2">Development Setup</h3>
-                        <p class="text-gray-600 text-sm">Contributing to the project</p>
+                        <h3 class="font-semibold text-slate-900 mb-2">Development Setup</h3>
+                        <p class="text-slate-500 text-sm">Contributing to the project</p>
                     </a>
 
-                    <a href="#testing" class="guide-card bg-white rounded-lg shadow-md border border-gray-200 p-6">
+                    <a href="#testing" class="card-feature">
                         <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
                             <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                         </div>
-                        <h3 class="font-semibold text-gray-900 mb-2">Testing Features</h3>
-                        <p class="text-gray-600 text-sm">Exploring demo functionality</p>
+                        <h3 class="font-semibold text-slate-900 mb-2">Testing Features</h3>
+                        <p class="text-slate-500 text-sm">Exploring demo functionality</p>
                     </a>
 
-                    <a href="#feedback" class="guide-card bg-white rounded-lg shadow-md border border-gray-200 p-6">
+                    <a href="#feedback" class="card-feature">
                         <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
                             <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
                             </svg>
                         </div>
-                        <h3 class="font-semibold text-gray-900 mb-2">Providing Feedback</h3>
-                        <p class="text-gray-600 text-sm">Reporting issues & suggestions</p>
+                        <h3 class="font-semibold text-slate-900 mb-2">Providing Feedback</h3>
+                        <p class="text-slate-500 text-sm">Reporting issues & suggestions</p>
                     </a>
                 </div>
             </div>
         </section>
 
         <!-- Guides Content -->
-        <section class="py-16 bg-gray-50">
+        <section class="py-16 bg-slate-50">
             <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                 <!-- Getting Started -->
                 <section id="getting-started" class="mb-16">
                     <div class="border-b border-gray-200 pb-6 mb-8">
-                        <h2 class="text-2xl font-bold text-gray-900">Getting Started</h2>
-                        <p class="mt-2 text-gray-600">Understanding the FinAegis platform and how to explore it</p>
+                        <h2 class="text-2xl font-bold text-slate-900">Getting Started</h2>
+                        <p class="mt-2 text-slate-500">Understanding the FinAegis platform and how to explore it</p>
                     </div>
                     
                     <div class="space-y-6">
-                        <div class="bg-white border border-gray-200 rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3">About the Sandbox</h3>
-                            <p class="text-gray-600 mb-4">The public FinAegis instance runs in sandbox mode, which means:</p>
-                            <ul class="list-disc list-inside text-gray-600 space-y-2">
+                        <div class="card-feature">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-3">About the Sandbox</h3>
+                            <p class="text-slate-500 mb-4">The public FinAegis instance runs in sandbox mode, which means:</p>
+                            <ul class="list-disc list-inside text-slate-500 space-y-2">
                                 <li>All transactions and balances use test data (no real money)</li>
                                 <li>Every feature is available for you to explore</li>
                                 <li>New features are added regularly as the platform evolves</li>
@@ -127,24 +127,24 @@
                             </div>
                         </div>
 
-                        <div class="bg-white border border-gray-200 rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3">Creating Your Test Account</h3>
-                            <p class="text-gray-600 mb-4">Follow these steps to create your account:</p>
-                            <ol class="list-decimal list-inside text-gray-600 space-y-2">
+                        <div class="card-feature">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-3">Creating Your Test Account</h3>
+                            <p class="text-slate-500 mb-4">Follow these steps to create your account:</p>
+                            <ol class="list-decimal list-inside text-slate-500 space-y-2">
                                 <li>Click "Register" on the homepage</li>
                                 <li>Use a test email address (can be your real email)</li>
                                 <li>Create a password (this is for testing only)</li>
                                 <li>Explore the dashboard with sandbox data</li>
                             </ol>
-                            <p class="text-gray-600 mt-4">
+                            <p class="text-slate-500 mt-4">
                                 <strong>Note:</strong> No real identity verification is required for the sandbox.
                             </p>
                         </div>
 
-                        <div class="bg-white border border-gray-200 rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3">Available Features</h3>
-                            <p class="text-gray-600 mb-4">Available to explore in the sandbox:</p>
-                            <ul class="list-disc list-inside text-gray-600 space-y-2">
+                        <div class="card-feature">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-3">Available Features</h3>
+                            <p class="text-slate-500 mb-4">Available to explore in the sandbox:</p>
+                            <ul class="list-disc list-inside text-slate-500 space-y-2">
                                 <li>User registration and authentication</li>
                                 <li>Dashboard with simulated account data</li>
                                 <li>GCU concept demonstration</li>
@@ -158,42 +158,42 @@
                 <!-- Development Setup -->
                 <section id="development" class="mb-16">
                     <div class="border-b border-gray-200 pb-6 mb-8">
-                        <h2 class="text-2xl font-bold text-gray-900">Development Setup</h2>
-                        <p class="mt-2 text-gray-600">Contributing to the FinAegis open source project</p>
+                        <h2 class="text-2xl font-bold text-slate-900">Development Setup</h2>
+                        <p class="mt-2 text-slate-500">Contributing to the FinAegis open source project</p>
                     </div>
                     
                     <div class="space-y-6">
-                        <div class="bg-white border border-gray-200 rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3">Local Development Environment</h3>
-                            <p class="text-gray-600 mb-4">Set up FinAegis locally for development:</p>
-                            <div class="bg-gray-50 rounded-lg p-4 font-mono text-sm">
-                                <p class="text-gray-700"># Clone the repository</p>
+                        <div class="card-feature">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-3">Local Development Environment</h3>
+                            <p class="text-slate-500 mb-4">Set up FinAegis locally for development:</p>
+                            <div class="bg-slate-50 rounded-lg p-4 font-mono text-sm">
+                                <p class="text-slate-600"># Clone the repository</p>
                                 <p class="text-green-600">git clone https://github.com/FinAegis/core-banking-prototype-laravel.git</p>
                                 <p class="text-green-600">cd core-banking-prototype-laravel</p>
                                 <br>
-                                <p class="text-gray-700"># Install dependencies</p>
+                                <p class="text-slate-600"># Install dependencies</p>
                                 <p class="text-green-600">composer install</p>
                                 <p class="text-green-600">npm install</p>
                                 <br>
-                                <p class="text-gray-700"># Configure environment</p>
+                                <p class="text-slate-600"># Configure environment</p>
                                 <p class="text-green-600">cp .env.example .env</p>
                                 <p class="text-green-600">php artisan key:generate</p>
                                 <br>
-                                <p class="text-gray-700"># Run migrations</p>
+                                <p class="text-slate-600"># Run migrations</p>
                                 <p class="text-green-600">php artisan migrate</p>
                                 <br>
-                                <p class="text-gray-700"># Start development server</p>
+                                <p class="text-slate-600"># Start development server</p>
                                 <p class="text-green-600">php artisan serve</p>
                             </div>
                         </div>
 
-                        <div class="bg-white border border-gray-200 rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3">Tech Stack Overview</h3>
-                            <p class="text-gray-600 mb-4">FinAegis is built with:</p>
+                        <div class="card-feature">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-3">Tech Stack Overview</h3>
+                            <p class="text-slate-500 mb-4">FinAegis is built with:</p>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <h4 class="font-semibold text-gray-800 mb-2">Backend</h4>
-                                    <ul class="text-sm text-gray-600 space-y-1">
+                                    <h4 class="font-semibold text-slate-800 mb-2">Backend</h4>
+                                    <ul class="text-sm text-slate-500 space-y-1">
                                         <li>• Laravel (PHP framework)</li>
                                         <li>• MySQL/PostgreSQL</li>
                                         <li>• Redis for queues</li>
@@ -201,8 +201,8 @@
                                     </ul>
                                 </div>
                                 <div>
-                                    <h4 class="font-semibold text-gray-800 mb-2">Frontend</h4>
-                                    <ul class="text-sm text-gray-600 space-y-1">
+                                    <h4 class="font-semibold text-slate-800 mb-2">Frontend</h4>
+                                    <ul class="text-sm text-slate-500 space-y-1">
                                         <li>• Blade templates</li>
                                         <li>• Tailwind CSS</li>
                                         <li>• Alpine.js</li>
@@ -212,10 +212,10 @@
                             </div>
                         </div>
 
-                        <div class="bg-white border border-gray-200 rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3">Contributing Guidelines</h3>
-                            <p class="text-gray-600 mb-4">How to contribute to FinAegis:</p>
-                            <ol class="list-decimal list-inside text-gray-600 space-y-2">
+                        <div class="card-feature">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-3">Contributing Guidelines</h3>
+                            <p class="text-slate-500 mb-4">How to contribute to FinAegis:</p>
+                            <ol class="list-decimal list-inside text-slate-500 space-y-2">
                                 <li>Fork the repository on GitHub</li>
                                 <li>Create a feature branch (<code class="bg-gray-100 px-2 py-1 rounded">git checkout -b feature/your-feature</code>)</li>
                                 <li>Make your changes and test thoroughly</li>
@@ -230,51 +230,51 @@
                 <!-- Testing Features -->
                 <section id="testing" class="mb-16">
                     <div class="border-b border-gray-200 pb-6 mb-8">
-                        <h2 class="text-2xl font-bold text-gray-900">Testing Platform Features</h2>
-                        <p class="mt-2 text-gray-600">How to test and explore the demo functionality</p>
+                        <h2 class="text-2xl font-bold text-slate-900">Testing Platform Features</h2>
+                        <p class="mt-2 text-slate-500">How to test and explore the demo functionality</p>
                     </div>
                     
                     <div class="space-y-6">
-                        <div class="bg-white border border-gray-200 rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3">Simulated Transactions</h3>
-                            <p class="text-gray-600 mb-4">Testing transaction flows:</p>
-                            <ul class="list-disc list-inside text-gray-600 space-y-2">
+                        <div class="card-feature">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-3">Simulated Transactions</h3>
+                            <p class="text-slate-500 mb-4">Testing transaction flows:</p>
+                            <ul class="list-disc list-inside text-slate-500 space-y-2">
                                 <li>All balances are simulated (starting with demo funds)</li>
                                 <li>Transactions don't involve real money or banks</li>
                                 <li>Currency conversions use demo exchange rates</li>
                                 <li>Transaction history is for demonstration only</li>
                             </ul>
-                            <p class="text-gray-600 mt-4">
+                            <p class="text-slate-500 mt-4">
                                 Feel free to test all transaction types without worry - nothing is real!
                             </p>
                         </div>
 
-                        <div class="bg-white border border-gray-200 rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3">API Testing</h3>
-                            <p class="text-gray-600 mb-4">Testing the REST API:</p>
-                            <ol class="list-decimal list-inside text-gray-600 space-y-2">
+                        <div class="card-feature">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-3">API Testing</h3>
+                            <p class="text-slate-500 mb-4">Testing the REST API:</p>
+                            <ol class="list-decimal list-inside text-slate-500 space-y-2">
                                 <li>Register for an account to get API access</li>
                                 <li>Use the API documentation at <code class="bg-gray-100 px-2 py-1 rounded">/developers/api-docs</code></li>
                                 <li>Test with tools like Postman or curl</li>
                                 <li>All API responses use simulated data</li>
                             </ol>
-                            <div class="mt-4 bg-gray-50 rounded-lg p-4 font-mono text-sm">
-                                <p class="text-gray-700"># Example API call</p>
+                            <div class="mt-4 bg-slate-50 rounded-lg p-4 font-mono text-sm">
+                                <p class="text-slate-600"># Example API call</p>
                                 <p class="text-green-600">curl -X GET http://localhost:8000/api/v1/accounts \</p>
                                 <p class="text-green-600">  -H "Authorization: Bearer YOUR_TOKEN"</p>
                             </div>
                         </div>
 
-                        <div class="bg-white border border-gray-200 rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3">GCU Demo Features</h3>
-                            <p class="text-gray-600 mb-4">Exploring the Global Currency Unit concept:</p>
-                            <ul class="list-disc list-inside text-gray-600 space-y-2">
+                        <div class="card-feature">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-3">GCU Demo Features</h3>
+                            <p class="text-slate-500 mb-4">Exploring the Global Currency Unit concept:</p>
+                            <ul class="list-disc list-inside text-slate-500 space-y-2">
                                 <li>View the current GCU composition (demonstration values)</li>
                                 <li>See how democratic voting will work (UI preview only)</li>
                                 <li>Test currency conversion with GCU</li>
                                 <li>Understand the multi-currency basket concept</li>
                             </ul>
-                            <p class="text-gray-600 mt-4">
+                            <p class="text-slate-500 mt-4">
                                 <strong>Note:</strong> Voting functionality is available in sandbox mode. Production governance cycles are planned for a future release.
                             </p>
                         </div>
@@ -284,15 +284,15 @@
                 <!-- Providing Feedback -->
                 <section id="feedback" class="mb-16">
                     <div class="border-b border-gray-200 pb-6 mb-8">
-                        <h2 class="text-2xl font-bold text-gray-900">Providing Feedback</h2>
-                        <p class="mt-2 text-gray-600">Help us improve FinAegis with your feedback</p>
+                        <h2 class="text-2xl font-bold text-slate-900">Providing Feedback</h2>
+                        <p class="mt-2 text-slate-500">Help us improve FinAegis with your feedback</p>
                     </div>
                     
                     <div class="space-y-6">
-                        <div class="bg-white border border-gray-200 rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3">Reporting Bugs</h3>
-                            <p class="text-gray-600 mb-4">Found a bug? Here's how to report it:</p>
-                            <ol class="list-decimal list-inside text-gray-600 space-y-2">
+                        <div class="card-feature">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-3">Reporting Bugs</h3>
+                            <p class="text-slate-500 mb-4">Found a bug? Here's how to report it:</p>
+                            <ol class="list-decimal list-inside text-slate-500 space-y-2">
                                 <li>Check if the issue already exists on GitHub</li>
                                 <li>Create a new issue with a clear title</li>
                                 <li>Provide steps to reproduce the bug</li>
@@ -306,10 +306,10 @@
                             </div>
                         </div>
 
-                        <div class="bg-white border border-gray-200 rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3">Feature Requests</h3>
-                            <p class="text-gray-600 mb-4">Have an idea for a new feature?</p>
-                            <ul class="list-disc list-inside text-gray-600 space-y-2">
+                        <div class="card-feature">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-3">Feature Requests</h3>
+                            <p class="text-slate-500 mb-4">Have an idea for a new feature?</p>
+                            <ul class="list-disc list-inside text-slate-500 space-y-2">
                                 <li>Check our roadmap to see if it's planned</li>
                                 <li>Create a GitHub issue with [Feature Request] tag</li>
                                 <li>Describe the feature and its benefits</li>
@@ -318,10 +318,10 @@
                             </ul>
                         </div>
 
-                        <div class="bg-white border border-gray-200 rounded-lg p-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3">Community Discussion</h3>
-                            <p class="text-gray-600 mb-4">Join our community:</p>
-                            <ul class="list-disc list-inside text-gray-600 space-y-2">
+                        <div class="card-feature">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-3">Community Discussion</h3>
+                            <p class="text-slate-500 mb-4">Join our community:</p>
+                            <ul class="list-disc list-inside text-slate-500 space-y-2">
                                 <li>GitHub Discussions for general topics</li>
                                 <li>Email info@finaegis.org for direct feedback</li>
                                 <li>Star the repository to show support</li>
@@ -341,15 +341,15 @@
 
                 <!-- Additional Resources -->
                 <div class="bg-indigo-50 rounded-xl p-8 text-center">
-                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Need More Help?</h3>
-                    <p class="text-gray-600 mb-6">
+                    <h3 class="text-xl font-semibold text-slate-900 mb-4">Need More Help?</h3>
+                    <p class="text-slate-500 mb-6">
                         Can't find what you're looking for? Check out these additional resources.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                        <a href="{{ route('support.faq') }}" class="bg-white text-indigo-600 px-6 py-3 rounded-lg font-semibold border-2 border-indigo-600 hover:bg-indigo-50 transition">
+                        <a href="{{ route('support.faq') }}" class="btn-outline-dark">
                             Browse FAQ
                         </a>
-                        <a href="{{ route('support.contact') }}" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
+                        <a href="{{ route('support.contact') }}" class="btn-primary">
                             Contact Support
                         </a>
                     </div>

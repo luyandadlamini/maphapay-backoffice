@@ -20,16 +20,6 @@
 
 @push('styles')
 <style>
-    .feature-card {
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .feature-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 30px rgba(0,0,0,0.08);
-    }
-    .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
     .code-block {
         background: #1a202c;
         color: #e2e8f0;
@@ -69,33 +59,33 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div class="text-center">
-                    <div class="w-16 h-16 bg-indigo-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                    <div class="w-16 h-16 bg-indigo-50 rounded-lg flex items-center justify-center mx-auto mb-6">
                         <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold mb-3">RESTful APIs</h3>
-                    <p class="text-gray-600">Clean, predictable REST endpoints with comprehensive documentation and examples.</p>
+                    <p class="text-slate-500">Clean, predictable REST endpoints with comprehensive documentation and examples.</p>
                 </div>
                 
                 <div class="text-center">
-                    <div class="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                    <div class="w-16 h-16 bg-purple-50 rounded-lg flex items-center justify-center mx-auto mb-6">
                         <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold mb-3">Real-time Webhooks</h3>
-                    <p class="text-gray-600">Get instant notifications for all important events in your integration.</p>
+                    <p class="text-slate-500">Get instant notifications for all important events in your integration.</p>
                 </div>
                 
                 <div class="text-center">
-                    <div class="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                    <div class="w-16 h-16 bg-green-50 rounded-lg flex items-center justify-center mx-auto mb-6">
                         <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold mb-3">SDKs & Libraries</h3>
-                    <p class="text-gray-600">Official SDKs for PHP, JavaScript, Python, Java, and more.</p>
+                    <p class="text-slate-500">Official SDKs for PHP, JavaScript, Python, Java, and more.</p>
                 </div>
             </div>
         </div>
@@ -104,13 +94,13 @@
     <!-- API Categories -->
     <section class="py-20 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">API Categories</h2>
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-center text-slate-900 mb-12">API Categories</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <!-- Authentication -->
-                <div class="endpoint-card bg-white rounded-xl p-8 shadow-md">
+                <div class="endpoint-card card-feature !p-8">
                     <h3 class="text-2xl font-bold mb-4">Authentication & Users</h3>
-                    <p class="text-gray-600 mb-6">Secure user authentication and profile management.</p>
+                    <p class="text-slate-500 mb-6">Secure user authentication and profile management.</p>
                     <div class="space-y-3">
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div class="flex items-center">
@@ -134,9 +124,9 @@
                 </div>
 
                 <!-- Accounts -->
-                <div class="endpoint-card bg-white rounded-xl p-8 shadow-md">
+                <div class="endpoint-card card-feature !p-8">
                     <h3 class="text-2xl font-bold mb-4">Account Management</h3>
-                    <p class="text-gray-600 mb-6">Create and manage user accounts with multi-asset support.</p>
+                    <p class="text-slate-500 mb-6">Create and manage user accounts with multi-asset support.</p>
                     <div class="space-y-3">
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div class="flex items-center">
@@ -160,9 +150,9 @@
                 </div>
 
                 <!-- Transactions -->
-                <div class="endpoint-card bg-white rounded-xl p-8 shadow-md">
+                <div class="endpoint-card card-feature !p-8">
                     <h3 class="text-2xl font-bold mb-4">Transactions & Transfers</h3>
-                    <p class="text-gray-600 mb-6">Process payments and transfers with instant settlement.</p>
+                    <p class="text-slate-500 mb-6">Process payments and transfers with instant settlement.</p>
                     <div class="space-y-3">
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div class="flex items-center">
@@ -186,9 +176,9 @@
                 </div>
 
                 <!-- GCU & Voting -->
-                <div class="endpoint-card bg-white rounded-xl p-8 shadow-md">
+                <div class="endpoint-card card-feature !p-8">
                     <h3 class="text-2xl font-bold mb-4">GCU & Governance</h3>
-                    <p class="text-gray-600 mb-6">Global Currency Unit operations and voting endpoints.</p>
+                    <p class="text-slate-500 mb-6">Global Currency Unit operations and voting endpoints.</p>
                     <div class="space-y-3">
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div class="flex items-center">
@@ -217,7 +207,7 @@
     <!-- Code Examples -->
     <section class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">Quick Start Examples</h2>
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-center text-slate-900 mb-12">Quick Start Examples</h2>
             
             <div class="max-w-4xl mx-auto space-y-8">
                 <!-- Authentication Example -->
@@ -308,10 +298,10 @@ app.post('/webhooks/finaegis', (req, res) => {
     <!-- Features -->
     <section class="py-20 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">API Features</h2>
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-center text-slate-900 mb-12">API Features</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-white rounded-xl p-8">
+                <div class="card-feature !p-8">
                     <h3 class="text-2xl font-bold mb-6">Technical Features</h3>
                     <ul class="space-y-3">
                         <li class="flex items-start">
@@ -353,7 +343,7 @@ app.post('/webhooks/finaegis', (req, res) => {
                     </ul>
                 </div>
                 
-                <div class="bg-white rounded-xl p-8">
+                <div class="card-feature !p-8">
                     <h3 class="text-2xl font-bold mb-6">Developer Experience</h3>
                     <ul class="space-y-3">
                         <li class="flex items-start">
@@ -401,7 +391,7 @@ app.post('/webhooks/finaegis', (req, res) => {
     <!-- SDKs -->
     <section class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">Official SDKs</h2>
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-center text-slate-900 mb-12">Official SDKs</h2>
             
             <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
                 <div class="text-center">
@@ -409,45 +399,46 @@ app.post('/webhooks/finaegis', (req, res) => {
                         <span class="text-2xl font-bold text-purple-600">PHP</span>
                     </div>
                     <h4 class="font-semibold">PHP SDK</h4>
-                    <p class="text-sm text-gray-600 mt-1">Composer package</p>
+                    <p class="text-sm text-slate-500 mt-1">Composer package</p>
                 </div>
                 <div class="text-center">
                     <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                         <span class="text-2xl font-bold text-yellow-600">JS</span>
                     </div>
                     <h4 class="font-semibold">JavaScript SDK</h4>
-                    <p class="text-sm text-gray-600 mt-1">NPM package</p>
+                    <p class="text-sm text-slate-500 mt-1">NPM package</p>
                 </div>
                 <div class="text-center">
                     <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                         <span class="text-2xl font-bold text-blue-600">Py</span>
                     </div>
                     <h4 class="font-semibold">Python SDK</h4>
-                    <p class="text-sm text-gray-600 mt-1">PyPI package</p>
+                    <p class="text-sm text-slate-500 mt-1">PyPI package</p>
                 </div>
                 <div class="text-center">
                     <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                         <span class="text-2xl font-bold text-red-600">Java</span>
                     </div>
                     <h4 class="font-semibold">Java SDK</h4>
-                    <p class="text-sm text-gray-600 mt-1">Maven package</p>
+                    <p class="text-sm text-slate-500 mt-1">Maven package</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- CTA Section -->
-    <section class="py-20 gradient-bg text-white">
-        <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold mb-6">Start Building Today</h2>
-            <p class="text-xl mb-8 text-purple-100">
+    <!-- CTA -->
+    <section class="bg-fa-navy relative overflow-hidden">
+        <div class="absolute inset-0 bg-dot-pattern"></div>
+        <div class="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 py-20">
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-white mb-4">Start Building Today</h2>
+            <p class="text-lg text-slate-400 mb-10 max-w-2xl mx-auto">
                 Get your API keys and start integrating FinAegis into your applications
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{{ route('register') }}" class="bg-white text-indigo-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition">
+                <a href="{{ route('register') }}" class="btn-primary px-8 py-4 text-lg">
                     Get API Keys
                 </a>
-                <a href="{{ route('developers') }}" class="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-indigo-600 transition">
+                <a href="{{ route('developers') }}" class="btn-outline px-8 py-4 text-lg">
                     View Documentation
                 </a>
             </div>

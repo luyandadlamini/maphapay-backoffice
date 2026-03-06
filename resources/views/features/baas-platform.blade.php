@@ -18,20 +18,6 @@
     ]" />
 @endsection
 
-@push('styles')
-<style>
-    .feature-card {
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .feature-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 30px rgba(0,0,0,0.08);
-    }
-    .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-</style>
-@endpush
 
 @section('content')
 
@@ -53,34 +39,34 @@
     <section class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="baas-card bg-white rounded-xl p-8 shadow-md text-center">
-                    <div class="w-16 h-16 bg-indigo-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                <div class="baas-card card-feature !p-8 text-center">
+                    <div class="w-16 h-16 bg-indigo-50 rounded-lg flex items-center justify-center mx-auto mb-6">
                         <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold mb-3">Partner APIs</h3>
-                    <p class="text-gray-600">Comprehensive onboarding, dashboard, and usage metering APIs. Everything partners need to build and scale on your platform.</p>
+                    <p class="text-slate-500">Comprehensive onboarding, dashboard, and usage metering APIs. Everything partners need to build and scale on your platform.</p>
                 </div>
 
-                <div class="baas-card bg-white rounded-xl p-8 shadow-md text-center">
-                    <div class="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                <div class="baas-card card-feature !p-8 text-center">
+                    <div class="w-16 h-16 bg-purple-50 rounded-lg flex items-center justify-center mx-auto mb-6">
                         <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold mb-3">SDK Generation</h3>
-                    <p class="text-gray-600">Auto-generated SDKs for TypeScript, Python, Java, Go, and PHP. Keep client libraries in sync with your API automatically.</p>
+                    <p class="text-slate-500">Auto-generated SDKs for TypeScript, Python, Java, Go, and PHP. Keep client libraries in sync with your API automatically.</p>
                 </div>
 
-                <div class="baas-card bg-white rounded-xl p-8 shadow-md text-center">
-                    <div class="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                <div class="baas-card card-feature !p-8 text-center">
+                    <div class="w-16 h-16 bg-green-50 rounded-lg flex items-center justify-center mx-auto mb-6">
                         <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold mb-3">White-Label Branding</h3>
-                    <p class="text-gray-600">Fully customizable UI with your brand identity. Logos, colors, typography, and domain -- all configurable per tenant.</p>
+                    <p class="text-slate-500">Fully customizable UI with your brand identity. Logos, colors, typography, and domain -- all configurable per tenant.</p>
                 </div>
             </div>
         </div>
@@ -89,70 +75,70 @@
     <!-- Partner APIs Detail -->
     <section class="py-20 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">Partner Platform</h2>
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-center text-slate-900 mb-12">Partner Platform</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                 <div>
-                    <p class="text-lg text-gray-600 mb-6">
+                    <p class="text-lg text-slate-500 mb-6">
                         The BaaS Partner Platform provides everything your partners need to integrate, monitor, and scale their financial products. Self-service onboarding reduces time to first API call to under five minutes.
                     </p>
                     <div class="space-y-4">
                         <div class="flex items-start">
-                            <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-4">
+                            <div class="flex-shrink-0 w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center mr-4">
                                 <span class="text-indigo-600 font-bold">1</span>
                             </div>
                             <div>
                                 <h4 class="font-semibold mb-1">Partner Onboarding</h4>
-                                <p class="text-gray-600">Self-service registration with KYB verification, API key generation, and sandbox environment provisioning.</p>
+                                <p class="text-slate-500">Self-service registration with KYB verification, API key generation, and sandbox environment provisioning.</p>
                             </div>
                         </div>
                         <div class="flex items-start">
-                            <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+                            <div class="flex-shrink-0 w-10 h-10 bg-purple-50 rounded-full flex items-center justify-center mr-4">
                                 <span class="text-purple-600 font-bold">2</span>
                             </div>
                             <div>
                                 <h4 class="font-semibold mb-1">Partner Dashboard</h4>
-                                <p class="text-gray-600">Real-time analytics, transaction monitoring, and revenue tracking with customizable reporting.</p>
+                                <p class="text-slate-500">Real-time analytics, transaction monitoring, and revenue tracking with customizable reporting.</p>
                             </div>
                         </div>
                         <div class="flex items-start">
-                            <div class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                            <div class="flex-shrink-0 w-10 h-10 bg-green-50 rounded-full flex items-center justify-center mr-4">
                                 <span class="text-green-600 font-bold">3</span>
                             </div>
                             <div>
                                 <h4 class="font-semibold mb-1">Usage Metering</h4>
-                                <p class="text-gray-600">Granular API call tracking, bandwidth monitoring, and resource consumption metrics for transparent billing.</p>
+                                <p class="text-slate-500">Granular API call tracking, bandwidth monitoring, and resource consumption metrics for transparent billing.</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-2xl p-8 shadow-lg">
-                    <h3 class="text-2xl font-bold mb-6 text-gray-900">SDK Languages</h3>
+                <div class="card-feature !p-8 rounded-2xl">
+                    <h3 class="text-2xl font-bold mb-6 text-slate-900">SDK Languages</h3>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="text-center p-4 bg-gray-50 rounded-lg">
                             <div class="text-2xl font-bold text-blue-600 mb-1">TS</div>
-                            <p class="text-sm text-gray-600">TypeScript</p>
+                            <p class="text-sm text-slate-500">TypeScript</p>
                             <p class="text-xs text-gray-400 mt-1">NPM package</p>
                         </div>
                         <div class="text-center p-4 bg-gray-50 rounded-lg">
                             <div class="text-2xl font-bold text-yellow-600 mb-1">Py</div>
-                            <p class="text-sm text-gray-600">Python</p>
+                            <p class="text-sm text-slate-500">Python</p>
                             <p class="text-xs text-gray-400 mt-1">PyPI package</p>
                         </div>
                         <div class="text-center p-4 bg-gray-50 rounded-lg">
                             <div class="text-2xl font-bold text-red-600 mb-1">Java</div>
-                            <p class="text-sm text-gray-600">Java</p>
+                            <p class="text-sm text-slate-500">Java</p>
                             <p class="text-xs text-gray-400 mt-1">Maven Central</p>
                         </div>
                         <div class="text-center p-4 bg-gray-50 rounded-lg">
                             <div class="text-2xl font-bold text-cyan-600 mb-1">Go</div>
-                            <p class="text-sm text-gray-600">Go</p>
+                            <p class="text-sm text-slate-500">Go</p>
                             <p class="text-xs text-gray-400 mt-1">Go module</p>
                         </div>
                         <div class="text-center p-4 bg-gray-50 rounded-lg col-span-2">
                             <div class="text-2xl font-bold text-purple-600 mb-1">PHP</div>
-                            <p class="text-sm text-gray-600">PHP</p>
+                            <p class="text-sm text-slate-500">PHP</p>
                             <p class="text-xs text-gray-400 mt-1">Composer package</p>
                         </div>
                     </div>
@@ -164,10 +150,10 @@
     <!-- Widgets and Marketplace -->
     <section class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">Embeddable Widgets and Marketplace</h2>
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-center text-slate-900 mb-12">Embeddable Widgets and Marketplace</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-indigo-50 rounded-xl p-8">
+                <div class="card-feature !p-8">
                     <h3 class="text-2xl font-bold mb-6 text-indigo-900">Embeddable Widgets</h3>
                     <ul class="space-y-4">
                         <li class="flex items-start">
@@ -176,7 +162,7 @@
                             </svg>
                             <div>
                                 <h4 class="font-semibold mb-1">Drop-In UI Components</h4>
-                                <p class="text-gray-700">Pre-built account opening, KYC, payment, and wallet widgets ready to embed</p>
+                                <p class="text-slate-600">Pre-built account opening, KYC, payment, and wallet widgets ready to embed</p>
                             </div>
                         </li>
                         <li class="flex items-start">
@@ -185,7 +171,7 @@
                             </svg>
                             <div>
                                 <h4 class="font-semibold mb-1">Theme Customization</h4>
-                                <p class="text-gray-700">CSS variables and configuration API for complete visual customization</p>
+                                <p class="text-slate-600">CSS variables and configuration API for complete visual customization</p>
                             </div>
                         </li>
                         <li class="flex items-start">
@@ -194,13 +180,13 @@
                             </svg>
                             <div>
                                 <h4 class="font-semibold mb-1">Event Callbacks</h4>
-                                <p class="text-gray-700">JavaScript event hooks for widget lifecycle and user interaction tracking</p>
+                                <p class="text-slate-600">JavaScript event hooks for widget lifecycle and user interaction tracking</p>
                             </div>
                         </li>
                     </ul>
                 </div>
 
-                <div class="bg-purple-50 rounded-xl p-8">
+                <div class="card-feature !p-8">
                     <h3 class="text-2xl font-bold mb-6 text-purple-900">Integration Marketplace</h3>
                     <ul class="space-y-4">
                         <li class="flex items-start">
@@ -209,7 +195,7 @@
                             </svg>
                             <div>
                                 <h4 class="font-semibold mb-1">Pre-Built Integrations</h4>
-                                <p class="text-gray-700">Connect with payment processors, KYC providers, and analytics tools</p>
+                                <p class="text-slate-600">Connect with payment processors, KYC providers, and analytics tools</p>
                             </div>
                         </li>
                         <li class="flex items-start">
@@ -218,7 +204,7 @@
                             </svg>
                             <div>
                                 <h4 class="font-semibold mb-1">Toggle Enable/Disable</h4>
-                                <p class="text-gray-700">One-click activation and deactivation of marketplace integrations</p>
+                                <p class="text-slate-600">One-click activation and deactivation of marketplace integrations</p>
                             </div>
                         </li>
                         <li class="flex items-start">
@@ -227,7 +213,7 @@
                             </svg>
                             <div>
                                 <h4 class="font-semibold mb-1">Custom Extensions</h4>
-                                <p class="text-gray-700">Build and publish your own integrations to the marketplace ecosystem</p>
+                                <p class="text-slate-600">Build and publish your own integrations to the marketplace ecosystem</p>
                             </div>
                         </li>
                     </ul>
@@ -239,10 +225,10 @@
     <!-- Technical Features Checklist -->
     <section class="py-20 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">Platform Capabilities</h2>
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-center text-slate-900 mb-12">Platform Capabilities</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-white rounded-xl p-8">
+                <div class="card-feature !p-8">
                     <h3 class="text-2xl font-bold mb-6">Billing and Invoicing</h3>
                     <ul class="space-y-3">
                         <li class="flex items-start">
@@ -284,7 +270,7 @@
                     </ul>
                 </div>
 
-                <div class="bg-white rounded-xl p-8">
+                <div class="card-feature !p-8">
                     <h3 class="text-2xl font-bold mb-6">White-Label Features</h3>
                     <ul class="space-y-3">
                         <li class="flex items-start">
@@ -329,18 +315,19 @@
         </div>
     </section>
 
-    <!-- CTA Section -->
-    <section class="py-20 gradient-bg text-white">
-        <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-bold mb-6">Launch Your Financial Product</h2>
-            <p class="text-xl mb-8 text-purple-100">
+    <!-- CTA -->
+    <section class="bg-fa-navy relative overflow-hidden">
+        <div class="absolute inset-0 bg-dot-pattern"></div>
+        <div class="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 py-20">
+            <h2 class="font-display text-3xl md:text-4xl font-bold text-white mb-4">Launch Your Financial Product</h2>
+            <p class="text-lg text-slate-400 mb-10 max-w-2xl mx-auto">
                 Skip years of infrastructure development. Build on FinAegis BaaS and go to market faster with enterprise-grade financial services under your own brand.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{{ route('register') }}" class="bg-white text-indigo-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition">
+                <a href="{{ route('register') }}" class="btn-primary px-8 py-4 text-lg">
                     Become a Partner
                 </a>
-                <a href="{{ route('developers') }}" class="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-indigo-600 transition">
+                <a href="{{ route('developers') }}" class="btn-outline px-8 py-4 text-lg">
                     BaaS Documentation
                 </a>
             </div>
