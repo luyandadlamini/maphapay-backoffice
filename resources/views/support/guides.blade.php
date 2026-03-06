@@ -12,12 +12,8 @@
 
 @push('styles')
 <style>
-    .guide-card {
+    .card-feature {
         transition: all 0.3s ease;
-    }
-    .guide-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 24px rgba(0,0,0,0.1);
     }
 </style>
 @endpush
@@ -38,7 +34,7 @@
                         <div class="relative">
                             <input type="text" id="guide-search" placeholder="Search guides..."
                                 class="w-full px-6 py-3 rounded-lg text-slate-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white pl-12">
-                            <svg class="absolute left-4 top-3.5 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="absolute left-4 top-3.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                             </svg>
                         </div>
@@ -217,9 +213,9 @@
                             <p class="text-slate-500 mb-4">How to contribute to FinAegis:</p>
                             <ol class="list-decimal list-inside text-slate-500 space-y-2">
                                 <li>Fork the repository on GitHub</li>
-                                <li>Create a feature branch (<code class="bg-gray-100 px-2 py-1 rounded">git checkout -b feature/your-feature</code>)</li>
+                                <li>Create a feature branch (<code class="bg-slate-100 px-2 py-1 rounded">git checkout -b feature/your-feature</code>)</li>
                                 <li>Make your changes and test thoroughly</li>
-                                <li>Run tests (<code class="bg-gray-100 px-2 py-1 rounded">./vendor/bin/pest</code>)</li>
+                                <li>Run tests (<code class="bg-slate-100 px-2 py-1 rounded">./vendor/bin/pest</code>)</li>
                                 <li>Commit with clear messages</li>
                                 <li>Push to your fork and create a pull request</li>
                             </ol>
@@ -254,7 +250,7 @@
                             <p class="text-slate-500 mb-4">Testing the REST API:</p>
                             <ol class="list-decimal list-inside text-slate-500 space-y-2">
                                 <li>Register for an account to get API access</li>
-                                <li>Use the API documentation at <code class="bg-gray-100 px-2 py-1 rounded">/developers/api-docs</code></li>
+                                <li>Use the API documentation at <code class="bg-slate-100 px-2 py-1 rounded">/developers/api-docs</code></li>
                                 <li>Test with tools like Postman or curl</li>
                                 <li>All API responses use simulated data</li>
                             </ol>

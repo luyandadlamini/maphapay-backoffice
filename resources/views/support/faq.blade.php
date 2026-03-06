@@ -91,19 +91,19 @@
                 <button class="category-filter active px-4 py-2 rounded-full bg-indigo-600 text-white transition" data-category="all">
                     All Questions
                 </button>
-                <button class="category-filter px-4 py-2 rounded-full bg-slate-200 text-slate-600 hover:bg-gray-300 transition" data-category="getting-started">
+                <button class="category-filter px-4 py-2 rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 transition" data-category="getting-started">
                     Getting Started
                 </button>
-                <button class="category-filter px-4 py-2 rounded-full bg-slate-200 text-slate-600 hover:bg-gray-300 transition" data-category="gcu">
+                <button class="category-filter px-4 py-2 rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 transition" data-category="gcu">
                     GCU
                 </button>
-                <button class="category-filter px-4 py-2 rounded-full bg-slate-200 text-slate-600 hover:bg-gray-300 transition" data-category="platform">
+                <button class="category-filter px-4 py-2 rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 transition" data-category="platform">
                     Platform Status
                 </button>
-                <button class="category-filter px-4 py-2 rounded-full bg-slate-200 text-slate-600 hover:bg-gray-300 transition" data-category="technical">
+                <button class="category-filter px-4 py-2 rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 transition" data-category="technical">
                     Technical
                 </button>
-                <button class="category-filter px-4 py-2 rounded-full bg-slate-200 text-slate-600 hover:bg-gray-300 transition" data-category="future">
+                <button class="category-filter px-4 py-2 rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 transition" data-category="future">
                     Future Features
                 </button>
             </div>
