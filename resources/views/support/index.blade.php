@@ -241,10 +241,10 @@
                     Our team and community are here to help you get the most out of FinAegis
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="{{ route('support.contact') }}" class="btn-primary !py-4 !px-10 !text-base !rounded-lg">
+                    <a href="{{ route('support.contact') }}" class="btn-primary btn-lg">
                         Contact Support
                     </a>
-                    <a href="{{ route('support.faq') }}" class="btn-outline !py-4 !px-10 !text-base !rounded-lg">
+                    <a href="{{ route('support.faq') }}" class="btn-outline btn-lg">
                         Browse FAQ
                     </a>
                 </div>

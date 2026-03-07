@@ -349,7 +349,7 @@
                 See these features in action. Try the demo or explore the source code on GitHub.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{{ route('register') }}" class="btn-primary !py-4 !px-10 !text-base !rounded-lg group">
+                <a href="{{ route('register') }}" class="btn-primary btn-lg group">
                     Explore the Platform
                     <svg class="w-4 h-4 ml-2 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
                 </a>

@@ -311,6 +311,13 @@
         color: white;
         background: rgba(255, 255, 255, 0.05);
     }
+
+    /* Size modifier — large CTA buttons */
+    .btn-lg {
+        padding: 1rem 2.5rem;
+        font-size: 1rem;
+        border-radius: 0.5rem;
+    }
 }
 
 /* ── Feature list items ── */

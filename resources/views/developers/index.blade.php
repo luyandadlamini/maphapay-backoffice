@@ -834,10 +834,10 @@
                     Join our developer community and start building the future of finance
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="{{ route('register') }}" class="btn-primary !py-4 !px-10 !text-base !rounded-lg">
+                    <a href="{{ route('register') }}" class="btn-primary btn-lg">
                         Get API Key
                     </a>
-                    <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="btn-outline-dark !py-4 !px-10 !text-base !rounded-lg">
+                    <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="btn-outline-dark btn-lg">
                         View on GitHub
                     </a>
                 </div>

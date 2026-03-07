@@ -480,8 +480,8 @@
                 <p class="text-xl text-slate-500">See how we compare to traditional financial institutions</p>
             </div>
             
-            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
-                <table class="w-full">
+            <div class="bg-white rounded-2xl shadow-xl overflow-x-auto">
+                <table class="w-full min-w-[540px]">
                     <thead class="bg-slate-50">
                         <tr>
                             <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900">Feature</th>
@@ -548,10 +548,10 @@
                 See these features in action. Try the demo or explore the source code on GitHub.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{{ route('register') }}" class="btn-primary !py-4 !px-10 !text-base !rounded-lg">
+                <a href="{{ route('register') }}" class="btn-primary btn-lg">
                     Explore the Platform
                 </a>
-                <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="btn-outline !py-4 !px-10 !text-base !rounded-lg">
+                <a href="https://github.com/FinAegis/core-banking-prototype-laravel" target="_blank" class="btn-outline btn-lg">
                     View Source
                 </a>
             </div>

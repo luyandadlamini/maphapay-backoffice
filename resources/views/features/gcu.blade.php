@@ -317,10 +317,10 @@
             <h2 class="font-display text-4xl font-bold mb-6 text-white">Start Using GCU Today</h2>
             <p class="text-lg mb-10 text-slate-400">Join thousands of users already benefiting from the stability and transparency of the Global Currency Unit</p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{{ route('register') }}" class="btn-primary !py-4 !px-10 !text-base !rounded-lg">
+                <a href="{{ route('register') }}" class="btn-primary btn-lg">
                     Open an Account
                 </a>
-                <a href="{{ route('gcu') }}" class="btn-outline !py-4 !px-10 !text-base !rounded-lg">
+                <a href="{{ route('gcu') }}" class="btn-outline btn-lg">
                     View Live Stats
                 </a>
             </div>

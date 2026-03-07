@@ -56,7 +56,7 @@
                 <ul class="space-y-2.5">
                     <li><a href="{{ route('about') }}" class="text-sm text-slate-500 hover:text-white transition-colors">About</a></li>
                     <li><a href="{{ route('blog') }}" class="text-sm text-slate-500 hover:text-white transition-colors">Blog</a></li>
-                    <li><a href="{{ route('cgo') }}" class="text-sm text-slate-500 hover:text-white transition-colors">Invest</a></li>
+                    <li><a href="{{ route('cgo') }}" class="text-sm text-slate-500 hover:text-white transition-colors">CGO Concept</a></li>
                     <li><a href="{{ route('support.contact') }}" class="text-sm text-slate-500 hover:text-white transition-colors">Contact</a></li>
                     <li><a href="{{ route('support.faq') }}" class="text-sm text-slate-500 hover:text-white transition-colors">FAQ</a></li>
                 </ul>
