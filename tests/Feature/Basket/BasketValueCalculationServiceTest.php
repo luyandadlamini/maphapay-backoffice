@@ -319,12 +319,16 @@ class BasketValueCalculationServiceTest extends ServiceTestCase
     #[Test]
     public function it_can_calculate_performance()
     {
-        // Create historical values
+        // Clear any basket values created by prior tests in this class
+        BasketValue::where('basket_asset_code', $this->basket->code)->delete();
+
+        // Create historical values — use subDays(25) to ensure the start value
+        // falls within the subMonth() query range regardless of month length
         BasketValue::create([
             'basket_asset_code' => $this->basket->code,
             'value'             => 1.00,
             'component_values'  => [],
-            'calculated_at'     => now()->subDays(30),
+            'calculated_at'     => now()->subDays(25),
         ]);
 
         BasketValue::create([

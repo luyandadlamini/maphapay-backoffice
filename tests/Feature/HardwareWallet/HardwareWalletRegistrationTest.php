@@ -26,7 +26,7 @@ class HardwareWalletRegistrationTest extends TestCase
 
         Cache::flush();
         Feature::define('sub_product.blockchain', true);
-        Sanctum::actingAs($this->user);
+        Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
     }
 
     #[Test]
@@ -118,7 +118,7 @@ class HardwareWalletRegistrationTest extends TestCase
     public function it_requires_authentication(): void
     {
         // Clear authentication
-        Sanctum::actingAs(User::factory()->create());
+        Sanctum::actingAs(User::factory()->create(), ['read', 'write', 'delete']);
 
         // Now test without auth by making a raw request
         $this->app['auth']->forgetGuards();

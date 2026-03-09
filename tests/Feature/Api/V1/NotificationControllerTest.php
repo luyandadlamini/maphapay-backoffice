@@ -14,12 +14,15 @@ class NotificationControllerTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
+    protected User $user;
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->user = User::factory()->create();
     }
 
+    /** @param array<string, mixed> $overrides */
     private function createNotification(array $overrides = []): MobilePushNotification
     {
         return MobilePushNotification::create(array_merge([
@@ -122,7 +125,7 @@ class NotificationControllerTest extends TestCase
 
     public function test_mark_read_marks_notification_as_read(): void
     {
-        Sanctum::actingAs($this->user, ['read', 'write']);
+        Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
 
         $notification = $this->createNotification();
         $this->assertNull($notification->read_at);
@@ -138,7 +141,7 @@ class NotificationControllerTest extends TestCase
 
     public function test_mark_all_read_marks_all_as_read(): void
     {
-        Sanctum::actingAs($this->user, ['read', 'write']);
+        Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
 
         $this->createNotification();
         $this->createNotification();
