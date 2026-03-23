@@ -102,7 +102,7 @@ class CertificateApplicationController extends Controller
             'id'                => 'app_' . Str::random(20),
             'user_id'           => $user->id,
             'target_level'      => $targetLevel->value,
-            'status'            => 'draft',
+            'status'            => 'pending',
             'requirements'      => $targetLevel->requirements(),
             'requiredDocuments' => $requiredDocuments,
             'documents'         => $requiredDocuments,
@@ -308,12 +308,12 @@ class CertificateApplicationController extends Controller
             ], 404);
         }
 
-        if ($application['status'] !== 'draft') {
+        if (! in_array($application['status'], ['draft', 'pending'], true)) {
             return response()->json([
                 'success' => false,
                 'error'   => [
                     'code'    => 'APPLICATION_NOT_EDITABLE',
-                    'message' => 'Application is not in a draft state.',
+                    'message' => 'Application is not in a pending state.',
                 ],
             ], 422);
         }
@@ -408,17 +408,17 @@ class CertificateApplicationController extends Controller
             ], 404);
         }
 
-        if ($application['status'] !== 'draft') {
+        if (! in_array($application['status'], ['draft', 'pending'], true)) {
             return response()->json([
                 'success' => false,
                 'error'   => [
                     'code'    => 'APPLICATION_NOT_SUBMITTABLE',
-                    'message' => 'Only draft applications can be submitted.',
+                    'message' => 'Only pending applications can be submitted.',
                 ],
             ], 422);
         }
 
-        $application['status'] = 'submitted';
+        $application['status'] = 'in_review';
         $application['submitted_at'] = now()->toIso8601String();
         $application['updated_at'] = now()->toIso8601String();
         $this->storeApplication($user->id, $application);
@@ -533,13 +533,14 @@ class CertificateApplicationController extends Controller
             return null;
         }
 
-        // Normalize status for mobile compatibility:
-        // Backend uses 'draft'/'submitted', mobile expects 'pending'/'in_review'
-        $application['status'] = match ($application['status']) {
-            'draft'     => 'pending',
-            'submitted' => 'in_review',
-            default     => $application['status'],
-        };
+        // Backward compat: normalize legacy statuses from old cached data
+        if (isset($application['status'])) {
+            $application['status'] = match ($application['status']) {
+                'draft'     => 'pending',
+                'submitted' => 'in_review',
+                default     => $application['status'],
+            };
+        }
 
         return $application;
     }
