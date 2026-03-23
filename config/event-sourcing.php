@@ -451,6 +451,14 @@ return [
         'visacli_card_enrolled'     => App\Domain\VisaCli\Events\VisaCliCardEnrolled::class,
         'visacli_card_removed'      => App\Domain\VisaCli\Events\VisaCliCardRemoved::class,
 
+        // AP2 Mandate Events
+        'mandate_created'   => App\Domain\AgentProtocol\Events\MandateCreated::class,
+        'mandate_accepted'  => App\Domain\AgentProtocol\Events\MandateAccepted::class,
+        'mandate_executed'  => App\Domain\AgentProtocol\Events\MandateExecuted::class,
+        'mandate_completed' => App\Domain\AgentProtocol\Events\MandateCompleted::class,
+        'mandate_revoked'   => App\Domain\AgentProtocol\Events\MandateRevoked::class,
+        'mandate_disputed'  => App\Domain\AgentProtocol\Events\MandateDisputed::class,
+
         // Machine Payments Protocol Events
         'mpp_challenge_issued'  => App\Domain\MachinePay\Events\MppChallengeIssued::class,
         'mpp_payment_verified'  => App\Domain\MachinePay\Events\MppPaymentVerified::class,

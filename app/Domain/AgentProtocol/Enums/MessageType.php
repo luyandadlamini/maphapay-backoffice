@@ -42,6 +42,14 @@ enum MessageType: string
     case STATUS_INQUIRY = 'status.inquiry';
     case STATUS_REPORT = 'status.report';
 
+    // AP2 Mandate messages
+    case MANDATE_CREATE = 'mandate.create';
+    case MANDATE_ACCEPT = 'mandate.accept';
+    case MANDATE_EXECUTE = 'mandate.execute';
+    case MANDATE_COMPLETE = 'mandate.complete';
+    case MANDATE_REVOKE = 'mandate.revoke';
+    case MANDATE_DISPUTE = 'mandate.dispute';
+
     // Error handling
     case ERROR = 'error';
     case ACKNOWLEDGMENT = 'acknowledgment';
@@ -55,6 +63,8 @@ enum MessageType: string
             self::REQUEST,
             self::PAYMENT_REQUEST,
             self::ESCROW_CREATE,
+            self::MANDATE_CREATE,
+            self::MANDATE_EXECUTE,
             self::DISCOVERY_QUERY,
             self::PROTOCOL_NEGOTIATION,
             self::STATUS_INQUIRY => true,
@@ -76,7 +86,13 @@ enum MessageType: string
             self::ESCROW_FUNDED,
             self::ESCROW_RELEASE,
             self::ESCROW_DISPUTE,
-            self::ESCROW_RESOLVED => true,
+            self::ESCROW_RESOLVED,
+            self::MANDATE_CREATE,
+            self::MANDATE_ACCEPT,
+            self::MANDATE_EXECUTE,
+            self::MANDATE_COMPLETE,
+            self::MANDATE_REVOKE,
+            self::MANDATE_DISPUTE => true,
             default               => false,
         };
     }
@@ -110,8 +126,10 @@ enum MessageType: string
             self::PROTOCOL_NEGOTIATION,
             self::PROTOCOL_AGREEMENT => 30,
             self::PAYMENT_REQUEST,
-            self::ESCROW_CREATE => 60,
-            default             => 30,
+            self::ESCROW_CREATE,
+            self::MANDATE_CREATE,
+            self::MANDATE_EXECUTE => 60,
+            default               => 30,
         };
     }
 
