@@ -8981,3 +8981,15 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: tests/Unit/Domain/TrustCert/Enums/TrustLevelTest.php
+
+		-
+			message: '#^Variable \$paymentService in PHPDoc tag @var does not exist\.$#'
+			identifier: varTag.variableNotFound
+			count: 1
+			path: tests/Unit/Domain/VirtualsAgent/Services/AcpServiceProviderBridgeTest.php
+
+		-
+			message: '#^Variable \$paymentService in PHPDoc tag @var does not exist\.$#'
+			identifier: varTag.variableNotFound
+			count: 1
+			path: tests/Unit/Domain/VirtualsAgent/Services/VirtualsAgentServiceTest.php
