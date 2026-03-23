@@ -5,6 +5,7 @@ namespace App\Actions\Fortify;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 use Laravel\Jetstream\Jetstream;
@@ -50,8 +51,18 @@ class CreateNewUser implements CreatesNewUsers
         // Track referral if code provided
         if (! empty($input['referral_code'])) {
             $referrer = User::where('referral_code', $input['referral_code'])->first();
-            if ($referrer) {
+            if ($referrer && $referrer->id !== $user->id) {
                 $user->update(['referred_by' => $referrer->id]);
+                Log::info('Referral tracked', [
+                    'user_id'    => $user->id,
+                    'referrer_id' => $referrer->id,
+                    'code'       => $input['referral_code'],
+                ]);
+            } elseif (! $referrer) {
+                Log::warning('Invalid referral code used during registration', [
+                    'user_id' => $user->id,
+                    'code'    => $input['referral_code'],
+                ]);
             }
         }
 
