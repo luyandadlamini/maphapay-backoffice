@@ -64,14 +64,7 @@ class MobileTrustCertController extends Controller
         if (! $certificate) {
             return response()->json([
                 'success' => true,
-                'data'    => [
-                    'trust_level'   => TrustLevel::UNKNOWN->value,
-                    'label'         => TrustLevel::UNKNOWN->label(),
-                    'numeric_value' => TrustLevel::UNKNOWN->numericValue(),
-                    'certificate'   => null,
-                    'is_valid'      => false,
-                    'expires_at'    => null,
-                ],
+                'data'    => null,
             ]);
         }
 
@@ -128,12 +121,15 @@ class MobileTrustCertController extends Controller
     {
         $levels = [];
         foreach (TrustLevel::cases() as $level) {
+            $limits = $this->getLimitsForLevel($level);
             $levels[] = [
-                'level'         => $level->value,
-                'label'         => $level->label(),
-                'numeric_value' => $level->numericValue(),
-                'requirements'  => $level->requirements(),
-                'limits'        => $this->getLimitsForLevel($level),
+                'level'        => $level->numericValue(),
+                'name'         => $level->label(),
+                'description'  => $level->description(),
+                'dailyLimit'   => $limits['daily'] ?? 0,
+                'monthlyLimit' => $limits['monthly'] ?? 0,
+                'requirements' => $level->requirements(),
+                'documents'    => $level->documents(),
             ];
         }
 

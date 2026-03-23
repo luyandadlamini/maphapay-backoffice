@@ -92,16 +92,23 @@ class CertificateApplicationController extends Controller
             ], 409);
         }
 
+        // Pre-populate required documents based on target level
+        $requiredDocuments = array_map(
+            fn (string $type) => ['type' => $type, 'status' => 'pending'],
+            $targetLevel->documents(),
+        );
+
         $application = [
-            'id'           => 'app_' . Str::random(20),
-            'user_id'      => $user->id,
-            'target_level' => $targetLevel->value,
-            'status'       => 'draft',
-            'requirements' => $targetLevel->requirements(),
-            'documents'    => [],
-            'created_at'   => now()->toIso8601String(),
-            'updated_at'   => now()->toIso8601String(),
-            'submitted_at' => null,
+            'id'                => 'app_' . Str::random(20),
+            'user_id'           => $user->id,
+            'target_level'      => $targetLevel->value,
+            'status'            => 'draft',
+            'requirements'      => $targetLevel->requirements(),
+            'requiredDocuments' => $requiredDocuments,
+            'documents'         => $requiredDocuments,
+            'created_at'        => now()->toIso8601String(),
+            'updated_at'        => now()->toIso8601String(),
+            'submitted_at'      => null,
         ];
 
         $this->storeApplication($user->id, $application);

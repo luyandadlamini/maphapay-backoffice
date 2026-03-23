@@ -45,16 +45,46 @@ enum TrustLevel: string
     /**
      * Get trust requirements for this level.
      *
-     * @return array<string, mixed>
+     * @return array<int, string>
      */
     public function requirements(): array
     {
         return match ($this) {
+            self::UNKNOWN  => ['Email or phone verification'],
+            self::BASIC    => ['Government-issued ID', 'Selfie verification'],
+            self::VERIFIED => ['Level 1 requirements', 'Proof of address'],
+            self::HIGH     => ['Level 2 requirements', 'Source of funds documentation'],
+            self::ULTIMATE => ['Level 3 requirements', 'Full KYB / accredited investor verification'],
+        };
+    }
+
+    /**
+     * Get required document types for this level.
+     *
+     * @return array<int, string>
+     */
+    public function documents(): array
+    {
+        return match ($this) {
             self::UNKNOWN  => [],
-            self::BASIC    => ['email_verified' => true],
-            self::VERIFIED => ['email_verified' => true, 'identity_verified' => true],
-            self::HIGH     => ['email_verified' => true, 'identity_verified' => true, 'kyc_completed' => true],
-            self::ULTIMATE => ['email_verified' => true, 'identity_verified' => true, 'kyc_completed' => true, 'audit_completed' => true],
+            self::BASIC    => ['id_front', 'id_back', 'selfie'],
+            self::VERIFIED => ['id_front', 'id_back', 'selfie', 'proof_of_address'],
+            self::HIGH     => ['id_front', 'id_back', 'selfie', 'proof_of_address', 'source_of_funds'],
+            self::ULTIMATE => ['id_front', 'id_back', 'selfie', 'proof_of_address', 'source_of_funds'],
+        };
+    }
+
+    /**
+     * Get description for this level.
+     */
+    public function description(): string
+    {
+        return match ($this) {
+            self::UNKNOWN  => 'No verification required',
+            self::BASIC    => 'Basic identity verification',
+            self::VERIFIED => 'Full identity and address verification',
+            self::HIGH     => 'Full verification with source of funds',
+            self::ULTIMATE => 'Complete KYB / accredited investor verification',
         };
     }
 }
