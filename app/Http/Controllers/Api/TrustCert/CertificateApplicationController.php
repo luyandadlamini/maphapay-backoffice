@@ -291,8 +291,9 @@ class CertificateApplicationController extends Controller
     public function uploadDocuments(string $id, Request $request): JsonResponse
     {
         $request->validate([
-            'document_type' => ['required', 'string', 'in:identity,address,kyc,audit'],
-            'file_name'     => ['required', 'string'],
+            'document_type' => ['required', 'string', 'in:id_front,id_back,selfie,proof_of_address,source_of_funds'],
+            'file'          => ['nullable', 'file', 'max:10240'], // 10MB max, optional for JSON-only submissions
+            'file_name'     => ['nullable', 'string'],
         ]);
 
         $user = $request->user();
@@ -318,14 +319,39 @@ class CertificateApplicationController extends Controller
             ], 422);
         }
 
+        $docType = $request->input('document_type');
+
+        // Handle file upload if present
+        $fileName = $request->input('file_name', '');
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $fileName = $file->getClientOriginalName();
+            $file->store("trustcert/{$id}", 'local');
+        }
+
         $document = [
             'id'            => 'doc_' . Str::random(16),
-            'document_type' => $request->input('document_type'),
-            'file_name'     => $request->input('file_name'),
+            'type'          => $docType,
+            'document_type' => $docType,
+            'file_name'     => $fileName,
+            'status'        => 'uploaded',
             'uploaded_at'   => now()->toIso8601String(),
         ];
 
-        $application['documents'][] = $document;
+        // Update the matching requiredDocument status
+        $requiredDocs = $application['requiredDocuments'] ?? $application['documents'] ?? [];
+        foreach ($requiredDocs as &$doc) {
+            if (($doc['type'] ?? '') === $docType && ($doc['status'] ?? '') === 'pending') {
+                $doc['status'] = 'uploaded';
+                $doc['file_name'] = $fileName;
+                $doc['uploaded_at'] = now()->toIso8601String();
+                break;
+            }
+        }
+        unset($doc);
+
+        $application['requiredDocuments'] = $requiredDocs;
+        $application['documents'] = $requiredDocs;
         $application['updated_at'] = now()->toIso8601String();
         $this->storeApplication($user->id, $application);
 
