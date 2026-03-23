@@ -41,10 +41,17 @@ describe('TrustLevel Enum', function (): void {
     });
 
     it('returns correct requirements', function (): void {
-        expect(TrustLevel::UNKNOWN->requirements())->toBe([]);
-        expect(TrustLevel::BASIC->requirements())->toBe(['email_verified' => true]);
-        expect(TrustLevel::VERIFIED->requirements())->toHaveKey('identity_verified');
-        expect(TrustLevel::HIGH->requirements())->toHaveKey('kyc_completed');
-        expect(TrustLevel::ULTIMATE->requirements())->toHaveKey('audit_completed');
+        expect(TrustLevel::UNKNOWN->requirements())->toBeArray()->not->toBeEmpty();
+        expect(TrustLevel::BASIC->requirements())->toContain('Government-issued ID');
+        expect(TrustLevel::VERIFIED->requirements())->toContain('Proof of address');
+        expect(TrustLevel::HIGH->requirements())->toContain('Source of funds documentation');
+        expect(TrustLevel::ULTIMATE->requirements())->not->toBeEmpty();
+    });
+
+    it('returns correct document types per level', function (): void {
+        expect(TrustLevel::UNKNOWN->documents())->toBe([]);
+        expect(TrustLevel::BASIC->documents())->toBe(['id_front', 'id_back', 'selfie']);
+        expect(TrustLevel::VERIFIED->documents())->toContain('proof_of_address');
+        expect(TrustLevel::HIGH->documents())->toContain('source_of_funds');
     });
 });
