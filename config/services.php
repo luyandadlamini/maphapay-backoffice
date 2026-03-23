@@ -236,4 +236,10 @@ return [
         'verifid_api_url' => env('ONDATO_VERIFID_API_URL', 'https://verifid.ondato.com'),
     ],
 
+    'helius' => [
+        'api_key'        => env('HELIUS_API_KEY'),
+        'webhook_secret' => env('HELIUS_WEBHOOK_SECRET'),
+        'rpc_url'        => env('SOLANA_RPC_URL', 'https://api.mainnet-beta.solana.com'),
+    ],
+
 ];

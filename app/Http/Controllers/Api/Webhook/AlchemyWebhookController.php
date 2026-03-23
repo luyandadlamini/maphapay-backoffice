@@ -199,6 +199,7 @@ class AlchemyWebhookController extends Controller
             'arb-mainnet', 'arb_mainnet' => 'arbitrum',
             'base-mainnet', 'base_mainnet' => 'base',
             'opt-mainnet', 'opt_mainnet' => 'optimism',
+            'sol-mainnet', 'solana_mainnet', 'solana-mainnet' => 'solana',
             default => null,
         };
     }

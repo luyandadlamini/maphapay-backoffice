@@ -264,6 +264,11 @@ Route::post('webhooks/alchemy/address-activity', [App\Http\Controllers\Api\Webho
     ->middleware('api.rate_limit:webhook')
     ->name('api.webhooks.alchemy.address-activity');
 
+// Helius Solana webhook (secret verified via Authorization header)
+Route::post('webhooks/helius/solana', [App\Http\Controllers\Api\Webhook\HeliusWebhookController::class, 'handle'])
+    ->middleware('api.rate_limit:webhook')
+    ->name('api.webhooks.helius.solana');
+
 // Visa CLI payment status webhook (no auth, HMAC verified)
 Route::post('webhooks/visa-cli/payment', [App\Http\Controllers\Api\Webhook\VisaCliWebhookController::class, 'handle'])
     ->middleware('api.rate_limit:webhook')
