@@ -342,8 +342,8 @@ VISACLI_PER_TX_LIMIT=1000    <span class="text-slate-500"># $10.00 per transacti
             <h2 class="font-display text-3xl font-bold text-white mb-4">Start building with Visa CLI</h2>
             <p class="text-slate-400 mb-8 max-w-xl mx-auto">Enable the demo driver and run <code class="text-blue-300">visa:status</code> in under a minute. No Visa account needed for development.</p>
             <div class="flex flex-wrap justify-center gap-4">
-                <a href="{{ url('/developers') }}" class="btn-primary">Developer Docs</a>
-                <a href="{{ route('features.show', 'x402-protocol') }}" class="btn-outline-light">Compare with x402</a>
+                <a href="{{ url('/developers') }}" class="btn-primary px-8 py-4 text-lg">Developer Docs</a>
+                <a href="{{ route('features.show', 'x402-protocol') }}" class="btn-outline px-8 py-4 text-lg">Compare with x402</a>
             </div>
         </div>
     </section>

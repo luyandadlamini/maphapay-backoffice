@@ -245,4 +245,16 @@
         </div>
     </section>
 
+    <!-- CTA -->
+    <section class="py-16 bg-fa-navy">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="font-display text-3xl font-bold text-white mb-4">Extend the platform your way</h2>
+            <p class="text-slate-400 mb-8 max-w-xl mx-auto">17 integration hooks, sandboxed execution, and a security scanner. Build plugins that ship with confidence.</p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="{{ url('/developers') }}" class="btn-primary px-8 py-4 text-lg">Developer Docs</a>
+                <a href="{{ route('features.show', 'api') }}" class="btn-outline px-8 py-4 text-lg">View APIs</a>
+            </div>
+        </div>
+    </section>
+
 @endsection

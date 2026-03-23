@@ -262,8 +262,8 @@ console.log(status.card);  <span class="text-slate-500">// { last4: "4242", netw
             <h2 class="font-display text-3xl font-bold text-white mb-4">Build agent-native banking</h2>
             <p class="text-slate-400 mb-8 max-w-xl mx-auto">Connect your Virtuals agent to {{ config('brand.name', 'Zelta') }} via ACP and give it a compliant bank account in minutes.</p>
             <div class="flex flex-wrap justify-center gap-4">
-                <a href="{{ url('/developers') }}" class="btn-primary">Developer Docs</a>
-                <a href="{{ route('features.show', 'visa-cli') }}" class="btn-outline-light">Visa CLI Payment Rail</a>
+                <a href="{{ url('/developers') }}" class="btn-primary px-8 py-4 text-lg">Developer Docs</a>
+                <a href="{{ route('features.show', 'visa-cli') }}" class="btn-outline px-8 py-4 text-lg">Visa CLI Payment Rail</a>
             </div>
         </div>
     </section>
