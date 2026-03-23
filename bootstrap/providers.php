@@ -28,6 +28,7 @@ return [
     App\Providers\HorizonServiceProvider::class,
     App\Providers\JetstreamServiceProvider::class,
     App\Providers\LendingServiceProvider::class,
+    App\Providers\MachinePayServiceProvider::class,
     App\Providers\MobilePaymentServiceProvider::class,
     App\Providers\PrivacyServiceProvider::class,
     App\Providers\RegTechServiceProvider::class,

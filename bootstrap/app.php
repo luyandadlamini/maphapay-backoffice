@@ -115,6 +115,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'deprecated' => App\Http\Middleware\ApiDeprecationMiddleware::class,
             // X402 Payment Protocol middleware (v5.2.0)
             'x402.payment' => App\Http\Middleware\X402PaymentGateMiddleware::class,
+            // Machine Payments Protocol middleware (v6.4.0)
+            'mpp.payment' => App\Http\Middleware\MppPaymentGateMiddleware::class,
         ]);
 
         // Prepend CORS middleware to handle it before other middleware

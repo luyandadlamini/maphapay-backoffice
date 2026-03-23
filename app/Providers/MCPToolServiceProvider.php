@@ -17,6 +17,8 @@ use App\Domain\AI\MCP\Tools\Compliance\KycTool;
 use App\Domain\AI\MCP\Tools\Exchange\LiquidityPoolTool;
 use App\Domain\AI\MCP\Tools\Exchange\QuoteTool;
 use App\Domain\AI\MCP\Tools\Exchange\TradeTool;
+use App\Domain\AI\MCP\Tools\MachinePay\MppDiscoveryTool;
+use App\Domain\AI\MCP\Tools\MachinePay\MppPaymentTool;
 use App\Domain\AI\MCP\Tools\Payment\PaymentStatusTool;
 use App\Domain\AI\MCP\Tools\Payment\TransferTool;
 use App\Domain\AI\MCP\Tools\VisaCli\VisaCliCardsTool;
@@ -70,6 +72,10 @@ class MCPToolServiceProvider extends ServiceProvider
         // Visa CLI Payment Tools
         VisaCliPaymentTool::class,
         VisaCliCardsTool::class,
+
+        // Machine Payments Protocol Tools
+        MppPaymentTool::class,
+        MppDiscoveryTool::class,
     ];
 
     /**

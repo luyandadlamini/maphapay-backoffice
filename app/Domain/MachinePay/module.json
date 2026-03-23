@@ -1,0 +1,35 @@
+{
+    "$schema": "https://finaegis.io/schemas/module.json",
+    "name": "finaegis/machinepay",
+    "version": "1.0.0",
+    "description": "Machine Payments Protocol (MPP) — multi-rail HTTP 402 payments with Stripe, Tempo, Lightning",
+    "type": "feature",
+    "dependencies": {
+        "required": {
+            "finaegis/shared": "^1.0"
+        },
+        "optional": {
+            "finaegis/x402": "^1.0",
+            "finaegis/agent-protocol": "^1.0"
+        }
+    },
+    "provides": {
+        "interfaces": [
+            "App\\Domain\\MachinePay\\Contracts\\PaymentRailInterface",
+            "App\\Domain\\MachinePay\\Contracts\\ChallengeSignerInterface"
+        ],
+        "events": [
+            "MppChallengeIssued",
+            "MppPaymentVerified",
+            "MppPaymentSettled",
+            "MppPaymentFailed"
+        ],
+        "commands": []
+    },
+    "paths": {
+        "routes": "Routes/api.php",
+        "migrations": "Database/Migrations",
+        "config": null,
+        "tests": "Tests"
+    }
+}
