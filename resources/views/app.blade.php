@@ -215,8 +215,8 @@
                 </h1>
 
                 <p class="mt-6 text-lg md:text-xl max-w-lg font-medium font-body text-text-sec">
-                    The stablecoin wallet that shields your on-chain tracks, ships virtual cards on demand,
-                    and never asks you to trust a third party with your keys.
+                    The stablecoin wallet that shields your on-chain tracks, ships virtual Visa cards,
+                    gives your AI agents a spending budget, and never asks you to trust a third party with your keys.
                 </p>
 
                 <div class="mt-8 flex flex-wrap gap-4">
@@ -490,13 +490,13 @@
             <span class="text-white text-xl md:text-2xl font-black uppercase tracking-wider font-heading tracking-tighter pr-8">
                 SECURE STABLECOINS <span class="text-acid">&#9670;</span> SHIELD PRIVACY
                 <span class="text-acid">&#9670;</span> VIRTUAL CARDS
-                <span class="text-acid">&#9670;</span> SPLIT KEY SECURITY
+                <span class="text-acid">&#9670;</span> AI AGENT BUDGETS
                 <span class="text-acid">&#9670;</span> ZERO TRACE
-                <span class="text-acid">&#9670;</span> SECURE STABLECOINS
-                <span class="text-acid">&#9670;</span> SHIELD PRIVACY
-                <span class="text-acid">&#9670;</span> VIRTUAL CARDS
+                <span class="text-acid">&#9670;</span> x402 MICROPAYMENTS
+                <span class="text-acid">&#9670;</span> TRUSTCERT IDENTITY
                 <span class="text-acid">&#9670;</span> SPLIT KEY SECURITY
-                <span class="text-acid">&#9670;</span> ZERO TRACE
+                <span class="text-acid">&#9670;</span> AGENTIC PAYMENTS
+                <span class="text-acid">&#9670;</span> NON-CUSTODIAL
                 <span class="text-acid">&#9670;</span>
             </span>
             @endfor
@@ -521,6 +521,8 @@
                 ['id' => 'pay', 'label' => 'Pay', 'active' => false],
                 ['id' => 'security', 'label' => 'Security', 'active' => false],
                 ['id' => 'shield', 'label' => 'Shield', 'active' => false],
+                ['id' => 'agents', 'label' => 'AI Agents', 'active' => false],
+                ['id' => 'identity', 'label' => 'Identity', 'active' => false],
             ];
             @endphp
             <div class="flex gap-2 mb-8 flex-wrap" role="tablist" aria-label="Feature categories">
@@ -562,9 +564,23 @@
                 [
                     'id' => 'shield', 'bg' => 'bg-lavender', 'active' => false,
                     'title' => 'Shield Your Transactions',
-                    'desc' => 'Your on-chain history is decoupled from your spending. Privacy relayers ensure no one traces your purchases back to your wallet.',
+                    'desc' => 'Zero-knowledge proofs (ZK-SNARKs) make your balance invisible on-chain. Nobody can trace your spending or total holdings. When compliance is needed, generate a Proof of Innocence — prove your funds are clean without revealing your history.',
                     'type' => 'icon-trio',
                     'icons' => ['/icons/ghost.svg', '/icons/incognito.svg', '/icons/globe.svg'],
+                ],
+                [
+                    'id' => 'agents', 'bg' => 'bg-z-purple', 'active' => false,
+                    'title' => 'Give AI Agents a Budget',
+                    'desc' => 'Set daily spending limits for autonomous AI agents. They pay for APIs, datasets, and cloud services via x402 micropayments — constrained by per-transaction caps you control. Payments above your threshold require biometric approval.',
+                    'type' => 'icon-trio',
+                    'icons' => ['/icons/lock.svg', '/icons/credit-card.svg', '/icons/checkmark.svg'],
+                ],
+                [
+                    'id' => 'identity', 'bg' => 'bg-z-green', 'active' => false,
+                    'title' => 'TrustCert Identity',
+                    'desc' => 'Blockchain-verified credentials issued as Soulbound Tokens. Basic (ID), Verified (address), Enhanced (source of funds). Higher levels unlock larger limits and fiat off-ramps. Verifiable by third parties without exposing your personal data.',
+                    'type' => 'icon-trio',
+                    'icons' => ['/icons/user.svg', '/icons/shield-check.svg', '/icons/checkmark.svg'],
                 ],
             ];
             @endphp
@@ -623,13 +639,41 @@
 
             {{-- 2-column sub-cards --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                @foreach([['icon' => '/icons/credit-card.svg', 'title' => 'Virtual Cards', 'desc' => 'Generate disposable virtual Visa cards linked to your stablecoin balance. Merchants see a normal card payment.'], ['icon' => '/icons/incognito.svg', 'title' => 'Privacy Relayers', 'desc' => 'Transactions routed through privacy-preserving relayers. Your blockchain address stays disconnected from purchases.']] as $subCard)
+                @foreach([
+                    ['icon' => '/icons/credit-card.svg', 'title' => 'Virtual Visa Cards', 'desc' => 'Generate virtual Visa cards backed by your stablecoin balance. Add to Apple Pay or Google Pay. Merchants see a normal card payment — not a crypto wallet.'],
+                    ['icon' => '/icons/incognito.svg', 'title' => 'ZK Privacy Shield', 'desc' => 'Shield and unshield stablecoins with zero-knowledge proofs. Your on-chain balance becomes invisible. Generate Proof of Innocence for compliance without revealing history.'],
+                    ['icon' => '/icons/lock.svg', 'title' => 'x402 Agent Payments', 'desc' => 'Give AI agents a spending allowance. Daily budgets, per-transaction caps, and biometric approval for over-limit requests. Your agents pay for APIs autonomously — within your rules.'],
+                    ['icon' => '/icons/globe.svg', 'title' => 'Multi-Network', 'desc' => 'Polygon, Base, and Arbitrum from one wallet. Sub-cent fees, instant finality. Switch networks for the best rates. ERC-4337 means you never need ETH for gas.'],
+                ] as $subCard)
                 <div class="p-8 bg-white bru-card rounded-[2rem]">
                     <div class="rounded-full overflow-hidden mb-4 bru-card-sm" style="width: 56px; height: 56px;">
                         <img src="{{ $subCard['icon'] }}" alt="" class="h-full w-full">
                     </div>
                     <h3 class="text-xl md:text-2xl font-black mb-2 font-heading tracking-tighter">{{ $subCard['title'] }}</h3>
                     <p class="text-base text-text-sec">{{ $subCard['desc'] }}</p>
+                </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
+
+    {{-- ═══════════════════════════════════════════════════════════════
+         STATS / POWERED BY
+    ═══════════════════════════════════════════════════════════════ --}}
+    <section class="px-5 py-16 md:py-20 bg-obsidian">
+        <div class="mx-auto max-w-6xl">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+                @foreach([
+                    ['value' => '3', 'label' => 'Networks', 'sub' => 'Polygon · Base · Arbitrum'],
+                    ['value' => 'ZK', 'label' => 'Privacy', 'sub' => 'Zero-Knowledge Proofs'],
+                    ['value' => '$0', 'label' => 'Gas Fees', 'sub' => 'ERC-4337 Abstraction'],
+                    ['value' => 'x402', 'label' => 'Agent Pay', 'sub' => 'HTTP-Native Micropayments'],
+                ] as $stat)
+                <div class="text-center">
+                    <p class="text-3xl md:text-4xl font-black text-acid font-heading tracking-tighter">{{ $stat['value'] }}</p>
+                    <p class="text-sm font-bold text-white mt-1">{{ $stat['label'] }}</p>
+                    <p class="text-xs text-white/40 mt-0.5 font-mono">{{ $stat['sub'] }}</p>
                 </div>
                 @endforeach
             </div>
