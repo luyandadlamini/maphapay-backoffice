@@ -96,7 +96,7 @@ class MppChallengeService implements ChallengeSignerInterface
     public function signChallenge(MppChallenge $challenge): string
     {
         $input = $challenge->buildHmacInput();
-        $key = $this->hmacKey !== '' ? $this->hmacKey : (string) config('app.key');
+        $key = $this->resolveHmacKey();
 
         return hash_hmac('sha256', $input, $key);
     }
@@ -109,5 +109,21 @@ class MppChallengeService implements ChallengeSignerInterface
         $expected = $this->signChallenge($challenge);
 
         return hash_equals($expected, $hmac);
+    }
+
+    /**
+     * Resolve the HMAC key with key separation.
+     *
+     * Uses a dedicated HMAC key if configured, otherwise derives a
+     * domain-specific key from the app key to maintain key separation.
+     */
+    private function resolveHmacKey(): string
+    {
+        if ($this->hmacKey !== '') {
+            return $this->hmacKey;
+        }
+
+        // Derive a dedicated key — never reuse app key directly
+        return hash_hmac('sha256', 'mpp-challenge-signing', (string) config('app.key'));
     }
 }

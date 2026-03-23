@@ -11,6 +11,11 @@ use Illuminate\Http\Request;
 
 class MppResourceController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('is_admin')->except(['index', 'show']);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $resources = MppMonetizedResource::query()
@@ -28,14 +33,37 @@ class MppResourceController extends Controller
     {
         $validated = $request->validate([
             'method'            => ['required', 'string', 'in:GET,POST,PUT,PATCH,DELETE'],
-            'path'              => ['required', 'string', 'max:500'],
-            'amount_cents'      => ['required', 'integer', 'min:1'],
+            'path'              => ['required', 'string', 'max:500', 'regex:/^[a-zA-Z0-9\/_\-\.{}]+$/'],
+            'amount_cents'      => ['required', 'integer', 'min:1', 'max:100000000'],
             'currency'          => ['required', 'string', 'max:10'],
             'available_rails'   => ['required', 'array', 'min:1'],
             'available_rails.*' => ['string', 'in:stripe,tempo,lightning,card'],
             'description'       => ['nullable', 'string', 'max:500'],
             'mime_type'         => ['nullable', 'string', 'max:128'],
         ]);
+
+        // Prevent duplicate method+path
+        $exists = MppMonetizedResource::where('method', $validated['method'])
+            ->where('path', $validated['path'])
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'error'   => 'A monetized resource with this method and path already exists.',
+            ], 409);
+        }
+
+        // Block monetization of sensitive paths
+        $blockedPrefixes = ['auth/', 'admin/', 'monitoring/', 'webhooks/'];
+        foreach ($blockedPrefixes as $prefix) {
+            if (str_starts_with($validated['path'], $prefix)) {
+                return response()->json([
+                    'success' => false,
+                    'error'   => "Cannot monetize paths starting with '{$prefix}'.",
+                ], 422);
+            }
+        }
 
         $resource = MppMonetizedResource::create($validated);
 
@@ -60,7 +88,7 @@ class MppResourceController extends Controller
         $resource = MppMonetizedResource::findOrFail($id);
 
         $validated = $request->validate([
-            'amount_cents'      => ['sometimes', 'integer', 'min:1'],
+            'amount_cents'      => ['sometimes', 'integer', 'min:1', 'max:100000000'],
             'currency'          => ['sometimes', 'string', 'max:10'],
             'available_rails'   => ['sometimes', 'array', 'min:1'],
             'available_rails.*' => ['string', 'in:stripe,tempo,lightning,card'],

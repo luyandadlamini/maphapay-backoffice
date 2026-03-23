@@ -144,11 +144,12 @@ class MppClientService
                 ]);
             }
 
-            // Reset daily spending if new day
-            if ($limit->last_reset !== now()->toDateString()) {
+            // Reset daily spending if new day (UTC to avoid timezone drift)
+            $todayUtc = gmdate('Y-m-d');
+            if ($limit->last_reset !== $todayUtc) {
                 $limit->update([
                     'spent_today' => 0,
-                    'last_reset'  => now()->toDateString(),
+                    'last_reset'  => $todayUtc,
                 ]);
                 $limit->refresh();
             }
@@ -182,6 +183,12 @@ class MppClientService
      */
     private function generateProof(string $rail, MppChallenge $challenge): array
     {
+        if (app()->environment('production')) {
+            throw new MppException(
+                "Production MPP client proof generation requires real rail integration (rail: {$rail})."
+            );
+        }
+
         // Demo mode: return simulated proof structures
         return match ($rail) {
             'stripe'    => ['spt' => 'spt_demo_' . bin2hex(random_bytes(12)), 'type' => 'stripe_payment_token'],

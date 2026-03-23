@@ -801,7 +801,14 @@
             </div>
         </div>
 
-        <div class="relative z-10 mx-auto max-w-6xl mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4"
+        {{-- Legal disclaimer --}}
+        <div class="relative z-10 mx-auto max-w-6xl mt-8 pt-6" style="border-top: 2px solid #e5e5e5;">
+            <p class="text-xs opacity-30 leading-relaxed max-w-4xl">
+                {{ $brand }} is a technology platform providing a user interface for services offered by independent third-party providers. {{ $brand }} does not offer, hold, or transmit funds or provide financial, custodial, or regulated services. All wallet functionality is non-custodial &mdash; private keys remain under exclusive user control. Financial services are provided by third-party licensed providers. All investments carry risks, including total loss. The user is responsible for their recovery phrase.
+            </p>
+        </div>
+
+        <div class="relative z-10 mx-auto max-w-6xl mt-6 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4"
              style="border-top: 2px solid #e5e5e5;">
             <p class="text-sm opacity-40">&copy; {{ date('Y') }} {{ $brand }}. All rights reserved.</p>
             <div class="flex gap-6">

@@ -20,8 +20,8 @@ use Illuminate\Support\Str;
 /**
  * Orchestrates MPP payment settlement across payment rails.
  *
- * Handles idempotency via payload hash, dispatches domain events,
- * and records settlement results in the payments ledger.
+ * Handles idempotency via payload hash with row-level locking,
+ * dispatches domain events, and records settlement results.
  */
 class MppSettlementService
 {
@@ -34,66 +34,76 @@ class MppSettlementService
     /**
      * Settle a verified payment credential.
      *
+     * The entire settlement is wrapped in a transaction with row-level
+     * locking to prevent duplicate payments and race conditions.
+     *
      * @throws MppSettlementException
      */
     public function settle(MppCredential $credential, MppChallenge $challenge): MppReceipt
     {
-        // Idempotency: check if this credential has already been settled
         $payloadHash = hash('sha256', (string) json_encode($credential->toArray()));
-        $existing = MppPayment::where('payload_hash', $payloadHash)
-            ->where('status', MppSettlementStatus::SETTLED->value)
-            ->first();
 
-        if ($existing instanceof MppPayment) {
-            Log::info('MPP: Returning idempotent settlement', ['payment_id' => $existing->uuid]);
+        return DB::transaction(function () use ($credential, $challenge, $payloadHash): MppReceipt {
+            // Idempotency: check with lock to prevent concurrent duplicate settlements
+            $existing = MppPayment::where('payload_hash', $payloadHash)
+                ->lockForUpdate()
+                ->first();
 
-            return new MppReceipt(
-                receiptId: $existing->uuid,
-                challengeId: $challenge->id,
-                rail: $credential->rail,
-                settlementReference: (string) $existing->settlement_reference,
-                settledAt: $existing->updated_at?->format('c') ?? gmdate('c'),
-                amountCents: $challenge->amountCents,
-                currency: $challenge->currency,
-            );
-        }
+            if ($existing instanceof MppPayment && $existing->status === MppSettlementStatus::SETTLED->value) {
+                Log::info('MPP: Returning idempotent settlement', ['payment_id' => $existing->uuid]);
 
-        // Verify the credential
-        $verifyResult = $this->verification->verify($credential, $challenge);
+                return new MppReceipt(
+                    receiptId: $existing->uuid,
+                    challengeId: $challenge->id,
+                    rail: $credential->rail,
+                    settlementReference: (string) $existing->settlement_reference,
+                    settledAt: $existing->updated_at?->format('c') ?? gmdate('c'),
+                    amountCents: $challenge->amountCents,
+                    currency: $challenge->currency,
+                );
+            }
 
-        if (! $verifyResult['valid']) {
-            throw MppSettlementException::verificationFailed((string) $verifyResult['reason']);
-        }
+            // Verify the credential
+            $verifyResult = $this->verification->verify($credential, $challenge);
 
-        MppPaymentVerified::dispatch($challenge->id, $credential->rail);
+            if (! $verifyResult['valid']) {
+                throw MppSettlementException::verificationFailed((string) $verifyResult['reason']);
+            }
 
-        // Record the payment attempt
-        $payment = MppPayment::create([
-            'uuid'             => Str::uuid()->toString(),
-            'challenge_id'     => $challenge->id,
-            'rail'             => $credential->rail,
-            'amount_cents'     => $challenge->amountCents,
-            'currency'         => $challenge->currency,
-            'status'           => MppSettlementStatus::VERIFIED->value,
-            'payer_identifier' => $credential->payerIdentifier,
-            'endpoint_method'  => '',
-            'endpoint_path'    => $challenge->resourceId,
-            'payment_payload'  => $credential->toArray(),
-            'payload_hash'     => $payloadHash,
-        ]);
+            MppPaymentVerified::dispatch($challenge->id, $credential->rail);
 
-        // Delegate to the payment rail for settlement
-        $rail = $this->railResolver->resolve($credential->rail);
+            // Resolve rail inside the transaction
+            $rail = $this->railResolver->resolve($credential->rail);
 
-        if ($rail === null) {
-            $payment->update(['status' => MppSettlementStatus::FAILED->value]);
-            MppPaymentFailed::dispatch($challenge->id, $credential->rail, 'Rail unavailable');
+            if ($rail === null) {
+                MppPaymentFailed::dispatch($challenge->id, $credential->rail, 'Rail unavailable');
 
-            throw MppSettlementException::railUnavailable($credential->rail);
-        }
+                throw MppSettlementException::railUnavailable($credential->rail);
+            }
 
-        try {
-            $receipt = DB::transaction(function () use ($rail, $credential, $challenge, $payment): MppReceipt {
+            // Record the payment attempt
+            $payment = MppPayment::create([
+                'uuid'             => Str::uuid()->toString(),
+                'challenge_id'     => $challenge->id,
+                'rail'             => $credential->rail,
+                'amount_cents'     => $challenge->amountCents,
+                'currency'         => $challenge->currency,
+                'status'           => MppSettlementStatus::VERIFIED->value,
+                'payer_identifier' => $credential->payerIdentifier,
+                'endpoint_method'  => '',
+                'endpoint_path'    => $challenge->resourceId,
+                'payment_payload'  => $credential->toArray(),
+                'payload_hash'     => $payloadHash,
+            ]);
+
+            Log::info('MPP: Payment record created', [
+                'payment_id'   => $payment->uuid,
+                'challenge_id' => $challenge->id,
+                'amount_cents' => $challenge->amountCents,
+            ]);
+
+            // Process payment via rail
+            try {
                 $receipt = $rail->processPayment($credential, [
                     'amount_cents' => $challenge->amountCents,
                     'currency'     => $challenge->currency,
@@ -105,25 +115,23 @@ class MppSettlementService
                     'settlement_reference' => $receipt->settlementReference,
                 ]);
 
+                MppPaymentSettled::dispatch(
+                    $challenge->id,
+                    $credential->rail,
+                    $receipt->settlementReference,
+                    $challenge->amountCents,
+                );
+
                 return $receipt;
-            });
+            } catch (MppSettlementException $e) {
+                $payment->update([
+                    'status'        => MppSettlementStatus::FAILED->value,
+                    'error_message' => $e->getMessage(),
+                ]);
+                MppPaymentFailed::dispatch($challenge->id, $credential->rail, $e->getMessage());
 
-            MppPaymentSettled::dispatch(
-                $challenge->id,
-                $credential->rail,
-                $receipt->settlementReference,
-                $challenge->amountCents,
-            );
-
-            return $receipt;
-        } catch (MppSettlementException $e) {
-            $payment->update([
-                'status'        => MppSettlementStatus::FAILED->value,
-                'error_message' => $e->getMessage(),
-            ]);
-            MppPaymentFailed::dispatch($challenge->id, $credential->rail, $e->getMessage());
-
-            throw $e;
-        }
+                throw $e;
+            }
+        });
     }
 }

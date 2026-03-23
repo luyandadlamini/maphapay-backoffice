@@ -147,20 +147,22 @@ class MandateService
      */
     public function completeMandate(string $mandateId): MandateResult
     {
-        $mandate = AgentMandate::where('uuid', $mandateId)->firstOrFail();
+        return DB::transaction(function () use ($mandateId): MandateResult {
+            $mandate = AgentMandate::where('uuid', $mandateId)->lockForUpdate()->firstOrFail();
 
-        if ($mandate->status !== MandateStatus::EXECUTED->value) {
-            throw new RuntimeException("Mandate '{$mandateId}' must be EXECUTED before completion.");
-        }
+            if ($mandate->status !== MandateStatus::EXECUTED->value) {
+                throw new RuntimeException("Mandate '{$mandateId}' must be EXECUTED before completion.");
+            }
 
-        $mandate->update([
-            'status'       => MandateStatus::COMPLETED->value,
-            'completed_at' => now()->toDateTimeString(),
-        ]);
+            $mandate->update([
+                'status'       => MandateStatus::COMPLETED->value,
+                'completed_at' => now()->toDateTimeString(),
+            ]);
 
-        MandateCompleted::dispatch($mandateId);
+            MandateCompleted::dispatch($mandateId);
 
-        return new MandateResult($mandateId, MandateStatus::COMPLETED, (array) ($mandate->payment_references ?? []));
+            return new MandateResult($mandateId, MandateStatus::COMPLETED, (array) ($mandate->payment_references ?? []));
+        });
     }
 
     /**
@@ -168,23 +170,25 @@ class MandateService
      */
     public function revokeMandate(string $mandateId, string $revokedByDid, string $reason): MandateResult
     {
-        $mandate = AgentMandate::where('uuid', $mandateId)->firstOrFail();
+        return DB::transaction(function () use ($mandateId, $revokedByDid, $reason): MandateResult {
+            $mandate = AgentMandate::where('uuid', $mandateId)->lockForUpdate()->firstOrFail();
 
-        if ($mandate->getStatusEnum()->isTerminal()) {
-            throw new RuntimeException("Mandate '{$mandateId}' is already in a terminal state.");
-        }
+            if ($mandate->getStatusEnum()->isTerminal()) {
+                throw new RuntimeException("Mandate '{$mandateId}' is already in a terminal state.");
+            }
 
-        $mandate->update(['status' => MandateStatus::REVOKED->value]);
+            $mandate->update(['status' => MandateStatus::REVOKED->value]);
 
-        MandateRevoked::dispatch($mandateId, $revokedByDid, $reason);
+            MandateRevoked::dispatch($mandateId, $revokedByDid, $reason);
 
-        Log::info('AP2: Mandate revoked', [
-            'mandate_id' => $mandateId,
-            'revoked_by' => $revokedByDid,
-            'reason'     => $reason,
-        ]);
+            Log::info('AP2: Mandate revoked', [
+                'mandate_id' => $mandateId,
+                'revoked_by' => $revokedByDid,
+                'reason'     => $reason,
+            ]);
 
-        return new MandateResult($mandateId, MandateStatus::REVOKED);
+            return new MandateResult($mandateId, MandateStatus::REVOKED);
+        });
     }
 
     /**
@@ -192,23 +196,25 @@ class MandateService
      */
     public function disputeMandate(string $mandateId, string $disputedByDid, string $reason): MandateResult
     {
-        $mandate = AgentMandate::where('uuid', $mandateId)->firstOrFail();
+        return DB::transaction(function () use ($mandateId, $disputedByDid, $reason): MandateResult {
+            $mandate = AgentMandate::where('uuid', $mandateId)->lockForUpdate()->firstOrFail();
 
-        if (! in_array($mandate->status, [MandateStatus::EXECUTED->value, MandateStatus::ACCEPTED->value], true)) {
-            throw new RuntimeException("Mandate '{$mandateId}' cannot be disputed in current state.");
-        }
+            if (! in_array($mandate->status, [MandateStatus::EXECUTED->value, MandateStatus::ACCEPTED->value], true)) {
+                throw new RuntimeException("Mandate '{$mandateId}' cannot be disputed in current state.");
+            }
 
-        $mandate->update(['status' => MandateStatus::DISPUTED->value]);
+            $mandate->update(['status' => MandateStatus::DISPUTED->value]);
 
-        MandateDisputed::dispatch($mandateId, $disputedByDid, $reason);
+            MandateDisputed::dispatch($mandateId, $disputedByDid, $reason);
 
-        Log::info('AP2: Mandate disputed', [
-            'mandate_id'  => $mandateId,
-            'disputed_by' => $disputedByDid,
-            'reason'      => $reason,
-        ]);
+            Log::info('AP2: Mandate disputed', [
+                'mandate_id'  => $mandateId,
+                'disputed_by' => $disputedByDid,
+                'reason'      => $reason,
+            ]);
 
-        return new MandateResult($mandateId, MandateStatus::DISPUTED, disputeInfo: $reason);
+            return new MandateResult($mandateId, MandateStatus::DISPUTED, disputeInfo: $reason);
+        });
     }
 
     /**

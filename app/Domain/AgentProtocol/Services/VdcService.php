@@ -40,7 +40,7 @@ class VdcService
             'claims'  => $claims,
         ], JSON_THROW_ON_ERROR);
 
-        $signature = hash_hmac('sha256', $signaturePayload, (string) config('app.key'));
+        $signature = hash_hmac('sha256', $signaturePayload, self::deriveVdcKey());
 
         $vdc = new VerifiableDigitalCredential(
             type: $type->value,
@@ -79,7 +79,7 @@ class VdcService
             'claims'  => $vdc->claims,
         ], JSON_THROW_ON_ERROR);
 
-        $expectedSignature = hash_hmac('sha256', $signaturePayload, (string) config('app.key'));
+        $expectedSignature = hash_hmac('sha256', $signaturePayload, self::deriveVdcKey());
 
         if (! hash_equals($expectedSignature, $vdc->signature)) {
             Log::warning('AP2: VDC signature verification failed', [
@@ -120,5 +120,14 @@ class VdcService
         }
 
         return true;
+    }
+
+    /**
+     * Derive a domain-specific key for VDC signing.
+     * Never reuses the app key directly (key separation principle).
+     */
+    private static function deriveVdcKey(): string
+    {
+        return hash_hmac('sha256', 'ap2-vdc-signing', (string) config('app.key'));
     }
 }
