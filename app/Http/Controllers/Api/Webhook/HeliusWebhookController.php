@@ -175,12 +175,22 @@ class HeliusWebhookController extends Controller
         $secret = (string) config('services.helius.webhook_secret', '');
 
         if ($secret === '') {
-            // No secret configured — accept in non-production
-            return ! app()->environment('production');
+            if (app()->environment('production')) {
+                Log::error('Helius: HELIUS_WEBHOOK_SECRET not set in production');
+
+                return false;
+            }
+
+            return true;
         }
 
+        // Helius sends the authHeader value exactly as configured in the dashboard
         $authHeader = $request->header('Authorization', '');
 
-        return is_string($authHeader) && hash_equals($secret, $authHeader);
+        if (! is_string($authHeader) || $authHeader === '') {
+            return false;
+        }
+
+        return hash_equals($secret, $authHeader);
     }
 }
