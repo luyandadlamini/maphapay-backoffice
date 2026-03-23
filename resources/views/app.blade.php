@@ -46,6 +46,16 @@
         }
         ::selection { background: #ccff00; color: #000; }
 
+        /* ── Missing Tailwind utilities (not in pre-compiled app-landing.css) ── */
+        .bg-z-purple { background-color: #c8a8f0; }
+        @media (min-width: 768px) {
+            .md\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .md\:text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+            .md\:py-20 { padding-top: 5rem; padding-bottom: 5rem; }
+        }
+        .py-16 { padding-top: 4rem; padding-bottom: 4rem; }
+        .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
         /* ── Brutalist utilities ── */
         .bru-border { border: 3px solid #0a0a0a; }
         .bru-card { border: 3px solid #0a0a0a; box-shadow: 6px 6px 0px #0a0a0a; }
