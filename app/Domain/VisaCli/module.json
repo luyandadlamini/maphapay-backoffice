@@ -1,0 +1,17 @@
+{
+    "$schema": "https://finaegis.io/schemas/module.json",
+    "name": "finaegis/visa-cli",
+    "version": "1.0.0",
+    "description": "Visa CLI — programmatic Visa card payments for AI agents",
+    "type": "feature",
+    "dependencies": {
+        "required": { "finaegis/shared": "^1.0" },
+        "optional": {}
+    },
+    "provides": {
+        "interfaces": ["App\\Domain\\VisaCli\\Contracts\\VisaCliClientInterface"],
+        "events": ["VisaCliPaymentInitiated", "VisaCliPaymentCompleted", "VisaCliPaymentFailed", "VisaCliCardEnrolled", "VisaCliCardRemoved"],
+        "commands": ["visa:status", "visa:enroll", "visa:pay"]
+    },
+    "paths": { "routes": "Routes/api.php", "migrations": null, "config": null, "tests": null }
+}

@@ -1,0 +1,13 @@
+{
+    "$schema": "https://finaegis.io/schemas/module.json",
+    "name": "finaegis/ramp",
+    "version": "1.0.0",
+    "description": "On/Off Ramp — fiat-to-crypto and crypto-to-fiat conversion services",
+    "type": "feature",
+    "dependencies": {
+        "required": { "finaegis/shared": "^1.0" },
+        "optional": {}
+    },
+    "provides": { "interfaces": [], "events": [], "commands": [] },
+    "paths": { "routes": "Routes/api.php", "migrations": null, "config": null, "tests": null }
+}

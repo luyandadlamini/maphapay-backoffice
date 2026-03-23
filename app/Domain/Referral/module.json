@@ -1,0 +1,13 @@
+{
+    "$schema": "https://finaegis.io/schemas/module.json",
+    "name": "finaegis/referral",
+    "version": "1.0.0",
+    "description": "Referral System — user referral codes, tracking, and reward distribution",
+    "type": "feature",
+    "dependencies": {
+        "required": { "finaegis/shared": "^1.0" },
+        "optional": {}
+    },
+    "provides": { "interfaces": [], "events": [], "commands": [] },
+    "paths": { "routes": "Routes/api.php", "migrations": null, "config": null, "tests": null }
+}

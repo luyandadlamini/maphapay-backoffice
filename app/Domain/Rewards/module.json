@@ -1,0 +1,13 @@
+{
+    "$schema": "https://finaegis.io/schemas/module.json",
+    "name": "finaegis/rewards",
+    "version": "1.0.0",
+    "description": "Rewards — quest system, points, shop, and gamification",
+    "type": "feature",
+    "dependencies": {
+        "required": { "finaegis/shared": "^1.0" },
+        "optional": {}
+    },
+    "provides": { "interfaces": [], "events": [], "commands": [] },
+    "paths": { "routes": "Routes/api.php", "migrations": null, "config": null, "tests": null }
+}
