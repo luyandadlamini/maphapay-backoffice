@@ -110,6 +110,12 @@ return [
         'eip155:43113' => [
             'USDC' => '0x5425890298aed601595a70AB815c96711a31Bc65',
         ],
+        'solana:mainnet' => [
+            'USDC' => 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+        ],
+        'solana:devnet' => [
+            'USDC' => '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU',
+        ],
     ],
 
     /*

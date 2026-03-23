@@ -502,7 +502,7 @@
                 <span class="text-acid">&#9670;</span> VIRTUAL CARDS
                 <span class="text-acid">&#9670;</span> AI AGENT BUDGETS
                 <span class="text-acid">&#9670;</span> ZERO TRACE
-                <span class="text-acid">&#9670;</span> x402 MICROPAYMENTS
+                <span class="text-acid">&#9670;</span> x402 + MPP PAYMENTS
                 <span class="text-acid">&#9670;</span> TRUSTCERT IDENTITY
                 <span class="text-acid">&#9670;</span> SPLIT KEY SECURITY
                 <span class="text-acid">&#9670;</span> AGENTIC PAYMENTS
@@ -678,7 +678,7 @@
                     ['value' => '3', 'label' => 'Networks', 'sub' => 'Polygon · Base · Arbitrum'],
                     ['value' => 'ZK', 'label' => 'Privacy', 'sub' => 'Zero-Knowledge Proofs'],
                     ['value' => '$0', 'label' => 'Gas Fees', 'sub' => 'ERC-4337 Abstraction'],
-                    ['value' => 'x402', 'label' => 'Agent Pay', 'sub' => 'HTTP-Native Micropayments'],
+                    ['value' => '3', 'label' => 'Pay Protocols', 'sub' => 'x402 · MPP · AP2'],
                 ] as $stat)
                 <div class="text-center">
                     <p class="text-3xl md:text-4xl font-black text-acid font-heading tracking-tighter">{{ $stat['value'] }}</p>
@@ -701,11 +701,12 @@
             <div class="flex flex-col gap-4">
                 @php
                 $faqs = [
-                    ['q' => 'Is ' . $brand . ' a custodial wallet?', 'a' => 'No. ' . $brand . ' is fully non-custodial. Your private key is split into three encrypted shards using Shamir\'s Secret Sharing. One lives in your device\'s Secure Enclave, one in our HSM infrastructure, and one is an optional cloud backup. Any two of three are needed to sign. No seed phrase, no single point of failure.'],
+                    ['q' => 'What is ' . $brand . '?', 'a' => $brand . ' is a technology platform providing a user interface for services offered by independent third-party providers. ' . $brand . ' does not offer, hold, or transmit funds, crypto-assets, or provide financial, custodial, or regulated services. All wallet functionality is non-custodial — private keys remain under exclusive user control. Financial services are provided by third-party licensed providers.'],
+                    ['q' => 'Is ' . $brand . ' a custodial wallet?', 'a' => 'No. ' . $brand . ' is fully non-custodial. Your private key is split into three encrypted shards using Shamir\'s Secret Sharing. One lives in your device\'s Secure Enclave, one in our HSM infrastructure, and one is an optional cloud backup. Any two of three are needed to sign. No seed phrase, no single point of failure. You are responsible for storing your own recovery phrase.'],
                     ['q' => 'How does transaction shielding work?', 'a' => $brand . ' uses zero-knowledge proofs (ZK-SNARKs) to shield your stablecoin balance from public view. Your transactions become unlinkable on-chain — nobody can trace your spending habits or total balance. When compliance is needed, generate a Proof of Innocence: a cryptographic certificate proving your funds are clean, without revealing your history.'],
                     ['q' => 'Do I pay gas fees?', 'a' => 'No. ' . $brand . ' uses ERC-4337 Account Abstraction so you never need to hold ETH. Gas fees are either sponsored or paid in the stablecoin you\'re spending. You think in dollars, not in gwei.'],
                     ['q' => 'What is TrustCert?', 'a' => 'TrustCert is ' . $brand . '\'s identity verification system, issued as non-transferable Soulbound Tokens on-chain. Levels range from Basic (email + phone) to Premium (full KYB). Higher levels unlock larger spending limits and fiat off-ramps. Certificates are verifiable by third parties without accessing your personal data.'],
-                    ['q' => 'Can AI agents use ' . $brand . '?', 'a' => 'Yes. ' . $brand . ' supports x402 HTTP-native micropayments with per-agent spending limits. AI agents can pay for APIs, datasets, and cloud services autonomously — constrained by daily budgets and per-transaction caps that you control. Payments above your auto-pay threshold require biometric approval.'],
+                    ['q' => 'Can AI agents use ' . $brand . '?', 'a' => 'Yes. ' . $brand . ' supports three payment protocols: x402 (USDC micropayments), MPP (Stripe, Tempo, Lightning), and AP2 mandates (Google\'s agent authorization). AI agents can pay for APIs, datasets, and cloud services autonomously — constrained by daily budgets and per-transaction caps that you control.'],
                     ['q' => 'Which networks are supported?', 'a' => $brand . ' supports Polygon, Base, and Arbitrum from a single wallet. All networks are EVM-compatible with sub-cent transaction fees. Switch networks anytime for the best rates.'],
                 ];
                 @endphp

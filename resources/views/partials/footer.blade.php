@@ -63,6 +63,13 @@
         </div>
     </div>
 
+    <!-- Legal Disclaimer -->
+    <div class="border-t border-white/[0.04]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <x-legal-disclaimer :compact="true" />
+        </div>
+    </div>
+
     <!-- Bottom Bar -->
     <div class="border-t border-white/[0.04]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">

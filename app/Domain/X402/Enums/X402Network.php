@@ -19,6 +19,8 @@ enum X402Network: string
     case SEPOLIA = 'eip155:11155111';
     case AVALANCHE = 'eip155:43114';
     case AVALANCHE_FUJI = 'eip155:43113';
+    case SOLANA_MAINNET = 'solana:mainnet';
+    case SOLANA_DEVNET = 'solana:devnet';
 
     /**
      * Get the numeric chain ID for this network.
@@ -32,6 +34,8 @@ enum X402Network: string
             self::SEPOLIA          => 11155111,
             self::AVALANCHE        => 43114,
             self::AVALANCHE_FUJI   => 43113,
+            self::SOLANA_MAINNET   => 0,
+            self::SOLANA_DEVNET    => 0,
         };
     }
 
@@ -41,8 +45,8 @@ enum X402Network: string
     public function isTestnet(): bool
     {
         return match ($this) {
-            self::BASE_SEPOLIA, self::SEPOLIA, self::AVALANCHE_FUJI => true,
-            self::BASE_MAINNET, self::ETHEREUM_MAINNET, self::AVALANCHE => false,
+            self::BASE_SEPOLIA, self::SEPOLIA, self::AVALANCHE_FUJI, self::SOLANA_DEVNET => true,
+            self::BASE_MAINNET, self::ETHEREUM_MAINNET, self::AVALANCHE, self::SOLANA_MAINNET => false,
         };
     }
 
@@ -76,6 +80,8 @@ enum X402Network: string
             self::SEPOLIA          => 'Sepolia',
             self::AVALANCHE        => 'Avalanche C-Chain',
             self::AVALANCHE_FUJI   => 'Avalanche Fuji',
+            self::SOLANA_MAINNET   => 'Solana Mainnet',
+            self::SOLANA_DEVNET    => 'Solana Devnet',
         };
     }
 
@@ -91,6 +97,8 @@ enum X402Network: string
             self::SEPOLIA          => 'https://sepolia.etherscan.io',
             self::AVALANCHE        => 'https://snowtrace.io',
             self::AVALANCHE_FUJI   => 'https://testnet.snowtrace.io',
+            self::SOLANA_MAINNET   => 'https://explorer.solana.com',
+            self::SOLANA_DEVNET    => 'https://explorer.solana.com/?cluster=devnet',
         };
     }
 }

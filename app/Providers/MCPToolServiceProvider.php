@@ -10,8 +10,10 @@ use App\Domain\AI\MCP\Tools\Account\CreateAccountTool;
 use App\Domain\AI\MCP\Tools\Account\DepositTool;
 use App\Domain\AI\MCP\Tools\Account\WithdrawTool;
 use App\Domain\AI\MCP\Tools\AgentProtocol\AgentEscrowTool;
+use App\Domain\AI\MCP\Tools\AgentProtocol\AgentMandateTool;
 use App\Domain\AI\MCP\Tools\AgentProtocol\AgentPaymentTool;
 use App\Domain\AI\MCP\Tools\AgentProtocol\AgentReputationTool;
+use App\Domain\AI\MCP\Tools\AgentProtocol\AgentVdcTool;
 use App\Domain\AI\MCP\Tools\Compliance\AmlScreeningTool;
 use App\Domain\AI\MCP\Tools\Compliance\KycTool;
 use App\Domain\AI\MCP\Tools\Exchange\LiquidityPoolTool;
@@ -76,6 +78,10 @@ class MCPToolServiceProvider extends ServiceProvider
         // Machine Payments Protocol Tools
         MppPaymentTool::class,
         MppDiscoveryTool::class,
+
+        // AP2 Mandate Tools
+        AgentMandateTool::class,
+        AgentVdcTool::class,
     ];
 
     /**
