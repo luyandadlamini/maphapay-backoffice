@@ -113,7 +113,7 @@ use OpenApi\Attributes as OA;
     ],
 )]
 #[OA\Schema(
-    schema: 'CreateReportRequest',
+    schema: 'RegulatoryCreateReportRequest',
     required: ['report_type', 'period_start', 'period_end'],
     properties: [
         new OA\Property(property: 'report_type', type: 'string', enum: ['ctr', 'sar', 'currency_exposure', 'large_exposure', 'liquidity', 'capital_adequacy']),

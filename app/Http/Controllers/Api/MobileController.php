@@ -615,24 +615,9 @@ class MobileController extends Controller
 
     /**
      * Get unread notification count.
+     *
+     * @see \App\Http\Controllers\Api\V1\NotificationController::unreadCount() for OpenAPI docs
      */
-    #[OA\Get(
-        path: '/api/v1/notifications/unread-count',
-        operationId: 'getNotificationUnreadCount',
-        tags: ['Mobile'],
-        summary: 'Get unread notification count',
-        security: [['sanctum' => []]]
-    )]
-    #[OA\Response(
-        response: 200,
-        description: 'Unread count',
-        content: new OA\JsonContent(properties: [
-        new OA\Property(property: 'success', type: 'boolean', example: true),
-        new OA\Property(property: 'data', type: 'object', properties: [
-        new OA\Property(property: 'unread_count', type: 'integer', example: 5),
-        ]),
-        ])
-    )]
     public function getUnreadNotificationCount(Request $request): JsonResponse
     {
         $user = $this->getAuthenticatedUser($request);

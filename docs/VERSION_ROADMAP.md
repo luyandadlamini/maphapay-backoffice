@@ -2401,6 +2401,24 @@ Rain is a modern card issuing platform for crypto/fintech companies.
 
 ---
 
-*Document Version: 6.3.1*
+### v6.3.2 — Production Hardening & Landing Page (COMPLETED)
+
+**Release Date**: March 23, 2026
+**Theme**: Admin Operations, TrustCert Mobile Fixes, Landing Page Expansion
+
+| Feature | Description |
+|---------|-------------|
+| User invitation system | Email invites via CLI + Filament admin dashboard, 72h expiry, single-use tokens |
+| Admin module visibility | `ADMIN_MODULES` env var hides irrelevant Filament groups (25 → 11 for Zelta) |
+| TrustCert API fixes | Documents pre-populated, requirements include documents array, null responses for no cert |
+| TrustCert status normalization | Stored as mobile-native: pending/in_review (was draft/submitted) |
+| Landing page expansion | 6 feature tabs (+AI Agents, +Identity), 4 sub-cards, stats strip, expanded marquee |
+| CTA button fix | Replaced nonexistent btn-outline-light with btn-outline across all feature pages |
+| Invitation security | Rate limiting, DB transactions, role whitelist, Filament authorization, token not in CLI output |
+| Sitemap production fix | Respects SHOW_PROMO_PAGES, auth pages removed, generated files untracked from git |
+
+---
+
+*Document Version: 6.3.2*
 *Created: January 11, 2026*
-*Updated: March 23, 2026 (v6.3.1 admin CLI + registration control)*
+*Updated: March 23, 2026 (v6.3.2 production hardening + landing page)*
