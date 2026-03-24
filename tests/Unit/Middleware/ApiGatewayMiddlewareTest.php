@@ -57,14 +57,17 @@ describe('ApiGatewayMiddleware', function () {
         expect($response->headers->get('X-Gateway-Timing'))->toContain('ms');
     });
 
-    it('adds X-Powered-By header to the response', function () {
+    it('removes X-Powered-By header from the response', function () {
         $request = Request::create('/api/test', 'GET');
 
         $response = $this->middleware->handle($request, function () {
-            return new Response('OK', 200);
+            $resp = new Response('OK', 200);
+            $resp->headers->set('X-Powered-By', 'PHP/8.4');
+
+            return $resp;
         });
 
-        expect($response->headers->get('X-Powered-By'))->toBe('FinAegis');
+        expect($response->headers->get('X-Powered-By'))->toBeNull();
     });
 
     it('passes the request through to the next handler', function () {
