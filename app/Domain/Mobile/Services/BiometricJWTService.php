@@ -219,9 +219,10 @@ class BiometricJWTService implements BiometricJWTServiceInterface
     }
 
     /**
-     * Verify device attestation (Apple App Attest / Google SafetyNet).
+     * Verify device attestation (Apple App Attest / Google Play Integrity).
      *
-     * @todo PRODUCTION: Implement actual attestation verification
+     * When MOBILE_ATTESTATION_ENABLED=true, delegates to the platform-specific
+     * verifier. Falls back to demo mode (length check) when disabled.
      */
     public function verifyDeviceAttestation(string $attestation, string $deviceType): bool
     {
@@ -229,11 +230,19 @@ class BiometricJWTService implements BiometricJWTServiceInterface
             return false;
         }
 
+        // Production attestation when enabled
+        if (config('mobile.attestation.enabled', false)) {
+            return match ($deviceType) {
+                'ios'     => app(AppleAttestationVerifier::class)->verify($attestation, ''),
+                'android' => app(GoogleIntegrityVerifier::class)->verify($attestation),
+                default   => false,
+            };
+        }
+
         // Demo mode: Accept any non-empty attestation with minimum length
-        // Production: Verify with Apple/Google attestation services
         $minLength = match ($deviceType) {
-            'ios'     => 100,  // App Attest assertion minimum
-            'android' => 50,   // SafetyNet response minimum
+            'ios'     => 100,
+            'android' => 50,
             default   => 32,
         };
 
@@ -247,7 +256,6 @@ class BiometricJWTService implements BiometricJWTServiceInterface
             return false;
         }
 
-        // Demo: Log attestation verification (would verify with Apple/Google in production)
         Log::debug('Device attestation verified (demo mode)', [
             'type'   => $deviceType,
             'length' => strlen($attestation),
