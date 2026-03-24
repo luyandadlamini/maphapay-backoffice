@@ -19,12 +19,13 @@ paths = [
     '''(test|tests|spec|specs)/.*''',
     '''(example|examples|sample|samples|demo|demos)/.*''',
     '''.*\.postman_collection\.json$''',
-    '''\.env\.(example|sample|demo|test)$''',
+    '''\.env\.(example|sample|demo|test|dev)$''',
+    '''\.env\.[a-z]+\.example$''',
     '''\.php-cs-fixer\.cache$''',
     '''config/(crosschain|defi|relayer|privacy|cctp)\.php$''',
-    '''\.env\.example$''',
     '''resources/views/developers/.*\.blade\.php$''',
-    '''resources/views/features/.*\.blade\.php$'''
+    '''resources/views/features/.*\.blade\.php$''',
+    '''bin/.*\.sh$'''
 ]
 commits = [
     '''(docs|doc|documentation|readme|example|sample|test)'''
