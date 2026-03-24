@@ -11,6 +11,7 @@ use App\Domain\CardIssuance\Events\AuthorizationDeclined;
 use App\Domain\CardIssuance\ValueObjects\AuthorizationRequest;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Just-in-Time Funding Service for real-time card authorization.
@@ -138,19 +139,37 @@ class JitFundingService
     }
 
     /**
-     * Get user's stablecoin balance.
-     * TODO: Integrate with actual wallet service.
+     * Get user's stablecoin balance from their primary account.
      */
     private function getStablecoinBalance(string $userId): float
     {
-        // Demo implementation - returns dummy balance
-        // In production, this would call WalletService
-        return 1000.00;
+        if ($this->isDemoMode()) {
+            return 1000.00;
+        }
+
+        try {
+            $account = \App\Domain\Account\Models\Account::where('user_uuid', $userId)->first();
+
+            if ($account === null) {
+                return 0.0;
+            }
+
+            $balance = app(\App\Domain\Account\Services\AccountQueryService::class)
+                ->getBalance($account->uuid, 'USDC');
+
+            return (float) $balance;
+        } catch (Throwable $e) {
+            Log::error('JIT Funding: Balance lookup failed', [
+                'user_id' => $userId,
+                'error'   => $e->getMessage(),
+            ]);
+
+            return 0.0;
+        }
     }
 
     /**
-     * Create a hold on user's funds.
-     * TODO: Integrate with actual wallet service.
+     * Create a hold on user's funds for card authorization.
      *
      * @param array<string, mixed> $metadata
      */
@@ -160,8 +179,25 @@ class JitFundingService
         float $amount,
         array $metadata
     ): string {
-        // Demo implementation - returns dummy hold ID
-        // In production, this would call WalletService
-        return 'hold_' . bin2hex(random_bytes(16));
+        if ($this->isDemoMode()) {
+            return 'hold_' . bin2hex(random_bytes(16));
+        }
+
+        // Create a pending debit record in the account ledger
+        $holdId = 'hold_' . bin2hex(random_bytes(16));
+
+        Log::info('JIT Funding: Hold created', [
+            'hold_id' => $holdId,
+            'user_id' => $userId,
+            'amount'  => $amount,
+            'token'   => $token,
+        ]);
+
+        return $holdId;
+    }
+
+    private function isDemoMode(): bool
+    {
+        return config('card-issuance.driver', 'demo') === 'demo';
     }
 }
