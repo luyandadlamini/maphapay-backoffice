@@ -140,6 +140,55 @@ class WebSocketPaymentService
     }
 
     /**
+     * Renew an existing subscription by extending its expiry.
+     *
+     * Returns the updated subscription, or null if no active subscription exists.
+     */
+    public function renewSubscription(string $channel, ?int $userId, ?string $agentId): ?WebSocketSubscription
+    {
+        $query = WebSocketSubscription::active()->forChannel($channel);
+
+        if ($userId !== null) {
+            $query->where('user_id', $userId);
+        } elseif ($agentId !== null) {
+            $query->where('agent_id', $agentId);
+        } else {
+            return null;
+        }
+
+        $subscription = $query->latest('expires_at')->first();
+
+        if ($subscription === null) {
+            return null;
+        }
+
+        /** @var array<string, array{price: string, protocol: string, duration_seconds: int}> $premiumChannels */
+        $premiumChannels = (array) config('websocket.premium_channels', []);
+
+        $durationSeconds = 3600; // Default 1 hour
+        foreach ($premiumChannels as $pattern => $pricing) {
+            if ($this->channelMatchesPattern($channel, $pattern)) {
+                $durationSeconds = $pricing['duration_seconds'];
+
+                break;
+            }
+        }
+
+        $newExpiry = $subscription->expires_at->addSeconds($durationSeconds);
+        $subscription->update(['expires_at' => $newExpiry]);
+
+        Log::info('ws: Renewed channel subscription', [
+            'subscription_id' => $subscription->id,
+            'channel'         => $channel,
+            'user_id'         => $userId,
+            'agent_id'        => $agentId,
+            'new_expires_at'  => $newExpiry->toIso8601String(),
+        ]);
+
+        return $subscription;
+    }
+
+    /**
      * Check if a channel name matches a wildcard pattern.
      *
      * Supports '*' as a wildcard for a single segment.
