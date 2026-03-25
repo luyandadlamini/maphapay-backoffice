@@ -15,7 +15,9 @@ use App\Domain\X402\Services\X402PaymentVerificationService;
 use App\Domain\X402\Services\X402PricingService;
 use App\Domain\X402\Services\X402SettlementService;
 use App\Domain\X402\Services\X402SignerFactory;
+use App\Domain\X402\Services\X402SolanaHsmSignerService;
 use App\Domain\X402\Services\X402SolanaSignerService;
+use App\Domain\X402\Services\X402SolanaVerifierService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\ServiceProvider;
 
@@ -55,6 +57,15 @@ class X402ServiceProvider extends ServiceProvider
                 signerKeyId: (string) config('x402.client.signer_key_id', 'default'),
             );
         });
+
+        $this->app->bind(X402SolanaHsmSignerService::class, function () {
+            return new X402SolanaHsmSignerService(
+                keyId: (string) config('x402.client.signer_key_id', 'default'),
+                provider: (string) config('x402.client.solana_hsm_provider', 'sodium'),
+            );
+        });
+
+        $this->app->singleton(X402SolanaVerifierService::class);
 
         // Signer factory — returns appropriate signer based on network
         $this->app->singleton(X402SignerFactory::class, function ($app) {

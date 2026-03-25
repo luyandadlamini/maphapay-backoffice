@@ -92,6 +92,12 @@ return [
 
         // Solana-specific signer address (base58 public key)
         'solana_signer_address' => env('X402_CLIENT_SOLANA_SIGNER_ADDRESS', ''),
+
+        // Solana HSM provider (sodium for dev, aws/azure for production)
+        'solana_hsm_provider' => env('X402_SOLANA_HSM_PROVIDER', 'sodium'),
+
+        // Path to Solana keypair file (for sodium provider only)
+        'solana_key_path' => env('X402_SOLANA_KEY_PATH', ''),
     ],
 
     /*
