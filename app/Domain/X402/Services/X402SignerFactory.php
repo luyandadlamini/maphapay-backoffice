@@ -26,6 +26,10 @@ class X402SignerFactory
     public function forNetwork(string $network): X402SignerInterface
     {
         if (self::isSolanaNetwork($network)) {
+            if (app()->isProduction()) {
+                return app(X402SolanaHsmSignerService::class);
+            }
+
             return $this->solanaSigner;
         }
 
