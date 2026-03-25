@@ -131,6 +131,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'x402.payment' => App\Http\Middleware\X402PaymentGateMiddleware::class,
             // Machine Payments Protocol middleware (v6.4.0)
             'mpp.payment' => App\Http\Middleware\MppPaymentGateMiddleware::class,
+            // WebSocket paid channel gate (v6.5.0)
+            'ws.payment' => App\Http\Middleware\WebSocketPaymentGateMiddleware::class,
             // Protocol subdomain auto-detection (v6.5.0)
             'protocol.subdomain' => App\Http\Middleware\ProtocolSubdomainMiddleware::class,
         ]);
