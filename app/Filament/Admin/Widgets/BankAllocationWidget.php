@@ -2,7 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Models\UserBankPreference;
+use App\Domain\Banking\Models\UserBankPreference;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Number;
 

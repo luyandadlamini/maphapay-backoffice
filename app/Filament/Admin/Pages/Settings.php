@@ -2,7 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
-use App\Domain\Account\Models\Setting;
+use App\Models\Setting;
 use App\Services\SettingsService;
 use Exception;
 use Filament\Forms;
@@ -27,11 +27,16 @@ class Settings extends Page
 
     public ?array $data = [];
 
-    protected SettingsService $settingsService;
+    protected ?SettingsService $settingsService = null;
 
     public function boot(): void
     {
         $this->settingsService = app(SettingsService::class);
+    }
+
+    protected function getSettingsService(): SettingsService
+    {
+        return $this->settingsService ??= app(SettingsService::class);
     }
 
     public function mount(): void
@@ -49,7 +54,7 @@ class Settings extends Page
     {
         $schema = [];
 
-        foreach ($this->settingsService->getConfig() as $group => $groupConfig) {
+        foreach ($this->getSettingsService()->getConfig() as $group => $groupConfig) {
             $fields = [];
 
             foreach ($groupConfig['settings'] as $key => $config) {
@@ -101,13 +106,13 @@ class Settings extends Page
             $data = $this->form->getState();
 
             foreach ($data as $key => $value) {
-                $config = $this->settingsService->getSettingConfig($key);
+                $config = $this->getSettingsService()->getSettingConfig($key);
 
                 if (empty($config)) {
                     continue;
                 }
 
-                $validation = $this->settingsService->validateSetting($key, $value);
+                $validation = $this->getSettingsService()->validateSetting($key, $value);
 
                 if (! $validation['valid']) {
                     Notification::make()
@@ -119,7 +124,7 @@ class Settings extends Page
                     throw new Halt();
                 }
 
-                $this->settingsService->updateSetting($key, $value, auth()->user()->email ?? 'system');
+                $this->getSettingsService()->updateSetting($key, $value, auth()->user()->email ?? 'system');
             }
 
             Cache::flush();
@@ -144,7 +149,7 @@ class Settings extends Page
     public function resetToDefaults(): void
     {
         try {
-            $this->settingsService->initializeSettings();
+            $this->getSettingsService()->initializeSettings();
 
             Cache::flush();
 
@@ -172,7 +177,7 @@ class Settings extends Page
 
     public function exportSettings(): void
     {
-        $settings = $this->settingsService->exportSettings();
+        $settings = $this->getSettingsService()->exportSettings();
 
         $filename = 'settings-export-' . now()->format('Y-m-d-His') . '.json';
 
