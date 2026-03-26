@@ -1,7 +1,7 @@
 {
-    "name": "finaegis",
-    "version": "1.0.0",
-    "description": "Core Banking Prototype - Educational Demonstration",
+  "name": "maphapay-backoffice",
+  "version": "1.0.0",
+  "description": "MaphaPay backoffice (FinAegis-based core banking platform)",
     "author": "Marijus Planciunas <yozaz.mandac@gmail.com>",
     "license": "Apache-2.0",
     "repository": {

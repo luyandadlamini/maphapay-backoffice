@@ -420,7 +420,7 @@
 
         function startTour() {
             // This would integrate with a tour library like Intro.js or Shepherd.js
-            alert('Starting your ' . config('brand.name', 'Zelta') . ' tour! Let\'s explore the platform together.');
+            alert("Starting your {{ config('brand.name', 'Zelta') }} tour! Let's explore the platform together.");
             // In a real implementation, this would start an interactive tour
         }
     </script>
