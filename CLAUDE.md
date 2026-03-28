@@ -43,6 +43,18 @@ namespace App\Domain\Exchange\Services;
 - Commits: `feat:` / `fix:` / `test:` / `refactor:` + `Co-Authored-By: Claude <noreply@anthropic.com>`
 - Tests: Always pass `['read', 'write', 'delete']` abilities to `Sanctum::actingAs()`
 
+## Compat Layer API Contract (api-compat.php)
+
+**The backend is the single source of truth for field names and data shapes.**
+
+- Compat controllers translate **route paths** (legacy URL → new handler) — not field names.
+- Return domain model field names directly. **Never add legacy aliases** (`trx_type`, `remark`, `trx`, `details`, `remarks`).
+- When the mobile client and backend disagree on a field name, **update the mobile**, not the backend.
+- Canonical transaction fields: `id`, `reference`, `description`, `amount` (major-unit string), `type` (`deposit`/`withdrawal`/`transfer`), `subtype` (`send_money`/`request_money`/etc.), `asset_code`, `created_at`.
+- Filter params must match domain vocabulary: `?type=deposit`, `?subtype=send_money`, `?search=` — not `?remark=`, `?trx_type=`.
+- Response wrapper keys must be semantic: `subtypes` (not `remarks`), `transactions` (not `history`).
+- Amount format: major-unit decimal string (e.g. `"10.50"`) via `TransactionProjection::formatted_amount` or `number_format($minor / $divisor, $precision)`. Never return raw minor-unit integers to mobile clients.
+
 ## CI/CD
 
 | Issue | Fix |

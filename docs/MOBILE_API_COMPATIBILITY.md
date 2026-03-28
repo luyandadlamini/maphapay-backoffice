@@ -166,7 +166,170 @@ The following custom headers are allowed in CORS configuration:
 
 ---
 
-## 11. What Mobile Should Update
+## 11. MaphaPay Compat Layer Endpoints (Phase 18+)
+
+These endpoints live in `routes/api-compat.php` and are gated by feature flags (`MAPHAPAY_MIGRATION_ENABLE_*`). They replace the equivalent legacy MaphaPay backend routes one-for-one at the URL level.
+
+### Design principle
+
+> **The backend is the single source of truth for field names and data shapes.**
+>
+> The compat layer translates *URL paths* only — it does not translate field names. Mobile clients must read the backend's domain vocabulary directly. If a screen was reading a legacy field name (e.g. `trx_type`, `remark`, `trx`), update the mobile hook to read the canonical name instead.
+
+### Standard response envelope
+
+```json
+{ "status": "success", "remark": "<endpoint-name>", "data": { ... } }
+```
+
+Error:
+```json
+{ "status": "error", "message": "Human-readable message.", "data": {} }
+```
+
+---
+
+### GET /api/transactions
+
+Returns paginated transaction history for the authenticated user.
+
+**Query params**
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `page` | int | Page number (default 1) |
+| `type` | string | Filter by `deposit`, `withdrawal`, or `transfer` |
+| `subtype` | string | Filter by subtype e.g. `send_money`, `request_money` |
+| `search` | string | Full-text match on `description` or `reference` |
+
+**Response**
+
+```json
+{
+  "status": "success",
+  "remark": "transactions",
+  "data": {
+    "transactions": {
+      "data": [
+        {
+          "id": "uuid",
+          "reference": "REF-001",
+          "description": "Payment from Alice",
+          "amount": "10.50",
+          "type": "deposit",
+          "subtype": "send_money",
+          "asset_code": "SZL",
+          "created_at": "2026-03-28T10:00:00+00:00"
+        }
+      ],
+      "current_page": 1,
+      "last_page": 3,
+      "next_page_url": "...",
+      "total": 42
+    },
+    "subtypes": ["send_money", "request_money"]
+  }
+}
+```
+
+**Field name mapping (legacy → canonical)**
+
+| Legacy (do not use) | Canonical |
+|---------------------|-----------|
+| `trx` | `reference` |
+| `trx_type` (`+`/`-`) | `type` (`deposit`/`withdrawal`/`transfer`) |
+| `remark` | `subtype` |
+| `details` | `description` |
+| `remarks` (filter list) | `subtypes` |
+| `?remark=` (filter param) | `?subtype=` |
+
+---
+
+### GET /api/dashboard
+
+Returns the user's profile and wallet balance. Cached 30 s per user.
+
+**Response**
+
+```json
+{
+  "status": "success",
+  "remark": "dashboard",
+  "data": {
+    "user": {
+      "id": 1,
+      "email": "user@example.com",
+      "mobile": null,
+      "balance": "250.00"
+    },
+    "balance": "250.00",
+    "offers": []
+  }
+}
+```
+
+`balance` is the SZL wallet balance as a major-unit decimal string. `mobile` is `null` until a mobile-phone column is added to the users table.
+
+---
+
+### POST /api/send-money/store
+
+Initiates an OTP-gated peer send. Returns an `authorized_transaction` reference and dispatches OTP.
+
+**Body**: `{ recipient_id, amount, note? }` — `amount` is a major-unit decimal string (e.g. `"25.00"`).
+
+---
+
+### POST /api/request-money/store
+
+Creates a money request. Does not move funds; awaits recipient acceptance.
+
+---
+
+### POST /api/request-money/received-store
+
+Accepts a pending money request (recipient initiates transfer). Requires OTP/PIN.
+
+---
+
+### POST /api/request-money/reject/{moneyRequest}
+
+Rejects a pending money request.
+
+---
+
+### GET /api/request-money/history
+
+Paginated list of requests the authenticated user *sent*.
+
+### GET /api/request-money/received-history
+
+Paginated list of requests the authenticated user *received*.
+
+---
+
+### POST /api/verification-process/verify/otp
+
+Verifies the OTP for a pending `authorized_transaction`. For scheduled sends, sets `verification_confirmed_at` without executing the transfer immediately.
+
+### POST /api/verification-process/verify/pin
+
+Same as OTP verify but uses the user's transaction PIN.
+
+---
+
+### MTN MoMo (`/api/mtn/*`)
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/mtn/request-to-pay` | POST | Required | Initiate MoMo collection (credits wallet on success) |
+| `/api/mtn/disbursement` | POST | Required | Debit wallet and push funds to MoMo number |
+| `/api/mtn/transaction/{referenceId}/status` | GET | Required | Poll transaction status |
+| `/api/mtn/callback` | POST | None (token header) | IPN from MTN; verified via `X-Callback-Token` |
+
+---
+
+## 12. What Mobile Should Update
 
 The following are breaking or notable changes that the mobile app should account for:
 
