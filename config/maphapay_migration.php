@@ -20,4 +20,8 @@ return [
     'enable_scheduled_send' => (bool) env('MAPHAPAY_MIGRATION_ENABLE_SCHEDULED_SEND', false),
 
     'enable_mtn_momo' => (bool) env('MAPHAPAY_MIGRATION_ENABLE_MTN_MOMO', false),
+
+    'enable_transaction_history' => (bool) env('MAPHAPAY_MIGRATION_ENABLE_TRANSACTION_HISTORY', false),
+
+    'enable_dashboard' => (bool) env('MAPHAPAY_MIGRATION_ENABLE_DASHBOARD', false),
 ];

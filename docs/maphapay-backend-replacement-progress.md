@@ -215,8 +215,23 @@ These do **not** touch files already changed above; assign one agent per row.
 
 ---
 
+### Session **2026-03-28** — Transaction History + Dashboard compat endpoints
+
+| Area | What | Files |
+|------|------|--------|
+| Config | `enable_transaction_history`, `enable_dashboard` flags | `config/maphapay_migration.php` |
+| Phase 5 | `TransactionHistoryController` — `GET /api/transactions`: queries `TransactionProjection` for the user's account, paginates 15/page, returns **canonical domain field names** (`id`, `reference`, `description`, `amount` major-unit string, `type` deposit/withdrawal/transfer, `subtype`, `asset_code`, `created_at`); supports `type`/`subtype`/`search` query filters; returns distinct `subtypes` list | `app/Http/Controllers/Api/Compatibility/Transactions/TransactionHistoryController.php` |
+| Phase 5 | `DashboardController` — `GET /api/dashboard`: returns user info + SZL balance (major-unit string), cached 30 s per user; balance = 0.00 when no account exists | `app/Http/Controllers/Api/Compatibility/Dashboard/DashboardController.php` |
+| Routes | `GET /api/transactions` (flag `enable_transaction_history`), `GET /api/dashboard` (flag `enable_dashboard`) in `api-compat.php` | `routes/api-compat.php` |
+| Tests | `TransactionHistoryControllerTest` (9 cases), `DashboardControllerTest` (6 cases) — all 15 pass; PHPStan 0 errors, CS-Fixer clean | `tests/Feature/Http/Controllers/Api/Compatibility/Transactions/`, `tests/Feature/Http/Controllers/Api/Compatibility/Dashboard/` |
+
+**Canonical field policy (no legacy aliases):** `TransactionHistoryController` returns `type`/`subtype`/`reference`/`description` — NOT `trx_type`/`remark`/`trx`/`details`. Response wrapper uses `subtypes` (not `remarks`). Anti-corruption layer responsibility sits in the mobile client.
+
+**Mobile app updated (canonical field alignment):** `useTransactions.ts`, `useTransactionDetail.ts`, `walletDataSource.ts`, `homeDataSource.ts` all updated to read backend-native field names. `tx.reference` → id, `tx.type === 'deposit'` → isCredit, `tx.subtype` → category input. `subtypes` replaces `remarks` in filter UI.
+
 ## Last updated
 
+- **2026-03-28 (Transaction History + Dashboard — canonical fields):** `GET /api/transactions` returns `type`/`subtype`/`reference`/`description` (no legacy `trx_type`/`remark` aliases). `GET /api/dashboard` returns user + balance. Mobile RN updated: `useTransactions`, `useTransactionDetail`, `walletDataSource`, `homeDataSource` all read canonical field names. 15 tests green (9 tx + 6 dashboard), PHPStan 0 errors, CS-Fixer clean.
 - **2026-03-28 (Phase 15 MTN MoMo — hardening):** Post-review fixes: `wallet_refunded_at` column; no MTN error body in API responses; `Log::critical` on failed refund; callback 404→200 for unknown refs; idempotency race fix in disbursement; `withoutMiddleware` route fix (class + alias); `WalletOperationsService` mocked in tests; all 7 tests green. PHPStan 0 errors, CS-Fixer clean.
 - **2026-03-28 (Phase 15 MTN MoMo):** Config `mtn_momo.php`, migration flag `enable_mtn_momo`, `MtnMomoClient` + collection settlement, four `/api/mtn/*` compat routes (callback unauthenticated + `X-Callback-Token`), `MtnMomoControllersTest`. PHPStan clean on touched paths. Local SQLite full-migration runs may still hit 10s statement timeouts — CI/MySQL per checklist.
 - **2026-03-28 (scheduled send + Phase 10 notes):** `scheduled_sends` migration/model; three compat controllers; `ScheduledSendHandler` sets `executed` after transfer; `enable_scheduled_send` config + api-compat routes (idempotent store). Feature tests added. Phase 10 auth/schema findings appended. Local SQLite test runs may still hit migration timeouts — use MySQL/CI per checklist.

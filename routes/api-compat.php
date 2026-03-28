@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\Compatibility\Dashboard\DashboardController;
 use App\Http\Controllers\Api\Compatibility\Mtn\CallbackController;
 use App\Http\Controllers\Api\Compatibility\Mtn\DisbursementController;
 use App\Http\Controllers\Api\Compatibility\Mtn\RequestToPayController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendCancelCont
 use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendIndexController;
 use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendStoreController;
 use App\Http\Controllers\Api\Compatibility\SendMoney\SendMoneyStoreController;
+use App\Http\Controllers\Api\Compatibility\Transactions\TransactionHistoryController;
 use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyOtpController;
 use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyPinController;
 use Illuminate\Auth\Middleware\Authenticate;
@@ -89,3 +91,11 @@ Route::middleware(['migration_flag:enable_mtn_momo', 'kyc_approved'])->group(fun
         ->withoutMiddleware([Authenticate::class, 'auth:sanctum', 'kyc_approved'])
         ->name('maphapay.compat.mtn.callback');
 });
+
+Route::middleware('migration_flag:enable_transaction_history')
+    ->get('transactions', TransactionHistoryController::class)
+    ->name('maphapay.compat.transactions.history');
+
+Route::middleware('migration_flag:enable_dashboard')
+    ->get('dashboard', DashboardController::class)
+    ->name('maphapay.compat.dashboard');
