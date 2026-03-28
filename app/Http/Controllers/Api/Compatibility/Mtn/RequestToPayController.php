@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Rules\MajorUnitAmountString;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use RuntimeException;
@@ -92,10 +93,20 @@ class RequestToPayController extends Controller
             );
         } catch (RuntimeException $e) {
             $txn->update(['status' => MtnMomoTransaction::STATUS_FAILED]);
+            Log::error('MTN request-to-pay failed', [
+                'mtn_reference_id' => $referenceId,
+                'user_id'          => $authUser->id,
+                'error'            => $e->getMessage(),
+            ]);
 
-            return $this->errorResponse($e->getMessage(), 503);
-        } catch (Throwable) {
+            return $this->errorResponse('MTN request-to-pay could not be completed.', 503);
+        } catch (Throwable $e) {
             $txn->update(['status' => MtnMomoTransaction::STATUS_FAILED]);
+            Log::error('MTN request-to-pay unexpected error', [
+                'mtn_reference_id' => $referenceId,
+                'user_id'          => $authUser->id,
+                'error'            => $e->getMessage(),
+            ]);
 
             return $this->errorResponse('MTN request-to-pay could not be completed.', 503);
         }

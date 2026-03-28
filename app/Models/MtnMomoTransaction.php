@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $last_mtn_status
  * @property \Illuminate\Support\Carbon|null $wallet_credited_at
  * @property \Illuminate\Support\Carbon|null $wallet_debited_at
+ * @property \Illuminate\Support\Carbon|null $wallet_refunded_at
  */
 class MtnMomoTransaction extends Model
 {
@@ -73,6 +74,7 @@ class MtnMomoTransaction extends Model
         'last_mtn_status',
         'wallet_credited_at',
         'wallet_debited_at',
+        'wallet_refunded_at',
     ];
 
     /**
@@ -83,6 +85,7 @@ class MtnMomoTransaction extends Model
         return [
             'wallet_credited_at' => 'datetime',
             'wallet_debited_at'  => 'datetime',
+            'wallet_refunded_at' => 'datetime',
         ];
     }
 

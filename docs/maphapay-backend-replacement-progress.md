@@ -117,9 +117,21 @@
 | Persistence | `mtn_momo_transactions` — idempotency per user, MTN reference, wallet credit/debit timestamps | `database/migrations/2026_03_28_170000_create_mtn_momo_transactions_table.php`, `app/Models/MtnMomoTransaction.php` |
 | Client | `MtnMomoClient` — collection/disbursement OAuth tokens, request-to-pay, transfer, status GET | `app/Domain/MtnMomo/Services/MtnMomoClient.php` |
 | Settlement | `MtnMomoCollectionSettler` — idempotent `WalletOperationsService::deposit` on successful collection (status poll + IPN) | `app/Domain/MtnMomo/Services/MtnMomoCollectionSettler.php` |
-| Phase 18 | Routes under `migration_flag:enable_mtn_momo`: `POST mtn/request-to-pay`, `POST mtn/disbursement` (both + `idempotency`), `GET mtn/transaction/{referenceId}/status`, `POST mtn/callback` (**`withoutMiddleware(Authenticate::class)`** for MTN IPN) | `routes/api-compat.php` |
+| Phase 18 | Routes under `migration_flag:enable_mtn_momo`: `POST mtn/request-to-pay`, `POST mtn/disbursement` (both + `idempotency`), `GET mtn/transaction/{referenceId}/status`, `POST mtn/callback` (**`withoutMiddleware([Authenticate::class, 'auth:sanctum'])`** — both class and alias required to fully strip auth from the group stack) | `routes/api-compat.php` |
 | Controllers | Legacy-style success/error envelopes; `MajorUnitAmountString` + `MoneyConverter::normalise`; disbursement debits wallet before MTN call with refund on MTN failure | `app/Http/Controllers/API/Compatibility/Mtn/*` |
-| Tests | `MtnMomoControllersTest` — flag off 404, RTP/disbursement/status/callback; payer account uses `Str::uuid()` (v4) for `WalletOperationsService` validation | `tests/Feature/Http/Controllers/Api/Compatibility/Mtn/MtnMomoControllersTest.php` |
+| Tests | `MtnMomoControllersTest` — flag off 404, RTP/disbursement/status/callback (all 7 pass); `WalletOperationsService` mocked via `$this->app->instance()` to avoid workflow dispatch type mismatch in HTTP-layer tests | `tests/Feature/Http/Controllers/Api/Compatibility/Mtn/MtnMomoControllersTest.php` |
+
+**Post-review hardening (2026-03-28):** Code-review findings resolved before merge:
+- **Security:** MTN `RuntimeException` messages (which include raw HTTP response bodies) no longer leaked to API clients — logged internally via `Log::error`, generic string returned.
+- **Security:** Callback with empty `MTNMOMO_CALLBACK_TOKEN` + verification enabled now logs `Log::warning` and returns 401 immediately, making misconfiguration visible.
+- **Resilience:** Callback 404 for unknown reference ID changed to 200 (no-op + `Log::warning`) so MTN does not retry indefinitely.
+- **Observability:** `Log::critical` on failed disbursement refund (funds-loss path); `Log::error` on all MTN API failure paths.
+- **Audit trail:** Added `wallet_refunded_at` column (`2026_03_28_180000_add_wallet_refunded_at_to_mtn_momo_transactions.php`) — replaces nulling `wallet_debited_at` in `refundAndFail`, preserving full debit/refund history for reconciliation.
+- **Idempotency race:** Concurrent disbursements with the same key that hit the DB unique constraint now retry the idempotency query and return the existing record (200) instead of 503.
+- **Route auth:** `withoutMiddleware` updated to strip both `Authenticate::class` and `'auth:sanctum'` alias — original only stripped the class reference, leaving `auth:sanctum` alias in place.
+- **Style:** Migration file anonymous-class brace style fixed (CS-Fixer).
+
+**Known follow-up (not blocking):** Async disbursement failure path — when MTN accepts (202) but later marks a disbursement FAILED via callback, there is no auto-refund. A reconciliation cron job should be scoped and scheduled before production launch with real money.
 
 **Note:** Paths are `/api/mtn/...` (handoff). Legacy mobile used `/api/wallet-transfer/mtn-momo/...`; add proxies or mobile config if URLs must stay byte-identical.
 
@@ -205,6 +217,7 @@ These do **not** touch files already changed above; assign one agent per row.
 
 ## Last updated
 
+- **2026-03-28 (Phase 15 MTN MoMo — hardening):** Post-review fixes: `wallet_refunded_at` column; no MTN error body in API responses; `Log::critical` on failed refund; callback 404→200 for unknown refs; idempotency race fix in disbursement; `withoutMiddleware` route fix (class + alias); `WalletOperationsService` mocked in tests; all 7 tests green. PHPStan 0 errors, CS-Fixer clean.
 - **2026-03-28 (Phase 15 MTN MoMo):** Config `mtn_momo.php`, migration flag `enable_mtn_momo`, `MtnMomoClient` + collection settlement, four `/api/mtn/*` compat routes (callback unauthenticated + `X-Callback-Token`), `MtnMomoControllersTest`. PHPStan clean on touched paths. Local SQLite full-migration runs may still hit 10s statement timeouts — CI/MySQL per checklist.
 - **2026-03-28 (scheduled send + Phase 10 notes):** `scheduled_sends` migration/model; three compat controllers; `ScheduledSendHandler` sets `executed` after transfer; `enable_scheduled_send` config + api-compat routes (idempotent store). Feature tests added. Phase 10 auth/schema findings appended. Local SQLite test runs may still hit migration timeouts — use MySQL/CI per checklist.
 - **2026-03-28 (scheduled send post-review hardening):** Cancel-then-OTP exploit fixed (`lockForUpdate` pre-transfer guard + `STATUS_CANCELLED` propagation to `authorized_transaction`); transfer failure marks `scheduled_send` `failed`; explicit field projection in index; `before:+1 year` on `scheduled_for`; 5 new test cases. `AuthorizedTransaction::STATUS_CANCELLED` added.

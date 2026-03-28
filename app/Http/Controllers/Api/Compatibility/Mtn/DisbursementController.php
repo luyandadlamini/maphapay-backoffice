@@ -17,6 +17,7 @@ use App\Rules\MajorUnitAmountString;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use RuntimeException;
@@ -123,7 +124,24 @@ class DisbursementController extends Controller
             });
         } catch (InsufficientBalanceException) {
             return $this->errorResponse('Insufficient balance.', 422);
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            // A unique-constraint violation means a concurrent request with the same
+            // idempotency key won the race — return the existing record idempotently.
+            $raceExisting = MtnMomoTransaction::query()
+                ->where('user_id', $authUser->id)
+                ->where('idempotency_key', $validated['idempotency_key'])
+                ->first();
+
+            if ($raceExisting !== null) {
+                return $this->successResponse($raceExisting);
+            }
+
+            Log::error('MTN disbursement fund reservation failed', [
+                'user_id'         => $authUser->id,
+                'idempotency_key' => $validated['idempotency_key'],
+                'error'           => $e->getMessage(),
+            ]);
+
             return $this->errorResponse('Could not reserve funds for disbursement.', 503);
         }
 
@@ -143,10 +161,20 @@ class DisbursementController extends Controller
             );
         } catch (RuntimeException $e) {
             $this->refundAndFail($txn, $fromAccount, $currency, $amountMinor, $referenceId);
+            Log::error('MTN disbursement API call failed', [
+                'mtn_reference_id' => $referenceId,
+                'user_id'          => $authUser->id,
+                'error'            => $e->getMessage(),
+            ]);
 
-            return $this->errorResponse($e->getMessage(), 503);
-        } catch (Throwable) {
+            return $this->errorResponse('MTN disbursement could not be completed.', 503);
+        } catch (Throwable $e) {
             $this->refundAndFail($txn, $fromAccount, $currency, $amountMinor, $referenceId);
+            Log::error('MTN disbursement unexpected error', [
+                'mtn_reference_id' => $referenceId,
+                'user_id'          => $authUser->id,
+                'error'            => $e->getMessage(),
+            ]);
 
             return $this->errorResponse('MTN disbursement could not be completed.', 503);
         }
@@ -169,14 +197,23 @@ class DisbursementController extends Controller
                 'mtn-disburse-refund:' . $referenceId,
                 ['mtn_momo_transaction_id' => $txn->id],
             );
-        } catch (Throwable) {
-            // Best-effort refund; row still marked failed for reconciliation.
-        }
 
-        $txn->update([
-            'status'            => MtnMomoTransaction::STATUS_FAILED,
-            'wallet_debited_at' => null,
-        ]);
+            $txn->update([
+                'status'             => MtnMomoTransaction::STATUS_FAILED,
+                'wallet_refunded_at' => now(),
+            ]);
+        } catch (Throwable $e) {
+            Log::critical('MTN disbursement refund failed — funds may be lost', [
+                'mtn_reference_id'        => $referenceId,
+                'mtn_momo_transaction_id' => $txn->id,
+                'user_id'                 => $fromAccount->user_uuid ?? null,
+                'amount_minor'            => $amountMinor,
+                'currency'                => $currency,
+                'error'                   => $e->getMessage(),
+            ]);
+
+            $txn->update(['status' => MtnMomoTransaction::STATUS_FAILED]);
+        }
     }
 
     private function successResponse(MtnMomoTransaction $txn): JsonResponse

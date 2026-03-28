@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MtnMomoTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 
 /**
  * POST /api/mtn/callback — MTN MoMo IPN (no Sanctum; verify X-Callback-Token).
@@ -24,9 +25,16 @@ class CallbackController extends Controller
     {
         if (config('mtn_momo.verify_callback_token', true)) {
             $expected = (string) config('mtn_momo.callback_token', '');
+
+            if ($expected === '') {
+                Log::warning('MTN callback token verification is enabled but MTNMOMO_CALLBACK_TOKEN is not set.');
+
+                return response('', 401);
+            }
+
             $incoming = (string) $request->header('X-Callback-Token', '');
 
-            if ($expected === '' || $incoming === '' || ! hash_equals($expected, $incoming)) {
+            if ($incoming === '' || ! hash_equals($expected, $incoming)) {
                 return response('', 401);
             }
         }
@@ -44,7 +52,12 @@ class CallbackController extends Controller
             ->first();
 
         if ($txn === null) {
-            return response('', 404);
+            Log::warning('MTN callback received for unknown reference ID', [
+                'mtn_reference_id' => $referenceId,
+            ]);
+
+            // Return 200 to prevent MTN from retrying; do not leak whether the ID exists.
+            return response('', 200);
         }
 
         $remoteStatus = $this->mtnStatusFrom($body);

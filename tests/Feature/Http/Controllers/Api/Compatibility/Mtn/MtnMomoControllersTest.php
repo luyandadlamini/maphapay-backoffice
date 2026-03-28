@@ -7,6 +7,7 @@ namespace Tests\Feature\Http\Controllers\Api\Compatibility\Mtn;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Asset\Models\Asset;
+use App\Domain\Wallet\Services\WalletOperationsService;
 use App\Models\MtnMomoTransaction;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
@@ -28,6 +29,12 @@ class MtnMomoControllersTest extends ControllerTestCase
 
         Cache::flush();
         Http::preventStrayRequests();
+
+        // Stub wallet ops so workflow dispatch does not run in this HTTP-layer test.
+        $walletStub = $this->createMock(WalletOperationsService::class);
+        $walletStub->method('withdraw')->willReturn('stub-txn-id');
+        $walletStub->method('deposit')->willReturn('stub-txn-id');
+        $this->app->instance(WalletOperationsService::class, $walletStub);
 
         $this->payer = User::factory()->create();
 

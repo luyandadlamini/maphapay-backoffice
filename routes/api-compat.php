@@ -85,6 +85,6 @@ Route::middleware('migration_flag:enable_mtn_momo')->group(function () {
         ->name('maphapay.compat.mtn.transaction.status');
 
     Route::post('mtn/callback', CallbackController::class)
-        ->withoutMiddleware([Authenticate::class])
+        ->withoutMiddleware([Authenticate::class, 'auth:sanctum'])
         ->name('maphapay.compat.mtn.callback');
 });
