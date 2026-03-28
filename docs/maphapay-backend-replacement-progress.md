@@ -180,7 +180,7 @@ These do **not** touch files already changed above; assign one agent per row.
 
 | Next stream | Exclusive files | Plan ref |
 |-------------|-----------------|----------|
-| **E** | `app/Http/Controllers/API/MobilePayment/PaymentIntentController.php`, `app/Http/Requests/MobilePayment/CreatePaymentIntentRequest.php` | Idempotency header naming §Phase 1 / 5 |
+| ~~**E**~~ | ~~`app/Http/Controllers/API/MobilePayment/PaymentIntentController.php`~~ | **Already done** — `resolveIdempotencyKeyFromHeaders()` at line 430 already handles both `Idempotency-Key` and `X-Idempotency-Key` with the same null-coalescing order as `IdempotencyMiddleware`. |
 | **G** | `config/machinepay.php`, `config/agent_protocol.php` (SZL default — **risky**; verify GCU domains first) | Phase 3.2 |
 
 **`app/Http/Controllers/Api/Compatibility/` directory is now live** — do not scaffold it again (VerifyOtp/VerifyPin already exist there).
@@ -197,7 +197,9 @@ These do **not** touch files already changed above; assign one agent per row.
 4. ~~**Phase 5 — `RequestMoneyStoreController`**~~ **Done** (2026-03-28).
 5. ~~**Phase 5 — request-money accept / reject / history**~~ **Done** (2026-03-28). ~~**Phase 5 — scheduled send**~~ **Done** (2026-03-28): `ScheduledSendStoreController`, `ScheduledSendIndexController`, `ScheduledSendCancelController` + `scheduled_sends` + routes + handler `executed` update + tests.
 6. ~~**Phase 15 — MTN config + controllers**~~ **Done** (2026-03-28): `config/mtn_momo.php`, `enable_mtn_momo`, `MtnMomoClient`, `mtn_momo_transactions`, four compat controllers, IPN callback token verification, feature tests.
-7. **MTN reconciliation command** (legacy `ReconcileMtnMomoTransactions`) — not started.
+7. ~~**MTN reconciliation command**~~ **Done** (2026-03-28): `ReconcileMtnMomoTransactions` command; `everyFifteenMinutes` schedule entry with `withoutOverlapping`; `MtnMomoClient` `final` removed for testability; 8 passing tests (`#[Large]`, `LazilyRefreshDatabase`). See session entry below.
+8. **Phase 13 — `ExecuteScheduledSends` command** — **Already existed** (discovered 2026-03-28). `app/Console/Commands/ExecuteScheduledSends.php` fully implemented with `lockForUpdate`, `AuthorizedTransactionManager::finalize()`, `everyMinute()->withoutOverlapping()` schedule entry.
+9. **Phase 14 — `MigrateLegacySocialGraph` command** — **Already existed** (discovered 2026-03-28). `app/Console/Commands/MigrateLegacySocialGraph.php` handles identity_map, friendships, friend_requests, pending_money_requests, device_tokens with `--dry-run`/`--table`/`--chunk`.
 
 ## In flight / next (old — serial or after parallel merge)
 
@@ -229,8 +231,24 @@ These do **not** touch files already changed above; assign one agent per row.
 
 **Mobile app updated (canonical field alignment):** `useTransactions.ts`, `useTransactionDetail.ts`, `walletDataSource.ts`, `homeDataSource.ts` all updated to read backend-native field names. `tx.reference` → id, `tx.type === 'deposit'` → isCredit, `tx.subtype` → category input. `subtypes` replaces `remarks` in filter UI.
 
+### Session **2026-03-28** — MTN MoMo reconciliation command (Phase 15 follow-up)
+
+| Area | What | Files |
+|------|------|--------|
+| Reconciliation | `ReconcileMtnMomoTransactions` command — polls MTN status API for pending disbursements where wallet was debited but no callback arrived; refunds wallet on FAILED; skips rows younger than `--min-age` (default 15 min); `--dry-run` mode; `--chunk` batch size | `app/Console/Commands/ReconcileMtnMomoTransactions.php` |
+| Safety | `DB::transaction` + `lockForUpdate()` per row — prevents double-refund under concurrent cron ticks; `wallet_refunded_at` used as idempotency guard | same |
+| Safety | `MtnMomoTransaction::normaliseRemoteStatus()` maps MTN's varied status strings; `Log::critical` on failed refund (funds-loss path); `Log::error` on MTN API errors | same |
+| Schedule | `everyFifteenMinutes()->withoutOverlapping()->appendOutputTo('mtn-reconcile.log')->onFailure(Log::critical)` | `routes/console.php` |
+| Testability | Removed `final` from `MtnMomoClient` — Mockery cannot proxy final classes; it is a service, not a value object | `app/Domain/MtnMomo/Services/MtnMomoClient.php` |
+| Tests | 8 `#[Large]` Pest tests — min-age skip, SUCCESSFUL path, FAILED+refund, double-refund prevention, still-pending, non-disbursement skip, refund-throws (exit code 1 + `Log::critical`), dry-run no-writes | `tests/Feature/Console/Commands/ReconcileMtnMomoTransactionsTest.php` |
+
+**Design:** Age gate is on `wallet_debited_at` (not `created_at`) — gives MTN callbacks time after the wallet was actually debited before the cron intervenes. Exit code 1 is returned when any rows error, so monitoring alerts fire on partial failures without aborting the whole batch.
+
+---
+
 ## Last updated
 
+- **2026-03-28 (MTN reconciliation command):** `ReconcileMtnMomoTransactions` — polls MTN for pending+debited disbursements, refunds on FAILED, `DB::transaction+lockForUpdate` anti-double-refund, `--dry-run`/`--min-age`/`--chunk` options, `everyFifteenMinutes` schedule. `MtnMomoClient` `final` removed. 8 `#[Large]` tests green (38 assertions). PHPStan 0 errors, CS-Fixer clean. Discovered Phase 13 (`ExecuteScheduledSends`), Phase 14 (`MigrateLegacySocialGraph`), Stream E (`PaymentIntentController` idempotency) already done.
 - **2026-03-28 (Transaction History + Dashboard — canonical fields):** `GET /api/transactions` returns `type`/`subtype`/`reference`/`description` (no legacy `trx_type`/`remark` aliases). `GET /api/dashboard` returns user + balance. Mobile RN updated: `useTransactions`, `useTransactionDetail`, `walletDataSource`, `homeDataSource` all read canonical field names. 15 tests green (9 tx + 6 dashboard), PHPStan 0 errors, CS-Fixer clean.
 - **2026-03-28 (Phase 15 MTN MoMo — hardening):** Post-review fixes: `wallet_refunded_at` column; no MTN error body in API responses; `Log::critical` on failed refund; callback 404→200 for unknown refs; idempotency race fix in disbursement; `withoutMiddleware` route fix (class + alias); `WalletOperationsService` mocked in tests; all 7 tests green. PHPStan 0 errors, CS-Fixer clean.
 - **2026-03-28 (Phase 15 MTN MoMo):** Config `mtn_momo.php`, migration flag `enable_mtn_momo`, `MtnMomoClient` + collection settlement, four `/api/mtn/*` compat routes (callback unauthenticated + `X-Callback-Token`), `MtnMomoControllersTest`. PHPStan clean on touched paths. Local SQLite full-migration runs may still hit 10s statement timeouts — CI/MySQL per checklist.

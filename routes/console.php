@@ -168,6 +168,18 @@ Schedule::command('scheduled-sends:execute')
     ->description('Execute scheduled sends whose time has arrived')
     ->withoutOverlapping();
 
+// MaphaPay compatibility: reconcile pending MTN MoMo disbursements
+// Polls MTN status API for disbursements where the wallet was debited but no
+// callback was received. Refunds wallet on FAILED status.
+Schedule::command('mtn:reconcile-disbursements')
+    ->everyFifteenMinutes()
+    ->description('Reconcile pending MTN MoMo disbursements and refund on failure')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/mtn-reconcile.log'))
+    ->onFailure(function () {
+        Log::critical('MTN MoMo reconciliation cron failed to run');
+    });
+
 // Mobile Backend Jobs
 // Process scheduled mobile push notifications every minute
 Schedule::job(new App\Domain\Mobile\Jobs\ProcessScheduledNotifications())

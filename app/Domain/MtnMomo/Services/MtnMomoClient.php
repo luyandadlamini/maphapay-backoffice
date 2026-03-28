@@ -14,7 +14,7 @@ use RuntimeException;
  *
  * @see https://momodeveloper.mtn.com/ (API reference)
  */
-final class MtnMomoClient
+class MtnMomoClient
 {
     private const TOKEN_CACHE_TTL_SECONDS = 3500;
 
