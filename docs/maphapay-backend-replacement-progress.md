@@ -59,6 +59,28 @@
 | Phase 5 | `MoneyRequest` model + migration; `RequestMoneyHandler` (OTP/PIN finalize → status `pending`) | `app/Models/MoneyRequest.php`, `database/migrations/2026_03_28_150000_create_money_requests_table.php`, `app/Domain/AuthorizedTransaction/Handlers/RequestMoneyHandler.php` |
 | Tests | Feature tests for compat send/request store (enable flags via `config()`) | `tests/Feature/Http/Controllers/Api/Compatibility/SendMoney/SendMoneyStoreControllerTest.php`, `tests/Feature/Http/Controllers/Api/Compatibility/RequestMoney/RequestMoneyStoreControllerTest.php` |
 
+### Session **2026-03-28** — Phase 5 (request-money accept / reject / history)
+
+| Area | What | Files |
+|------|------|--------|
+| Phase 5 | `RequestMoneyReceivedStoreController` — pending + recipient checks; `initiate(REMARK_REQUEST_MONEY_RECEIVED)` + wallet UUIDs for `RequestMoneyReceivedHandler`; `dispatchOtp` when OTP | `app/Http/Controllers/API/Compatibility/RequestMoney/RequestMoneyReceivedStoreController.php` |
+| Phase 5 | `RequestMoneyRejectController` — pending + recipient; status → `rejected` | `app/Http/Controllers/API/Compatibility/RequestMoney/RequestMoneyRejectController.php` |
+| Phase 5 | `RequestMoneyHistoryController` / `RequestMoneyReceivedHistoryController` — paginated lists (`request_moneys` vs `requested_moneys`) | same folder |
+| Model | `MoneyRequest::STATUS_REJECTED` | `app/Models/MoneyRequest.php` |
+| Phase 18 | Four routes under `migration_flag:enable_request_money` group (implicit `{moneyRequest}` binding) | `routes/api-compat.php` |
+| Tests | Feature tests for the four controllers (flag on/off, auth scopes) | `tests/Feature/Http/Controllers/Api/Compatibility/RequestMoney/*ReceivedStore*`, `*Reject*`, `*History*`, `*ReceivedHistory*` |
+
+### Session **2026-03-28** — Phase 5 post-review hardening (request-money)
+
+| Area | What | Files |
+|------|------|--------|
+| Critical fix | `MoneyRequest::STATUS_FULFILLED` added — closes double-accept window (status stays `pending` forever without it) | `app/Models/MoneyRequest.php` |
+| Critical fix | `RequestMoneyReceivedHandler` now calls `MoneyRequest::query()->update(['status' => STATUS_FULFILLED])` after wallet transfer; added null/type guard for `money_request_id`; fixed PHPDoc (int→string UUID) | `app/Domain/AuthorizedTransaction/Handlers/RequestMoneyReceivedHandler.php` |
+| Security fix | `RequestMoneyReceivedStoreController` — added self-acceptance guard (`requester_user_id === authUser` → 422); wrapped `initiate()` + `dispatchOtp()` in `DB::transaction` for atomicity | `app/Http/Controllers/API/Compatibility/RequestMoney/RequestMoneyReceivedStoreController.php` |
+| Consistency fix | `RequestMoneyRejectController` — replaced inline error response payloads with `errorPayload()`/`errorResponse()` private helpers (matches `ReceivedStoreController` pattern) | `app/Http/Controllers/API/Compatibility/RequestMoney/RequestMoneyRejectController.php` |
+| Route fix | `received-store` route now includes `idempotency` middleware (parity with `send-money/store`) — prevents duplicate `AuthorizedTransaction` rows on mobile retry | `routes/api-compat.php` |
+| Tests | 3 new test cases: double-accept blocked (STATUS_FULFILLED), frozen recipient account → 422, already-rejected request → 422 on reject | `*ReceivedStoreControllerTest.php`, `*RejectControllerTest.php` |
+
 ---
 
 ## Must-do before merge (any agent)
@@ -74,7 +96,11 @@ XDEBUG_MODE=off "$PHP85" vendor/bin/phpstan analyse --memory-limit=2G
   tests/Feature/Middleware/IdempotencyMiddlewareTest.php \
   tests/Unit/Domain/Shared/Money/MoneyConverterTest.php \
   tests/Feature/Http/Controllers/Api/Compatibility/SendMoney/SendMoneyStoreControllerTest.php \
-  tests/Feature/Http/Controllers/Api/Compatibility/RequestMoney/RequestMoneyStoreControllerTest.php
+  tests/Feature/Http/Controllers/Api/Compatibility/RequestMoney/RequestMoneyStoreControllerTest.php \
+  tests/Feature/Http/Controllers/Api/Compatibility/RequestMoney/RequestMoneyReceivedStoreControllerTest.php \
+  tests/Feature/Http/Controllers/Api/Compatibility/RequestMoney/RequestMoneyRejectControllerTest.php \
+  tests/Feature/Http/Controllers/Api/Compatibility/RequestMoney/RequestMoneyHistoryControllerTest.php \
+  tests/Feature/Http/Controllers/Api/Compatibility/RequestMoney/RequestMoneyReceivedHistoryControllerTest.php
 ```
 
 1. **ExchangeRateService:** Confirm `AccountBalanceController` injection/calls match real `ExchangeRateService` API (method names, return types) — carried over from stream A.
@@ -103,9 +129,10 @@ These do **not** touch files already changed above; assign one agent per row.
 1. **Phase 10 — Auth gap assessment** (quick, ~1h): Check if legacy and FinAegis `users` table schemas are compatible for the shared-table approach. Check `personal_access_tokens` table. Determine if compatibility auth controllers are needed for login/register.
 2. ~~**Phase 18 — `routes/api-compat.php`**~~ **Done** (2026-03-28): `bootstrap/app.php` + `config/maphapay_migration.php` + gated verification/send/request store routes.
 3. ~~**Phase 5 — `SendMoneyStoreController`**~~ **Done** (2026-03-28).
-4. ~~**Phase 5 — `RequestMoneyStoreController`**~~ **Done** (2026-03-28). **Next:** `RequestMoneyReceivedStoreController` + reject/history controllers per plan §5.3.2.
-5. **Phase 15 — MTN config file** (`config/mtn_momo.php`) + env vars — before any MTN controller work.
-6. **MTN controllers** (request-to-pay, disbursement, status, IPN callback)
+4. ~~**Phase 5 — `RequestMoneyStoreController`**~~ **Done** (2026-03-28).
+5. ~~**Phase 5 — request-money accept / reject / history**~~ **Done** (2026-03-28): `RequestMoneyReceivedStoreController`, `RequestMoneyRejectController`, `RequestMoneyHistoryController`, `RequestMoneyReceivedHistoryController` + routes + tests. **Next:** `ScheduledSendStoreController`, `ScheduledSendIndexController`, `ScheduledSendCancelController` (plan §5.3.1 items 2–4).
+6. **Phase 15 — MTN config file** (`config/mtn_momo.php`) + env vars — before any MTN controller work.
+7. **MTN controllers** (request-to-pay, disbursement, status, IPN callback)
 
 ## In flight / next (old — serial or after parallel merge)
 
@@ -125,6 +152,8 @@ These do **not** touch files already changed above; assign one agent per row.
 
 ## Last updated
 
+- **2026-03-28 (request-money hardening):** Post-review fixes — `STATUS_FULFILLED` closes double-accept; handler marks request fulfilled + null guard; `DB::transaction` in `ReceivedStoreController`; self-acceptance guard; `idempotency` on `received-store` route; `RejectController` error helpers. 3 new tests (14 total). PHPStan 0 errors.
+- **2026-03-28 (request-money flow):** Phase 5 `received-store`, `reject`, `history`, `received-history` compat controllers; `STATUS_REJECTED`; grouped `enable_request_money` routes; feature tests. PHP CS Fixer on touched files.
 - **2026-03-28 (later):** Phase 18 `api-compat` routes (verification + send-money + request-money store), `MoneyRequest` + `RequestMoneyHandler`, compat controllers, feature tests. Registration via `bootstrap/app.php` (Laravel 12).
 - **2026-03-28:** CI green (PHPStan + CS Fixer + tests). Built Phase 12 (`MoneyConverter` + `MajorUnitAmountString` rule). Built Phase 11 (`AuthorizedTransaction` domain: migration, model, 3 handlers, `AuthorizedTransactionManager`, `VerifyOtpController`, `VerifyPinController`). Updated plan with Phases 10–19 (gaps review). Updated `docs/maphapay-backend-replacement-plan.md`.
 - **2026-03-27:** Documented parallel streams A–D as completed; added merge checklist and next exclusive streams E–G.

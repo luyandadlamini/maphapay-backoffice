@@ -9,6 +9,7 @@ use App\Domain\AuthorizedTransaction\Contracts\AuthorizedTransactionHandlerInter
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Shared\Money\MoneyConverter;
 use App\Domain\Wallet\Services\WalletOperationsService;
+use App\Models\MoneyRequest;
 use InvalidArgumentException;
 
 /**
@@ -19,7 +20,7 @@ use InvalidArgumentException;
  *   - to_account_uuid        string  Requester's FinAegis account UUID
  *   - amount                 string  Major-unit SZL string e.g. "50.00"
  *   - asset_code             string  e.g. "SZL"
- *   - money_request_id       int     ID of the MoneyRequest record to mark fulfilled
+ *   - money_request_id       string  UUID of the MoneyRequest record to mark fulfilled
  *   - reference              string  Unique transfer reference
  */
 class RequestMoneyReceivedHandler implements AuthorizedTransactionHandlerInterface
@@ -44,6 +45,10 @@ class RequestMoneyReceivedHandler implements AuthorizedTransactionHandlerInterfa
             throw new InvalidArgumentException('RequestMoneyReceivedHandler: missing required payload keys.');
         }
 
+        if (! is_string($moneyRequestId) || $moneyRequestId === '') {
+            throw new InvalidArgumentException('RequestMoneyReceivedHandler: money_request_id must be a non-empty string UUID.');
+        }
+
         $asset = Asset::query()->where('code', $assetCode)->firstOrFail();
         $amountMinor = MoneyConverter::forAsset((string) $amountStr, $asset);
 
@@ -60,6 +65,10 @@ class RequestMoneyReceivedHandler implements AuthorizedTransactionHandlerInterfa
                 'authorized_txn'   => $transaction->id,
             ],
         );
+
+        MoneyRequest::query()
+            ->where('id', $moneyRequestId)
+            ->update(['status' => MoneyRequest::STATUS_FULFILLED]);
 
         return [
             'trx'              => $transaction->trx,
