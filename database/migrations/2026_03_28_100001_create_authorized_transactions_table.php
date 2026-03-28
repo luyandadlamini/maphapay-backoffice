@@ -6,8 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     public function up(): void
     {
         Schema::create('authorized_transactions', function (Blueprint $table) {
@@ -26,7 +25,7 @@ return new class extends Migration
             // Normalized request payload (amount always stored as major-unit string).
             $table->json('payload');
 
-            // State machine: pending → completed | failed | expired
+            // State machine: pending → completed | failed | expired | cancelled
             $table->string('status', 16)->default('pending')->index();
 
             // Result stored on completion so re-plays return the same response.

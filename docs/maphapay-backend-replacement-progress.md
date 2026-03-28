@@ -81,6 +81,44 @@
 | Route fix | `received-store` route now includes `idempotency` middleware (parity with `send-money/store`) — prevents duplicate `AuthorizedTransaction` rows on mobile retry | `routes/api-compat.php` |
 | Tests | 3 new test cases: double-accept blocked (STATUS_FULFILLED), frozen recipient account → 422, already-rejected request → 422 on reject | `*ReceivedStoreControllerTest.php`, `*RejectControllerTest.php` |
 
+### Session **2026-03-28** — Phase 5 scheduled send post-review hardening
+
+| Area | What | Files |
+|------|------|--------|
+| Critical fix | `ScheduledSendHandler` — pre-transfer `lockForUpdate` status guard: aborts transfer if `scheduled_send` is no longer `pending` (cancel-then-OTP exploit closed) | `app/Domain/AuthorizedTransaction/Handlers/ScheduledSendHandler.php` |
+| Critical fix | `ScheduledSendHandler` — try/catch around `walletOps->transfer`; marks row `failed` on exception so user is not left with a phantom `pending` entry | same |
+| Security fix | `ScheduledSendCancelController` — wraps cancel in `DB::transaction`; also flips linked `authorized_transaction` to `cancelled` (defense-in-depth) | `app/Http/Controllers/API/Compatibility/ScheduledSend/ScheduledSendCancelController.php` |
+| Model | `AuthorizedTransaction::STATUS_CANCELLED = 'cancelled'` added; migration comment updated | `app/Domain/AuthorizedTransaction/Models/AuthorizedTransaction.php`, migration `2026_03_28_100001` |
+| Consistency fix | `ScheduledSendIndexController` — replaced `toArray()` with explicit field projection; `scheduled_for`/`created_at`/`updated_at` serialized as ISO 8601 | `app/Http/Controllers/API/Compatibility/ScheduledSend/ScheduledSendIndexController.php` |
+| Validation | `ScheduledSendStoreController` — added `before:+1 year` upper bound on `scheduled_for`; removed redundant `User::find()` (exists: rule already validates) | `app/Http/Controllers/API/Compatibility/ScheduledSend/ScheduledSendStoreController.php` |
+| Tests | 5 new cases: self-send rejected, frozen sender, `scheduled_for > 1 year` rejected, cancel non-pending → 422, cancel propagates to `authorized_transaction` | `ScheduledSendStoreControllerTest.php`, `ScheduledSendCancelControllerTest.php` |
+
+**Design note (schedule timing):** `ScheduledSendHandler` executes immediately on OTP/PIN verification — `scheduled_for` is stored but not enforced. The `ExecuteScheduledSendsCommand` (not yet built) will use `AuthorizedTransactionManager::finalize()` (no-OTP path) for time-deferred execution. Until that command exists every "scheduled" send executes when the user verifies. Clarify product intent before building the command.
+
+### Session **2026-03-28** — Phase 5 scheduled send (§5.3.1 items 2–4)
+
+| Area | What | Files |
+|------|------|--------|
+| Migration + model | `scheduled_sends` — sender/recipient, major-unit `amount`, `scheduled_for`, `status` (pending / cancelled / executed / failed), `trx` | `database/migrations/2026_03_28_160000_create_scheduled_sends_table.php`, `app/Models/ScheduledSend.php` |
+| Phase 5 | `ScheduledSendStoreController` — `AuthorizedTransactionManager::initiate(REMARK_SCHEDULED_SEND)` + `dispatchOtp`, legacy envelope `remark: scheduled_send` | `app/Http/Controllers/API/Compatibility/ScheduledSend/ScheduledSendStoreController.php` |
+| Phase 5 | `ScheduledSendIndexController` — paginated `scheduled_sends` for sender (same shape as request-money history) | `ScheduledSendIndexController.php` |
+| Phase 5 | `ScheduledSendCancelController` — owner-only, `pending` → `cancelled`, envelope `scheduled_send_cancel` | `ScheduledSendCancelController.php` |
+| Handler | `ScheduledSendHandler` — after successful wallet transfer, marks row `executed` when `scheduled_send_id` present in payload | `app/Domain/AuthorizedTransaction/Handlers/ScheduledSendHandler.php` |
+| Phase 18 | Routes under `migration_flag:enable_scheduled_send`; `idempotency` on `store` only | `routes/api-compat.php` |
+| Config | `MAPHAPAY_MIGRATION_ENABLE_SCHEDULED_SEND` → `enable_scheduled_send` | `config/maphapay_migration.php` |
+| Tests | Feature tests for store / index / cancel (same patterns as other compat controllers) | `tests/Feature/Http/Controllers/Api/Compatibility/ScheduledSend/*` |
+
+---
+
+## Phase 10 findings (auth / shared `users` table) — 2026-03-28
+
+Assessment only (no compat auth controllers added in this slice).
+
+- **`users` (FinAegis):** Base Laravel 11-style table (`name`, `email`, `password`, `email_verified_at`, Jetstream/Fortify fields, etc.) plus many follow-up migrations: `uuid` (HasUuids), KYC timestamps/level, OAuth columns, onboarding, country, teams, sponsorship/referral, mobile prefs, etc. Any legacy MaphaPay client that only needs `id` + `email` + `password` + token login can work **if** the same identifiers and hashing algorithm are used and extra NOT NULL constraints are satisfied for new signups.
+- **`personal_access_tokens`:** Standard Sanctum schema (`morphs('tokenable')`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`). Mobile Bearer auth aligns with Laravel Sanctum as long as the app creates tokens the same way (abilities/scopes must include what middleware expects, e.g. `read`/`write`/`delete` per CLAUDE.md tests).
+- **Transaction PIN:** `AuthorizedTransactionManager::verifyPin()` checks `$user->transaction_pin`. There is **no** `transaction_pin` column in tracked `database/migrations` under a quick repo search; confirm on real DBs whether this attribute exists (custom migration outside repo, or JSON/`kyc_data`). Without a stored hashed PIN, PIN verification paths will always fail until the column (or equivalent) exists and is populated.
+- **LoginController / RegisterController compat shims:** Not required solely from schema comparison. Add thin compat controllers **only when** the legacy mobile contract (URLs, field names, error JSON, OTP-on-login, etc.) diverges from current Fortify/Jetstream or `routes/api.php` auth. Next step: diff against the old MaphaPay OpenAPI or capture production requests.
+
 ---
 
 ## Must-do before merge (any agent)
@@ -126,11 +164,11 @@ These do **not** touch files already changed above; assign one agent per row.
 
 ## In flight / next (serial — implement in this order)
 
-1. **Phase 10 — Auth gap assessment** (quick, ~1h): Check if legacy and FinAegis `users` table schemas are compatible for the shared-table approach. Check `personal_access_tokens` table. Determine if compatibility auth controllers are needed for login/register.
+1. ~~**Phase 10 — Auth gap assessment**~~ **Documented** (2026-03-28): See **Phase 10 findings** above. No compat auth controllers until legacy contract is known.
 2. ~~**Phase 18 — `routes/api-compat.php`**~~ **Done** (2026-03-28): `bootstrap/app.php` + `config/maphapay_migration.php` + gated verification/send/request store routes.
 3. ~~**Phase 5 — `SendMoneyStoreController`**~~ **Done** (2026-03-28).
 4. ~~**Phase 5 — `RequestMoneyStoreController`**~~ **Done** (2026-03-28).
-5. ~~**Phase 5 — request-money accept / reject / history**~~ **Done** (2026-03-28): `RequestMoneyReceivedStoreController`, `RequestMoneyRejectController`, `RequestMoneyHistoryController`, `RequestMoneyReceivedHistoryController` + routes + tests. **Next:** `ScheduledSendStoreController`, `ScheduledSendIndexController`, `ScheduledSendCancelController` (plan §5.3.1 items 2–4).
+5. ~~**Phase 5 — request-money accept / reject / history**~~ **Done** (2026-03-28). ~~**Phase 5 — scheduled send**~~ **Done** (2026-03-28): `ScheduledSendStoreController`, `ScheduledSendIndexController`, `ScheduledSendCancelController` + `scheduled_sends` + routes + handler `executed` update + tests.
 6. **Phase 15 — MTN config file** (`config/mtn_momo.php`) + env vars — before any MTN controller work.
 7. **MTN controllers** (request-to-pay, disbursement, status, IPN callback)
 
@@ -152,6 +190,8 @@ These do **not** touch files already changed above; assign one agent per row.
 
 ## Last updated
 
+- **2026-03-28 (scheduled send + Phase 10 notes):** `scheduled_sends` migration/model; three compat controllers; `ScheduledSendHandler` sets `executed` after transfer; `enable_scheduled_send` config + api-compat routes (idempotent store). Feature tests added. Phase 10 auth/schema findings appended. Local SQLite test runs may still hit migration timeouts — use MySQL/CI per checklist.
+- **2026-03-28 (scheduled send post-review hardening):** Cancel-then-OTP exploit fixed (`lockForUpdate` pre-transfer guard + `STATUS_CANCELLED` propagation to `authorized_transaction`); transfer failure marks `scheduled_send` `failed`; explicit field projection in index; `before:+1 year` on `scheduled_for`; 5 new test cases. `AuthorizedTransaction::STATUS_CANCELLED` added.
 - **2026-03-28 (request-money hardening):** Post-review fixes — `STATUS_FULFILLED` closes double-accept; handler marks request fulfilled + null guard; `DB::transaction` in `ReceivedStoreController`; self-acceptance guard; `idempotency` on `received-store` route; `RejectController` error helpers. 3 new tests (14 total). PHPStan 0 errors.
 - **2026-03-28 (request-money flow):** Phase 5 `received-store`, `reject`, `history`, `received-history` compat controllers; `STATUS_REJECTED`; grouped `enable_request_money` routes; feature tests. PHP CS Fixer on touched files.
 - **2026-03-28 (later):** Phase 18 `api-compat` routes (verification + send-money + request-money store), `MoneyRequest` + `RequestMoneyHandler`, compat controllers, feature tests. Registration via `bootstrap/app.php` (Laravel 12).

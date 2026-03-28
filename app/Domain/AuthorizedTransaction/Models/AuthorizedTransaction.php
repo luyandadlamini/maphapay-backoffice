@@ -43,6 +43,8 @@ class AuthorizedTransaction extends Model
 
     public const STATUS_EXPIRED = 'expired';
 
+    public const STATUS_CANCELLED = 'cancelled';
+
     public const REMARK_SEND_MONEY = 'send_money';
 
     public const REMARK_SCHEDULED_SEND = 'scheduled_send';
