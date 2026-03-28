@@ -2,14 +2,22 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\Compatibility\Mtn\CallbackController;
+use App\Http\Controllers\Api\Compatibility\Mtn\DisbursementController;
+use App\Http\Controllers\Api\Compatibility\Mtn\RequestToPayController;
+use App\Http\Controllers\Api\Compatibility\Mtn\TransactionStatusController;
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyHistoryController;
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyReceivedHistoryController;
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyReceivedStoreController;
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyRejectController;
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyStoreController;
+use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendCancelController;
+use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendIndexController;
+use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendStoreController;
 use App\Http\Controllers\Api\Compatibility\SendMoney\SendMoneyStoreController;
 use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyOtpController;
 use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyPinController;
+use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -50,4 +58,33 @@ Route::middleware('migration_flag:enable_request_money')->group(function () {
 
     Route::get('request-money/received-history', RequestMoneyReceivedHistoryController::class)
         ->name('maphapay.compat.request-money.received-history');
+});
+
+Route::middleware('migration_flag:enable_scheduled_send')->group(function () {
+    Route::middleware(['idempotency'])
+        ->post('scheduled-send/store', ScheduledSendStoreController::class)
+        ->name('maphapay.compat.scheduled-send.store');
+
+    Route::get('scheduled-send/index', ScheduledSendIndexController::class)
+        ->name('maphapay.compat.scheduled-send.index');
+
+    Route::post('scheduled-send/cancel/{scheduledSend}', ScheduledSendCancelController::class)
+        ->name('maphapay.compat.scheduled-send.cancel');
+});
+
+Route::middleware('migration_flag:enable_mtn_momo')->group(function () {
+    Route::middleware(['idempotency'])
+        ->post('mtn/request-to-pay', RequestToPayController::class)
+        ->name('maphapay.compat.mtn.request-to-pay');
+
+    Route::middleware(['idempotency'])
+        ->post('mtn/disbursement', DisbursementController::class)
+        ->name('maphapay.compat.mtn.disbursement');
+
+    Route::get('mtn/transaction/{referenceId}/status', TransactionStatusController::class)
+        ->name('maphapay.compat.mtn.transaction.status');
+
+    Route::post('mtn/callback', CallbackController::class)
+        ->withoutMiddleware([Authenticate::class])
+        ->name('maphapay.compat.mtn.callback');
 });

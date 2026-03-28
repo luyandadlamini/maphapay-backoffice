@@ -108,6 +108,21 @@
 | Config | `MAPHAPAY_MIGRATION_ENABLE_SCHEDULED_SEND` → `enable_scheduled_send` | `config/maphapay_migration.php` |
 | Tests | Feature tests for store / index / cancel (same patterns as other compat controllers) | `tests/Feature/Http/Controllers/Api/Compatibility/ScheduledSend/*` |
 
+### Session **2026-03-28** — Phase 15 MTN MoMo (config + compat API)
+
+| Area | What | Files |
+|------|------|--------|
+| Config | `config/mtn_momo.php` — `MTNMOMO_*` env keys, optional `MTNMOMO_CALLBACK_TOKEN` + `MTNMOMO_VERIFY_CALLBACK_TOKEN` for IPN | `config/mtn_momo.php` |
+| Phase 18 | `enable_mtn_momo` ← `MAPHAPAY_MIGRATION_ENABLE_MTN_MOMO` (default false) | `config/maphapay_migration.php` |
+| Persistence | `mtn_momo_transactions` — idempotency per user, MTN reference, wallet credit/debit timestamps | `database/migrations/2026_03_28_170000_create_mtn_momo_transactions_table.php`, `app/Models/MtnMomoTransaction.php` |
+| Client | `MtnMomoClient` — collection/disbursement OAuth tokens, request-to-pay, transfer, status GET | `app/Domain/MtnMomo/Services/MtnMomoClient.php` |
+| Settlement | `MtnMomoCollectionSettler` — idempotent `WalletOperationsService::deposit` on successful collection (status poll + IPN) | `app/Domain/MtnMomo/Services/MtnMomoCollectionSettler.php` |
+| Phase 18 | Routes under `migration_flag:enable_mtn_momo`: `POST mtn/request-to-pay`, `POST mtn/disbursement` (both + `idempotency`), `GET mtn/transaction/{referenceId}/status`, `POST mtn/callback` (**`withoutMiddleware(Authenticate::class)`** for MTN IPN) | `routes/api-compat.php` |
+| Controllers | Legacy-style success/error envelopes; `MajorUnitAmountString` + `MoneyConverter::normalise`; disbursement debits wallet before MTN call with refund on MTN failure | `app/Http/Controllers/API/Compatibility/Mtn/*` |
+| Tests | `MtnMomoControllersTest` — flag off 404, RTP/disbursement/status/callback; payer account uses `Str::uuid()` (v4) for `WalletOperationsService` validation | `tests/Feature/Http/Controllers/Api/Compatibility/Mtn/MtnMomoControllersTest.php` |
+
+**Note:** Paths are `/api/mtn/...` (handoff). Legacy mobile used `/api/wallet-transfer/mtn-momo/...`; add proxies or mobile config if URLs must stay byte-identical.
+
 ---
 
 ## Phase 10 findings (auth / shared `users` table) — 2026-03-28
@@ -142,7 +157,7 @@ XDEBUG_MODE=off "$PHP85" vendor/bin/phpstan analyse --memory-limit=2G
 ```
 
 1. **ExchangeRateService:** Confirm `AccountBalanceController` injection/calls match real `ExchangeRateService` API (method names, return types) — carried over from stream A.
-2. **Migrations:** Run `php artisan migrate` so `authorized_transactions` + `money_requests` exist before enabling compat flags.
+2. **Migrations:** Run `php artisan migrate` so `authorized_transactions`, `money_requests`, and `mtn_momo_transactions` exist before enabling compat flags.
 3. **SQLite test timeout:** If Pest aborts migrations after 10s on `:memory:` SQLite, run the suite on MySQL (or CI’s `phpunit.ci.xml`) — same symptom affects any feature test that refreshes the full migration set.
 
 ---
@@ -153,7 +168,7 @@ These do **not** touch files already changed above; assign one agent per row.
 
 | Next stream | Exclusive files | Plan ref |
 |-------------|-----------------|----------|
-| **E** | `app/Http/Controllers/Api/MobilePayment/PaymentIntentController.php`, `app/Http/Requests/MobilePayment/CreatePaymentIntentRequest.php` | Idempotency header naming §Phase 1 / 5 |
+| **E** | `app/Http/Controllers/API/MobilePayment/PaymentIntentController.php`, `app/Http/Requests/MobilePayment/CreatePaymentIntentRequest.php` | Idempotency header naming §Phase 1 / 5 |
 | **G** | `config/machinepay.php`, `config/agent_protocol.php` (SZL default — **risky**; verify GCU domains first) | Phase 3.2 |
 
 **`app/Http/Controllers/Api/Compatibility/` directory is now live** — do not scaffold it again (VerifyOtp/VerifyPin already exist there).
@@ -169,8 +184,8 @@ These do **not** touch files already changed above; assign one agent per row.
 3. ~~**Phase 5 — `SendMoneyStoreController`**~~ **Done** (2026-03-28).
 4. ~~**Phase 5 — `RequestMoneyStoreController`**~~ **Done** (2026-03-28).
 5. ~~**Phase 5 — request-money accept / reject / history**~~ **Done** (2026-03-28). ~~**Phase 5 — scheduled send**~~ **Done** (2026-03-28): `ScheduledSendStoreController`, `ScheduledSendIndexController`, `ScheduledSendCancelController` + `scheduled_sends` + routes + handler `executed` update + tests.
-6. **Phase 15 — MTN config file** (`config/mtn_momo.php`) + env vars — before any MTN controller work.
-7. **MTN controllers** (request-to-pay, disbursement, status, IPN callback)
+6. ~~**Phase 15 — MTN config + controllers**~~ **Done** (2026-03-28): `config/mtn_momo.php`, `enable_mtn_momo`, `MtnMomoClient`, `mtn_momo_transactions`, four compat controllers, IPN callback token verification, feature tests.
+7. **MTN reconciliation command** (legacy `ReconcileMtnMomoTransactions`) — not started.
 
 ## In flight / next (old — serial or after parallel merge)
 
@@ -190,6 +205,7 @@ These do **not** touch files already changed above; assign one agent per row.
 
 ## Last updated
 
+- **2026-03-28 (Phase 15 MTN MoMo):** Config `mtn_momo.php`, migration flag `enable_mtn_momo`, `MtnMomoClient` + collection settlement, four `/api/mtn/*` compat routes (callback unauthenticated + `X-Callback-Token`), `MtnMomoControllersTest`. PHPStan clean on touched paths. Local SQLite full-migration runs may still hit 10s statement timeouts — CI/MySQL per checklist.
 - **2026-03-28 (scheduled send + Phase 10 notes):** `scheduled_sends` migration/model; three compat controllers; `ScheduledSendHandler` sets `executed` after transfer; `enable_scheduled_send` config + api-compat routes (idempotent store). Feature tests added. Phase 10 auth/schema findings appended. Local SQLite test runs may still hit migration timeouts — use MySQL/CI per checklist.
 - **2026-03-28 (scheduled send post-review hardening):** Cancel-then-OTP exploit fixed (`lockForUpdate` pre-transfer guard + `STATUS_CANCELLED` propagation to `authorized_transaction`); transfer failure marks `scheduled_send` `failed`; explicit field projection in index; `before:+1 year` on `scheduled_for`; 5 new test cases. `AuthorizedTransaction::STATUS_CANCELLED` added.
 - **2026-03-28 (request-money hardening):** Post-review fixes — `STATUS_FULFILLED` closes double-accept; handler marks request fulfilled + null guard; `DB::transaction` in `ReceivedStoreController`; self-acceptance guard; `idempotency` on `received-store` route; `RejectController` error helpers. 3 new tests (14 total). PHPStan 0 errors.

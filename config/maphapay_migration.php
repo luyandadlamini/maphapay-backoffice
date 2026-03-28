@@ -16,4 +16,8 @@ return [
     'enable_send_money' => (bool) env('MAPHAPAY_MIGRATION_ENABLE_SEND_MONEY', false),
 
     'enable_request_money' => (bool) env('MAPHAPAY_MIGRATION_ENABLE_REQUEST_MONEY', false),
+
+    'enable_scheduled_send' => (bool) env('MAPHAPAY_MIGRATION_ENABLE_SCHEDULED_SEND', false),
+
+    'enable_mtn_momo' => (bool) env('MAPHAPAY_MIGRATION_ENABLE_MTN_MOMO', false),
 ];
