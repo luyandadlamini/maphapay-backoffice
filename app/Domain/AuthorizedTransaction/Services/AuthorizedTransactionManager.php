@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Domain\AuthorizedTransaction\Services;
 
 use App\Domain\AuthorizedTransaction\Contracts\AuthorizedTransactionHandlerInterface;
+use App\Domain\AuthorizedTransaction\Exceptions\InvalidTransactionPinException;
+use App\Domain\AuthorizedTransaction\Exceptions\TransactionNotFoundException;
+use App\Domain\AuthorizedTransaction\Exceptions\TransactionPinNotSetException;
 use App\Domain\AuthorizedTransaction\Handlers\RequestMoneyHandler;
 use App\Domain\AuthorizedTransaction\Handlers\RequestMoneyReceivedHandler;
 use App\Domain\AuthorizedTransaction\Handlers\ScheduledSendHandler;
@@ -123,12 +126,21 @@ class AuthorizedTransactionManager
 
         $this->assertPendingAndNotExpired($txn);
 
+        if ($txn->remark === AuthorizedTransaction::REMARK_SCHEDULED_SEND
+            && $txn->verification_confirmed_at !== null) {
+            return $this->scheduledSendVerificationResult($txn);
+        }
+
         if ($txn->isOtpExpired()) {
             throw new RuntimeException('OTP has expired. Please request a new one.');
         }
 
         if (! $txn->otp_hash || ! Hash::check($otp, $txn->otp_hash)) {
             throw new RuntimeException('Invalid OTP.');
+        }
+
+        if ($txn->remark === AuthorizedTransaction::REMARK_SCHEDULED_SEND) {
+            return $this->markScheduledSendVerified($txn);
         }
 
         return $this->finalizeAtomically($txn);
@@ -138,7 +150,9 @@ class AuthorizedTransactionManager
      * Step 2b: Verify PIN and finalize the operation.
      *
      * @return array<string, mixed> Handler result data.
-     * @throws RuntimeException     On PIN mismatch or duplicate execution.
+     * @throws TransactionPinNotSetException  When the user has not set a transaction PIN.
+     * @throws InvalidTransactionPinException When the submitted PIN does not match.
+     * @throws RuntimeException               On duplicate execution or expired transaction.
      */
     public function verifyPin(string $trx, int $userId, string $pin): array
     {
@@ -146,10 +160,29 @@ class AuthorizedTransactionManager
 
         $this->assertPendingAndNotExpired($txn);
 
+        if ($txn->remark === AuthorizedTransaction::REMARK_SCHEDULED_SEND
+            && $txn->verification_confirmed_at !== null) {
+            return $this->scheduledSendVerificationResult($txn);
+        }
+
         $user = $txn->user;
 
-        if (! $user || ! Hash::check($pin, $user->transaction_pin ?? '')) {
-            throw new RuntimeException('Invalid transaction PIN.');
+        if (! $user) {
+            throw new RuntimeException('Transaction user not found.');
+        }
+
+        if ($user->transaction_pin === null) {
+            throw new TransactionPinNotSetException(
+                'Transaction PIN has not been set for this account.'
+            );
+        }
+
+        if (! Hash::check($pin, $user->transaction_pin)) {
+            throw new InvalidTransactionPinException('Invalid transaction PIN.');
+        }
+
+        if ($txn->remark === AuthorizedTransaction::REMARK_SCHEDULED_SEND) {
+            return $this->markScheduledSendVerified($txn);
         }
 
         return $this->finalizeAtomically($txn);
@@ -164,6 +197,7 @@ class AuthorizedTransactionManager
     public function finalize(AuthorizedTransaction $txn): array
     {
         $this->assertPendingAndNotExpired($txn);
+        $this->assertScheduledSendExecutable($txn);
 
         return $this->finalizeAtomically($txn);
     }
@@ -222,6 +256,75 @@ class AuthorizedTransactionManager
         });
     }
 
+    /**
+     * Scheduled sends: OTP/PIN only records consent; wallet transfer runs from
+     * {@see \App\Console\Commands\ExecuteScheduledSends} via finalize().
+     *
+     * @return array<string, mixed>
+     */
+    private function markScheduledSendVerified(AuthorizedTransaction $txn): array
+    {
+        return DB::transaction(function () use ($txn): array {
+            $updated = DB::table('authorized_transactions')
+                ->where('id', $txn->id)
+                ->where('status', AuthorizedTransaction::STATUS_PENDING)
+                ->update([
+                    'verification_confirmed_at' => now(),
+                    'otp_hash'                  => null,
+                    'otp_sent_at'               => null,
+                    'otp_expires_at'            => null,
+                    'updated_at'                => now(),
+                ]);
+
+            if ($updated === 0) {
+                $txn->refresh();
+
+                if ($txn->verification_confirmed_at !== null) {
+                    return $this->scheduledSendVerificationResult($txn);
+                }
+
+                throw new RuntimeException(
+                    'This transaction has already been processed or is no longer pending.'
+                );
+            }
+
+            $txn->refresh();
+
+            return $this->scheduledSendVerificationResult($txn);
+        });
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function scheduledSendVerificationResult(AuthorizedTransaction $txn): array
+    {
+        $payload = $txn->payload;
+
+        return [
+            'trx'          => $txn->trx,
+            'scheduled'    => true,
+            'scheduled_at' => $payload['scheduled_at'] ?? null,
+            'message'      => 'Scheduled send authorized. Funds move at the scheduled time.',
+        ];
+    }
+
+    private function assertScheduledSendExecutable(AuthorizedTransaction $txn): void
+    {
+        if ($txn->remark !== AuthorizedTransaction::REMARK_SCHEDULED_SEND) {
+            return;
+        }
+
+        $executable = $txn->verification_confirmed_at !== null
+            || $txn->verification_type === AuthorizedTransaction::VERIFICATION_NONE;
+
+        if (! $executable) {
+            throw new RuntimeException(
+                'Scheduled send must be verified (OTP/PIN) before execution.'
+            );
+        }
+    }
+
     private function findForUser(string $trx, int $userId): AuthorizedTransaction
     {
         $txn = AuthorizedTransaction::where('trx', $trx)
@@ -229,7 +332,7 @@ class AuthorizedTransactionManager
             ->first();
 
         if (! $txn) {
-            throw new RuntimeException("Authorized transaction '{$trx}' not found.");
+            throw new TransactionNotFoundException("Authorized transaction '{$trx}' not found.");
         }
 
         return $txn;

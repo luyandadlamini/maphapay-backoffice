@@ -38,16 +38,17 @@ Route::middleware('migration_flag:enable_verification')->group(function () {
         ->name('maphapay.compat.verification.pin');
 });
 
-Route::middleware(['migration_flag:enable_send_money', 'idempotency'])
+Route::middleware(['migration_flag:enable_send_money', 'kyc_approved', 'idempotency', 'throttle:maphapay-send-money'])
     ->post('send-money/store', SendMoneyStoreController::class)
     ->name('maphapay.compat.send-money.store');
 
-Route::middleware('migration_flag:enable_request_money')->group(function () {
+Route::middleware(['migration_flag:enable_request_money', 'kyc_approved'])->group(function () {
     Route::post('request-money/store', RequestMoneyStoreController::class)
+        ->middleware('throttle:maphapay-request-money')
         ->name('maphapay.compat.request-money.store');
 
     Route::post('request-money/received-store/{moneyRequest}', RequestMoneyReceivedStoreController::class)
-        ->middleware('idempotency')
+        ->middleware(['idempotency', 'throttle:maphapay-request-money'])
         ->name('maphapay.compat.request-money.received-store');
 
     Route::post('request-money/reject/{moneyRequest}', RequestMoneyRejectController::class)
@@ -72,12 +73,12 @@ Route::middleware('migration_flag:enable_scheduled_send')->group(function () {
         ->name('maphapay.compat.scheduled-send.cancel');
 });
 
-Route::middleware('migration_flag:enable_mtn_momo')->group(function () {
-    Route::middleware(['idempotency'])
+Route::middleware(['migration_flag:enable_mtn_momo', 'kyc_approved'])->group(function () {
+    Route::middleware(['idempotency', 'throttle:maphapay-mtn-initiation'])
         ->post('mtn/request-to-pay', RequestToPayController::class)
         ->name('maphapay.compat.mtn.request-to-pay');
 
-    Route::middleware(['idempotency'])
+    Route::middleware(['idempotency', 'throttle:maphapay-mtn-initiation'])
         ->post('mtn/disbursement', DisbursementController::class)
         ->name('maphapay.compat.mtn.disbursement');
 
@@ -85,6 +86,6 @@ Route::middleware('migration_flag:enable_mtn_momo')->group(function () {
         ->name('maphapay.compat.mtn.transaction.status');
 
     Route::post('mtn/callback', CallbackController::class)
-        ->withoutMiddleware([Authenticate::class, 'auth:sanctum'])
+        ->withoutMiddleware([Authenticate::class, 'auth:sanctum', 'kyc_approved'])
         ->name('maphapay.compat.mtn.callback');
 });

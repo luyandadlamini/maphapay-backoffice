@@ -162,6 +162,12 @@ if (app()->environment('demo')) {
         ->withoutOverlapping();
 }
 
+// MaphaPay compatibility: execute scheduled P2P sends when due
+Schedule::command('scheduled-sends:execute')
+    ->everyMinute()
+    ->description('Execute scheduled sends whose time has arrived')
+    ->withoutOverlapping();
+
 // Mobile Backend Jobs
 // Process scheduled mobile push notifications every minute
 Schedule::job(new App\Domain\Mobile\Jobs\ProcessScheduledNotifications())

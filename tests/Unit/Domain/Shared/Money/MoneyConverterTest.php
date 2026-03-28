@@ -85,8 +85,8 @@ describe('MoneyConverter::toMajorUnitString', function () {
 
     it('round-trips with toSmallestUnit', function () {
         $original = '123.45';
-        $minor    = MoneyConverter::toSmallestUnit($original, 2);
-        $back     = MoneyConverter::toMajorUnitString($minor, 2);
+        $minor = MoneyConverter::toSmallestUnit($original, 2);
+        $back = MoneyConverter::toMajorUnitString($minor, 2);
 
         expect($back)->toBe($original);
     });

@@ -111,6 +111,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.api_or_sanctum'    => App\Http\Middleware\AuthenticateApiOrSanctum::class,
             'idempotency'            => App\Http\Middleware\IdempotencyMiddleware::class,
             'migration_flag'         => App\Http\Middleware\RequiresMigrationFlag::class,
+            'kyc_approved'           => App\Http\Middleware\CheckKycApproved::class,
             'webhook.signature'      => App\Http\Middleware\ValidateWebhookSignature::class,
             'validate.key.access'    => App\Http\Middleware\ValidateKeyAccess::class,
             'demo'                   => App\Http\Middleware\DemoMode::class,

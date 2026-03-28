@@ -1,8 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Kreait\Firebase\Contract\Messaging;
 use Kreait\Laravel\Firebase\FirebaseProjectManager;
@@ -77,6 +82,27 @@ class AppServiceProvider extends ServiceProvider
 
             /** @var class-string<Factory> */
             return 'Database\\Factories\\' . $modelBaseName . 'Factory';
+        });
+
+        // MaphaPay compatibility: per-user rate limits for money-moving endpoints.
+        // Keys include the user ID (or IP for unauthenticated fallback) so limits
+        // are isolated per caller and do not bleed across users.
+        RateLimiter::for('maphapay-send-money', function (Request $request): Limit {
+            $user = $request->user();
+
+            return Limit::perMinute(10)->by((string) ($user !== null ? $user->id : $request->ip()));
+        });
+
+        RateLimiter::for('maphapay-request-money', function (Request $request): Limit {
+            $user = $request->user();
+
+            return Limit::perMinute(10)->by((string) ($user !== null ? $user->id : $request->ip()));
+        });
+
+        RateLimiter::for('maphapay-mtn-initiation', function (Request $request): Limit {
+            $user = $request->user();
+
+            return Limit::perMinute(5)->by((string) ($user !== null ? $user->id : $request->ip()));
         });
 
         // Treat 'demo' environment as production

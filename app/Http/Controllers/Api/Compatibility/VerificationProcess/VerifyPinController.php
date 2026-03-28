@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Compatibility\VerificationProcess;
 
+use App\Domain\AuthorizedTransaction\Exceptions\InvalidTransactionPinException;
+use App\Domain\AuthorizedTransaction\Exceptions\TransactionNotFoundException;
+use App\Domain\AuthorizedTransaction\Exceptions\TransactionPinNotSetException;
 use App\Domain\AuthorizedTransaction\Services\AuthorizedTransactionManager;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -43,6 +46,18 @@ class VerifyPinController extends Controller
                 'remark' => $validated['remark'] ?? 'pin_verified',
                 'data'   => $result,
             ]);
+        } catch (TransactionNotFoundException $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => $e->getMessage(),
+                'data'    => null,
+            ], 404);
+        } catch (TransactionPinNotSetException | InvalidTransactionPinException $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => $e->getMessage(),
+                'data'    => null,
+            ], 422);
         } catch (RuntimeException $e) {
             return response()->json([
                 'status'  => 'error',

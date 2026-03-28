@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -29,6 +31,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property \Illuminate\Support\Carbon|null $free_tx_until
  * @property int $sponsored_tx_used
  * @property int $sponsored_tx_limit
+ * @property string|null $transaction_pin
  */
 class User extends Authenticatable implements FilamentUser
 {
@@ -87,6 +90,7 @@ class User extends Authenticatable implements FilamentUser
         'sponsored_tx_limit',
         'referral_code',
         'referred_by',
+        'transaction_pin',
     ];
 
     /**
@@ -99,6 +103,7 @@ class User extends Authenticatable implements FilamentUser
         'remember_token',
         'two_factor_recovery_codes',
         'two_factor_secret',
+        'transaction_pin',
     ];
 
     /**
@@ -131,6 +136,7 @@ class User extends Authenticatable implements FilamentUser
             'data_retention_consent'     => 'boolean',
             'has_completed_onboarding'   => 'boolean',
             'onboarding_completed_at'    => 'datetime',
+            'transaction_pin'            => 'hashed',
             'mobile_preferences'         => 'array',
             'free_tx_until'              => 'datetime',
             'sponsored_tx_used'          => 'integer',

@@ -35,19 +35,20 @@ class PaymentIntentController extends Controller
         path: '/api/v1/payments/intents',
         operationId: 'mobilePaymentCreateIntent',
         summary: 'Create a new payment intent',
-        description: 'Creates a payment intent for a merchant transaction. Supports idempotency via X-Idempotency-Key header or body field. The intent must be submitted separately to authorize payment.',
+        description: 'Creates a payment intent for a merchant transaction. HTTP idempotency uses IdempotencyMiddleware with the same key resolution as this handler: Idempotency-Key, else X-Idempotency-Key (null-coalescing). When that effective header key is non-empty, it is always stored on the intent (overriding body idempotencyKey) so domain idempotency matches HTTP replay caching. Body idempotencyKey applies only when both headers are absent or empty. The intent must be submitted separately to authorize payment.',
         tags: ['Mobile Payments'],
         security: [['sanctum' => []]],
         parameters: [
-        new OA\Parameter(name: 'X-Idempotency-Key', in: 'header', required: false, description: 'Idempotency key to prevent duplicate payments', schema: new OA\Schema(type: 'string', maxLength: 128)),
+        new OA\Parameter(name: 'Idempotency-Key', in: 'header', required: false, description: 'Primary idempotency header (same precedence as IdempotencyMiddleware)', schema: new OA\Schema(type: 'string', maxLength: 128)),
+        new OA\Parameter(name: 'X-Idempotency-Key', in: 'header', required: false, description: 'Fallback when Idempotency-Key is omitted; same null-coalescing order as IdempotencyMiddleware (ignored when Idempotency-Key is set)', schema: new OA\Schema(type: 'string', maxLength: 128)),
         ],
         requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(required: ['merchantId', 'amount', 'asset', 'preferredNetwork'], properties: [
         new OA\Property(property: 'merchantId', type: 'string', example: 'merchant_abc123', description: 'Merchant identifier (max 64 chars)'),
-        new OA\Property(property: 'amount', type: 'number', example: 25.50, description: 'Payment amount (must be > 0)'),
+        new OA\Property(property: 'amount', type: 'string', example: '25.50', description: 'Payment amount as major-unit string (must be > 0)'),
         new OA\Property(property: 'asset', type: 'string', enum: ['USDC'], example: 'USDC', description: 'Payment asset'),
         new OA\Property(property: 'preferredNetwork', type: 'string', enum: ['SOLANA', 'TRON'], example: 'SOLANA', description: 'Preferred payment network'),
         new OA\Property(property: 'shield', type: 'boolean', example: false, description: 'Enable privacy shield'),
-        new OA\Property(property: 'idempotencyKey', type: 'string', example: 'idem_key_123', description: 'Idempotency key (alternative to header)'),
+        new OA\Property(property: 'idempotencyKey', type: 'string', example: 'idem_key_123', description: 'Idempotency key when both Idempotency-Key and X-Idempotency-Key headers are absent; headers override this when sent'),
         ]))
     )]
     #[OA\Response(
@@ -58,7 +59,7 @@ class PaymentIntentController extends Controller
         new OA\Property(property: 'data', type: 'object', properties: [
         new OA\Property(property: 'intentId', type: 'string', example: 'pi_abc123'),
         new OA\Property(property: 'status', type: 'string', example: 'PENDING'),
-        new OA\Property(property: 'amount', type: 'number', example: 25.50),
+        new OA\Property(property: 'amount', type: 'string', example: '25.50', description: 'Major-unit decimal string'),
         new OA\Property(property: 'asset', type: 'string', example: 'USDC'),
         new OA\Property(property: 'merchant', type: 'object', properties: [
         new OA\Property(property: 'displayName', type: 'string', example: 'Coffee Shop'),
@@ -107,9 +108,9 @@ class PaymentIntentController extends Controller
 
             $data = $request->validated();
 
-            // Accept idempotency key from header (preferred) or body
-            if (! isset($data['idempotencyKey']) && $request->hasHeader('X-Idempotency-Key')) {
-                $data['idempotencyKey'] = $request->header('X-Idempotency-Key');
+            $headerIdempotencyKey = $this->resolveIdempotencyKeyFromHeaders($request);
+            if ($headerIdempotencyKey !== null) {
+                $data['idempotencyKey'] = $headerIdempotencyKey;
             }
 
             $intent = $this->paymentIntentService->create(
@@ -158,7 +159,7 @@ class PaymentIntentController extends Controller
         new OA\Property(property: 'data', type: 'object', properties: [
         new OA\Property(property: 'intentId', type: 'string', example: 'pi_abc123'),
         new OA\Property(property: 'status', type: 'string', example: 'PENDING'),
-        new OA\Property(property: 'amount', type: 'number', example: 25.50),
+        new OA\Property(property: 'amount', type: 'string', example: '25.50', description: 'Major-unit decimal string'),
         new OA\Property(property: 'asset', type: 'string', example: 'USDC'),
         new OA\Property(property: 'merchant', type: 'object', properties: [
         new OA\Property(property: 'displayName', type: 'string', example: 'Coffee Shop'),
@@ -343,7 +344,7 @@ class PaymentIntentController extends Controller
         new OA\Property(property: 'merchant', type: 'object', properties: [
         new OA\Property(property: 'displayName', type: 'string', example: 'Coffee Shop'),
         ]),
-        new OA\Property(property: 'amount', type: 'number', example: 25.50),
+        new OA\Property(property: 'amount', type: 'string', example: '25.50', description: 'Major-unit decimal string'),
         ]),
         ])
     )]
@@ -420,5 +421,21 @@ class PaymentIntentController extends Controller
         } catch (PaymentIntentException $e) {
             return response()->json($e->toApiResponse(), $e->httpStatus());
         }
+    }
+
+    /**
+     * Same header resolution as {@see \App\Http\Middleware\IdempotencyMiddleware}: `Idempotency-Key` then `X-Idempotency-Key`.
+     * Non-empty value overrides body `idempotencyKey` so domain deduplication matches HTTP replay cache keys.
+     */
+    private function resolveIdempotencyKeyFromHeaders(Request $request): ?string
+    {
+        $key = $request->header('Idempotency-Key')
+            ?? $request->header('X-Idempotency-Key');
+
+        if (! is_string($key) || $key === '') {
+            return null;
+        }
+
+        return $key;
     }
 }
