@@ -22,20 +22,20 @@ class TransactionInspectorTool extends Tool
             return Response::text(json_encode(['error' => 'account_uuid is required'], JSON_PRETTY_PRINT));
         }
 
-        $limit  = min((int) ($request->get('limit') ?? 20), 50);
+        $limit = min((int) ($request->get('limit') ?? 20), 50);
         $status = $request->get('status');
-        $type   = $request->get('type');
+        $type = $request->get('type');
 
-        $where  = ['tp.account_uuid = ?'];
+        $where = ['tp.account_uuid = ?'];
         $params = [$accountUuid];
 
         if ($status) {
-            $where[]  = 'tp.status = ?';
+            $where[] = 'tp.status = ?';
             $params[] = $status;
         }
 
         if ($type) {
-            $where[]  = 'tp.type = ?';
+            $where[] = 'tp.type = ?';
             $params[] = $type;
         }
 
@@ -66,22 +66,22 @@ class TransactionInspectorTool extends Tool
         );
 
         $formatted = array_map(function ($tx) {
-            $divisor   = 10 ** ($tx->precision ?? 2);
+            $divisor = 10 ** ($tx->precision ?? 2);
             $formatted = number_format($tx->amount / $divisor, $tx->precision ?? 2, '.', '');
 
             return [
-                'uuid'              => $tx->uuid,
-                'type'              => $tx->type,
-                'subtype'           => $tx->subtype,
-                'status'            => $tx->status,
-                'asset'             => $tx->asset_code,
-                'amount'            => "{$tx->symbol} {$formatted}",
-                'description'       => $tx->description,
-                'reference'         => $tx->reference,
-                'related_account'   => $tx->related_account_uuid,
-                'parent_tx'         => $tx->parent_transaction_id,
-                'group'             => $tx->transaction_group_uuid,
-                'created_at'        => $tx->created_at,
+                'uuid'            => $tx->uuid,
+                'type'            => $tx->type,
+                'subtype'         => $tx->subtype,
+                'status'          => $tx->status,
+                'asset'           => $tx->asset_code,
+                'amount'          => "{$tx->symbol} {$formatted}",
+                'description'     => $tx->description,
+                'reference'       => $tx->reference,
+                'related_account' => $tx->related_account_uuid,
+                'parent_tx'       => $tx->parent_transaction_id,
+                'group'           => $tx->transaction_group_uuid,
+                'created_at'      => $tx->created_at,
             ];
         }, $transactions);
 
@@ -110,11 +110,11 @@ class TransactionInspectorTool extends Tool
             'account_uuid' => $schema->string()
                 ->description('The account UUID to inspect transactions for')
                 ->required(),
-            'status'       => $schema->string()
+            'status' => $schema->string()
                 ->description('Filter by status: pending, completed, or failed'),
-            'type'         => $schema->string()
+            'type' => $schema->string()
                 ->description('Filter by type: credit, debit, or transfer'),
-            'limit'        => $schema->integer()
+            'limit' => $schema->integer()
                 ->description('Number of transactions to return (max 50, default 20)'),
         ];
     }

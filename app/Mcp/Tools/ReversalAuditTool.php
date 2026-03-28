@@ -17,13 +17,13 @@ class ReversalAuditTool extends Tool
     public function handle(Request $request): Response
     {
         $accountUuid = $request->get('account_uuid');
-        $limit       = min((int) ($request->get('limit') ?? 15), 50);
+        $limit = min((int) ($request->get('limit') ?? 15), 50);
 
-        $where  = ["tp.subtype = 'reversal' OR tp.parent_transaction_id IS NOT NULL"];
+        $where = ["tp.subtype = 'reversal' OR tp.parent_transaction_id IS NOT NULL"];
         $params = [];
 
         if ($accountUuid) {
-            $where[]  = 'tp.account_uuid = ?';
+            $where[] = 'tp.account_uuid = ?';
             $params[] = $accountUuid;
         }
 
@@ -56,7 +56,7 @@ class ReversalAuditTool extends Tool
         $result = [];
 
         foreach ($reversals as $reversal) {
-            $divisor   = 10 ** ($reversal->precision ?? 2);
+            $divisor = 10 ** ($reversal->precision ?? 2);
             $formatted = number_format($reversal->amount / $divisor, $reversal->precision ?? 2, '.', '');
 
             $original = null;
@@ -99,7 +99,7 @@ class ReversalAuditTool extends Tool
         return [
             'account_uuid' => $schema->string()
                 ->description('Scope reversals to a specific account UUID (optional — omit for platform-wide view)'),
-            'limit'        => $schema->integer()
+            'limit' => $schema->integer()
                 ->description('Number of reversals to return (max 50, default 15)'),
         ];
     }

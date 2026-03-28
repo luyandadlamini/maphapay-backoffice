@@ -26,6 +26,26 @@ beforeEach(function () {
     Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
 });
 
+it('accepts X-Idempotency-Key when Idempotency-Key is absent', function () {
+    $idempotencyKey = Str::uuid()->toString();
+
+    $firstResponse = $this->postJson('/test/idempotency', ['amount' => 100], [
+        'X-Idempotency-Key' => $idempotencyKey,
+    ]);
+
+    $firstResponse->assertStatus(201);
+    $firstResponse->assertHeader('X-Idempotency-Key', $idempotencyKey);
+    $firstId = $firstResponse->json('id');
+
+    $secondResponse = $this->postJson('/test/idempotency', ['amount' => 100], [
+        'X-Idempotency-Key' => $idempotencyKey,
+    ]);
+
+    $secondResponse->assertStatus(201);
+    $secondResponse->assertHeader('X-Idempotency-Replayed', 'true');
+    $secondResponse->assertJsonPath('id', $firstId);
+});
+
 it('returns cached response with X-Idempotency-Replayed header on duplicate POST', function () {
     $idempotencyKey = Str::uuid()->toString();
 

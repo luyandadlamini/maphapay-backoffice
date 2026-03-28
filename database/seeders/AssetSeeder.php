@@ -23,6 +23,15 @@ class AssetSeeder extends Seeder
                 'metadata'  => json_encode(['symbol' => '$']),
             ],
             [
+                'code'      => 'SZL',
+                'name'      => 'Swazi Lilangeni',
+                'type'      => 'fiat',
+                'precision' => 2,
+                'is_active' => true,
+                'is_basket' => false,
+                'metadata'  => json_encode(['symbol' => 'E']),
+            ],
+            [
                 'code'      => 'EUR',
                 'name'      => 'Euro',
                 'type'      => 'fiat',

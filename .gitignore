@@ -21,6 +21,7 @@ yarn-error.log
 /.idea
 /.vscode
 *.code-workspace
+.mcp.json
 coverage-html/
 work/
 

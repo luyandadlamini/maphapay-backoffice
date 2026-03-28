@@ -2,6 +2,7 @@
 
 namespace App\Domain\Account\Models;
 
+use App\Domain\Asset\Models\Asset;
 use App\Domain\Shared\Traits\UsesTenantConnection;
 use Database\Factories\TransactionProjectionFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -113,11 +114,18 @@ class TransactionProjection extends Model
     }
 
     /**
-     * Get formatted amount (in dollars/cents format).
+     * Get formatted amount in major units using the asset's precision (no currency symbol).
      */
     public function getFormattedAmountAttribute(): string
     {
-        return number_format($this->amount / 100, 2);
+        $asset = Asset::find($this->asset_code);
+        if ($asset === null) {
+            return number_format($this->amount / 100, 2, '.', '');
+        }
+
+        $divisor = 10 ** $asset->precision;
+
+        return number_format($this->amount / $divisor, $asset->precision, '.', '');
     }
 
     /**

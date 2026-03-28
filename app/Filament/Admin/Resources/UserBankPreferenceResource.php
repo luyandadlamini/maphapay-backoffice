@@ -2,8 +2,8 @@
 
 namespace App\Filament\Admin\Resources;
 
-use App\Filament\Admin\Resources\UserBankPreferenceResource\Pages;
 use App\Domain\Banking\Models\UserBankPreference;
+use App\Filament\Admin\Resources\UserBankPreferenceResource\Pages;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;

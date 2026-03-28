@@ -6,6 +6,7 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\TransactionProjection;
 use App\Domain\Account\Models\TransactionProjection as Transaction;
 use App\Domain\Account\Models\Turnover;
+use App\Domain\Asset\Models\Asset;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -210,12 +211,15 @@ class BatchProcessingActivity extends Activity
         $interestRate = 0.02; // 2% annual interest rate
         $dailyRate = $interestRate / 365;
 
+        $usdAsset = $this->usdAssetForMinorUnitRules();
+        $minimumInterestMinor = $usdAsset->toSmallestUnit(0.01);
+
         foreach ($savingsAccounts as $account) {
             // Calculate daily interest based on current balance
             $dailyInterest = $account->balance * $dailyRate;
 
-            // Only apply interest if it's significant (> $0.01)
-            if ($dailyInterest >= 1) { // 1 cent minimum
+            // Only apply interest if it's significant (>= smallest unit for $0.01 on USD asset)
+            if ($dailyInterest >= $minimumInterestMinor) {
                 $interestAmount = round($dailyInterest);
 
                 // Create interest transaction
@@ -255,9 +259,14 @@ class BatchProcessingActivity extends Activity
         $today = now()->startOfDay();
         $complianceFlags = [];
 
-        // Check for large transactions (> $10,000)
-        $largeTransactions = TransactionProjection::where('amount', '>', 1000000) // > $10,000 in cents
+        // Check for large transactions (> 10,000 major units in the transaction's asset)
+        $largeTransactions = TransactionProjection::query()
             ->whereDate('created_at', $today)
+            ->where(
+                function ($q) {
+                    $this->applyPerAssetLargeTransactionThreshold($q);
+                }
+            )
             ->with('account.user')
             ->get();
 
@@ -297,8 +306,9 @@ class BatchProcessingActivity extends Activity
             }
         )->toArray();
 
-        // Check for unusual account balance patterns
-        $highBalanceAccounts = Account::where('balance', '>', 100000000) // > $1M
+        // Check for unusual account balance patterns (USD balance vs $1M in USD minor units)
+        $oneMillionUsdMinor = $this->usdAssetForMinorUnitRules()->toSmallestUnit(1_000_000.0);
+        $highBalanceAccounts = Account::where('balance', '>', $oneMillionUsdMinor)
             ->with('user')
             ->get();
 
@@ -313,13 +323,12 @@ class BatchProcessingActivity extends Activity
             }
         )->toArray();
 
-        // Check for round-number transactions (possible structuring)
-        $roundTransactions = Transaction::whereIn(
-            'amount',
-            [
-                1000000, 900000, 800000, 700000, 600000, 500000, // $10k, $9k, etc.
-            ]
-        )
+        // Round-thousand USD amounts (possible structuring; USD-only — mixed assets need per-asset lists)
+        $usd = $this->usdAssetForMinorUnitRules();
+        $roundAmountsUsd = $this->roundThousandMinorAmountsForAsset($usd);
+        $roundTransactions = Transaction::query()
+            ->where('asset_code', $usd->code)
+            ->whereIn('amount', $roundAmountsUsd)
             ->whereDate('created_at', $today)
             ->count();
 
@@ -377,13 +386,15 @@ class BatchProcessingActivity extends Activity
         $today = now();
         $reportsGenerated = [];
 
-        // Daily Transaction Summary Report
+        // Daily Transaction Summary Report (raw minor units; not additive across different assets/precisions)
+        $dailyTxQuery = TransactionProjection::whereDate('created_at', $today);
         $dailyStats = [
-            'total_transactions' => TransactionProjection::whereDate('created_at', $today)->count(),
-            'total_volume'       => TransactionProjection::whereDate('created_at', $today)->sum('amount'),
-            'total_credits'      => TransactionProjection::whereDate('created_at', $today)->where('amount', '>', 0)->sum('amount'),
-            'total_debits'       => abs(TransactionProjection::whereDate('created_at', $today)->where('amount', '<', 0)->sum('amount')),
-            'unique_accounts'    => TransactionProjection::whereDate('created_at', $today)->distinct('account_uuid')->count(),
+            'total_transactions' => (clone $dailyTxQuery)->count(),
+            'total_volume'       => (clone $dailyTxQuery)->sum('amount'),
+            'total_credits'      => (clone $dailyTxQuery)->where('amount', '>', 0)->sum('amount'),
+            'total_debits'       => abs((clone $dailyTxQuery)->where('amount', '<', 0)->sum('amount')),
+            'unique_accounts'    => (clone $dailyTxQuery)->distinct('account_uuid')->count(),
+            'volume_note'        => 'total_volume and credit/debit sums are raw smallest-unit amounts; do not treat as one currency when asset_code values differ.',
         ];
 
         Storage::disk('local')->put(
@@ -393,8 +404,13 @@ class BatchProcessingActivity extends Activity
         $reportsGenerated[] = 'daily_transaction_summary';
 
         // Large Transaction Report (CTR - Currency Transaction Report)
-        $largeTransactions = TransactionProjection::where('amount', '>', 1000000) // > $10,000
+        $largeTransactions = TransactionProjection::query()
             ->whereDate('created_at', $today)
+            ->where(
+                function ($q) {
+                    $this->applyPerAssetLargeTransactionThreshold($q);
+                }
+            )
             ->with('account.user')
             ->get()
             ->map(
@@ -402,7 +418,8 @@ class BatchProcessingActivity extends Activity
                     return [
                         'transaction_uuid' => $transaction->uuid,
                         'account_uuid'     => $transaction->account_uuid,
-                        'amount'           => $transaction->amount / 100, // Convert to dollars
+                        'asset_code'       => $transaction->asset_code,
+                        'amount'           => $this->transactionAmountMajorUnits($transaction),
                         'transaction_date' => $transaction->created_at->toDateString(),
                         'customer_name'    => $transaction->account->user->name ?? 'Unknown',
                         'customer_email'   => $transaction->account->user->email ?? 'Unknown',
@@ -422,26 +439,31 @@ class BatchProcessingActivity extends Activity
         // Suspicious Activity Report (SAR) candidates
         $suspiciousActivities = [];
 
-        // Check for structuring (multiple transactions just under $10k)
+        // Structuring band: USD only (SUM(amount) across mixed asset_code is not meaningful)
+        $usd = $this->usdAssetForMinorUnitRules();
+        $structuringLower = $usd->toSmallestUnit(9000.0);
+        $structuringUpper = $usd->toSmallestUnit(9999.99);
         $structuringCandidates = DB::select(
             '
-            SELECT account_uuid, COUNT(*) as transaction_count, SUM(amount) as total_amount
-            FROM transactions
-            WHERE amount BETWEEN 900000 AND 999900
+            SELECT account_uuid, COUNT(*) as transaction_count, SUM(ABS(amount)) as total_amount
+            FROM transaction_projections
+            WHERE asset_code = ?
+            AND ABS(amount) BETWEEN ? AND ?
             AND created_at >= ?
             GROUP BY account_uuid
             HAVING COUNT(*) >= 3
         ',
-            [$today->startOfDay()]
+            [$usd->code, min($structuringLower, $structuringUpper), max($structuringLower, $structuringUpper), $today->startOfDay()]
         );
 
         foreach ($structuringCandidates as $candidate) {
             $suspiciousActivities[] = [
                 'account_uuid'      => $candidate->account_uuid,
                 'activity_type'     => 'Potential Structuring',
-                'description'       => 'Multiple transactions just under $10k threshold',
+                'description'       => 'Multiple USD transactions in 9k–9,999.99 major-unit band (asset precision aware)',
                 'transaction_count' => $candidate->transaction_count,
-                'total_amount'      => $candidate->total_amount / 100,
+                'total_amount'      => $usd->fromSmallestUnit((int) $candidate->total_amount),
+                'asset_code'        => $usd->code,
             ];
         }
 
@@ -453,16 +475,22 @@ class BatchProcessingActivity extends Activity
             $reportsGenerated[] = 'suspicious_activity_candidates';
         }
 
-        // Monthly Summary (if it's end of month)
+        // Monthly Summary (if it's end of month) — USD-only major units; avoids /100 on mixed assets
         if ($today->isLastOfMonth()) {
+            $usd = $this->usdAssetForMinorUnitRules();
+            $usdDivisor = 10 ** $usd->precision;
+            $monthAll = TransactionProjection::whereMonth('created_at', $today);
+            $monthUsd = TransactionProjection::whereMonth('created_at', $today)->where('asset_code', $usd->code);
             $monthlyStats = [
-                'month'                    => $today->format('Y-m'),
-                'total_accounts'           => Account::count(),
-                'active_accounts'          => Account::where('frozen', false)->count(),
-                'total_transactions'       => TransactionProjection::whereMonth('created_at', $today)->count(),
-                'total_volume'             => TransactionProjection::whereMonth('created_at', $today)->sum('amount') / 100,
-                'average_transaction_size' => TransactionProjection::whereMonth('created_at', $today)->avg('amount') / 100,
-                'largest_transaction'      => TransactionProjection::whereMonth('created_at', $today)->max('amount') / 100,
+                'month'                     => $today->format('Y-m'),
+                'total_accounts'            => Account::count(),
+                'active_accounts'           => Account::where('frozen', false)->count(),
+                'total_transactions'        => (clone $monthAll)->count(),
+                'total_volume'              => (clone $monthUsd)->sum('amount') / $usdDivisor,
+                'average_transaction_size'  => (clone $monthUsd)->avg('amount') / $usdDivisor,
+                'largest_transaction'       => (clone $monthUsd)->max('amount') / $usdDivisor,
+                'monthly_volume_basis'      => "Major units for asset_code={$usd->code} only; totals use that asset's precision ({$usd->precision} decimal places).",
+                'non_usd_transaction_count' => (clone $monthAll)->where('asset_code', '!=', $usd->code)->count(),
             ];
 
             Storage::disk('local')->put(
@@ -480,5 +508,73 @@ class BatchProcessingActivity extends Activity
             'suspicious_activities_count' => count($suspiciousActivities),
             'storage_path'                => 'storage/app/regulatory/',
         ];
+    }
+
+    /**
+     * USD asset for thresholds tied to legacy dollar semantics (account balance, CTR bands).
+     * Falls back to 2-decimal precision if the assets table is not seeded.
+     */
+    private function usdAssetForMinorUnitRules(): Asset
+    {
+        $found = Asset::query()->find('USD');
+        if ($found !== null) {
+            return $found;
+        }
+
+        $fallback = new Asset();
+        $fallback->forceFill(['code' => 'USD', 'precision' => 2]);
+
+        return $fallback;
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<Transaction>  $query
+     */
+    private function applyPerAssetLargeTransactionThreshold($query): void
+    {
+        $assets = Asset::query()->get();
+        if ($assets->isEmpty()) {
+            $query->whereRaw('ABS(amount) > ?', [(int) round(10000 * 100)]);
+
+            return;
+        }
+
+        $first = true;
+        foreach ($assets as $asset) {
+            $threshold = $asset->toSmallestUnit(10000.0);
+            $branch = function ($sub) use ($asset, $threshold) {
+                $sub->where('asset_code', $asset->code)
+                    ->whereRaw('ABS(amount) > ?', [$threshold]);
+            };
+            if ($first) {
+                $query->where($branch);
+                $first = false;
+            } else {
+                $query->orWhere($branch);
+            }
+        }
+    }
+
+    private function transactionAmountMajorUnits(TransactionProjection $transaction): float
+    {
+        $asset = Asset::query()->find($transaction->asset_code);
+        if ($asset !== null) {
+            return $asset->fromSmallestUnit((int) $transaction->amount);
+        }
+
+        return $transaction->amount / 100;
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function roundThousandMinorAmountsForAsset(Asset $asset): array
+    {
+        $amounts = [];
+        foreach ([10, 9, 8, 7, 6, 5] as $thousands) {
+            $amounts[] = $asset->toSmallestUnit($thousands * 1000.0);
+        }
+
+        return $amounts;
     }
 }

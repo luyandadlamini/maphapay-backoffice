@@ -7,6 +7,7 @@ use App\Domain\Account\DataObjects\Money;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\TransactionProjection;
 use App\Domain\Account\Workflows\TransactionReversalWorkflow;
+use App\Domain\Asset\Models\Asset;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Exception;
@@ -218,10 +219,14 @@ class TransactionReversalController extends Controller
 
         $data = $reversals->map(function ($transaction) {
             $metadata = $transaction->metadata ?? [];
+            $asset = Asset::find($transaction->asset_code);
+            $amountMajor = $asset !== null
+                ? $asset->fromSmallestUnit($transaction->amount)
+                : $transaction->amount / 100;
 
             return [
                 'reversal_id'             => 'rev_' . $transaction->uuid,
-                'amount'                  => $transaction->amount / 100, // Convert from cents
+                'amount'                  => $amountMajor,
                 'asset_code'              => $transaction->asset_code,
                 'transaction_type'        => $transaction->type,
                 'reversal_reason'         => $metadata['reversal_reason'] ?? $transaction->description ?? 'Not specified',

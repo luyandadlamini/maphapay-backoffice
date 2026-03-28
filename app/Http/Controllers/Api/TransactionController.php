@@ -23,6 +23,11 @@ use Workflow\WorkflowStub;
 
 class TransactionController extends Controller
 {
+    /**
+     * Legacy {@see \App\Domain\Account\Aggregates\TransactionAggregate} / {@see Money} path is single-currency; only this code uses {@see DepositAccountWorkflow} / {@see WithdrawAccountWorkflow}.
+     */
+    private const LEGACY_ACCOUNT_MONEY_ASSET_CODE = 'USD';
+
         #[OA\Post(
             path: '/api/accounts/{uuid}/deposit',
             operationId: 'depositToAccount',
@@ -99,14 +104,12 @@ class TransactionController extends Controller
 
         $accountUuid = new AccountUuid($uuid);
 
-        // Determine which workflow to use based on asset type
-        if ($validated['asset_code'] === 'USD') {
-            // Legacy workflow for USD
+        // Legacy Money workflow only supports the single-currency aggregate; SZL and other assets use asset workflows.
+        if ($this->shouldUseLegacyAccountMoneyWorkflow($validated['asset_code'])) {
             $money = new Money($amountInMinorUnits);
             $workflow = WorkflowStub::make(DepositAccountWorkflow::class);
             $workflow->start($accountUuid, $money);
         } else {
-            // Multi-asset workflow for other assets
             $workflow = WorkflowStub::make(AssetDepositWorkflow::class);
             $workflow->start($accountUuid, $validated['asset_code'], $amountInMinorUnits);
         }
@@ -210,14 +213,11 @@ class TransactionController extends Controller
         $accountUuid = new AccountUuid($uuid);
 
         try {
-            // Determine which workflow to use based on asset type
-            if ($validated['asset_code'] === 'USD') {
-                // Legacy workflow for USD
+            if ($this->shouldUseLegacyAccountMoneyWorkflow($validated['asset_code'])) {
                 $money = new Money($amountInMinorUnits);
                 $workflow = WorkflowStub::make(WithdrawAccountWorkflow::class);
                 $workflow->start($accountUuid, $money);
             } else {
-                // Multi-asset workflow for other assets
                 $workflow = WorkflowStub::make(AssetWithdrawWorkflow::class);
                 $workflow->start($accountUuid, $validated['asset_code'], $amountInMinorUnits);
             }
@@ -297,18 +297,22 @@ class TransactionController extends Controller
         // Transform events to transaction format
         $transactions = collect($events->items())->map(
             function ($event) {
-                $properties = json_decode($event->event_properties, true);
+                /** @var array<string, mixed> $properties */
+                $properties = json_decode((string) $event->event_properties, true);
+                if (! is_array($properties)) {
+                    $properties = [];
+                }
                 $eventClass = class_basename($event->event_class);
 
-                // Default values
+                // Default values; asset_code is set per event (unknown payloads fall back to legacy fiat).
                 $transaction = [
                     'id'           => $event->id,
                     'account_uuid' => $event->aggregate_uuid,
                     'type'         => $this->getTransactionType($eventClass),
                     'amount'       => 0,
-                    'asset_code'   => 'USD',
+                    'asset_code'   => self::LEGACY_ACCOUNT_MONEY_ASSET_CODE,
                     'description'  => $this->getTransactionDescription($eventClass),
-                    'hash'         => $properties['hash']['hash'] ?? null,
+                    'hash'         => $this->historyEventHash($properties),
                     'created_at'   => $event->created_at,
                     'metadata'     => [],
                 ];
@@ -317,24 +321,30 @@ class TransactionController extends Controller
                 switch ($eventClass) {
                     case 'MoneyAdded':
                     case 'MoneySubtracted':
-                        $transaction['amount'] = $properties['money']['amount'] ?? 0;
-                        $transaction['asset_code'] = 'USD'; // Legacy events are USD
+                        $transaction['amount'] = $this->historyMoneyAmount($properties);
+                        $transaction['asset_code'] = $this->historyAssetCodeForLegacyMoneyPayload($properties);
                         break;
 
                     case 'AssetBalanceAdded':
                     case 'AssetBalanceSubtracted':
-                        $transaction['amount'] = $properties['amount'] ?? 0;
-                        $transaction['asset_code'] = $properties['assetCode'] ?? 'USD';
+                        $transaction['amount'] = (int) ($properties['amount'] ?? 0);
+                        $transaction['asset_code'] = $this->historyAssetCodeFromScalar(
+                            $properties,
+                            'assetCode',
+                            self::LEGACY_ACCOUNT_MONEY_ASSET_CODE
+                        );
                         break;
 
                     case 'MoneyTransferred':
+                        $transaction['amount'] = $this->historyMoneyAmount($properties);
+                        $transaction['asset_code'] = $this->historyAssetCodeForLegacyMoneyPayload($properties);
+                        $transaction['metadata'] = $this->historyTransferMetadata($properties);
+                        break;
+
                     case 'AssetTransferred':
-                        $transaction['amount'] = $properties['money']['amount'] ?? $properties['fromAmount'] ?? 0;
-                        $transaction['asset_code'] = $properties['fromAsset'] ?? 'USD';
-                        $transaction['metadata'] = [
-                            'to_account'   => $properties['toAccount']['uuid'] ?? null,
-                            'from_account' => $properties['fromAccount']['uuid'] ?? null,
-                        ];
+                        $transaction['amount'] = (int) ($properties['amount'] ?? 0);
+                        $transaction['asset_code'] = $this->historyAssetCodeForAssetTransferred($properties);
+                        $transaction['metadata'] = $this->historyTransferMetadata($properties);
                         break;
                 }
 
@@ -393,5 +403,120 @@ class TransactionController extends Controller
             'MoneyTransferred', 'AssetTransferred' => 'Transfer',
             default => 'Transaction',
         };
+    }
+
+    private function shouldUseLegacyAccountMoneyWorkflow(string $assetCode): bool
+    {
+        return $assetCode === self::LEGACY_ACCOUNT_MONEY_ASSET_CODE;
+    }
+
+    /**
+     * @param array<string, mixed> $properties
+     */
+    private function historyEventHash(array $properties): ?string
+    {
+        $hash = $properties['hash'] ?? null;
+        if (! is_array($hash)) {
+            return null;
+        }
+
+        $inner = $hash['hash'] ?? null;
+
+        return is_string($inner) ? $inner : null;
+    }
+
+    /**
+     * @param array<string, mixed> $properties
+     */
+    private function historyMoneyAmount(array $properties): int
+    {
+        $money = $properties['money'] ?? null;
+        if (! is_array($money)) {
+            return 0;
+        }
+
+        return (int) ($money['amount'] ?? 0);
+    }
+
+    /**
+     * Stored legacy Money events may include `currency` (upcasters) even though {@see Money} has no currency field.
+     *
+     * @param array<string, mixed> $properties
+     */
+    private function historyAssetCodeForLegacyMoneyPayload(array $properties): string
+    {
+        foreach (['currency', 'assetCode'] as $key) {
+            if (isset($properties[$key]) && is_string($properties[$key]) && $properties[$key] !== '') {
+                return $properties[$key];
+            }
+        }
+
+        $money = $properties['money'] ?? null;
+        if (is_array($money) && isset($money['currency']) && is_string($money['currency']) && $money['currency'] !== '') {
+            return $money['currency'];
+        }
+
+        return self::LEGACY_ACCOUNT_MONEY_ASSET_CODE;
+    }
+
+    /**
+     * @param array<string, mixed> $properties
+     */
+    private function historyAssetCodeFromScalar(array $properties, string $key, string $fallback): string
+    {
+        $value = $properties[$key] ?? null;
+        if (is_string($value) && $value !== '') {
+            return $value;
+        }
+
+        return $fallback;
+    }
+
+    /**
+     * @param array<string, mixed> $properties
+     */
+    private function historyAssetCodeForAssetTransferred(array $properties): string
+    {
+        foreach (['assetCode', 'fromAsset'] as $key) {
+            if (isset($properties[$key]) && is_string($properties[$key]) && $properties[$key] !== '') {
+                return $properties[$key];
+            }
+        }
+
+        return self::LEGACY_ACCOUNT_MONEY_ASSET_CODE;
+    }
+
+    /**
+     * @param array<string, mixed> $properties
+     */
+    private function historyTransferMetadata(array $properties): array
+    {
+        $to = $this->historyTransferEndpointUuid($properties, 'toAccount', 'to');
+        $from = $this->historyTransferEndpointUuid($properties, 'fromAccount', 'from');
+
+        return [
+            'to_account'   => $to,
+            'from_account' => $from,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $properties
+     */
+    private function historyTransferEndpointUuid(array $properties, string $legacyKey, string $canonicalKey): ?string
+    {
+        foreach ([$legacyKey, $canonicalKey] as $key) {
+            $node = $properties[$key] ?? null;
+            if (! is_array($node)) {
+                continue;
+            }
+
+            $uuid = $node['uuid'] ?? null;
+            if (is_string($uuid) && $uuid !== '') {
+                return $uuid;
+            }
+        }
+
+        return null;
     }
 }

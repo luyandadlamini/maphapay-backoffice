@@ -17,7 +17,7 @@ class StuckTransactionsTool extends Tool
     public function handle(Request $request): Response
     {
         $minutesOld = max(1, (int) ($request->get('minutes_old') ?? 30));
-        $limit      = min((int) ($request->get('limit') ?? 25), 100);
+        $limit = min((int) ($request->get('limit') ?? 25), 100);
 
         $stuck = DB::select(
             "SELECT
@@ -46,7 +46,7 @@ class StuckTransactionsTool extends Tool
         $grouped = [];
 
         foreach ($stuck as $tx) {
-            $divisor   = 10 ** ($tx->precision ?? 2);
+            $divisor = 10 ** ($tx->precision ?? 2);
             $formatted = number_format($tx->amount / $divisor, $tx->precision ?? 2, '.', '');
 
             $grouped[$tx->type][] = [
@@ -75,7 +75,7 @@ class StuckTransactionsTool extends Tool
         return [
             'minutes_old' => $schema->integer()
                 ->description('Minimum age in minutes to consider a pending transaction stuck (default 30)'),
-            'limit'       => $schema->integer()
+            'limit' => $schema->integer()
                 ->description('Maximum number of stuck transactions to return (max 100, default 25)'),
         ];
     }

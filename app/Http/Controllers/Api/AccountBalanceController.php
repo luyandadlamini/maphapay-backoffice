@@ -7,7 +7,9 @@ namespace App\Http\Controllers\Api;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Asset\Models\Asset;
+use App\Domain\Asset\Services\ExchangeRateService;
 use App\Http\Controllers\Controller;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -52,7 +54,11 @@ class AccountBalanceController extends Controller
         ])),
         new OA\Property(property: 'summary', type: 'object', properties: [
         new OA\Property(property: 'total_assets', type: 'integer'),
-        new OA\Property(property: 'total_usd_equivalent', type: 'string'),
+        new OA\Property(
+            property: 'total_usd_equivalent',
+            type: 'string',
+            description: 'Approximate total in USD major units (2 decimal places in the formatted string). USD leg uses each asset\'s precision for smallest-unit amounts. Non-USD legs are converted via ExchangeRateService when a rate exists; assets without a rate contribute 0 to this sum.'
+        ),
         ]),
         ]),
         ])
@@ -245,25 +251,67 @@ class AccountBalanceController extends Controller
         return "{$formatted} {$asset->code}";
     }
 
-    private function calculateUsdEquivalent($balances): float
+    /**
+     * Approximate portfolio value in USD major units for display.
+     *
+     * Smallest-unit → major uses each {@see Asset::precision} (no fixed /100).
+     * Non-USD rows use {@see ExchangeRateService::convert()} when the container
+     * provides the service and a rate exists; otherwise they add 0 (same as
+     * omitting unpriced assets).
+     *
+     * @param  EloquentCollection<int, AccountBalance>  $balances
+     */
+    private function calculateUsdEquivalent(EloquentCollection $balances): float
     {
-        // Calculate without caching to avoid type issues
         $total = 0.0;
+        $exchangeRateService = app()->bound(ExchangeRateService::class)
+            ? app(ExchangeRateService::class)
+            : null;
+
+        /** @var Asset|null $usdAsset */
+        $usdAsset = Asset::query()->where('code', 'USD')->first();
+        $usdLedgerPrecision = $usdAsset instanceof Asset ? max(0, $usdAsset->precision) : 2;
 
         foreach ($balances as $balance) {
-            if ($balance->asset_code === 'USD') {
-                $total += $balance->balance / 100; // USD is stored in cents
-            } else {
-                // For now, return 0 for non-USD. In production, you'd convert using exchange rates
-                // $rate = app(ExchangeRateService::class)->getRate($balance->asset_code, 'USD');
-                // if ($rate) {
-                //     $usdAmount = $rate->convert($balance->balance);
-                //     $total += $usdAmount / 100;
-                // }
+            $asset = $balance->asset;
+            if (! $asset instanceof Asset) {
+                continue;
             }
+
+            if (strtoupper($balance->asset_code) === 'USD') {
+                $total += $this->smallestUnitToMajor((int) $balance->balance, max(0, $asset->precision));
+
+                continue;
+            }
+
+            if ($exchangeRateService === null) {
+                continue;
+            }
+
+            $usdSmallest = $exchangeRateService->convert(
+                (int) $balance->balance,
+                $balance->asset_code,
+                'USD'
+            );
+
+            if ($usdSmallest === null) {
+                continue;
+            }
+
+            $total += $this->smallestUnitToMajor($usdSmallest, $usdLedgerPrecision);
         }
 
         return $total;
+    }
+
+    /**
+     * Convert a ledger amount in smallest units to major units using the asset's decimal precision.
+     */
+    private function smallestUnitToMajor(int $amountSmallest, int $precision): float
+    {
+        $precision = max(0, $precision);
+
+        return $amountSmallest / (10 ** $precision);
     }
 
     private function calculateAssetTotals(): array

@@ -52,7 +52,7 @@ class AccountLookupTool extends Tool
             );
 
             $formattedBalances = array_map(function ($b) {
-                $divisor   = 10 ** ($b->precision ?? 2);
+                $divisor = 10 ** ($b->precision ?? 2);
                 $formatted = number_format($b->balance / $divisor, $b->precision ?? 2, '.', '');
 
                 return [
