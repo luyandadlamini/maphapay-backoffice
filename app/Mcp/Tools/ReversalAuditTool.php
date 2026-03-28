@@ -87,7 +87,7 @@ class ReversalAuditTool extends Tool
             ];
         }
 
-        return Response::text(json_encode([
+        return Response::text((string) json_encode([
             'scope'     => $accountUuid ?? 'all accounts',
             'count'     => count($result),
             'reversals' => $result,

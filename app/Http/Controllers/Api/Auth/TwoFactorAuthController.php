@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Traits\HasApiScopes;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Laravel\Fortify\Actions\DisableTwoFactorAuthentication;
 use Laravel\Fortify\Actions\EnableTwoFactorAuthentication;
@@ -41,18 +44,25 @@ class TwoFactorAuthController extends Controller
         response: 401,
         description: 'Unauthenticated'
     )]
-    public function enable(Request $request, EnableTwoFactorAuthentication $enable)
+    public function enable(Request $request, EnableTwoFactorAuthentication $enable): JsonResponse
     {
-        $enable($request->user());
+        $authUser = $request->user();
 
-        $user = $request->user()->fresh();
+        if (! $authUser instanceof User) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $enable($authUser);
+
+        /** @var User $user */
+        $user = $authUser->fresh();
 
         return response()->json(
             [
                 'message'        => 'Two-factor authentication enabled successfully.',
-                'secret'         => decrypt($user->two_factor_secret),
+                'secret'         => decrypt((string) $user->two_factor_secret),
                 'qr_code'        => $user->twoFactorQrCodeSvg(),
-                'recovery_codes' => json_decode(decrypt($user->two_factor_recovery_codes), true),
+                'recovery_codes' => json_decode(decrypt((string) $user->two_factor_recovery_codes), true),
             ]
         );
     }
@@ -82,15 +92,19 @@ class TwoFactorAuthController extends Controller
         response: 422,
         description: 'Invalid verification code'
     )]
-    public function confirm(Request $request, TwoFactorAuthenticationProvider $provider)
+    public function confirm(Request $request, TwoFactorAuthenticationProvider $provider): JsonResponse
     {
         $request->validate(['code' => 'required|string']);
 
         $user = $request->user();
 
+        if (! $user instanceof User) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
         if (
             ! $user->two_factor_secret
-            || ! $provider->verify(decrypt($user->two_factor_secret), $request->code)
+            || ! $provider->verify(decrypt((string) $user->two_factor_secret), $request->code)
         ) {
             return response()->json(
                 [
@@ -138,7 +152,7 @@ class TwoFactorAuthController extends Controller
         response: 422,
         description: 'Invalid password'
     )]
-    public function disable(Request $request, DisableTwoFactorAuthentication $disable)
+    public function disable(Request $request, DisableTwoFactorAuthentication $disable): JsonResponse
     {
         $request->validate(
             [
@@ -146,7 +160,13 @@ class TwoFactorAuthController extends Controller
             ]
         );
 
-        $disable($request->user());
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $disable($user);
 
         return response()->json(
             [
@@ -181,7 +201,7 @@ class TwoFactorAuthController extends Controller
         response: 422,
         description: 'Invalid code'
     )]
-    public function verify(Request $request, TwoFactorAuthenticationProvider $provider)
+    public function verify(Request $request, TwoFactorAuthenticationProvider $provider): JsonResponse
     {
         $request->validate(
             [
@@ -211,7 +231,7 @@ class TwoFactorAuthController extends Controller
 
             $user->replaceRecoveryCode($request->recovery_code);
         } else {
-            if (! $provider->verify(decrypt($user->two_factor_secret), $request->code)) {
+            if (! $provider->verify(decrypt((string) $user->two_factor_secret), $request->code)) {
                 return response()->json(
                     [
                         'message' => 'The provided two factor authentication code was invalid.',
@@ -251,9 +271,13 @@ class TwoFactorAuthController extends Controller
         new OA\Property(property: 'recovery_codes', type: 'array', items: new OA\Items(type: 'string')),
         ])
     )]
-    public function regenerateRecoveryCodes(Request $request)
+    public function regenerateRecoveryCodes(Request $request): JsonResponse
     {
         $user = $request->user();
+
+        if (! $user instanceof User) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
 
         $user->forceFill(
             [
@@ -264,7 +288,7 @@ class TwoFactorAuthController extends Controller
         return response()->json(
             [
                 'message'        => 'Recovery codes regenerated successfully.',
-                'recovery_codes' => json_decode(decrypt($user->two_factor_recovery_codes), true),
+                'recovery_codes' => json_decode(decrypt((string) $user->two_factor_recovery_codes), true),
             ]
         );
     }

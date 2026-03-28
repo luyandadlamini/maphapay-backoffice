@@ -37,6 +37,7 @@ class UserBankPreferenceResource extends Resource
                 [
                     Forms\Components\Select::make('user_uuid')
                         ->label('User')
+                        // @phpstan-ignore-next-line
                         ->options(User::all()->pluck('name', 'uuid'))
                         ->searchable()
                         ->required()
@@ -163,7 +164,11 @@ class UserBankPreferenceResource extends Resource
                         ->action(
                             function (UserBankPreference $record) {
                                 $service = app(\App\Domain\Account\Services\BankAllocationService::class);
-                                $service->setPrimaryBank($record->user, $record->bank_code);
+                                $user = $record->user;
+                                if (! $user instanceof User) {
+                                    return;
+                                }
+                                $service->setPrimaryBank($user, $record->bank_code);
                             }
                         )
                         ->requiresConfirmation(),

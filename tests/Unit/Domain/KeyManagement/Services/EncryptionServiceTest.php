@@ -99,7 +99,7 @@ describe('EncryptionService', function () {
             // Tamper with the ciphertext
             $decoded = base64_decode($encrypted);
             $tampered = $decoded;
-            $tampered[20] = chr(ord($tampered[20]) ^ 0xFF);
+            $tampered[20] = chr((ord($tampered[20]) ^ 0xFF) & 0xFF);
             $tamperedEncrypted = base64_encode($tampered);
 
             expect(fn () => $this->service->decryptForUser($tamperedEncrypted, 'user'))

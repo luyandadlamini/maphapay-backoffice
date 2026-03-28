@@ -62,7 +62,9 @@ class ExchangeController extends Controller
             ]
         );
 
-        $account = Auth::user()->account;
+        /** @var User $authUser */
+        $authUser = Auth::user();
+        $account = $authUser->account;
 
         if (! $account) {
             return response()->json(
@@ -122,7 +124,9 @@ class ExchangeController extends Controller
     )]
     public function cancelOrder(string $orderId): JsonResponse
     {
-        $account = Auth::user()->account;
+        /** @var User $authUser */
+        $authUser = Auth::user();
+        $account = $authUser->account;
 
         if (! $account) {
             return response()->json(
@@ -186,7 +190,9 @@ class ExchangeController extends Controller
     )]
     public function getOrders(Request $request): JsonResponse
     {
-        $account = Auth::user()->account;
+        /** @var User $authUser */
+        $authUser = Auth::user();
+        $account = $authUser->account;
 
         if (! $account) {
             return response()->json(
@@ -234,7 +240,9 @@ class ExchangeController extends Controller
     )]
     public function getTrades(Request $request): JsonResponse
     {
-        $account = Auth::user()->account;
+        /** @var User $authUser */
+        $authUser = Auth::user();
+        $account = $authUser->account;
 
         if (! $account) {
             return response()->json(

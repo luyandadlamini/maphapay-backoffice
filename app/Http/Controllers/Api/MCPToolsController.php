@@ -328,6 +328,10 @@ class MCPToolsController extends Controller
     }
 
     // Demo execution methods
+    /**
+     * @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
     private function executeGetAccountBalance(array $params): array
     {
         return [
@@ -340,6 +344,10 @@ class MCPToolsController extends Controller
         ];
     }
 
+    /**
+     * @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
     private function executeAuthorizeTransfer(array $params): array
     {
         return [
@@ -352,6 +360,10 @@ class MCPToolsController extends Controller
         ];
     }
 
+    /**
+     * @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
     private function executeCheckFraudRisk(array $params): array
     {
         return [
@@ -363,6 +375,10 @@ class MCPToolsController extends Controller
         ];
     }
 
+    /**
+     * @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
     private function executeGetTransactionHistory(array $params): array
     {
         return [
@@ -388,6 +404,10 @@ class MCPToolsController extends Controller
         ];
     }
 
+    /**
+     * @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
     private function executeAnalyzeSpendingPatterns(array $params): array
     {
         return [
@@ -408,6 +428,10 @@ class MCPToolsController extends Controller
         ];
     }
 
+    /**
+     * @param array<string, mixed> $params
+     * @return array<string, mixed>
+     */
     private function executeCreateBudgetPlan(array $params): array
     {
         return [

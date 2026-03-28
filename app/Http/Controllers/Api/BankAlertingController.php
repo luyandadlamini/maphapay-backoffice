@@ -371,7 +371,7 @@ class BankAlertingController extends Controller
         );
 
         try {
-            $period = $request->get('period', 'day');
+            $period = (string) $request->get('period', 'day');
 
             // In a real implementation, this would query from database
             // For now, return sample statistics
@@ -402,8 +402,9 @@ class BankAlertingController extends Controller
                     'p95_seconds'     => 120,
                 ],
                 'false_positive_rate' => 8.5,
-                'period_start'        => now()->sub($period, 1)->toISOString(),
-                'period_end'          => now()->toISOString(),
+                // @phpstan-ignore-next-line
+                'period_start' => now()->sub($period, 1)->toISOString(),
+                'period_end'   => now()->toISOString(),
             ];
 
             return response()->json(
@@ -623,13 +624,15 @@ class BankAlertingController extends Controller
             $custodian = $request->get('custodian', 'test_custodian');
             $message = $request->get('message', 'Test alert from API');
 
+            /** @var \App\Models\User|null $testAlertUser */
+            $testAlertUser = auth()->user();
             Log::info(
                 'Test alert triggered',
                 [
                     'severity'     => $severity,
                     'custodian'    => $custodian,
                     'message'      => $message,
-                    'triggered_by' => auth()->user()->email,
+                    'triggered_by' => $testAlertUser?->email,
                 ]
             );
 
@@ -701,11 +704,13 @@ class BankAlertingController extends Controller
             $resolutionNotes = $request->get('resolution_notes', '');
 
             // In a real implementation, this would update the alert in database
+            /** @var \App\Models\User|null $ackUser */
+            $ackUser = auth()->user();
             Log::info(
                 'Alert acknowledged',
                 [
                     'alert_id'         => $alertId,
-                    'acknowledged_by'  => auth()->user()->email,
+                    'acknowledged_by'  => $ackUser?->email,
                     'resolution_notes' => $resolutionNotes,
                 ]
             );
@@ -715,7 +720,7 @@ class BankAlertingController extends Controller
                     'data' => [
                         'alert_id'         => $alertId,
                         'acknowledged'     => true,
-                        'acknowledged_by'  => auth()->user()->email,
+                        'acknowledged_by'  => $ackUser?->email,
                         'acknowledged_at'  => now()->toISOString(),
                         'resolution_notes' => $resolutionNotes,
                     ],

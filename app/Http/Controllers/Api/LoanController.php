@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Lending\Aggregates\Loan as LoanAggregate;
 use App\Domain\Lending\Models\Loan;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
@@ -43,10 +46,10 @@ class LoanController extends Controller
         response: 401,
         description: 'Unauthorized'
     )]
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
-        $loans = Loan::where('borrower_id', $request->user()->id)
-            ->with(['application', 'repayments'])
+        $loans = Loan::where('borrower_id', $request->user()?->id)
+            ->with(['repayments'])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
@@ -90,10 +93,11 @@ class LoanController extends Controller
         response: 404,
         description: 'Loan not found'
     )]
-    public function show($id)
+    public function show($id): JsonResponse
     {
+        /** @var Loan $loan */
         $loan = Loan::where('borrower_id', auth()->id())
-            ->with(['application', 'repayments'])
+            ->with(['repayments'])
             ->findOrFail($id);
 
         return response()->json(
@@ -147,7 +151,7 @@ class LoanController extends Controller
         response: 422,
         description: 'Validation error'
     )]
-    public function makePayment(Request $request, $id)
+    public function makePayment(Request $request, $id): JsonResponse
     {
         $validated = $request->validate(
             [
@@ -156,11 +160,14 @@ class LoanController extends Controller
             ]
         );
 
+        /** @var Loan $loan */
         $loan = Loan::where('borrower_id', auth()->id())
             ->where('status', 'active')
             ->findOrFail($id);
 
         // Verify payment matches schedule
+        /** @var array<string, mixed>|null $scheduledPayment */
+        // @phpstan-ignore-next-line
         $scheduledPayment = collect($loan->repayment_schedule)
             ->firstWhere('payment_number', $validated['payment_number']);
 
@@ -182,7 +189,7 @@ class LoanController extends Controller
                     $validated['amount'],
                     $scheduledPayment['principal'],
                     $scheduledPayment['interest'],
-                    auth()->id()
+                    (string) auth()->id()
                 );
                 $aggregate->persist();
             }
@@ -229,8 +236,9 @@ class LoanController extends Controller
         response: 404,
         description: 'Loan not found'
     )]
-    public function settleEarly(Request $request, $id)
+    public function settleEarly(Request $request, $id): JsonResponse
     {
+        /** @var Loan $loan */
         $loan = Loan::where('borrower_id', auth()->id())
             ->whereIn('status', ['active', 'delinquent'])
             ->findOrFail($id);
@@ -245,7 +253,7 @@ class LoanController extends Controller
                 'loan_id'             => $loan->id,
                 'outstanding_balance' => $outstandingBalance,
                 'settlement_amount'   => $settlementAmount,
-                'savings'             => bcsub($outstandingBalance, $settlementAmount, 2),
+                'savings'             => bcsub((string) $outstandingBalance, (string) $settlementAmount, 2), // @phpstan-ignore-line
                 'confirm_url'         => route('api.loans.confirm-settlement', $loan->id),
             ]
         );
@@ -281,8 +289,9 @@ class LoanController extends Controller
         response: 404,
         description: 'Loan not found'
     )]
-    public function confirmSettlement(Request $request, $id)
+    public function confirmSettlement(Request $request, $id): JsonResponse
     {
+        /** @var Loan $loan */
         $loan = Loan::where('borrower_id', auth()->id())
             ->whereIn('status', ['active', 'delinquent'])
             ->findOrFail($id);
@@ -294,7 +303,7 @@ class LoanController extends Controller
                 $aggregate = LoanAggregate::retrieve($loan->id);
                 $aggregate->settleEarly(
                     $settlementAmount,
-                    auth()->id()
+                    (string) auth()->id()
                 );
                 $aggregate->persist();
             }

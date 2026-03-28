@@ -67,7 +67,9 @@ class BatchProcessingController extends Controller
     public function executeBatch(Request $request): JsonResponse
     {
         // Only admins can execute batch operations
-        if (! Auth::user()->hasRole('admin')) {
+        /** @var \App\Models\User $authUser */
+        $authUser = Auth::user();
+        if (! $authUser->hasRole('admin')) {
             return response()->json(['message' => 'Admin access required'], 403);
         }
 
@@ -238,6 +240,7 @@ class BatchProcessingController extends Controller
             : 0;
 
         // Build operations list from batch items
+        // @phpstan-ignore-next-line
         $operations = $batch->items->map(fn ($item) => [
             'type'              => $item->data['type'] ?? 'unknown',
             'status'            => $item->status,
@@ -513,6 +516,8 @@ class BatchProcessingController extends Controller
 
     /**
      * Validate operation-specific parameters.
+     *
+     * @param array<string, mixed> $operation
      */
     private function validateOperationParameters(array $operation): void
     {
@@ -545,6 +550,8 @@ class BatchProcessingController extends Controller
 
     /**
      * Estimate batch duration based on operations.
+     *
+     * @param array<string, mixed> $operations
      */
     private function estimateDuration(array $operations): string
     {

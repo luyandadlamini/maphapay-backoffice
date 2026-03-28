@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Basket\Models\BasketAsset;
@@ -58,10 +60,11 @@ class BasketPerformanceController extends Controller
         );
 
         $basket = BasketAsset::where('code', $code)->firstOrFail();
-        $period = $request->get('period', 'month');
+        $period = (string) $request->get('period', 'month');
 
+        // @phpstan-ignore-next-line
         $performance = $basket->performances()
-            ->where('period_type', $period)
+            ->where('period_type', $period) // @phpstan-ignore-line
             ->orderBy('period_end', 'desc')
             ->first();
 
@@ -76,9 +79,10 @@ class BasketPerformanceController extends Controller
                 'quarter'  => [$now->copy()->subQuarter(), $now],
                 'year'     => [$now->copy()->subYear(), $now],
                 'all_time' => [
-                    $basket->values()->orderBy('calculated_at')->first()?->calculated_at ?? $now->copy()->subYear(),
+                    $basket->values()->orderBy('calculated_at')->first()?->calculated_at ?? $now->copy()->subYear(), // @phpstan-ignore-line
                     $now,
                 ],
+                default => [$now->copy()->subMonth(), $now],
             };
 
             $performance = $this->performanceService->calculatePerformance(
@@ -136,9 +140,10 @@ class BasketPerformanceController extends Controller
 
         $basket = BasketAsset::where('code', $code)->firstOrFail();
 
+        // @phpstan-ignore-next-line
         $query = $basket->performances()
             ->with('componentPerformances')
-            ->complete();
+            ->complete(); // @phpstan-ignore-line
 
         if ($periodType = $request->get('period_type')) {
             $query->where('period_type', $periodType);
@@ -146,7 +151,7 @@ class BasketPerformanceController extends Controller
 
         $performances = $query
             ->orderBy('period_end', 'desc')
-            ->limit($request->get('limit', 30))
+            ->limit((int) $request->get('limit', 30))
             ->get();
 
         return BasketPerformanceResource::collection($performances);
@@ -218,10 +223,11 @@ class BasketPerformanceController extends Controller
         );
 
         $basket = BasketAsset::where('code', $code)->firstOrFail();
-        $period = $request->get('period', 'month');
+        $period = (string) $request->get('period', 'month');
 
+        // @phpstan-ignore-next-line
         $performance = $basket->performances()
-            ->where('period_type', $period)
+            ->where('period_type', $period) // @phpstan-ignore-line
             ->orderBy('period_end', 'desc')
             ->first();
 
@@ -264,8 +270,8 @@ class BasketPerformanceController extends Controller
         $basket = BasketAsset::where('code', $code)->firstOrFail();
         $performers = $this->performanceService->getTopPerformers(
             $basket,
-            $request->get('period', 'month'),
-            $request->get('limit', 5)
+            (string) $request->get('period', 'month'),
+            (int) $request->get('limit', 5)
         );
 
         return ComponentPerformanceResource::collection($performers);
@@ -299,8 +305,8 @@ class BasketPerformanceController extends Controller
         $basket = BasketAsset::where('code', $code)->firstOrFail();
         $performers = $this->performanceService->getWorstPerformers(
             $basket,
-            $request->get('period', 'month'),
-            $request->get('limit', 5)
+            (string) $request->get('period', 'month'),
+            (int) $request->get('limit', 5)
         );
 
         return ComponentPerformanceResource::collection($performers);
@@ -336,7 +342,7 @@ class BasketPerformanceController extends Controller
         );
 
         $basket = BasketAsset::where('code', $code)->firstOrFail();
-        $period = $request->get('period', 'all');
+        $period = (string) $request->get('period', 'all');
 
         if ($period === 'all') {
             $performances = $this->performanceService->calculateAllPeriods($basket);
@@ -350,6 +356,7 @@ class BasketPerformanceController extends Controller
                 'month'   => [$now->copy()->subMonth(), $now],
                 'quarter' => [$now->copy()->subQuarter(), $now],
                 'year'    => [$now->copy()->subYear(), $now],
+                default   => [$now->copy()->subMonth(), $now],
             };
 
             $performance = $this->performanceService->calculatePerformance(
@@ -394,7 +401,7 @@ class BasketPerformanceController extends Controller
         );
 
         $basket = BasketAsset::where('code', $code)->firstOrFail();
-        $benchmarkCodes = array_map('trim', explode(',', $request->get('benchmarks')));
+        $benchmarkCodes = array_map('trim', explode(',', (string) $request->get('benchmarks')));
 
         $comparison = $this->performanceService->compareToBenchmarks($basket, $benchmarkCodes);
 

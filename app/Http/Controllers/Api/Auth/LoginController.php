@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
@@ -82,7 +84,7 @@ class LoginController extends Controller
         );
 
         // Check if IP is blocked
-        $ip = $request->ip();
+        $ip = $request->ip() ?? '';
         if ($this->ipBlockingService->isBlocked($ip)) {
             $blockInfo = $this->ipBlockingService->getBlockInfo($ip);
             throw ValidationException::withMessages([
@@ -94,7 +96,7 @@ class LoginController extends Controller
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
             // Record failed attempt
-            $this->ipBlockingService->recordFailedAttempt($ip, $request->email);
+            $this->ipBlockingService->recordFailedAttempt($ip, (string) $request->email);
 
             throw ValidationException::withMessages(
                 [
@@ -157,7 +159,9 @@ class LoginController extends Controller
     public function logout(Request $request): JsonResponse
     {
         // Revoke all tokens for the user
-        $request->user()->tokens()->delete();
+        /** @var User $user */
+        $user = $request->user();
+        $user->tokens()->delete();
 
         // Invalidate session (only for web)
         if ($request->hasSession()) {

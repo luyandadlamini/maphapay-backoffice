@@ -79,7 +79,9 @@ class TransactionController extends Controller
         $account = Account::where('uuid', $uuid)->firstOrFail();
 
         // Check if user owns this account
-        if ($account->user_uuid !== auth()->user()->uuid) {
+        /** @var \App\Models\User $depositUser */
+        $depositUser = auth()->user();
+        if ($account->user_uuid !== $depositUser->uuid) {
             return response()->json(
                 [
                     'message' => 'Access denied to this account',
@@ -172,7 +174,9 @@ class TransactionController extends Controller
         $account = Account::where('uuid', $uuid)->firstOrFail();
 
         // Check if user owns this account
-        if ($account->user_uuid !== auth()->user()->uuid) {
+        /** @var \App\Models\User $withdrawUser */
+        $withdrawUser = auth()->user();
+        if ($account->user_uuid !== $withdrawUser->uuid) {
             return response()->json(
                 [
                     'message' => 'Access denied to this account',
@@ -302,7 +306,7 @@ class TransactionController extends Controller
                 if (! is_array($properties)) {
                     $properties = [];
                 }
-                $eventClass = class_basename($event->event_class);
+                $eventClass = class_basename((string) $event->event_class);
 
                 // Default values; asset_code is set per event (unknown payloads fall back to legacy fiat).
                 $transaction = [
@@ -488,6 +492,7 @@ class TransactionController extends Controller
 
     /**
      * @param array<string, mixed> $properties
+     * @return array<string, mixed>
      */
     private function historyTransferMetadata(array $properties): array
     {

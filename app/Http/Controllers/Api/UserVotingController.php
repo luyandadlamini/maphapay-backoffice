@@ -37,6 +37,7 @@ class UserVotingController extends Controller
     )]
     public function getActivePolls(): JsonResponse
     {
+        /** @var User|null $user */
         $user = Auth::user();
 
         $polls = Poll::where('status', PollStatus::ACTIVE)
@@ -117,7 +118,7 @@ class UserVotingController extends Controller
                 'data' => UserVotingPollResource::collection($polls),
                 'meta' => [
                     'total_votes'  => $votedPollIds->count(),
-                    'member_since' => $user->created_at->format('Y-m-d'),
+                    'member_since' => $user->created_at?->format('Y-m-d'),
                 ],
             ]
         );
@@ -162,7 +163,7 @@ class UserVotingController extends Controller
         $poll = Poll::where('uuid', $uuid)->firstOrFail();
 
         // Verify it's a basket voting poll
-        if ($poll->metadata['template'] !== 'monthly_basket') {
+        if (($poll->metadata['template'] ?? null) !== 'monthly_basket') {
             return response()->json(['error' => 'This endpoint is for basket voting only'], 400);
         }
 
@@ -239,8 +240,8 @@ class UserVotingController extends Controller
     )]
     public function getDashboard(): JsonResponse
     {
-        $user = Auth::user();
         /** @var User $user */
+        $user = Auth::user();
 
         // Get active polls
         $activePolls = Poll::where('status', PollStatus::ACTIVE)

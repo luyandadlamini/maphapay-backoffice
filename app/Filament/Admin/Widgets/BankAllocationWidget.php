@@ -37,9 +37,9 @@ class BankAllocationWidget extends Widget
                 'country'           => $bank['country'],
                 'type'              => ucfirst($bank['type']),
                 'user_count'        => $allocation->user_count,
-                'avg_allocation'    => Number::percentage($allocation->avg_allocation, 1),
-                'deposit_insurance' => Number::currency($bank['deposit_insurance'], 'EUR'),
-                'features'          => implode(', ', array_map(fn ($f) => ucwords(str_replace('_', ' ', $f)), $bank['features'] ?? [])),
+                'avg_allocation'    => Number::percentage((float) $allocation->avg_allocation, 1),
+                'deposit_insurance' => Number::currency((int) $bank['deposit_insurance'], 'EUR'),
+                'features'          => implode(', ', array_map(fn ($f) => ucwords(str_replace('_', ' ', $f)), $bank['features'])),
             ];
         }
 
@@ -52,8 +52,8 @@ class BankAllocationWidget extends Widget
                     'type'              => ucfirst($bank['type']),
                     'user_count'        => 0,
                     'avg_allocation'    => '0%',
-                    'deposit_insurance' => Number::currency($bank['deposit_insurance'], 'EUR'),
-                    'features'          => implode(', ', array_map(fn ($f) => ucwords(str_replace('_', ' ', $f)), $bank['features'] ?? [])),
+                    'deposit_insurance' => Number::currency((int) $bank['deposit_insurance'], 'EUR'),
+                    'features'          => implode(', ', array_map(fn ($f) => ucwords(str_replace('_', ' ', $f)), $bank['features'])),
                 ];
             }
         }

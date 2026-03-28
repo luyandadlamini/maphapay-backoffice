@@ -19,7 +19,7 @@ class AccountLookupTool extends Tool
         $email = $request->get('email');
 
         if (! $email) {
-            return Response::text(json_encode(['error' => 'email is required'], JSON_PRETTY_PRINT));
+            return Response::text((string) json_encode(['error' => 'email is required'], JSON_PRETTY_PRINT));
         }
 
         $user = DB::selectOne(
@@ -28,7 +28,7 @@ class AccountLookupTool extends Tool
         );
 
         if (! $user) {
-            return Response::text(json_encode(['error' => "No user found with email: {$email}"], JSON_PRETTY_PRINT));
+            return Response::text((string) json_encode(['error' => "No user found with email: {$email}"], JSON_PRETTY_PRINT));
         }
 
         $accounts = DB::select(
@@ -73,7 +73,7 @@ class AccountLookupTool extends Tool
             ];
         }
 
-        return Response::text(json_encode($result, JSON_PRETTY_PRINT));
+        return Response::text((string) json_encode($result, JSON_PRETTY_PRINT));
     }
 
     public function schema(JsonSchema $schema): array

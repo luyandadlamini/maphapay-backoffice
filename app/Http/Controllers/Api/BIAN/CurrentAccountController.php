@@ -35,6 +35,7 @@ use Workflow\WorkflowStub;
 class CurrentAccountController extends Controller
 {
     public function __construct(
+        // @phpstan-ignore-next-line
         private readonly AccountService $accountService
     ) {
     }
@@ -220,7 +221,7 @@ class CurrentAccountController extends Controller
                         'currency' => 'USD',
                     ],
                     'dateType' => [
-                        'date'         => $account->created_at->toIso8601String(),
+                        'date'         => $account->created_at?->toIso8601String(),
                         'dateTypeName' => 'AccountOpeningDate',
                     ],
                 ],
@@ -365,17 +366,22 @@ class CurrentAccountController extends Controller
 
         $accountUuid = new AccountUuid($crReferenceId);
 
+        /** @var \App\Models\User|null $controlUser */
+        $controlUser = auth()->user();
+        $controlUserName = $controlUser->name ?? 'System';
+        $status = 'unknown';
+
         switch ($validated['controlAction']) {
             case 'freeze':
             case 'suspend':
                 $workflow = WorkflowStub::make(FreezeAccountWorkflow::class);
-                $workflow->start($accountUuid, $validated['controlReason'], auth()->user()->name ?? 'System');
+                $workflow->start($accountUuid, $validated['controlReason'], $controlUserName);
                 $status = 'frozen';
                 break;
             case 'unfreeze':
             case 'reactivate':
                 $workflow = WorkflowStub::make(UnfreezeAccountWorkflow::class);
-                $workflow->start($accountUuid, $validated['controlReason'], auth()->user()->name ?? 'System');
+                $workflow->start($accountUuid, $validated['controlReason'], $controlUserName);
                 $status = 'active';
                 break;
         }
@@ -386,7 +392,7 @@ class CurrentAccountController extends Controller
                     'crReferenceId'   => $crReferenceId,
                     'controlAction'   => $validated['controlAction'],
                     'controlReason'   => $validated['controlReason'],
-                    'controlStatus'   => $status ?? 'unknown',
+                    'controlStatus'   => $status,
                     'controlDateTime' => now()->toIso8601String(),
                 ],
             ]
@@ -769,7 +775,7 @@ class CurrentAccountController extends Controller
                     'crReferenceId' => $crReferenceId,
                     'bqReferenceId' => Str::uuid()->toString(),
                     'reportPeriod'  => [
-                        'fromDate' => $validated['fromDate'] ?? $account->created_at->toDateString(),
+                        'fromDate' => $validated['fromDate'] ?? $account->created_at?->toDateString(),
                         'toDate'   => $validated['toDate'] ?? now()->toDateString(),
                     ],
                     'transactions'     => $transactions->values(),

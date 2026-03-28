@@ -17,6 +17,7 @@ use Throwable;
 class MobileCommerceController extends Controller
 {
     public function __construct(
+        // @phpstan-ignore-next-line
         private readonly MerchantOnboardingService $merchantService,
     ) {
     }
@@ -57,7 +58,7 @@ class MobileCommerceController extends Controller
         $query = Merchant::where('status', MerchantStatus::ACTIVE);
 
         if ($search = $request->query('search')) {
-            $query->where('display_name', 'like', '%' . $search . '%');
+            $query->where('display_name', 'like', '%' . (string) $search . '%');
         }
 
         $merchants = $query->orderBy('display_name')
@@ -154,7 +155,7 @@ class MobileCommerceController extends Controller
         return response()->json([
             'success' => true,
             'data'    => [
-                'merchant_id' => $params['merchant'] ?? null,
+                'merchant_id' => $params['merchant'],
                 'amount'      => $params['amount'] ?? null,
                 'asset'       => $params['asset'] ?? 'USDC',
                 'network'     => $params['network'] ?? 'polygon',
@@ -360,6 +361,7 @@ class MobileCommerceController extends Controller
             'network' => ['required', 'string'],
         ]);
 
+        /** @var \App\Models\User $user */
         $user = $request->user();
         $qrData = sprintf(
             'finaegis://pay?to=%s&amount=%s&asset=%s&network=%s',

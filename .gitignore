@@ -39,3 +39,4 @@ test_results.txt
 *.backup
 .env~
 database/schema/*.bak
+.DS_Store

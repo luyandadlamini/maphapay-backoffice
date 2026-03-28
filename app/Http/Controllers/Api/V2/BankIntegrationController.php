@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V2;
 
 use App\Domain\Banking\Contracts\IBankIntegrationService;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -130,8 +133,14 @@ class BankIntegrationController extends Controller
     )]
     public function getUserConnections(Request $request): JsonResponse
     {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
         try {
-            $connections = $this->bankService->getUserBankConnections($request->user())
+            $connections = $this->bankService->getUserBankConnections($user)
                 ->map(
                     function ($connection) {
                         return [
@@ -157,7 +166,7 @@ class BankIntegrationController extends Controller
             Log::error(
                 'Failed to get user bank connections',
                 [
-                    'user_id' => $request->user()->uuid,
+                    'user_id' => $user->uuid,
                     'error'   => $e->getMessage(),
                 ]
             );
@@ -219,9 +228,15 @@ class BankIntegrationController extends Controller
             ]
         );
 
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
         try {
             $connection = $this->bankService->connectUserToBank(
-                $request->user(),
+                $user,
                 $validated['bank_code'],
                 $validated['credentials']
             );
@@ -242,7 +257,7 @@ class BankIntegrationController extends Controller
             Log::error(
                 'Failed to connect to bank',
                 [
-                    'user_id'   => $request->user()->uuid,
+                    'user_id'   => $user->uuid,
                     'bank_code' => $validated['bank_code'],
                     'error'     => $e->getMessage(),
                 ]
@@ -292,9 +307,15 @@ class BankIntegrationController extends Controller
     )]
     public function disconnectBank(Request $request, string $bankCode): JsonResponse
     {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
         try {
             $success = $this->bankService->disconnectUserFromBank(
-                $request->user(),
+                $user,
                 $bankCode
             );
 
@@ -316,7 +337,7 @@ class BankIntegrationController extends Controller
             Log::error(
                 'Failed to disconnect from bank',
                 [
-                    'user_id'   => $request->user()->uuid,
+                    'user_id'   => $user->uuid,
                     'bank_code' => $bankCode,
                     'error'     => $e->getMessage(),
                 ]
@@ -374,8 +395,14 @@ class BankIntegrationController extends Controller
     {
         $bankCode = $request->query('bank_code');
 
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
         try {
-            $accounts = $this->bankService->getUserBankAccounts($request->user(), $bankCode)
+            $accounts = $this->bankService->getUserBankAccounts($user, $bankCode)
                 ->map(
                     function ($account) {
                         return [
@@ -401,7 +428,7 @@ class BankIntegrationController extends Controller
             Log::error(
                 'Failed to get bank accounts',
                 [
-                    'user_id'   => $request->user()->uuid,
+                    'user_id'   => $user->uuid,
                     'bank_code' => $bankCode,
                     'error'     => $e->getMessage(),
                 ]
@@ -448,8 +475,14 @@ class BankIntegrationController extends Controller
     )]
     public function syncAccounts(Request $request, string $bankCode): JsonResponse
     {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
         try {
-            $accounts = $this->bankService->syncBankAccounts($request->user(), $bankCode);
+            $accounts = $this->bankService->syncBankAccounts($user, $bankCode);
 
             return response()->json(
                 [
@@ -461,7 +494,7 @@ class BankIntegrationController extends Controller
             Log::error(
                 'Failed to sync bank accounts',
                 [
-                    'user_id'   => $request->user()->uuid,
+                    'user_id'   => $user->uuid,
                     'bank_code' => $bankCode,
                     'error'     => $e->getMessage(),
                 ]
@@ -521,9 +554,15 @@ class BankIntegrationController extends Controller
             ]
         );
 
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
         try {
             $balance = $this->bankService->getAggregatedBalance(
-                $request->user(),
+                $user,
                 strtoupper($validated['currency'])
             );
 
@@ -540,7 +579,7 @@ class BankIntegrationController extends Controller
             Log::error(
                 'Failed to get aggregated balance',
                 [
-                    'user_id'  => $request->user()->uuid,
+                    'user_id'  => $user->uuid,
                     'currency' => $validated['currency'],
                     'error'    => $e->getMessage(),
                 ]
@@ -617,9 +656,15 @@ class BankIntegrationController extends Controller
             ]
         );
 
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
         try {
             $transfer = $this->bankService->initiateInterBankTransfer(
-                $request->user(),
+                $user,
                 $validated['from_bank_code'],
                 $validated['from_account_id'],
                 $validated['to_bank_code'],
@@ -653,7 +698,7 @@ class BankIntegrationController extends Controller
             Log::error(
                 'Failed to initiate transfer',
                 [
-                    'user_id'       => $request->user()->uuid,
+                    'user_id'       => $user->uuid,
                     'transfer_data' => $validated,
                     'error'         => $e->getMessage(),
                 ]
@@ -773,10 +818,16 @@ class BankIntegrationController extends Controller
             ]
         );
 
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
         try {
             $routingService = app(\App\Domain\Banking\Services\BankRoutingService::class);
             $recommendations = $routingService->getRecommendedBanks(
-                $request->user(),
+                $user,
                 $validated
             );
 
@@ -789,7 +840,7 @@ class BankIntegrationController extends Controller
             Log::error(
                 'Failed to get bank recommendations',
                 [
-                    'user_id'      => $request->user()->uuid,
+                    'user_id'      => $user->uuid,
                     'requirements' => $validated,
                     'error'        => $e->getMessage(),
                 ]

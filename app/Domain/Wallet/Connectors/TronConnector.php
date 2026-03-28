@@ -78,7 +78,7 @@ class TronConnector implements BlockchainConnector
             $trc20 = $response['trc20'] ?? [];
 
             return array_map(function (array $tokenData): array {
-                $contract = array_key_first($tokenData);
+                $contract = (string) (array_key_first($tokenData) ?? '');
                 $balance = $tokenData[$contract] ?? '0';
 
                 return [

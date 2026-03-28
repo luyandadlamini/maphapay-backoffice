@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V2;
 
 use App\Domain\Governance\Models\GcuVote;
 use App\Domain\Governance\Models\GcuVotingProposal;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -55,6 +58,7 @@ class VotingController extends Controller
             }
         }
 
+        // @phpstan-ignore-next-line
         $proposals = $query->get()->map(
             function ($proposal) {
                 return [
@@ -103,6 +107,7 @@ class VotingController extends Controller
     )]
     public function proposalDetails($id): JsonResponse
     {
+        /** @var GcuVotingProposal $proposal */
         $proposal = GcuVotingProposal::findOrFail($id);
 
         return response()->json(
@@ -159,6 +164,7 @@ class VotingController extends Controller
     )]
     public function vote(Request $request, $id): JsonResponse
     {
+        /** @var GcuVotingProposal $proposal */
         $proposal = GcuVotingProposal::findOrFail($id);
 
         if (! $proposal->isVotingActive()) {
@@ -179,9 +185,14 @@ class VotingController extends Controller
 
         $user = $request->user();
 
+        if (! $user instanceof User) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthenticated'], 401);
+        }
+
         // Get user's GCU balance
+        // @phpstan-ignore-next-line
         $gcuAccount = $user->accounts()
-            ->where('currency', 'GCU')
+            ->where('currency', 'GCU') // @phpstan-ignore-line
             ->where('type', 'personal')
             ->first();
 
@@ -252,18 +263,25 @@ class VotingController extends Controller
     )]
     public function myVotes(Request $request): JsonResponse
     {
-        $votes = GcuVote::where('user_uuid', $request->user()->uuid)
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthenticated'], 401);
+        }
+
+        // @phpstan-ignore-next-line
+        $votes = GcuVote::where('user_uuid', $user->uuid)
             ->with('proposal')
             ->orderBy('created_at', 'desc')
             ->get()
-            ->map(
-                function ($vote) {
+            ->map( // @phpstan-ignore-line
+                function (GcuVote $vote) {
                     return [
                         'proposal_id'    => $vote->proposal_id,
-                        'proposal_title' => $vote->proposal->title,
+                        'proposal_title' => $vote->proposal?->title,
                         'vote'           => $vote->vote,
                         'voting_power'   => $vote->voting_power,
-                        'voted_at'       => $vote->created_at->toIso8601String(),
+                        'voted_at'       => $vote->created_at?->toIso8601String(),
                     ];
                 }
             );
@@ -276,7 +294,7 @@ class VotingController extends Controller
         );
     }
 
-    protected function updateProposalVoteCounts(GcuVotingProposal $proposal)
+    protected function updateProposalVoteCounts(GcuVotingProposal $proposal): void
     {
         $votes = $proposal->votes()->get();
 

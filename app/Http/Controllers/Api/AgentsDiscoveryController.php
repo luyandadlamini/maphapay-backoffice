@@ -71,7 +71,7 @@ class AgentsDiscoveryController extends Controller
                 'domain'        => $pathInfo['domain'],
                 'type'          => $pathInfo['type'],
                 'size'          => $file->getSize(),
-                'last_modified' => date('c', $file->getMTime()),
+                'last_modified' => date('c', (int) $file->getMTime()),
                 'url'           => route('api.agents.content', [
                     'path' => base64_encode($relativePath),
                 ]),
@@ -79,15 +79,15 @@ class AgentsDiscoveryController extends Controller
         }
 
         // Sort by type, then by domain name
-        usort($agentsFiles, function ($a, $b) {
+        usort($agentsFiles, function (array $a, array $b): int {
             if ($a['type'] === $b['type']) {
-                return strcmp($a['domain'], $b['domain']);
+                return strcmp((string) $a['domain'], (string) $b['domain']);
             }
 
             // Prioritize root, then domain, then other types
             $priority = ['root' => 0, 'domain' => 1, 'test' => 2, 'other' => 3];
 
-            return ($priority[$a['type']] ?? 3) <=> ($priority[$b['type']] ?? 3);
+            return ($priority[(string) $a['type']] ?? 3) <=> ($priority[(string) $b['type']] ?? 3);
         });
 
         return response()->json([
@@ -164,7 +164,7 @@ class AgentsDiscoveryController extends Controller
                 'type'          => $pathInfo['type'],
                 'size'          => strlen($content),
                 'lines'         => substr_count($content, "\n") + 1,
-                'last_modified' => date('c', (int) filemtime($fullPath)),
+                'last_modified' => date('c', (int) filemtime($fullPath) ?: 0),
             ],
         ]);
     }
@@ -254,6 +254,7 @@ class AgentsDiscoveryController extends Controller
     /**
      * Parse the agent file path to extract domain and type information.
      */
+    /** @return array<string, string> */
     private function parseAgentPath(string $path): array
     {
         $domain = 'General';
@@ -288,6 +289,12 @@ class AgentsDiscoveryController extends Controller
 
     /**
      * Get recommendations for improving AGENTS.md coverage.
+     */
+    /**
+     * @param array<string, mixed> $coverage
+     * @param array<int, string> $allDomains
+     * @param array<int, string> $coveredDomains
+     * @return array<int, string>
      */
     private function getRecommendations(array $coverage, array $allDomains, array $coveredDomains): array
     {

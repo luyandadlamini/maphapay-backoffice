@@ -48,7 +48,7 @@ class PasswordResetController extends Controller
         new OA\Property(property: 'message', type: 'string', example: 'Too many requests. Please try again later.'),
         ])
     )]
-    public function forgotPassword(Request $request)
+    public function forgotPassword(Request $request): \Illuminate\Http\JsonResponse
     {
         $request->validate(['email' => 'required|email']);
 
@@ -129,7 +129,7 @@ class PasswordResetController extends Controller
         description: 'Validation error or invalid token',
         content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')
     )]
-    public function resetPassword(Request $request)
+    public function resetPassword(Request $request): \Illuminate\Http\JsonResponse
     {
         $request->validate(
             [

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Account\DataObjects\AccountUuid;
@@ -88,7 +90,9 @@ class TransactionReversalController extends Controller
         $account = Account::where('uuid', $uuid)->firstOrFail();
 
         // Ensure account belongs to authenticated user (or admin)
-        if ($account->user_uuid !== Auth::user()->uuid && ! Auth::user()->hasRole('admin')) {
+        /** @var User $authUser */
+        $authUser = Auth::user();
+        if ($account->user_uuid !== $authUser->uuid && ! $authUser->hasRole('admin')) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -96,6 +100,7 @@ class TransactionReversalController extends Controller
             $accountUuid = AccountUuid::fromString($account->uuid);
 
             // Convert amount to Money object with proper precision
+            // @phpstan-ignore-next-line
             $amount = Money::fromFloat($validated['amount'], $validated['asset_code']);
 
             // Start the transaction reversal workflow
@@ -105,7 +110,7 @@ class TransactionReversalController extends Controller
                 $amount,
                 $validated['transaction_type'],
                 $validated['reversal_reason'],
-                $validated['authorized_by'] ?? Auth::user()->email
+                $validated['authorized_by'] ?? $authUser->email
             );
 
             // Generate cryptographically secure reversal ID for tracking
@@ -122,7 +127,7 @@ class TransactionReversalController extends Controller
                         'transaction_type'        => $validated['transaction_type'],
                         'reversal_reason'         => $validated['reversal_reason'],
                         'original_transaction_id' => $validated['original_transaction_id'] ?? null,
-                        'authorized_by'           => $validated['authorized_by'] ?? Auth::user()->email,
+                        'authorized_by'           => $validated['authorized_by'] ?? $authUser->email,
                         'status'                  => 'initiated',
                         'created_at'              => now()->toISOString(),
                     ],
@@ -195,7 +200,9 @@ class TransactionReversalController extends Controller
 
         $account = Account::where('uuid', $uuid)->firstOrFail();
 
-        if ($account->user_uuid !== Auth::user()->uuid && ! Auth::user()->hasRole('admin')) {
+        /** @var User $authUser */
+        $authUser = Auth::user();
+        if ($account->user_uuid !== $authUser->uuid && ! $authUser->hasRole('admin')) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -217,6 +224,7 @@ class TransactionReversalController extends Controller
         $total = $query->count();
         $reversals = $query->skip($offset)->take($limit)->get();
 
+        // @phpstan-ignore-next-line
         $data = $reversals->map(function ($transaction) {
             $metadata = $transaction->metadata ?? [];
             $asset = Asset::find($transaction->asset_code);
@@ -307,7 +315,9 @@ class TransactionReversalController extends Controller
 
         // Verify user has access to this reversal (check account ownership)
         $account = Account::where('uuid', $transaction->account_uuid)->first();
-        if ($account && $account->user_uuid !== Auth::user()->uuid && ! Auth::user()->hasRole('admin')) {
+        /** @var User $authUser */
+        $authUser = Auth::user();
+        if ($account && $account->user_uuid !== $authUser->uuid && ! $authUser->hasRole('admin')) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 

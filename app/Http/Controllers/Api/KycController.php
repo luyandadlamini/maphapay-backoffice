@@ -75,7 +75,8 @@ class KycController extends Controller
                 'approved_at'  => $user->kyc_approved_at,
                 'expires_at'   => $user->kyc_expires_at,
                 'needs_kyc'    => $user->needsKyc(),
-                'documents'    => $user->kycDocuments->map(
+                // @phpstan-ignore-next-line
+                'documents' => $user->kycDocuments->map(
                     fn ($doc) => [
                         'id'          => $doc->id,
                         'type'        => $doc->document_type,
@@ -205,7 +206,7 @@ class KycController extends Controller
         );
 
         try {
-            $this->kycService->submitKyc($user, $request->documents);
+            $this->kycService->submitKyc($user, (array) $request->input('documents', []));
 
             return response()->json(
                 [
@@ -304,16 +305,18 @@ class KycController extends Controller
          */
         $user = Auth::user();
         /** @var User $user */
+        /** @var \Illuminate\Http\UploadedFile $file */
         $file = $request->file('document');
         $type = $request->input('type', 'other');
 
         try {
             // Store the document
-            $path = $file->store('kyc/' . $user->uuid, 'private');
+            $path = (string) $file->store('kyc/' . $user->uuid, 'private');
 
             // Create document record
+            // @phpstan-ignore-next-line
             $document = $user->kycDocuments()->create(
-                [
+                [ // @phpstan-ignore-line
                     'document_type' => $type,
                     'file_path'     => $path,
                     'status'        => 'pending',

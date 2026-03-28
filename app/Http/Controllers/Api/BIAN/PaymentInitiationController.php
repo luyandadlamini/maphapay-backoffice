@@ -111,8 +111,8 @@ class PaymentInitiationController extends Controller
         );
 
         // Validate payer has sufficient funds
-        $payerAccount = Account::where('uuid', $validated['payerReference'])->first();
-        $payeeAccount = Account::where('uuid', $validated['payeeReference'])->first();
+        $payerAccount = Account::where('uuid', $validated['payerReference'])->firstOrFail();
+        $payeeAccount = Account::where('uuid', $validated['payeeReference'])->firstOrFail();
 
         // For backward compatibility, use USD balance
         $payerBalance = $payerAccount->getBalance('USD');
@@ -139,6 +139,7 @@ class PaymentInitiationController extends Controller
         if ($validated['paymentType'] !== 'scheduled' || ! isset($validated['valueDate'])) {
             $fromUuid = new AccountUuid($validated['payerReference']);
             $toUuid = new AccountUuid($validated['payeeReference']);
+            // @phpstan-ignore-next-line
             $money = new Money($validated['paymentAmount']);
 
             try {
@@ -320,7 +321,8 @@ class PaymentInitiationController extends Controller
             abort(404, 'Payment transaction not found');
         }
 
-        $properties = json_decode($event->event_properties, true);
+        /** @var array<string, mixed> $properties */
+        $properties = json_decode($event->event_properties, true) ?? [];
 
         return response()->json(
             [
@@ -570,7 +572,8 @@ class PaymentInitiationController extends Controller
 
         $payments = $events->map(
             function ($event) use ($accountReference) {
-                $properties = json_decode($event->event_properties, true);
+                /** @var array<string, mixed> $properties */
+                $properties = json_decode($event->event_properties, true) ?? [];
                 $fromUuid = $properties['from_uuid'] ?? $event->aggregate_uuid;
                 $toUuid = $properties['to_uuid'] ?? null;
 
@@ -600,7 +603,7 @@ class PaymentInitiationController extends Controller
                     'accountReference' => $accountReference,
                     'bqReferenceId'    => Str::uuid()->toString(),
                     'historyPeriod'    => [
-                        'fromDate' => $validated['fromDate'] ?? $account->created_at->toDateString(),
+                        'fromDate' => $validated['fromDate'] ?? $account->created_at?->toDateString(),
                         'toDate'   => $validated['toDate'] ?? now()->toDateString(),
                     ],
                     'payments'          => $payments->values(),

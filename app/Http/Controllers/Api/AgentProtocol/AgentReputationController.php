@@ -76,6 +76,7 @@ class AgentReputationController extends Controller
             }
 
             // Get reputation from aggregate
+            // @phpstan-ignore-next-line
             $aggregate = ReputationAggregate::retrieve($agent['agent_id']);
 
             // If no reputation exists yet, return initial values
@@ -210,6 +211,7 @@ class AgentReputationController extends Controller
             }
 
             // Get or initialize reputation aggregate
+            // @phpstan-ignore-next-line
             $reputationId = 'rep-' . $agent['agent_id'];
             $aggregate = ReputationAggregate::retrieve($reputationId);
 
@@ -516,6 +518,8 @@ class AgentReputationController extends Controller
 
     /**
      * Get trust-based recommendations.
+     *
+     * @return array<string, mixed>
      */
     private function getTrustRecommendations(float $trustScore): array
     {

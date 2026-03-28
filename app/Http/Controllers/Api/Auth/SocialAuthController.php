@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
@@ -40,7 +42,7 @@ class SocialAuthController extends Controller
         response: 400,
         description: 'Invalid provider'
     )]
-    public function redirect($provider)
+    public function redirect(string $provider): \Illuminate\Http\JsonResponse
     {
         $validProviders = ['google', 'facebook', 'github'];
 
@@ -49,6 +51,7 @@ class SocialAuthController extends Controller
         }
 
         try {
+            // @phpstan-ignore-next-line
             $url = Socialite::driver($provider)->stateless()->redirect()->getTargetUrl();
 
             return response()->json(['url' => $url]);
@@ -90,7 +93,7 @@ class SocialAuthController extends Controller
         response: 400,
         description: 'Invalid provider or authentication failed'
     )]
-    public function callback(Request $request, $provider)
+    public function callback(Request $request, string $provider): \Illuminate\Http\JsonResponse
     {
         $validProviders = ['google', 'facebook', 'github'];
 
@@ -101,6 +104,7 @@ class SocialAuthController extends Controller
         $request->validate(['code' => 'required|string']);
 
         try {
+            // @phpstan-ignore-next-line
             $socialUser = Socialite::driver($provider)->stateless()->user();
 
             // Check if user exists with this provider

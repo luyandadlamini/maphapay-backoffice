@@ -19,7 +19,7 @@ class TransactionInspectorTool extends Tool
         $accountUuid = $request->get('account_uuid');
 
         if (! $accountUuid) {
-            return Response::text(json_encode(['error' => 'account_uuid is required'], JSON_PRETTY_PRINT));
+            return Response::text((string) json_encode(['error' => 'account_uuid is required'], JSON_PRETTY_PRINT));
         }
 
         $limit = min((int) ($request->get('limit') ?? 20), 50);
@@ -96,7 +96,7 @@ class TransactionInspectorTool extends Tool
             [$accountUuid]
         );
 
-        return Response::text(json_encode([
+        return Response::text((string) json_encode([
             'account_uuid' => $accountUuid,
             'filters'      => array_filter(['status' => $status, 'type' => $type]),
             'summary'      => $summary,

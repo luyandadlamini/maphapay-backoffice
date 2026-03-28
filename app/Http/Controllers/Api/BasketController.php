@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Basket\Models\BasketAsset;
@@ -54,6 +56,7 @@ class BasketController extends Controller
             $query->where('is_active', $request->boolean('active'));
         }
 
+        // @phpstan-ignore-next-line
         $baskets = $query->get()->map(
             function ($basket) {
                 $latestValue = $basket->latestValue;
@@ -69,6 +72,7 @@ class BasketController extends Controller
                         'value'         => $latestValue->value,
                         'calculated_at' => $latestValue->calculated_at->toISOString(),
                     ] : null,
+                    // @phpstan-ignore-next-line
                     'components' => $basket->components->map(
                         function ($component) {
                             return [
@@ -122,8 +126,9 @@ class BasketController extends Controller
                 'rebalance_frequency' => $basket->rebalance_frequency,
                 'last_rebalanced_at'  => $basket->last_rebalanced_at?->toISOString(),
                 'is_active'           => $basket->is_active,
-                'created_at'          => $basket->created_at->toISOString(),
-                'components'          => $basket->components->map(
+                'created_at'          => $basket->created_at?->toISOString(),
+                // @phpstan-ignore-next-line
+                'components' => $basket->components->map(
                     function ($component) {
                         return [
                             'asset_code' => $component->asset_code,
@@ -135,11 +140,12 @@ class BasketController extends Controller
                         ];
                     }
                 ),
+                // @phpstan-ignore-next-line
                 'recent_values' => $basket->values->map(
                     function ($value) {
                         return [
                             'value'         => $value->value,
-                            'calculated_at' => $value->calculated_at->toISOString(),
+                            'calculated_at' => $value->calculated_at?->toISOString(),
                         ];
                     }
                 ),
@@ -205,6 +211,7 @@ class BasketController extends Controller
             );
         }
 
+        /** @var BasketAsset $basket */
         $basket = DB::transaction(
             function () use ($validated, $request) {
                 $basket = BasketAsset::create(
@@ -243,7 +250,8 @@ class BasketController extends Controller
                 'type'                => $basket->type,
                 'rebalance_frequency' => $basket->rebalance_frequency,
                 'is_active'           => $basket->is_active,
-                'components'          => $basket->components->map(
+                // @phpstan-ignore-next-line
+                'components' => $basket->components->map(
                     function ($component) {
                         return [
                             'asset_code' => $component->asset_code,

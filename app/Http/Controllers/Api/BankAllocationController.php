@@ -59,8 +59,8 @@ class BankAllocationController extends Controller
     )]
     public function index(): JsonResponse
     {
-        $user = Auth::user();
         /** @var User $user */
+        $user = Auth::user();
         $allocations = $user->bankPreferences()->getQuery()->where('is_active', true)->get();
 
         if ($allocations->isEmpty()) {
@@ -347,7 +347,7 @@ class BankAllocationController extends Controller
                         'bank_code'  => $preference->bank_code,
                         'bank_name'  => $preference->bank_name,
                         'is_primary' => $preference->is_primary,
-                        'updated_at' => $preference->updated_at->toISOString(),
+                        'updated_at' => $preference->updated_at?->toISOString(),
                     ],
                 ]
             );

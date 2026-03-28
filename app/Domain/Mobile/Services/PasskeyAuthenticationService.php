@@ -836,8 +836,8 @@ class PasskeyAuthenticationService
         $prime256v1Oid = "\x06\x08\x2a\x86\x48\xce\x3d\x03\x01\x07";
         $algorithmSequence = "\x30" . chr(strlen($ecPublicKeyOid) + strlen($prime256v1Oid)) . $ecPublicKeyOid . $prime256v1Oid;
 
-        $bitString = "\x03" . chr(strlen($point) + 1) . "\x00" . $point;
-        $spki = "\x30" . chr(strlen($algorithmSequence) + strlen($bitString)) . $algorithmSequence . $bitString;
+        $bitString = "\x03" . chr((strlen($point) + 1) & 0xFF) . "\x00" . $point;
+        $spki = "\x30" . chr((strlen($algorithmSequence) + strlen($bitString)) & 0xFF) . $algorithmSequence . $bitString;
 
         $pem = "-----BEGIN PUBLIC KEY-----\n";
         $pem .= chunk_split(base64_encode($spki), 64, "\n");

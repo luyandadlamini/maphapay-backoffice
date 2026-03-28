@@ -160,6 +160,7 @@ class ExchangeRateController extends Controller
         }
 
         $rate = $this->exchangeRateService->getRate($fromAsset, $toAsset);
+        assert($rate !== null);
 
         // Get asset details for formatting
         $fromAssetModel = \App\Domain\Asset\Models\Asset::where('code', $fromAsset)->first();

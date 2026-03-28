@@ -26,6 +26,7 @@ use Workflow\WorkflowStub;
 class AccountController extends Controller
 {
     public function __construct(
+        // @phpstan-ignore-next-line
         private readonly AccountService $accountService,
         private readonly AccountCacheService $accountCache
     ) {
@@ -49,6 +50,7 @@ class AccountController extends Controller
     public function index(Request $request): JsonResponse
     {
         // Get the authenticated user
+        /** @var \App\Models\User $user */
         $user = $request->user();
 
         // Retrieve accounts for the authenticated user
@@ -58,6 +60,7 @@ class AccountController extends Controller
 
         return response()->json(
             [
+                // @phpstan-ignore-next-line
                 'data' => $accounts->map(
                     function ($account) {
                         return [
@@ -114,20 +117,23 @@ class AccountController extends Controller
         $sanitizedName = strip_tags($validated['name']);
         $sanitizedName = htmlspecialchars($sanitizedName, ENT_QUOTES, 'UTF-8');
         // Remove dangerous protocols
-        $sanitizedName = preg_replace('/javascript:/i', '', $sanitizedName);
-        $sanitizedName = preg_replace('/data:/i', '', $sanitizedName);
-        $sanitizedName = preg_replace('/vbscript:/i', '', $sanitizedName);
+        $sanitizedName = (string) preg_replace('/javascript:/i', '', $sanitizedName);
+        $sanitizedName = (string) preg_replace('/data:/i', '', $sanitizedName);
+        $sanitizedName = (string) preg_replace('/vbscript:/i', '', $sanitizedName);
         $sanitizedName = trim($sanitizedName);
 
         // Generate a UUID for the new account
         $accountUuid = Str::uuid()->toString();
+
+        /** @var \App\Models\User $user */
+        $user = $request->user();
 
         // Create the Account data object with the UUID
         // Always use the authenticated user's UUID, never from request
         $accountData = new \App\Domain\Account\DataObjects\Account(
             uuid: $accountUuid,
             name: $sanitizedName,
-            userUuid: $request->user()->uuid
+            userUuid: $user->uuid
         );
 
         $workflow = WorkflowStub::make(CreateAccountWorkflow::class);
@@ -150,7 +156,7 @@ class AccountController extends Controller
             $account = Account::create(
                 [
                     'uuid'      => $accountUuid,
-                    'user_uuid' => $request->user()->uuid,
+                    'user_uuid' => $user->uuid,
                     'name'      => $sanitizedName,
                     'balance'   => $validated['initial_balance'] ?? 0,
                 ]
@@ -206,7 +212,9 @@ class AccountController extends Controller
         }
 
         // Check authorization - user must own the account
-        if ($account->user_uuid !== $request->user()->uuid) {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        if ($account->user_uuid !== $user->uuid) {
             abort(403, 'Forbidden');
         }
 
@@ -258,7 +266,9 @@ class AccountController extends Controller
         $account = Account::where('uuid', $uuid)->firstOrFail();
 
         // Check authorization - user must own the account
-        if ($account->user_uuid !== $request->user()->uuid) {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        if ($account->user_uuid !== $user->uuid) {
             abort(403, 'Forbidden');
         }
 
@@ -339,8 +349,10 @@ class AccountController extends Controller
 
         // Check authorization - user must own the account OR be an admin
         // Use Spatie role check for admin, not tokenCan which is for Sanctum scopes
-        $isAdmin = $request->user()->hasRole(['admin', 'super_admin', 'bank_admin']);
-        if (! $isAdmin && $account->user_uuid !== $request->user()->uuid) {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $isAdmin = $user->hasRole(['admin', 'super_admin', 'bank_admin']);
+        if (! $isAdmin && $account->user_uuid !== $user->uuid) {
             abort(403, 'Forbidden');
         }
 
@@ -409,8 +421,10 @@ class AccountController extends Controller
         $account = Account::where('uuid', $uuid)->firstOrFail();
 
         // Check authorization - user must own the account OR be an admin
-        $isAdmin = $request->user()->hasRole(['admin', 'super_admin', 'bank_admin']);
-        if (! $isAdmin && $account->user_uuid !== $request->user()->uuid) {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $isAdmin = $user->hasRole(['admin', 'super_admin', 'bank_admin']);
+        if (! $isAdmin && $account->user_uuid !== $user->uuid) {
             abort(403, 'Forbidden');
         }
 

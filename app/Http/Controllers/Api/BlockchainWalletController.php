@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Wallet\Services\BlockchainWalletService;
@@ -8,7 +10,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\BlockchainWalletResource;
 use App\Http\Resources\TransactionResource;
 use App\Http\Resources\WalletAddressResource;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use OpenApi\Attributes as OA;
@@ -49,10 +53,10 @@ class BlockchainWalletController extends Controller
         response: 401,
         description: 'Unauthorized'
     )]
-    public function index(Request $request)
+    public function index(Request $request): AnonymousResourceCollection
     {
         $wallets = DB::table('blockchain_wallets')
-            ->where('user_id', $request->user()->id)
+            ->where('user_id', $request->user()?->id)
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -100,7 +104,7 @@ class BlockchainWalletController extends Controller
         response: 422,
         description: 'Validation error or invalid mnemonic'
     )]
-    public function store(Request $request)
+    public function store(Request $request): BlockchainWalletResource|JsonResponse
     {
         $validated = $request->validate(
             [
@@ -127,7 +131,7 @@ class BlockchainWalletController extends Controller
         }
 
         $wallet = $this->walletService->createWallet(
-            userId: $request->user()->id,
+            userId: (string) $request->user()?->id,
             type: $validated['type'],
             mnemonic: $validated['mnemonic'] ?? null,
             settings: $validated['settings'] ?? []
@@ -175,11 +179,11 @@ class BlockchainWalletController extends Controller
         response: 404,
         description: 'Wallet not found'
     )]
-    public function show(Request $request, string $walletId)
+    public function show(Request $request, string $walletId): BlockchainWalletResource
     {
         $wallet = DB::table('blockchain_wallets')
             ->where('wallet_id', $walletId)
-            ->where('user_id', $request->user()->id)
+            ->where('user_id', $request->user()?->id)
             ->firstOrFail();
 
         return new BlockchainWalletResource($wallet);
@@ -231,12 +235,12 @@ class BlockchainWalletController extends Controller
         response: 422,
         description: 'Validation error'
     )]
-    public function update(Request $request, string $walletId)
+    public function update(Request $request, string $walletId): BlockchainWalletResource
     {
         // Verify ownership
         $wallet = DB::table('blockchain_wallets')
             ->where('wallet_id', $walletId)
-            ->where('user_id', $request->user()->id)
+            ->where('user_id', $request->user()?->id)
             ->firstOrFail();
 
         $validated = $request->validate(
@@ -295,12 +299,12 @@ class BlockchainWalletController extends Controller
         response: 404,
         description: 'Wallet not found'
     )]
-    public function addresses(Request $request, string $walletId)
+    public function addresses(Request $request, string $walletId): AnonymousResourceCollection
     {
         // Verify ownership
         $wallet = DB::table('blockchain_wallets')
             ->where('wallet_id', $walletId)
-            ->where('user_id', $request->user()->id)
+            ->where('user_id', $request->user()?->id)
             ->firstOrFail();
 
         $addresses = DB::table('wallet_addresses')
@@ -355,12 +359,12 @@ class BlockchainWalletController extends Controller
         response: 422,
         description: 'Validation error'
     )]
-    public function generateAddress(Request $request, string $walletId)
+    public function generateAddress(Request $request, string $walletId): WalletAddressResource
     {
         // Verify ownership
         $wallet = DB::table('blockchain_wallets')
             ->where('wallet_id', $walletId)
-            ->where('user_id', $request->user()->id)
+            ->where('user_id', $request->user()?->id)
             ->firstOrFail();
 
         $validated = $request->validate(
@@ -422,12 +426,12 @@ class BlockchainWalletController extends Controller
         response: 404,
         description: 'Wallet not found'
     )]
-    public function transactions(Request $request, string $walletId)
+    public function transactions(Request $request, string $walletId): AnonymousResourceCollection
     {
         // Verify ownership
         $wallet = DB::table('blockchain_wallets')
             ->where('wallet_id', $walletId)
-            ->where('user_id', $request->user()->id)
+            ->where('user_id', $request->user()?->id)
             ->firstOrFail();
 
         $validated = $request->validate(
@@ -495,12 +499,12 @@ class BlockchainWalletController extends Controller
         response: 422,
         description: 'Only non-custodial wallets can be backed up'
     )]
-    public function createBackup(Request $request, string $walletId)
+    public function createBackup(Request $request, string $walletId): JsonResponse
     {
         // Verify ownership
         $wallet = DB::table('blockchain_wallets')
             ->where('wallet_id', $walletId)
-            ->where('user_id', $request->user()->id)
+            ->where('user_id', $request->user()?->id)
             ->firstOrFail();
 
         // Only non-custodial wallets can be backed up
@@ -554,7 +558,7 @@ class BlockchainWalletController extends Controller
         response: 401,
         description: 'Unauthorized'
     )]
-    public function generateMnemonic()
+    public function generateMnemonic(): JsonResponse
     {
         $mnemonic = $this->keyManager->generateMnemonic();
 

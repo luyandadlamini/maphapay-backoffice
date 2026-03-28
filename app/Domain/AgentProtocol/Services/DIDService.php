@@ -403,7 +403,7 @@ if (! function_exists('base58_decode')) {
             // Convert decimal to binary
             $decoded = '';
             while (bccomp($num, '0') > 0) {
-                $decoded = chr((int) bcmod($num, '256')) . $decoded;
+                $decoded = chr((int) bcmod($num, '256') & 0xFF) . $decoded;
                 $num = bcdiv($num, '256', 0);
             }
         } else {
@@ -419,7 +419,7 @@ if (! function_exists('base58_decode')) {
             // Convert to binary
             $decoded = '';
             while (base58_bccomp($num, '0') > 0) {
-                $decoded = chr((int) base58_bcmod($num, '256')) . $decoded;
+                $decoded = chr((int) base58_bcmod($num, '256') & 0xFF) . $decoded;
                 $num = base58_bcdiv($num, '256');
             }
         }

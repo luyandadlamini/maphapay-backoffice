@@ -369,7 +369,7 @@ class ReportGeneratorService
         foreach ($headers as $header) {
             $sheet->setCellValue($col . $startRow, $header);
             $sheet->getStyle($col . $startRow)->getFont()->setBold(true);
-            $col++;
+            $col = str_increment($col);
         }
 
         // Add data rows
@@ -379,7 +379,7 @@ class ReportGeneratorService
             $col = 'A';
             foreach ($row as $value) {
                 $sheet->setCellValue($col . $currentRow, $value);
-                $col++;
+                $col = str_increment($col);
             }
             $currentRow++;
         }

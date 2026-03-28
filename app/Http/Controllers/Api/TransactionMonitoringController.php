@@ -185,7 +185,7 @@ class TransactionMonitoringController extends Controller
                     'transaction_id' => $transaction->id,
                     'amount'         => $transaction->amount,
                     'notes'          => $validated['notes'] ?? null,
-                    'flagged_by'     => auth()->user()->name,
+                    'flagged_by'     => auth()->user()?->name,
                 ],
             ]);
         });

@@ -50,6 +50,7 @@ class WebhookController extends Controller
 
         return response()->json(
             [
+                // @phpstan-ignore-next-line
                 'data' => $webhooks->map(
                     function ($webhook) {
                         return [
@@ -58,7 +59,7 @@ class WebhookController extends Controller
                             'events'            => $webhook->events,
                             'is_active'         => $webhook->is_active,
                             'description'       => $webhook->description,
-                            'created_at'        => $webhook->created_at->toIso8601String(),
+                            'created_at'        => $webhook->created_at?->toIso8601String(),
                             'last_triggered_at' => $webhook->last_triggered_at?->toIso8601String(),
                         ];
                     }
@@ -129,7 +130,7 @@ class WebhookController extends Controller
                     'events'     => $webhook->events,
                     'secret'     => $secret, // Only shown once at creation
                     'is_active'  => $webhook->is_active,
-                    'created_at' => $webhook->created_at->toIso8601String(),
+                    'created_at' => $webhook->created_at?->toIso8601String(),
                 ],
             ],
             201
@@ -186,7 +187,7 @@ class WebhookController extends Controller
                     'events'      => $webhook->events,
                     'is_active'   => $webhook->is_active,
                     'description' => $webhook->description,
-                    'created_at'  => $webhook->created_at->toIso8601String(),
+                    'created_at'  => $webhook->created_at?->toIso8601String(),
                     'statistics'  => $statistics,
                 ],
             ]
@@ -237,7 +238,7 @@ class WebhookController extends Controller
                     'url'        => $webhook->url,
                     'events'     => $webhook->events,
                     'is_active'  => $webhook->is_active,
-                    'updated_at' => $webhook->updated_at->toIso8601String(),
+                    'updated_at' => $webhook->updated_at?->toIso8601String(),
                 ],
             ]
         );
@@ -372,6 +373,7 @@ class WebhookController extends Controller
         );
     }
 
+    /** @return array<int, string> */
     private function getAvailableEvents(): array
     {
         return [

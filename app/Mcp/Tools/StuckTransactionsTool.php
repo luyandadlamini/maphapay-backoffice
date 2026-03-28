@@ -63,7 +63,7 @@ class StuckTransactionsTool extends Tool
             ];
         }
 
-        return Response::text(json_encode([
+        return Response::text((string) json_encode([
             'threshold_minutes' => $minutesOld,
             'total_stuck'       => count($stuck),
             'by_type'           => $grouped,

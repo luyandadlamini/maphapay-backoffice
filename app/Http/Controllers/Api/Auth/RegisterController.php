@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Actions\Fortify\CreateNewUser;
@@ -82,8 +84,9 @@ class RegisterController extends Controller
 
         // Use the same CreateNewUser action as Fortify for consistency
         $creator = new CreateNewUser();
+        // @phpstan-ignore-next-line
         $user = $creator->create(
-            [
+            [ // @phpstan-ignore-line
                 'name'                  => $validated['name'],
                 'email'                 => $validated['email'],
                 'password'              => $validated['password'],

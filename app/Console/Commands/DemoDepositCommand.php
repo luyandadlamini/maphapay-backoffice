@@ -129,11 +129,14 @@ class DemoDepositCommand extends Command
                     $this->info('Using instant demo payment service...');
 
                     $result = $paymentService->processStripeDeposit([
-                        'account_uuid'   => $account->uuid,
-                        'amount'         => $amountInCents,
-                        'currency'       => strtolower($assetCode),
-                        'description'    => $description,
-                        'payment_method' => 'demo_instant',
+                        'account_uuid'        => $account->uuid,
+                        'amount'              => $amountInCents,
+                        'currency'            => strtolower($assetCode),
+                        'reference'           => 'demo_' . uniqid(),
+                        'external_reference'  => 'demo_ext_' . uniqid(),
+                        'payment_method'      => 'demo_instant',
+                        'payment_method_type' => 'demo',
+                        'metadata'            => ['description' => $description],
                     ]);
 
                     $transactionId = $result;

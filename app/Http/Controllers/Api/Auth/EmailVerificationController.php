@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
@@ -37,11 +39,12 @@ class EmailVerificationController extends Controller
         response: 403,
         description: 'Invalid or expired verification link'
     )]
-    public function verify(Request $request, $id, $hash)
+    public function verify(Request $request, mixed $id, mixed $hash): \Illuminate\Http\JsonResponse
     {
+        /** @var \Illuminate\Contracts\Auth\MustVerifyEmail&User $user */
         $user = User::findOrFail($id);
 
-        if (! hash_equals($hash, sha1($user->getEmailForVerification()))) {
+        if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
             return response()->json(['message' => 'Invalid verification link.'], 403);
         }
 
@@ -89,13 +92,15 @@ class EmailVerificationController extends Controller
         response: 401,
         description: 'Unauthenticated'
     )]
-    public function resend(Request $request)
+    public function resend(Request $request): \Illuminate\Http\JsonResponse
     {
-        if ($request->user()->hasVerifiedEmail()) {
+        /** @var \Illuminate\Contracts\Auth\MustVerifyEmail&User $user */
+        $user = $request->user();
+        if ($user->hasVerifiedEmail()) {
             return response()->json(['message' => 'Email already verified.'], 400);
         }
 
-        $request->user()->sendEmailVerificationNotification();
+        $user->sendEmailVerificationNotification();
 
         return response()->json(['message' => 'Verification link sent.']);
     }

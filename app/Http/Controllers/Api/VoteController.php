@@ -47,7 +47,9 @@ class VoteController extends Controller
             ]
         );
 
-        $query = Vote::byUser(Auth::user()->uuid)
+        /** @var User $indexUser */
+        $indexUser = Auth::user();
+        $query = Vote::byUser($indexUser->uuid)
             ->with(['poll', 'user'])
             ->orderByDesc('voted_at');
 
@@ -99,7 +101,9 @@ class VoteController extends Controller
         }
 
         // Users can only view their own votes
-        if ($vote->user_uuid !== Auth::user()->uuid) {
+        /** @var User $showUser */
+        $showUser = Auth::user();
+        if ($vote->user_uuid !== $showUser->uuid) {
             return response()->json(
                 [
                     'message' => 'Access denied',
@@ -155,7 +159,9 @@ class VoteController extends Controller
         }
 
         // Users can only verify their own votes
-        if ($vote->user_uuid !== Auth::user()->uuid) {
+        /** @var User $verifyUser */
+        $verifyUser = Auth::user();
+        if ($vote->user_uuid !== $verifyUser->uuid) {
             return response()->json(
                 [
                     'message' => 'Access denied',
@@ -196,7 +202,9 @@ class VoteController extends Controller
     )]
     public function stats(): JsonResponse
     {
-        $userUuid = Auth::user()->uuid;
+        /** @var User $statsUser */
+        $statsUser = Auth::user();
+        $userUuid = $statsUser->uuid;
 
         $totalVotes = Vote::byUser($userUuid)->count();
         $totalVotingPower = Vote::byUser($userUuid)->sum('voting_power');

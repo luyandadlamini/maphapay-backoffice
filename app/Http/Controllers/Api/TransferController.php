@@ -117,7 +117,9 @@ DESC
         $toAccount = Account::where('uuid', $toAccountUuid)->first();
 
         // Check authorization - user must own the from account
-        if ($fromAccount && $fromAccount->user_uuid !== $request->user()->uuid) {
+        /** @var \App\Models\User $requestUser */
+        $requestUser = $request->user();
+        if ($fromAccount && $fromAccount->user_uuid !== $requestUser->uuid) {
             return response()->json(
                 [
                     'message' => 'Unauthorized: You can only transfer from your own accounts',
@@ -178,7 +180,8 @@ DESC
         }
 
         // Check sufficient balance
-        $fromBalance = $fromAccount->getBalance($validated['asset_code']);
+        assert($fromAccount !== null);
+        $fromBalance = $fromAccount->getBalance((string) $validated['asset_code']);
 
         if ($fromBalance < $amountInMinorUnits) {
             return response()->json(

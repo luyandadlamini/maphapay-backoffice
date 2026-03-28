@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V2;
 
 use App\Domain\FinancialInstitution\Models\FinancialInstitutionApplication;
@@ -367,7 +369,7 @@ class FinancialInstitutionController extends Controller
                     'status'             => $application->status,
                     'review_stage'       => $application->review_stage,
                     'risk_rating'        => $application->risk_rating,
-                    'submitted_at'       => $application->created_at->toIso8601String(),
+                    'submitted_at'       => $application->created_at?->toIso8601String(),
                     'documents'          => $documentStatus,
                     'is_editable'        => $application->isEditable(),
                 ],

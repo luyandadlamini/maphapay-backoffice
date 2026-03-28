@@ -423,7 +423,7 @@ class GdprEnhancedController extends Controller
     {
         try {
             $demoMode = config('compliance-certification.soc2.demo_mode', true);
-            $userUuid = $request->user()?->uuid ?? 'demo-user';
+            $userUuid = $request->user()->uuid ?? 'demo-user';
 
             $data = $demoMode
                 ? $this->consentService->getDemoStatus()
@@ -463,7 +463,7 @@ class GdprEnhancedController extends Controller
                 'version' => ['sometimes', 'string'],
             ]);
 
-            $userUuid = $request->user()?->uuid ?? 'demo-user';
+            $userUuid = $request->user()->uuid ?? 'demo-user';
 
             $record = $this->consentService->recordConsent(
                 $userUuid,
@@ -471,8 +471,8 @@ class GdprEnhancedController extends Controller
                 $validated['granted'],
                 [
                     'version'    => $validated['version'] ?? '1.0',
-                    'ip_address' => $request->ip(),
-                    'user_agent' => $request->userAgent(),
+                    'ip_address' => $request->ip() ?? '',
+                    'user_agent' => $request->userAgent() ?? '',
                 ],
             );
 

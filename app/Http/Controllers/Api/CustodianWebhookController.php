@@ -168,6 +168,7 @@ class CustodianWebhookController extends Controller
             return response()->json(['error' => 'Invalid payload'], 400);
         }
 
+        /** @var array<string, mixed> $data */
         // Extract event information
         $eventType = $this->extractEventType($custodianName, $data);
         $eventId = $this->extractEventId($custodianName, $data);
@@ -230,6 +231,8 @@ class CustodianWebhookController extends Controller
 
     /**
      * Extract event type based on custodian format.
+     *
+     * @param array<string, mixed> $data
      */
     private function extractEventType(string $custodianName, array $data): string
     {
@@ -243,6 +246,8 @@ class CustodianWebhookController extends Controller
 
     /**
      * Extract event ID based on custodian format.
+     *
+     * @param array<string, mixed> $data
      */
     private function extractEventId(string $custodianName, array $data): ?string
     {

@@ -142,16 +142,19 @@ class AgentAuthController extends Controller
                 ], 401);
             }
 
+            $agentRecord = $result['agent'];
+            assert($agentRecord !== null);
+
             return response()->json([
                 'success' => true,
                 'data'    => [
                     'session_token' => $result['session_token'],
                     'expires_at'    => $result['expires_at'],
                     'agent'         => [
-                        'agent_id' => $result['agent']->agent_id,
-                        'did'      => $result['agent']->did,
-                        'name'     => $result['agent']->name,
-                        'status'   => $result['agent']->status,
+                        'agent_id' => $agentRecord->agent_id,
+                        'did'      => $agentRecord->did,
+                        'name'     => $agentRecord->name,
+                        'status'   => $agentRecord->status,
                     ],
                 ],
             ]);
@@ -215,16 +218,19 @@ class AgentAuthController extends Controller
                 ], 401);
             }
 
+            $agentRecord = $result['agent'];
+            assert($agentRecord !== null);
+
             return response()->json([
                 'success' => true,
                 'data'    => [
                     'session_token' => $result['session_token'],
                     'expires_at'    => $result['expires_at'],
                     'agent'         => [
-                        'agent_id' => $result['agent']->agent_id,
-                        'did'      => $result['agent']->did,
-                        'name'     => $result['agent']->name,
-                        'status'   => $result['agent']->status,
+                        'agent_id' => $agentRecord->agent_id,
+                        'did'      => $agentRecord->did,
+                        'name'     => $agentRecord->name,
+                        'status'   => $agentRecord->status,
                     ],
                 ],
             ]);
@@ -272,6 +278,8 @@ class AgentAuthController extends Controller
                 'error'   => $result['error'],
             ], 401);
         }
+
+        assert($result['agent'] !== null);
 
         return response()->json([
             'success' => true,
@@ -360,7 +368,7 @@ class AgentAuthController extends Controller
         $validated = $request->validate([
             'name'       => 'required|string|max:255',
             'scopes'     => 'nullable|array',
-            'scopes.*'   => ['string', Rule::in(array_keys(config('agent_protocol.authentication.scopes', [])))],
+            'scopes.*'   => ['string', Rule::in(array_keys((array) config('agent_protocol.authentication.scopes', [])))],
             'expires_at' => 'nullable|date|after:now',
         ]);
 
@@ -382,7 +390,7 @@ class AgentAuthController extends Controller
             $result = $this->authService->generateApiKey(
                 $agent,
                 $validated['name'],
-                $validated['scopes'] ?? config('agent_protocol.authentication.default_scopes', []),
+                $validated['scopes'] ?? (array) config('agent_protocol.authentication.default_scopes', []),
                 $expiresAt
             );
 
@@ -687,7 +695,7 @@ class AgentAuthController extends Controller
     )]
     public function listScopes(): JsonResponse
     {
-        $configScopes = config('agent_protocol.authentication.scopes', []);
+        $configScopes = (array) config('agent_protocol.authentication.scopes', []);
 
         // Transform to array of objects with scope and description
         $scopes = [];
@@ -702,7 +710,7 @@ class AgentAuthController extends Controller
             'success' => true,
             'data'    => [
                 'scopes'         => $scopes,
-                'default_scopes' => config('agent_protocol.authentication.default_scopes', []),
+                'default_scopes' => (array) config('agent_protocol.authentication.default_scopes', []),
             ],
         ]);
     }

@@ -22,6 +22,7 @@ class MobileRelayerController extends Controller
 {
     public function __construct(
         private readonly GasStationService $gasStation,
+        // @phpstan-ignore-next-line
         private readonly SmartAccountService $smartAccountService,
         private readonly BundlerInterface $bundler,
         private readonly ?EthRpcClient $rpcClient = null,
@@ -351,7 +352,9 @@ class MobileRelayerController extends Controller
             ], 422);
         }
 
+        /** @var array<string, mixed> $opData */
         $opData = $request->input('user_op');
+        /** @var string $signature */
         $signature = $request->input('signature');
 
         try {

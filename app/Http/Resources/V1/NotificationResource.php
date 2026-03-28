@@ -56,13 +56,14 @@ class NotificationResource extends JsonResource
     {
         $rawType = $this->notification_type;
         $category = $this->mapType($rawType);
-        $subtype = str_contains($rawType, '.') ? substr($rawType, strrpos($rawType, '.') + 1) : null;
+        $dotPos = strrpos($rawType, '.');
+        $subtype = ($dotPos !== false) ? substr($rawType, $dotPos + 1) : null;
 
         return [
             'id'         => $this->id,
             'type'       => $category,
             'subtype'    => $subtype,
-            'icon'       => self::SUBTYPE_ICONS[$subtype] ?? 'bell',
+            'icon'       => self::SUBTYPE_ICONS[$subtype !== null ? $subtype : ''] ?? 'bell',
             'icon_set'   => 'material',
             'title'      => $this->title,
             'body'       => $this->body,

@@ -108,6 +108,7 @@ class AccountBalanceController extends Controller
                     'account_uuid' => $account->uuid,
                     'balances'     => $balances->map(
                         function ($balance) {
+                            /** @var Asset $asset */
                             $asset = $balance->asset;
                             $formatted = $this->formatAmount($balance->balance, $asset);
 
@@ -218,14 +219,19 @@ class AccountBalanceController extends Controller
             [
                 'data' => $balances->map(
                     function ($balance) {
+                        /** @var Asset $balAsset */
+                        $balAsset = $balance->asset;
+                        /** @var Account $balAccount */
+                        $balAccount = $balance->account;
+
                         return [
                             'account_uuid' => $balance->account_uuid,
                             'asset_code'   => $balance->asset_code,
                             'balance'      => $balance->balance,
-                            'formatted'    => $this->formatAmount($balance->balance, $balance->asset),
+                            'formatted'    => $this->formatAmount($balance->balance, $balAsset),
                             'account'      => [
-                                'uuid'      => $balance->account->uuid,
-                                'user_uuid' => $balance->account->user_uuid,
+                                'uuid'      => $balAccount->uuid,
+                                'user_uuid' => $balAccount->user_uuid,
                             ],
                         ];
                     }
@@ -314,6 +320,9 @@ class AccountBalanceController extends Controller
         return $amountSmallest / (10 ** $precision);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function calculateAssetTotals(): array
     {
         return Cache::remember(
@@ -329,7 +338,7 @@ class AccountBalanceController extends Controller
                             $asset = Asset::where('code', $item->asset_code)->first();
                             if ($asset) {
                                 $formatted = number_format(
-                                    $item->total / (10 ** $asset->precision),
+                                    (int) $item->total / (10 ** $asset->precision),
                                     $asset->precision,
                                     '.',
                                     ''

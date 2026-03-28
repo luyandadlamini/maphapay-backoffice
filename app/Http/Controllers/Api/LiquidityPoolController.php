@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Exchange\Services\LiquidityPoolService;
@@ -165,10 +167,14 @@ class LiquidityPoolController extends Controller
         }
 
         try {
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $account = $user->account;
+            assert($account !== null);
             $result = $this->liquidityService->addLiquidity(
                 new LiquidityAdditionInput(
                     poolId: $validated['pool_id'],
-                    providerId: $request->user()->account->id,
+                    providerId: $account->id,
                     baseCurrency: $pool->base_currency,
                     quoteCurrency: $pool->quote_currency,
                     baseAmount: $validated['base_amount'],
@@ -213,10 +219,14 @@ class LiquidityPoolController extends Controller
         );
 
         try {
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $account = $user->account;
+            assert($account !== null);
             $result = $this->liquidityService->removeLiquidity(
                 new LiquidityRemovalInput(
                     poolId: $validated['pool_id'],
-                    providerId: $request->user()->account->id,
+                    providerId: $account->id,
                     shares: $validated['shares'],
                     minBaseAmount: $validated['min_base_amount'] ?? '0',
                     minQuoteAmount: $validated['min_quote_amount'] ?? '0'
@@ -259,9 +269,13 @@ class LiquidityPoolController extends Controller
         );
 
         try {
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $account = $user->account;
+            assert($account !== null);
             $result = $this->liquidityService->swap(
                 poolId: $validated['pool_id'],
-                accountId: $request->user()->account->id,
+                accountId: $account->id,
                 inputCurrency: $validated['input_currency'],
                 inputAmount: $validated['input_amount'],
                 minOutputAmount: $validated['min_output_amount'] ?? '0'
@@ -287,8 +301,13 @@ class LiquidityPoolController extends Controller
     {
         $this->middleware('auth:sanctum');
 
-        $positions = $this->liquidityService->getProviderPositions($request->user()->account->id);
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $userAccount = $user->account;
+        assert($userAccount !== null);
+        $positions = $this->liquidityService->getProviderPositions($userAccount->id);
 
+        // @phpstan-ignore-next-line
         $positionData = $positions->map(
             function ($position) {
                 return [
@@ -335,9 +354,13 @@ class LiquidityPoolController extends Controller
         );
 
         try {
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $claimAccount = $user->account;
+            assert($claimAccount !== null);
             $rewards = $this->liquidityService->claimRewards(
                 $validated['pool_id'],
-                $request->user()->account->id
+                $claimAccount->id
             );
 
             return response()->json(
@@ -465,8 +488,9 @@ class LiquidityPoolController extends Controller
             $claims = $this->liquidityService->processImpermanentLossProtectionClaims($validated['pool_id']);
 
             return response()->json([
-                'success'           => true,
-                'claims'            => $claims,
+                'success' => true,
+                'claims'  => $claims,
+                // @phpstan-ignore-next-line
                 'total_compensated' => $claims->sum('compensation'),
             ]);
         } catch (Exception $e) {

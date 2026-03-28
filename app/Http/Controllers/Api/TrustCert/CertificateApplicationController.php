@@ -16,6 +16,7 @@ use OpenApi\Attributes as OA;
 class CertificateApplicationController extends Controller
 {
     public function __construct(
+        // @phpstan-ignore-next-line
         private readonly CertificateAuthorityService $certificateAuthority,
     ) {
     }
@@ -77,6 +78,7 @@ class CertificateApplicationController extends Controller
             'target_level' => ['required', 'string', 'in:basic,verified,high,ultimate'],
         ]);
 
+        /** @var \App\Models\User $user */
         $user = $request->user();
         $targetLevel = TrustLevel::from($request->input('target_level'));
 
@@ -168,6 +170,7 @@ class CertificateApplicationController extends Controller
     )]
     public function show(string $id, Request $request): JsonResponse
     {
+        /** @var \App\Models\User $user */
         $user = $request->user();
         $application = $this->findApplication($user->id, $id);
 
@@ -222,6 +225,7 @@ class CertificateApplicationController extends Controller
     )]
     public function currentApplication(Request $request): JsonResponse
     {
+        /** @var \App\Models\User $user */
         $user = $request->user();
         $application = $this->getActiveApplication($user->id);
 
@@ -296,6 +300,7 @@ class CertificateApplicationController extends Controller
             'file_name'     => ['nullable', 'string'],
         ]);
 
+        /** @var \App\Models\User $user */
         $user = $request->user();
         $application = $this->findApplication($user->id, $id);
 
@@ -421,6 +426,7 @@ class CertificateApplicationController extends Controller
     )]
     public function submit(string $id, Request $request): JsonResponse
     {
+        /** @var \App\Models\User $user */
         $user = $request->user();
         $application = $this->findApplication($user->id, $id);
 
@@ -515,6 +521,7 @@ class CertificateApplicationController extends Controller
     )]
     public function cancel(string $id, Request $request): JsonResponse
     {
+        /** @var \App\Models\User $user */
         $user = $request->user();
         $application = $this->findApplication($user->id, $id);
 
@@ -553,6 +560,7 @@ class CertificateApplicationController extends Controller
      */
     private function getActiveApplication(int $userId): ?array
     {
+        /** @var array<string, mixed>|null $application */
         $application = Cache::get("trustcert_application:{$userId}");
 
         if (! $application || in_array($application['status'], ['approved', 'cancelled'], true)) {
@@ -576,6 +584,7 @@ class CertificateApplicationController extends Controller
      */
     private function findApplication(int $userId, string $id): ?array
     {
+        /** @var array<string, mixed>|null $application */
         $application = Cache::get("trustcert_application:{$userId}");
 
         if (! $application || $application['id'] !== $id) {

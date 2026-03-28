@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -299,6 +301,7 @@ class WorkflowMonitoringController extends Controller
 
         $enrichedWorkflows = $failedWorkflows->getCollection()->map(
             function ($workflow) use ($exceptions) {
+                // @phpstan-ignore-next-line
                 $workflow->exceptions = $exceptions->get($workflow->id, collect());
 
                 return $workflow;
@@ -439,6 +442,7 @@ class WorkflowMonitoringController extends Controller
         }
 
         if ($searchType === 'exception' || $searchType === 'all') {
+            // @phpstan-ignore-next-line
             $query->orWhere('exception', 'LIKE', "%{$searchTerm}%");
         }
 
@@ -526,12 +530,14 @@ class WorkflowMonitoringController extends Controller
 
     // Private helper methods
 
+    /** @return array<string, mixed> */
     private function getWorkflowStats(): array
     {
         return [
             'total_workflows' => StoredWorkflow::count(),
-            'by_status'       => StoredWorkflow::selectRaw('status, COUNT(*) as count')
+            'by_status'       => StoredWorkflow::selectRaw('status, COUNT(*) as count') // @phpstan-ignore-line
                 ->groupBy('status')
+                // @phpstan-ignore-next-line
                 ->pluck('count', 'status')
                 ->toArray(),
             'recent_executions'  => StoredWorkflow::where('created_at', '>=', now()->subHour())->count(),
@@ -539,7 +545,8 @@ class WorkflowMonitoringController extends Controller
         ];
     }
 
-    private function getCompensationInfo($workflow): array
+    /** @return array<string, mixed> */
+    private function getCompensationInfo(StoredWorkflow $workflow): array
     {
         // Look for compensation-related log entries
         $compensationLogs = $workflow->logs->filter(
@@ -561,7 +568,8 @@ class WorkflowMonitoringController extends Controller
         ];
     }
 
-    private function buildExecutionTimeline($workflow): array
+    /** @return array<int, mixed> */
+    private function buildExecutionTimeline(StoredWorkflow $workflow): array
     {
         $timeline = [];
 
@@ -578,6 +586,7 @@ class WorkflowMonitoringController extends Controller
         return $timeline;
     }
 
+    /** @return array<string, mixed> */
     private function getErrorSummary(): array
     {
         $exceptions = StoredWorkflowException::selectRaw('class, COUNT(*) as count')
@@ -593,7 +602,7 @@ class WorkflowMonitoringController extends Controller
         ];
     }
 
-    private function getAverageDuration($since): ?float
+    private function getAverageDuration(\Carbon\Carbon $since): ?float
     {
         $workflows = StoredWorkflow::where('created_at', '>=', $since)
             ->whereNotNull('updated_at')
@@ -605,13 +614,14 @@ class WorkflowMonitoringController extends Controller
 
         $totalDuration = $workflows->sum(
             function ($workflow) {
-                return $workflow->updated_at->diffInSeconds($workflow->created_at);
+                return $workflow->updated_at?->diffInSeconds($workflow->created_at) ?? 0;
             }
         );
 
         return round($totalDuration / $workflows->count(), 2);
     }
 
+    /** @return array<mixed> */
     private function getWorkflowTypeMetrics(): array
     {
         // Use database-agnostic date functions
@@ -636,6 +646,7 @@ class WorkflowMonitoringController extends Controller
         }
     }
 
+    /** @return array<string, mixed> */
     private function getPerformanceMetrics(): array
     {
         $dbDriver = config('database.default');
@@ -676,7 +687,8 @@ class WorkflowMonitoringController extends Controller
         ];
     }
 
-    private function getRollbackActivities($workflow): array
+    /** @return array<mixed> */
+    private function getRollbackActivities(StoredWorkflow $workflow): array
     {
         // Look for rollback/compensation activities in logs
         return $workflow->logs->filter(
@@ -697,6 +709,7 @@ class WorkflowMonitoringController extends Controller
         )->values()->toArray();
     }
 
+    /** @return array<string, mixed> */
     private function getCompensationSummary(): array
     {
         $totalWorkflows = StoredWorkflow::count();

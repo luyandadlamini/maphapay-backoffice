@@ -155,7 +155,9 @@ class PollController extends Controller
             ]
         );
 
-        $validated['created_by'] = Auth::user()->uuid;
+        /** @var User $storeUser */
+        $storeUser = Auth::user();
+        $validated['created_by'] = $storeUser->uuid;
 
         $poll = $this->governanceService->createPoll($validated);
 
@@ -321,15 +323,17 @@ class PollController extends Controller
         }
 
         try {
+            /** @var User $voteUser */
+            $voteUser = Auth::user();
             $vote = $this->governanceService->castVote(
                 $poll,
-                Auth::user(),
+                $voteUser,
                 $validated['selected_options']
             );
 
             // Invalidate relevant caches
             $this->cacheService->invalidatePollCache($poll->uuid);
-            $this->cacheService->invalidateUserPollCache(Auth::user()->uuid, $poll->uuid);
+            $this->cacheService->invalidateUserPollCache($voteUser->uuid, $poll->uuid);
 
             return response()->json(
                 [
@@ -419,7 +423,7 @@ class PollController extends Controller
 
         return response()->json(
             [
-                'data' => $results->toArray(),
+                'data' => $results?->toArray() ?? [],
             ]
         );
     }
@@ -461,8 +465,8 @@ class PollController extends Controller
             );
         }
 
-        $user = Auth::user();
         /** @var User $user */
+        $user = Auth::user();
         $votingPower = $this->cacheService->getUserVotingPower($user->uuid, $poll->uuid);
         $canVote = $this->governanceService->canUserVote($user, $poll);
         $hasVoted = $this->cacheService->hasUserVoted($user->uuid, $poll->uuid);

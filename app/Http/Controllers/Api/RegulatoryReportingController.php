@@ -232,7 +232,8 @@ class RegulatoryReportingController extends Controller
         );
 
         try {
-            $month = Carbon::createFromFormat('Y-m', $request->month);
+            $month = Carbon::createFromFormat('Y-m', (string) $request->month);
+            assert($month !== null);
             $filename = $this->regulatoryReportingService->generateComplianceSummary($month);
 
             return response()->json(
@@ -384,8 +385,8 @@ class RegulatoryReportingController extends Controller
 
         try {
             $type = $request->get('type');
-            $limit = $request->get('limit', 20);
-            $page = $request->get('page', 1);
+            $limit = (int) $request->get('limit', 20);
+            $page = (int) $request->get('page', 1);
             $offset = ($page - 1) * $limit;
 
             $directories = [
@@ -533,7 +534,7 @@ class RegulatoryReportingController extends Controller
                 );
             }
 
-            $content = Storage::get($filePath);
+            $content = (string) Storage::get($filePath);
             $reportData = json_decode($content, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
@@ -612,7 +613,7 @@ class RegulatoryReportingController extends Controller
         response: 401,
         description: 'Unauthenticated'
     )]
-    public function downloadReport(string $filename)
+    public function downloadReport(string $filename): JsonResponse|\Symfony\Component\HttpFoundation\BinaryFileResponse|\Symfony\Component\HttpFoundation\StreamedResponse
     {
         try {
             // Security: Only allow specific file extensions and patterns

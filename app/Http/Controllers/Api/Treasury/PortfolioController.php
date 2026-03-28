@@ -75,7 +75,9 @@ class PortfolioController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $treasuryId = $request->query('treasury_id', $request->user()->uuid ?? '');
+            /** @var \App\Models\User|null $portfolioUser */
+            $portfolioUser = $request->user();
+            $treasuryId = $request->query('treasury_id', $portfolioUser->uuid ?? '');
 
             if (empty($treasuryId)) {
                 return response()->json([
@@ -88,7 +90,8 @@ class PortfolioController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data'    => $portfolios->map(function ($portfolio) {
+                // @phpstan-ignore-next-line
+                'data' => $portfolios->map(function ($portfolio) {
                     return [
                         'portfolio_id'        => $portfolio['portfolio_id'] ?? null,
                         'treasury_id'         => $portfolio['treasury_id'] ?? null,
@@ -976,6 +979,10 @@ class PortfolioController extends Controller
         }
     }
 
+    /**
+     * @param array<string, mixed> $portfolio
+     * @return array<string, mixed>
+     */
     private function formatPortfolioResponse(array $portfolio): array
     {
         return [

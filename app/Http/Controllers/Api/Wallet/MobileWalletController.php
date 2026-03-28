@@ -128,6 +128,7 @@ class MobileWalletController extends Controller
     )]
     public function balances(Request $request): JsonResponse
     {
+        /** @var \App\Models\User $user */
         $user = $request->user();
         $accounts = $this->smartAccountService->getUserAccounts($user);
 
@@ -222,6 +223,7 @@ class MobileWalletController extends Controller
     )]
     public function state(Request $request): JsonResponse
     {
+        /** @var \App\Models\User $user */
         $user = $request->user();
         $accounts = $this->smartAccountService->getUserAccounts($user);
 
@@ -319,6 +321,7 @@ class MobileWalletController extends Controller
     )]
     public function addresses(Request $request): JsonResponse
     {
+        /** @var \App\Models\User $user */
         $user = $request->user();
         $accounts = $this->smartAccountService->getUserAccounts($user);
 
@@ -329,7 +332,7 @@ class MobileWalletController extends Controller
                 'network'    => $account->network ?? 'polygon',
                 'type'       => 'smart_account',
                 'deployed'   => $account->is_deployed ?? false,
-                'created_at' => $account->created_at?->toIso8601String(),
+                'created_at' => $account->created_at->toIso8601String(),
             ];
         }
 
@@ -385,6 +388,7 @@ class MobileWalletController extends Controller
     )]
     public function transactions(Request $request): JsonResponse
     {
+        /** @var \App\Models\User $user */
         $user = $request->user();
 
         $feed = $this->activityFeedService->getFeed(
@@ -438,6 +442,7 @@ class MobileWalletController extends Controller
     )]
     public function transactionDetail(string $id, Request $request): JsonResponse
     {
+        /** @var \App\Models\User $user */
         $user = $request->user();
         $detail = $this->transactionDetailService->getDetails($id, $user->id);
 
@@ -506,6 +511,7 @@ class MobileWalletController extends Controller
             'network' => ['required', 'string'],
         ]);
 
+        /** @var \App\Models\User $user */
         $user = $request->user();
 
         try {
@@ -584,6 +590,7 @@ class MobileWalletController extends Controller
             ->orderByDesc('created_at')
             ->limit(200)
             ->get()
+            // @phpstan-ignore-next-line
             ->map(fn (PaymentIntent $intent) => [
                 'address'      => $intent->metadata['recipient_address'] ?? '',
                 'network'      => $intent->network,

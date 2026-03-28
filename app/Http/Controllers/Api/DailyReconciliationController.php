@@ -242,7 +242,7 @@ class DailyReconciliationController extends Controller
             $days = $request->get('days', 30);
             $limit = $request->get('limit', 20);
 
-            $files = glob(storage_path('app/reconciliation/reconciliation-*.json'));
+            $files = glob(storage_path('app/reconciliation/reconciliation-*.json')) ?: [];
 
             if (empty($files)) {
                 return response()->json(
@@ -263,7 +263,8 @@ class DailyReconciliationController extends Controller
             $cutoffDate = now()->subDays($days);
 
             foreach (array_slice($files, 0, $limit) as $file) {
-                $content = file_get_contents($file);
+                $content = file_get_contents($file) ?: '';
+                /** @var array<string, mixed>|null $reportData */
                 $reportData = json_decode($content, true);
 
                 if (! $reportData) {
@@ -282,7 +283,7 @@ class DailyReconciliationController extends Controller
                     'discrepancy_count'     => count($reportData['discrepancies'] ?? []),
                     'recommendations_count' => count($reportData['recommendations'] ?? []),
                     'file_path'             => basename($file),
-                    'file_size'             => filesize($file),
+                    'file_size'             => filesize($file) ?: 0,
                     'generated_at'          => $reportData['generated_at'] ?? null,
                 ];
             }
@@ -391,7 +392,8 @@ class DailyReconciliationController extends Controller
                 );
             }
 
-            $content = file_get_contents($filePath);
+            $content = file_get_contents($filePath) ?: '';
+            /** @var array<string, mixed>|null $reportData */
             $reportData = json_decode($content, true);
 
             if (! $reportData) {
@@ -409,8 +411,8 @@ class DailyReconciliationController extends Controller
                         'date'      => $date,
                         'report'    => $reportData,
                         'file_info' => [
-                            'size'        => filesize($filePath),
-                            'modified_at' => Carbon::createFromTimestamp(filemtime($filePath))->toISOString(),
+                            'size'        => filesize($filePath) ?: 0,
+                            'modified_at' => Carbon::createFromTimestamp((int) filemtime($filePath))->toISOString(),
                         ],
                         'retrieved_at' => now()->toISOString(),
                     ],
@@ -496,7 +498,7 @@ class DailyReconciliationController extends Controller
             $days = $request->get('days', 30);
             $cutoffDate = now()->subDays($days);
 
-            $files = glob(storage_path('app/reconciliation/reconciliation-*.json'));
+            $files = glob(storage_path('app/reconciliation/reconciliation-*.json')) ?: [];
 
             if (empty($files)) {
                 return response()->json(
@@ -531,7 +533,8 @@ class DailyReconciliationController extends Controller
             ];
 
             foreach ($files as $file) {
-                $content = file_get_contents($file);
+                $content = file_get_contents($file) ?: '';
+                /** @var array<string, mixed>|null $reportData */
                 $reportData = json_decode($content, true);
 
                 if (! $reportData || ! isset($reportData['summary'])) {
@@ -681,8 +684,9 @@ class DailyReconciliationController extends Controller
             ];
 
             if ($isRunning && file_exists($lockFile)) {
-                $status['started_at'] = Carbon::createFromTimestamp(filemtime($lockFile))->toISOString();
-                $status['running_duration_minutes'] = Carbon::createFromTimestamp(filemtime($lockFile))->diffInMinutes(now());
+                $lockMtime = (int) filemtime($lockFile);
+                $status['started_at'] = Carbon::createFromTimestamp($lockMtime)->toISOString();
+                $status['running_duration_minutes'] = Carbon::createFromTimestamp($lockMtime)->diffInMinutes(now());
             }
 
             if ($latestReport) {
