@@ -450,6 +450,6 @@ class TransferControllerTest extends ControllerTestCase
 
         $response->assertStatus(201)
             ->assertJsonPath('data.asset_code', 'EUR')
-            ->assertJsonPath('data.amount', 200);
+            ->assertJsonPath('data.amount', '200.00');
     }
 }
