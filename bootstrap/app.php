@@ -55,6 +55,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 Route::middleware(['api', 'protocol.subdomain'])
                     ->prefix('v2')
                     ->group(base_path('routes/api-v2.php'));
+
+                Route::middleware(['api', 'protocol.subdomain', 'auth:sanctum'])
+                    ->group(base_path('routes/api-compat.php'));
             } elseif ($isApiSubdomain) {
                 // For api.* subdomain, ONLY load API routes without /api prefix
                 Route::middleware('api')
@@ -66,6 +69,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 Route::middleware('api')
                     ->prefix('v2')
                     ->group(base_path('routes/api-v2.php'));
+
+                Route::middleware(['api', 'auth:sanctum'])
+                    ->group(base_path('routes/api-compat.php'));
             } else {
                 // For main domain, load web routes and API routes with prefix
                 Route::middleware('web')
@@ -82,6 +88,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 Route::middleware('api')
                     ->prefix('api/v2')
                     ->group(base_path('routes/api-v2.php'));
+
+                Route::middleware(['api', 'auth:sanctum'])
+                    ->prefix('api')
+                    ->group(base_path('routes/api-compat.php'));
             }
         },
         commands: __DIR__ . '/../routes/console.php',
@@ -100,6 +110,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.apikey'            => App\Http\Middleware\AuthenticateApiKey::class,
             'auth.api_or_sanctum'    => App\Http\Middleware\AuthenticateApiOrSanctum::class,
             'idempotency'            => App\Http\Middleware\IdempotencyMiddleware::class,
+            'migration_flag'         => App\Http\Middleware\RequiresMigrationFlag::class,
             'webhook.signature'      => App\Http\Middleware\ValidateWebhookSignature::class,
             'validate.key.access'    => App\Http\Middleware\ValidateKeyAccess::class,
             'demo'                   => App\Http\Middleware\DemoMode::class,

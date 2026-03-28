@@ -1,0 +1,19 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | MaphaPay compatibility API (Phase 5 / 18)
+    |--------------------------------------------------------------------------
+    |
+    | Progressive rollout flags for routes registered in routes/api-compat.php.
+    |
+    */
+    'enable_verification' => (bool) env('MAPHAPAY_MIGRATION_ENABLE_VERIFICATION', false),
+
+    'enable_send_money' => (bool) env('MAPHAPAY_MIGRATION_ENABLE_SEND_MONEY', false),
+
+    'enable_request_money' => (bool) env('MAPHAPAY_MIGRATION_ENABLE_REQUEST_MONEY', false),
+];

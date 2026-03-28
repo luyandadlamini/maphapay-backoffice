@@ -47,6 +47,18 @@
 | Phase 11 | `AuthorizedTransactionManager` — initiate, dispatchOtp, verifyOtp, verifyPin, atomic finalize | `app/Domain/AuthorizedTransaction/Services/AuthorizedTransactionManager.php` |
 | Phase 11 | `VerifyOtpController` + `VerifyPinController` (legacy envelope) | `app/Http/Controllers/Api/Compatibility/VerificationProcess/` |
 
+### Session **2026-03-28** — Phase 18 + Phase 5 (send/request store)
+
+| Area | What | Files |
+|------|------|--------|
+| Phase 18 | `routes/api-compat.php` — env-gated verification, send-money, request-money routes | `routes/api-compat.php` |
+| Phase 18 | Compatibility routes registered with `api` + `auth:sanctum` (Laravel 12: `bootstrap/app.php`, not `RouteServiceProvider`) | `bootstrap/app.php` |
+| Config | `MAPHAPAY_MIGRATION_ENABLE_VERIFICATION`, `_SEND_MONEY`, `_REQUEST_MONEY` → `config('maphapay_migration.*')` | `config/maphapay_migration.php` |
+| Phase 5 | `SendMoneyStoreController` — `MajorUnitAmountString`, `MoneyConverter::normalise`, `AuthorizedTransactionManager::initiate` + `dispatchOtp`, legacy envelope | `app/Http/Controllers/API/Compatibility/SendMoney/SendMoneyStoreController.php` |
+| Phase 5 | `RequestMoneyStoreController` — `money_requests` row + auth txn `request_money`, no wallet movement at store | `app/Http/Controllers/API/Compatibility/RequestMoney/RequestMoneyStoreController.php` |
+| Phase 5 | `MoneyRequest` model + migration; `RequestMoneyHandler` (OTP/PIN finalize → status `pending`) | `app/Models/MoneyRequest.php`, `database/migrations/2026_03_28_150000_create_money_requests_table.php`, `app/Domain/AuthorizedTransaction/Handlers/RequestMoneyHandler.php` |
+| Tests | Feature tests for compat send/request store (enable flags via `config()`) | `tests/Feature/Http/Controllers/Api/Compatibility/SendMoney/SendMoneyStoreControllerTest.php`, `tests/Feature/Http/Controllers/Api/Compatibility/RequestMoney/RequestMoneyStoreControllerTest.php` |
+
 ---
 
 ## Must-do before merge (any agent)
@@ -60,11 +72,14 @@ XDEBUG_MODE=off "$PHP85" vendor/bin/phpstan analyse --memory-limit=2G
 "$PHP85" vendor/bin/pest tests/Feature/Http/Controllers/Api/TransferControllerTest.php \
   tests/Unit/Domain/Account/Models/TransactionProjectionFormattedAmountTest.php \
   tests/Feature/Middleware/IdempotencyMiddlewareTest.php \
-  tests/Unit/Domain/Shared/Money/MoneyConverterTest.php
+  tests/Unit/Domain/Shared/Money/MoneyConverterTest.php \
+  tests/Feature/Http/Controllers/Api/Compatibility/SendMoney/SendMoneyStoreControllerTest.php \
+  tests/Feature/Http/Controllers/Api/Compatibility/RequestMoney/RequestMoneyStoreControllerTest.php
 ```
 
 1. **ExchangeRateService:** Confirm `AccountBalanceController` injection/calls match real `ExchangeRateService` API (method names, return types) — carried over from stream A.
-2. **`authorized_transactions` migration:** Run `php artisan migrate` in a local/staging env before wiring routes to confirm no schema conflicts.
+2. **Migrations:** Run `php artisan migrate` so `authorized_transactions` + `money_requests` exist before enabling compat flags.
+3. **SQLite test timeout:** If Pest aborts migrations after 10s on `:memory:` SQLite, run the suite on MySQL (or CI’s `phpunit.ci.xml`) — same symptom affects any feature test that refreshes the full migration set.
 
 ---
 
@@ -76,7 +91,6 @@ These do **not** touch files already changed above; assign one agent per row.
 |-------------|-----------------|----------|
 | **E** | `app/Http/Controllers/Api/MobilePayment/PaymentIntentController.php`, `app/Http/Requests/MobilePayment/CreatePaymentIntentRequest.php` | Idempotency header naming §Phase 1 / 5 |
 | **G** | `config/machinepay.php`, `config/agent_protocol.php` (SZL default — **risky**; verify GCU domains first) | Phase 3.2 |
-| **H** | `routes/api-compat.php` (new file) + `app/Providers/RouteServiceProvider.php` registration | Phase 18 — **single owner only** |
 
 **`app/Http/Controllers/Api/Compatibility/` directory is now live** — do not scaffold it again (VerifyOtp/VerifyPin already exist there).
 
@@ -87,9 +101,9 @@ These do **not** touch files already changed above; assign one agent per row.
 ## In flight / next (serial — implement in this order)
 
 1. **Phase 10 — Auth gap assessment** (quick, ~1h): Check if legacy and FinAegis `users` table schemas are compatible for the shared-table approach. Check `personal_access_tokens` table. Determine if compatibility auth controllers are needed for login/register.
-2. **Phase 18 — `routes/api-compat.php`** (new file, single owner): Register all Phase 5 compatibility routes behind `MAPHAPAY_MIGRATION_ENABLE_*` env flags. Register the two already-built controllers (`VerifyOtp`, `VerifyPin`).
-3. **Phase 5 — `SendMoneyStoreController`** (first full compatibility controller): Uses `AuthorizedTransactionManager::initiate()` + `dispatchOtp()`. Proves the full two-step flow end-to-end.
-4. **Phase 5 — `RequestMoneyStoreController`** + `RequestMoneyReceivedStoreController`
+2. ~~**Phase 18 — `routes/api-compat.php`**~~ **Done** (2026-03-28): `bootstrap/app.php` + `config/maphapay_migration.php` + gated verification/send/request store routes.
+3. ~~**Phase 5 — `SendMoneyStoreController`**~~ **Done** (2026-03-28).
+4. ~~**Phase 5 — `RequestMoneyStoreController`**~~ **Done** (2026-03-28). **Next:** `RequestMoneyReceivedStoreController` + reject/history controllers per plan §5.3.2.
 5. **Phase 15 — MTN config file** (`config/mtn_momo.php`) + env vars — before any MTN controller work.
 6. **MTN controllers** (request-to-pay, disbursement, status, IPN callback)
 
@@ -111,5 +125,6 @@ These do **not** touch files already changed above; assign one agent per row.
 
 ## Last updated
 
+- **2026-03-28 (later):** Phase 18 `api-compat` routes (verification + send-money + request-money store), `MoneyRequest` + `RequestMoneyHandler`, compat controllers, feature tests. Registration via `bootstrap/app.php` (Laravel 12).
 - **2026-03-28:** CI green (PHPStan + CS Fixer + tests). Built Phase 12 (`MoneyConverter` + `MajorUnitAmountString` rule). Built Phase 11 (`AuthorizedTransaction` domain: migration, model, 3 handlers, `AuthorizedTransactionManager`, `VerifyOtpController`, `VerifyPinController`). Updated plan with Phases 10–19 (gaps review). Updated `docs/maphapay-backend-replacement-plan.md`.
 - **2026-03-27:** Documented parallel streams A–D as completed; added merge checklist and next exclusive streams E–G.

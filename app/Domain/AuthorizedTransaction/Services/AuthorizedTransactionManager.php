@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\AuthorizedTransaction\Services;
 
 use App\Domain\AuthorizedTransaction\Contracts\AuthorizedTransactionHandlerInterface;
+use App\Domain\AuthorizedTransaction\Handlers\RequestMoneyHandler;
 use App\Domain\AuthorizedTransaction\Handlers\RequestMoneyReceivedHandler;
 use App\Domain\AuthorizedTransaction\Handlers\ScheduledSendHandler;
 use App\Domain\AuthorizedTransaction\Handlers\SendMoneyHandler;
@@ -45,12 +46,14 @@ class AuthorizedTransactionManager
     private const HANDLER_MAP = [
         AuthorizedTransaction::REMARK_SEND_MONEY             => SendMoneyHandler::class,
         AuthorizedTransaction::REMARK_SCHEDULED_SEND         => ScheduledSendHandler::class,
+        AuthorizedTransaction::REMARK_REQUEST_MONEY          => RequestMoneyHandler::class,
         AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED => RequestMoneyReceivedHandler::class,
     ];
 
     public function __construct(
         private readonly SendMoneyHandler $sendMoneyHandler,
         private readonly ScheduledSendHandler $scheduledSendHandler,
+        private readonly RequestMoneyHandler $requestMoneyHandler,
         private readonly RequestMoneyReceivedHandler $requestMoneyReceivedHandler,
     ) {
     }
@@ -250,6 +253,7 @@ class AuthorizedTransactionManager
         return match ($remark) {
             AuthorizedTransaction::REMARK_SEND_MONEY             => $this->sendMoneyHandler,
             AuthorizedTransaction::REMARK_SCHEDULED_SEND         => $this->scheduledSendHandler,
+            AuthorizedTransaction::REMARK_REQUEST_MONEY          => $this->requestMoneyHandler,
             AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED => $this->requestMoneyReceivedHandler,
             default                                              => throw new InvalidArgumentException("No handler for remark: {$remark}"),
         };
