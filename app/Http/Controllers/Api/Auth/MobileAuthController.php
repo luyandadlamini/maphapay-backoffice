@@ -655,7 +655,10 @@ class MobileAuthController extends Controller
     {
         $maxSessions = (int) config('auth.max_concurrent_sessions', 5);
 
+        $newestTokenId = $user->tokens()->max('id');
+
         $accessTokenCount = $user->tokens()
+            ->where('id', '!=', $newestTokenId)
             ->where('abilities', '!=', '["refresh"]')
             ->count();
 
@@ -666,6 +669,7 @@ class MobileAuthController extends Controller
         $tokensToDelete = $accessTokenCount - $maxSessions;
 
         $user->tokens()
+            ->where('id', '!=', $newestTokenId)
             ->where('abilities', '!=', '["refresh"]')
             ->orderBy('created_at', 'asc')
             ->limit($tokensToDelete)
