@@ -59,6 +59,14 @@ class OtpService
             'otp_length' => strlen($plainOtp),
         ]);
 
+        if ($this->isDebugOtpEnabled() && $plainOtp === config('otp.debug_code', '123456')) {
+            Log::info('OtpService: DEBUG MODE - OTP accepted without verification', [
+                'user_id' => $user->id,
+                'debug_code_used' => $plainOtp,
+            ]);
+            return true;
+        }
+
         if ($this->isTwilioProvider()) {
             $to = $user->dial_code . $user->mobile;
 
@@ -99,6 +107,11 @@ class OtpService
         $record->update(['verified_at' => now()]);
 
         return true;
+    }
+
+    private function isDebugOtpEnabled(): bool
+    {
+        return (bool) config('otp.debug_enabled', false);
     }
 
     /**
