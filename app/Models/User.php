@@ -34,6 +34,13 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $transaction_pin
  * @property \Illuminate\Support\Carbon|null $email_verified_at
  * @property \Illuminate\Support\Carbon|null $mobile_verified_at
+ * @property string|null $mobile
+ * @property string|null $dial_code
+ * @property string|null $username
+ * @property \Illuminate\Support\Carbon|null $kyc_approved_at
+ * @property \Illuminate\Support\Carbon|null $kyc_submitted_at
+ * @property \Illuminate\Support\Carbon|null $kyc_rejected_at
+ * @property array<string, mixed>|null $mobile_preferences
  */
 class User extends Authenticatable implements FilamentUser
 {

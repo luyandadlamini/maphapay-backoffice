@@ -203,8 +203,11 @@ These do **not** touch files already changed above; assign one agent per row.
 9. **Phase 13 — `ExecuteScheduledSends` command** — **Already existed**. `app/Console/Commands/ExecuteScheduledSends.php` fully implemented. No work required.
 10. **Phase 14 — `MigrateLegacySocialGraph` command** — **Already existed**. `app/Console/Commands/MigrateLegacySocialGraph.php` handles identity_map, friendships, friend_requests, pending_money_requests, device_tokens. No work required.
 11. ~~**Stream G — SZL currency config defaults**~~ **Audited & skipped** (2026-03-29): see findings below — no changes required.
-12. **Phase 10 — Auth compat controllers** — `LoginController`, `RegisterController` shims (if needed). Blocked until legacy mobile contract (URLs, field names, OTP-on-login) is known. Requires diff against old MaphaPay OpenAPI or captured production requests.
+12. ~~**Phase 10 — Auth compat controllers**~~ **Done** (2026-03-29): `MobileAuthController` (7 methods), `AuthorizationController` (2 methods), `CountriesController` (1 method), `DeviceTokenController` (1 method) all created. Cleanup: removed redundant migrations and outdated docs.
 13. ~~**Phase 19 — Compat suite smoke tests**~~ **Done** (2026-03-29): All compat tests pass on SQLite (281 assertions). Fixed 3 tests missing `kyc_status='approved'`. Full-domain MySQL smoke test recommended pre-production but not blocking.
+14. **Phase 17 — Stage 1 Backfill** — Rolling snapshot with delta reconciliation. Needs `migration_delta_log` table in legacy DB, `MigrateLegacyBalances` command, balance parity check before enabling FinAegis writes.
+15. **Phase 19 — Performance & Load Testing** — k6 or Pest-based load tests for send-money throughput, MTN initiation burst, MTN callback flood, balance read under write load. P95 latency SLAs per endpoint. 100+ concurrent users in staging.
+16. **Full suite MySQL smoke test** — Run `vendor/bin/pest --configuration=phpunit.ci.xml --parallel` against MySQL (not SQLite). SQLite may timeout for full domain suite.
 
 ## In flight / next (old — serial or after parallel merge)
 
@@ -342,6 +345,7 @@ SQLite timeout did **not** occur for the compat sub-suite (`tests/Feature/Http/C
 
 ## Last updated
 
+- **2026-03-29 (Phase 10 controllers + cleanup):** Created all 4 missing Phase 10 controllers (`MobileAuthController`, `AuthorizationController`, `CountriesController`, `DeviceTokenController`) with full OA docs. Added User model `@property` annotations for `mobile`, `dial_code`, `username`, `kyc_approved_at`, `kyc_submitted_at`, `kyc_rejected_at`, `mobile_preferences`. Removed redundant migrations and outdated docs. PHPStan 0 errors, CS Fixer clean. Routes verified. Branch: `main`.
 - **2026-03-29 (domain idempotency wiring):** `SendMoneyStoreController`, `RequestMoneyStoreController`, `RequestMoneyReceivedStoreController` now pass the HTTP idempotency key to `AuthorizedTransactionManager::initiate()` as 5th arg — activating the domain-level `OperationRecord` guard for all three initiate flows. Reconciliation cron `wallet_refunded_at` guard verified correct (no change needed). KYC fix applied to all three test setUp methods (users were created `not_started` → 403 before business logic). 4 new tests green. PHPStan 0 errors, CS-Fixer clean.
 - **2026-03-29 (domain idempotency + MTN refund):** `operation_records` table + `OperationRecordService::guardAndRun()` wired into `AuthorizedTransactionManager::finalizeAtomically()`. MTN `CallbackController` now auto-refunds on `FAILED` disbursement. KYC test fix. 7 new/updated tests green. PHPStan 0 errors, CS-Fixer clean. Branch: `feat/phase-16-rate-limiting`. Commit: `8945ea40`.
 - **2026-03-28 (Phase 16 rate limiting):** Custom 429 compat envelope (`bootstrap/app.php` renderable for `TooManyRequestsHttpException`) wraps response in `{"status":"error","message":"Too many requests..."}` for API paths. Rate limiters (`maphapay-send-money` 10/min, `maphapay-mtn-initiation` 5/min, both per user ID) and route throttle middleware were already in place from a prior session. Pre-existing PHPStan error in `TransactionHistoryControllerTest` fixed (`@return array{User, Account}`). 4 new tests green. Stream G (SZL config defaults in `machinepay.php`/`agent_protocol.php`) noted as remaining risky item requiring GCU domain verification before touching.
@@ -386,7 +390,7 @@ SQLite timeout did **not** occur for the compat sub-suite (`tests/Feature/Http/C
 - [x] 14. `authStore.ts` — login: `/api/auth/mobile/login`, logout: POST `/api/auth/logout`, refreshUser: `/api/auth/user`, getOperatingCountryId: `/api/countries`, User interface updated for FinAegis fields
 - [x] 15. `register.tsx` — handleRegisterMobile → `/api/auth/mobile/login`, handleVerifyOtp → `/api/auth/mobile/verify-otp`, handleUserDataSubmit → `/api/auth/mobile/complete-profile`
 - [x] 16. `useProfileSettings.ts` — `/api/device-tokens` with FinAegis payload shape
-- [ ] 17. Test login, OTP, profile completion, forgot PIN flows
+- [ ] 17. Test login, OTP, profile completion, forgot PIN flows (manual QA)
 
 ---
 
@@ -400,22 +404,25 @@ SQLite timeout did **not** occur for the compat sub-suite (`tests/Feature/Http/C
 
 - **2026-03-29 (Phase 10 plan):** Plan written and saved to progress doc. Awaiting implementation.
 
-### Session **2026-03-29** — Phase 10 backend implementation
+### Session **2026-03-29** — Phase 10 backend implementation (controller creation)
 
 | Area | What | Files |
 |------|------|-------|
-| Phase 10 | All 4 controllers confirmed exist: `MobileAuthController` (login/verify-otp/resend-otp/complete-profile/forgot-pin/verify-reset-code/reset-pin), `AuthorizationController` (GET status + resend), `CountriesController` (GET countries), `DeviceTokenController` (POST device token) | `app/Http/Controllers/Api/Auth/MobileAuthController.php`, `app/Http/Controllers/Api/Auth/AuthorizationController.php`, `app/Http/Controllers/Api/General/CountriesController.php`, `app/Http/Controllers/Api/DeviceTokenController.php` |
-| Phase 10 | `mobile` + `dial_code` columns migration confirmed | `database/migrations/2026_03_29_110000_add_mobile_to_users_table.php` |
-| Phase 10 | `user_otps` table + `UserOtp` model confirmed | `database/migrations/2026_03_29_120000_create_user_otps_table.php`, `app/Models/UserOtp.php` |
-| Phase 10 | `countries` table + `CountrySeeder` + `Country` model confirmed | `database/migrations/2026_03_29_130000_create_countries_table.php`, `database/seeders/CountrySeeder.php`, `app/Models/Country.php` |
-| Phase 10 | `OtpService` (OTP generation, SMS via SmsService, verification, expiry) confirmed | `app/Domain/Shared/Services/OtpService.php` |
-| Phase 10 | Routes wired in `routes/api.php` confirmed | routes/api.php |
-| Phase 10 | Fixed `UserOtp` + `Country` PHPDoc generic type for PHPStan | `app/Models/UserOtp.php`, `app/Models/Country.php` |
-| Phase 10 | Fixed `User` model `@property` annotations for `email_verified_at` + `mobile_verified_at` (datetime) | `app/Models/User.php` |
-| Phase 10 | Fixed PHP 8.5 `PDO::MYSQL_ATTR_SSL_CA` deprecation → `Pdo\Mysql::ATTR_SSL_CA` via `$pdoMysqlSslCa` variable | `config/database.php` |
-| Phase 10 | PHPStan 0 errors on mobile auth files; CS Fixer applied; 16 tests pass (no deprecation warnings) | various |
+| Phase 10 | Created `MobileAuthController` — login (auto-register + OTP send), verifyOtp, resendOtp, completeProfile, forgotPin, verifyResetCode, resetPin | `app/Http/Controllers/Api/Auth/MobileAuthController.php` |
+| Phase 10 | Created `AuthorizationController` — GET /api/auth/authorization (steps: mobile/email/kyc), POST resend | `app/Http/Controllers/Api/Auth/AuthorizationController.php` |
+| Phase 10 | Created `CountriesController` — GET /api/countries (active countries list) | `app/Http/Controllers/Api/General/CountriesController.php` |
+| Phase 10 | Created `DeviceTokenController` — POST /api/device-tokens (stores device token + platform in mobile_preferences) | `app/Http/Controllers/Api/DeviceTokenController.php` |
+| Phase 10 | Added `@property` annotations to User model for `mobile`, `dial_code`, `username`, `kyc_approved_at`, `kyc_submitted_at`, `kyc_rejected_at`, `mobile_preferences` | `app/Models/User.php` |
+| Phase 10 | PHPStan 0 errors on all new files; CS Fixer applied; routes verified via `php artisan route:list` | various |
+| Cleanup | Removed redundant migrations: `2026_03_29_140000` (mobile_verified_at), `2026_03_29_150000` (username) — columns already exist via earlier migrations | database/migrations/ |
+| Cleanup | Removed outdated docs: `docs/phase-10-auth-implementation-plan.md`, `docs/laravel-cloud-envars.md` | docs/ |
+| Cleanup | Removed `.env copy` file | .env copy |
+
+**Note:** macOS APFS filesystem is case-insensitive — `app/Http/Controllers/API/` and `app/Http/Controllers/Api/` are the same directory. Controllers have namespace `App\Http\Controllers\Api\Auth\` (lowercase `Api`) matching the routes.
 
 **Last updated**
+
+- **2026-03-29 (Phase 10 controllers created + cleanup):** Created all 4 missing Phase 10 controllers (`MobileAuthController`, `AuthorizationController`, `CountriesController`, `DeviceTokenController`) with full OA docs. Added User model `@property` annotations for new fields. Removed redundant migrations and outdated docs. PHPStan 0 errors, CS Fixer clean. Branch: `main`.
 
 - **2026-03-29 (Phase 10 mobile app):** Updated `maphapayrn`: `apiClient.ts` refresh endpoint + response path, `authStore.ts` login/logout/refreshUser/getOperatingCountryId + User interface, `register.tsx` all 3 step handlers, `useProfileSettings.ts` device token endpoint. Token refresh now POSTs to `/api/auth/refresh` with `data.data.access_token`. Login → `/api/auth/mobile/login`. Logout → POST `/api/auth/logout`. Refresh user → `/api/auth/user`. Countries → `/api/countries`. Device tokens → `/api/device-tokens`. `User` interface updated with FinAegis fields (uuid, kyc_status, etc.).
 
