@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Compatibility\Mtn;
 
+use App\Domain\Account\Models\Account;
+use App\Domain\Asset\Models\Asset;
 use App\Domain\MtnMomo\Services\MtnMomoCollectionSettler;
+use App\Domain\Shared\Money\MoneyConverter;
+use App\Domain\Wallet\Services\WalletOperationsService;
 use App\Http\Controllers\Controller;
 use App\Models\MtnMomoTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * POST /api/mtn/callback — MTN MoMo IPN (no Sanctum; verify X-Callback-Token).
@@ -18,6 +24,7 @@ class CallbackController extends Controller
 {
     public function __construct(
         private readonly MtnMomoCollectionSettler $collectionSettler,
+        private readonly WalletOperationsService $walletOps,
     ) {
     }
 
@@ -71,6 +78,7 @@ class CallbackController extends Controller
         ]);
 
         $fresh = $txn->fresh();
+
         if (
             $fresh !== null
             && $fresh->type === MtnMomoTransaction::TYPE_REQUEST_TO_PAY
@@ -82,7 +90,104 @@ class CallbackController extends Controller
             }
         }
 
+        // Auto-refund if MTN later marks an accepted disbursement as FAILED.
+        if (
+            $fresh !== null
+            && $fresh->type === MtnMomoTransaction::TYPE_DISBURSEMENT
+            && $normalized === MtnMomoTransaction::STATUS_FAILED
+            && $fresh->wallet_debited_at !== null
+            && $fresh->wallet_refunded_at === null
+        ) {
+            $this->refundDisbursementIfNeeded($fresh);
+        }
+
         return response('', 200);
+    }
+
+    /**
+     * Refund the user's wallet when a previously debited disbursement is marked FAILED by MTN.
+     *
+     * Uses lockForUpdate inside a transaction to guard against concurrent refund attempts
+     * (e.g. this callback handler racing with a future reconciliation cron).
+     */
+    private function refundDisbursementIfNeeded(MtnMomoTransaction $txn): void
+    {
+        DB::transaction(function () use ($txn): void {
+            /** @var MtnMomoTransaction|null $locked */
+            $locked = MtnMomoTransaction::query()
+                ->where('id', $txn->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($locked === null) {
+                return;
+            }
+
+            // Double-check under lock: another process may have refunded between our
+            // pre-flight check and this lock acquisition.
+            if ($locked->wallet_debited_at === null || $locked->wallet_refunded_at !== null) {
+                return;
+            }
+
+            $user = $locked->user;
+
+            if ($user === null) {
+                Log::error('MTN disbursement callback refund: user not found', [
+                    'mtn_momo_transaction_id' => $locked->id,
+                    'user_id'                 => $locked->user_id,
+                ]);
+
+                return;
+            }
+
+            $account = Account::query()
+                ->where('user_uuid', $user->uuid)
+                ->orderBy('id')
+                ->first();
+
+            if ($account === null) {
+                Log::critical('MTN disbursement callback refund: account not found', [
+                    'mtn_momo_transaction_id' => $locked->id,
+                    'user_id'                 => $user->id,
+                ]);
+
+                return;
+            }
+
+            $asset = Asset::query()->where('code', $locked->currency)->first();
+
+            if ($asset === null) {
+                Log::critical('MTN disbursement callback refund: asset not found', [
+                    'mtn_momo_transaction_id' => $locked->id,
+                    'currency'                => $locked->currency,
+                ]);
+
+                return;
+            }
+
+            $amountMinor = MoneyConverter::forAsset($locked->amount, $asset);
+
+            try {
+                $this->walletOps->deposit(
+                    $account->uuid,
+                    $locked->currency,
+                    (string) $amountMinor,
+                    'mtn-disburse-refund:' . $locked->mtn_reference_id,
+                    ['mtn_momo_transaction_id' => $locked->id],
+                );
+
+                $locked->update(['wallet_refunded_at' => now()]);
+            } catch (Throwable $e) {
+                Log::critical('MTN disbursement callback refund failed — funds may be lost', [
+                    'mtn_reference_id'        => $locked->mtn_reference_id,
+                    'mtn_momo_transaction_id' => $locked->id,
+                    'user_id'                 => $user->id,
+                    'amount_minor'            => $amountMinor,
+                    'currency'                => $locked->currency,
+                    'error'                   => $e->getMessage(),
+                ]);
+            }
+        });
     }
 
     /**

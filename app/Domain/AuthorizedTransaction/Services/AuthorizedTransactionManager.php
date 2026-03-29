@@ -13,6 +13,8 @@ use App\Domain\AuthorizedTransaction\Handlers\RequestMoneyReceivedHandler;
 use App\Domain\AuthorizedTransaction\Handlers\ScheduledSendHandler;
 use App\Domain\AuthorizedTransaction\Handlers\SendMoneyHandler;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
+use App\Domain\Shared\OperationRecord\OperationRecordService;
+use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -58,14 +60,20 @@ class AuthorizedTransactionManager
         private readonly ScheduledSendHandler $scheduledSendHandler,
         private readonly RequestMoneyHandler $requestMoneyHandler,
         private readonly RequestMoneyReceivedHandler $requestMoneyReceivedHandler,
+        private readonly OperationRecordService $operationRecordService,
     ) {
     }
 
     /**
      * Step 1: Create an authorized transaction record.
      *
-     * @param array<string, mixed> $payload  Normalized operation parameters.
-     *                                       Amount MUST be a major-unit string (e.g. "25.10").
+     * @param array<string, mixed> $payload         Normalized operation parameters.
+     *                                              Amount MUST be a major-unit string (e.g. "25.10").
+     * @param string               $idempotencyKey  Optional idempotency key from the HTTP request.
+     *                                              When provided, finalizeAtomically() wraps handler
+     *                                              execution with a domain-level OperationRecord guard
+     *                                              that prevents duplicate execution even after the
+     *                                              HTTP-layer cache (24 h) expires.
      * @return AuthorizedTransaction
      */
     public function initiate(
@@ -73,12 +81,19 @@ class AuthorizedTransactionManager
         string $remark,
         array $payload,
         string $verificationType = AuthorizedTransaction::VERIFICATION_OTP,
+        string $idempotencyKey = '',
     ): AuthorizedTransaction {
         if (! isset(self::HANDLER_MAP[$remark])) {
             throw new InvalidArgumentException("Unknown remark: {$remark}");
         }
 
         $trx = $this->generateTrx();
+
+        // Embed the idempotency key into the payload so finalize() can read it
+        // without requiring a separate column on authorized_transactions.
+        if ($idempotencyKey !== '') {
+            $payload['_idempotency_key'] = $idempotencyKey;
+        }
 
         $txn = AuthorizedTransaction::create([
             'user_id'           => $userId,
@@ -236,7 +251,10 @@ class AuthorizedTransactionManager
             $handler = $this->resolveHandler($txn->remark);
 
             try {
-                $result = $handler->handle($txn);
+                $result = $this->executeWithIdempotencyGuard(
+                    $txn,
+                    fn (): array => $handler->handle($txn),
+                );
 
                 $txn->update(['result' => $result]);
 
@@ -254,6 +272,41 @@ class AuthorizedTransactionManager
                 throw $e;
             }
         });
+    }
+
+    /**
+     * Wrap the handler execution with a domain-level idempotency guard when the
+     * transaction payload carries a '_idempotency_key' sentinel set by initiate().
+     *
+     * Without a key (legacy callers), the closure is invoked directly — no guard overhead.
+     *
+     * @param  Closure(): array<string, mixed> $fn
+     * @return array<string, mixed>
+     */
+    private function executeWithIdempotencyGuard(AuthorizedTransaction $txn, Closure $fn): array
+    {
+        $idempotencyKey = (string) ($txn->payload['_idempotency_key'] ?? '');
+
+        if ($idempotencyKey === '') {
+            return $fn();
+        }
+
+        // Hash the payload without the sentinel so the hash reflects only business data.
+        // ksort() ensures a deterministic key order across separate PHP processes.
+        $payloadForHash = array_diff_key($txn->payload, ['_idempotency_key' => true]);
+        ksort($payloadForHash);
+        $payloadHash = hash(
+            'sha256',
+            (string) json_encode($payloadForHash, JSON_THROW_ON_ERROR),
+        );
+
+        return $this->operationRecordService->guardAndRun(
+            $txn->user_id,
+            $txn->remark,
+            $idempotencyKey,
+            $payloadHash,
+            $fn,
+        );
     }
 
     /**

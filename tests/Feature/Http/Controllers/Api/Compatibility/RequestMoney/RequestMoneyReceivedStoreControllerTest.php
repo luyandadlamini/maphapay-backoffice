@@ -23,8 +23,8 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
     {
         parent::setUp();
 
-        $this->requester = User::factory()->create();
-        $this->recipient = User::factory()->create();
+        $this->requester = User::factory()->create(['kyc_status' => 'approved']);
+        $this->recipient = User::factory()->create(['kyc_status' => 'approved']);
         $this->createAccount($this->requester);
         $this->createAccount($this->recipient);
     }
@@ -109,7 +109,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
             'maphapay_migration.enable_request_money' => true,
         ]);
 
-        $other = User::factory()->create();
+        $other = User::factory()->create(['kyc_status' => 'approved']);
         $this->createAccount($other);
 
         $moneyRequestId = (string) Str::uuid();
@@ -164,7 +164,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
             'maphapay_migration.enable_request_money' => true,
         ]);
 
-        $frozenRecipient = User::factory()->create();
+        $frozenRecipient = User::factory()->create(['kyc_status' => 'approved']);
         $account = $this->createAccount($frozenRecipient);
         Account::query()->where('uuid', $account->uuid)->update(['frozen' => true]);
 
@@ -185,6 +185,42 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
         $this->postJson("/api/request-money/received-store/{$moneyRequestId}")
             ->assertStatus(422)
             ->assertJsonPath('status', 'error');
+    }
+
+    #[Test]
+    public function test_received_store_embeds_idempotency_key_in_payload(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        $moneyRequestId = (string) Str::uuid();
+        MoneyRequest::query()->create([
+            'id'                => $moneyRequestId,
+            'requester_user_id' => $this->requester->id,
+            'recipient_user_id' => $this->recipient->id,
+            'amount'            => '12.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => 'TRX-IDEM-RECV',
+        ]);
+
+        Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
+
+        $response = $this->withHeaders([
+            'Idempotency-Key' => '00000000-0000-0000-0000-000000000020',
+        ])->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+            'verification_type' => 'pin',
+        ]);
+
+        $response->assertOk();
+
+        $trx = $response->json('data.trx');
+        /** @var AuthorizedTransaction $txn */
+        $txn = AuthorizedTransaction::where('trx', $trx)->firstOrFail();
+
+        $this->assertSame('00000000-0000-0000-0000-000000000020', $txn->payload['_idempotency_key'] ?? null);
     }
 
     #[Test]

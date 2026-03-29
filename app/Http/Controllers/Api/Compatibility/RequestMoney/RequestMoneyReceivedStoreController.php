@@ -83,14 +83,18 @@ class RequestMoneyReceivedStoreController extends Controller
             'to_account_uuid'   => $toAccount->uuid,
         ];
 
+        $idempotencyKey = (string) $request->header('Idempotency-Key', '')
+            ?: (string) $request->header('X-Idempotency-Key', '');
+
         $codeSentMessage = null;
 
-        $txn = DB::transaction(function () use ($authUser, $payload, $verificationType, $validated, &$codeSentMessage): AuthorizedTransaction {
+        $txn = DB::transaction(function () use ($authUser, $payload, $verificationType, $validated, $idempotencyKey, &$codeSentMessage): AuthorizedTransaction {
             $txn = $this->authorizedTransactionManager->initiate(
                 (int) $authUser->getAuthIdentifier(),
                 AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
                 $payload,
                 $verificationType,
+                $idempotencyKey,
             );
 
             if ($verificationType === AuthorizedTransaction::VERIFICATION_OTP) {

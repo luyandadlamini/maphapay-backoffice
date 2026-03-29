@@ -70,6 +70,9 @@ class RequestMoneyStoreController extends Controller
             default => AuthorizedTransaction::VERIFICATION_OTP,
         };
 
+        $idempotencyKey = (string) $request->header('Idempotency-Key', '')
+            ?: (string) $request->header('X-Idempotency-Key', '');
+
         [$txn, $codeSentMessage] = DB::transaction(function () use (
             $authUser,
             $recipient,
@@ -77,6 +80,7 @@ class RequestMoneyStoreController extends Controller
             $asset,
             $validated,
             $verificationType,
+            $idempotencyKey,
         ): array {
             $moneyRequest = MoneyRequest::query()->create([
                 'id'                => (string) Str::uuid(),
@@ -100,6 +104,7 @@ class RequestMoneyStoreController extends Controller
                 AuthorizedTransaction::REMARK_REQUEST_MONEY,
                 $payload,
                 $verificationType,
+                $idempotencyKey,
             );
 
             $moneyRequest->update(['trx' => $txn->trx]);

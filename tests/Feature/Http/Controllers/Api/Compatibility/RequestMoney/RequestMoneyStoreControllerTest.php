@@ -22,8 +22,8 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
     {
         parent::setUp();
 
-        $this->requester = User::factory()->create();
-        $this->recipient = User::factory()->create();
+        $this->requester = User::factory()->create(['kyc_status' => 'approved']);
+        $this->recipient = User::factory()->create(['kyc_status' => 'approved']);
 
         Asset::firstOrCreate(
             ['code' => 'SZL'],
@@ -80,6 +80,31 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
             'status'            => MoneyRequest::STATUS_AWAITING_OTP,
             'amount'            => '25.00',
         ]);
+    }
+
+    #[Test]
+    public function test_store_embeds_idempotency_key_in_payload(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
+
+        $response = $this->withHeaders([
+            'X-Idempotency-Key' => '00000000-0000-0000-0000-000000000010',
+        ])->postJson('/api/request-money/store', [
+            'user'   => $this->recipient->email,
+            'amount' => '15.00',
+        ]);
+
+        $response->assertOk();
+
+        $trx = $response->json('data.trx');
+        /** @var AuthorizedTransaction $txn */
+        $txn = AuthorizedTransaction::where('trx', $trx)->firstOrFail();
+
+        $this->assertSame('00000000-0000-0000-0000-000000000010', $txn->payload['_idempotency_key'] ?? null);
     }
 
     #[Test]

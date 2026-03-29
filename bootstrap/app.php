@@ -205,6 +205,29 @@ return Application::configure(basePath: dirname(__DIR__))
             return $request->expectsJson();
         });
 
+        // Phase 16: compat envelope for throttled API requests.
+        // The respond() callback below still appends error/request_id fields.
+        $exceptions->renderable(function (Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException $e, Illuminate\Http\Request $request): ?Illuminate\Http\JsonResponse {
+            $rHost = $request->getHost();
+            $isApi = $request->is('api/*')
+                || str_starts_with($rHost, 'api.')
+                || str_starts_with($rHost, 'x402.')
+                || str_starts_with($rHost, 'mpp.')
+                || $request->expectsJson();
+
+            if (! $isApi) {
+                return null;
+            }
+
+            $retryAfter = $e->getHeaders()['Retry-After'] ?? null;
+
+            return response()->json(
+                ['status' => 'error', 'message' => 'Too many requests. Please try again later.'],
+                429,
+                $retryAfter !== null ? ['Retry-After' => (string) $retryAfter] : [],
+            );
+        });
+
         // Standardize API error responses (v5.10.0)
         $exceptions->respond(function (Symfony\Component\HttpFoundation\Response $response, Throwable $e, Illuminate\Http\Request $request) {
             if (! $response instanceof Illuminate\Http\JsonResponse) {

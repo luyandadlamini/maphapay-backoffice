@@ -74,7 +74,7 @@ class DashboardControllerTest extends ControllerTestCase
             ->assertJsonPath('data.user.balance', '500.00')
             ->assertJsonStructure([
                 'data' => [
-                    'user'    => ['id', 'email', 'mobile', 'balance'],
+                    'user' => ['id', 'email', 'mobile', 'balance'],
                     'balance',
                     'offers',
                 ],
@@ -116,7 +116,7 @@ class DashboardControllerTest extends ControllerTestCase
 
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
 
-        $first  = $this->getJson(self::ROUTE)->assertOk()->json('data.balance');
+        $first = $this->getJson(self::ROUTE)->assertOk()->json('data.balance');
         $second = $this->getJson(self::ROUTE)->assertOk()->json('data.balance');
 
         $this->assertSame($first, $second);

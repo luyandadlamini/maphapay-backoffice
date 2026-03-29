@@ -150,13 +150,14 @@ Assessment only (no compat auth controllers added in this slice).
 
 ## Must-do before merge (any agent)
 
-> **CI is currently green** (2026-03-28). PHP binary: use `php85` via Herd (`/Users/Lihle/Library/Application Support/Herd/bin/php85`) — `php84` has a dyld error on this machine.
+> **CI is currently green** (2026-03-28). Current branch: `feat/phase-16-rate-limiting`. PHP binary: use `php85` via Herd (`/Users/Lihle/Library/Application Support/Herd/bin/php85`) — `php84` has a dyld error on this machine.
 
 ```bash
 PHP85="/Users/Lihle/Library/Application Support/Herd/bin/php85"
 XDEBUG_MODE=off "$PHP85" vendor/bin/phpstan analyse --memory-limit=2G
 "$PHP85" vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php
-"$PHP85" vendor/bin/pest tests/Feature/Http/Controllers/Api/TransferControllerTest.php \
+"$PHP85" vendor/bin/pest tests/Feature/Http/Controllers/Api/Compatibility/RateLimiting/CompatRateLimitingTest.php \
+  tests/Feature/Http/Controllers/Api/TransferControllerTest.php \
   tests/Unit/Domain/Account/Models/TransactionProjectionFormattedAmountTest.php \
   tests/Feature/Middleware/IdempotencyMiddlewareTest.php \
   tests/Unit/Domain/Shared/Money/MoneyConverterTest.php \
@@ -181,7 +182,7 @@ These do **not** touch files already changed above; assign one agent per row.
 | Next stream | Exclusive files | Plan ref |
 |-------------|-----------------|----------|
 | ~~**E**~~ | ~~`app/Http/Controllers/API/MobilePayment/PaymentIntentController.php`~~ | **Already done** — `resolveIdempotencyKeyFromHeaders()` at line 430 already handles both `Idempotency-Key` and `X-Idempotency-Key` with the same null-coalescing order as `IdempotencyMiddleware`. |
-| **G** | `config/machinepay.php`, `config/agent_protocol.php` (SZL default — **risky**; verify GCU domains first) | Phase 3.2 |
+| ~~**G**~~ | ~~`config/machinepay.php`, `config/agent_protocol.php`~~ | **Audited & skipped** — see Stream G findings below. |
 
 **`app/Http/Controllers/Api/Compatibility/` directory is now live** — do not scaffold it again (VerifyOtp/VerifyPin already exist there).
 
@@ -192,19 +193,22 @@ These do **not** touch files already changed above; assign one agent per row.
 ## In flight / next (serial — implement in this order)
 
 1. ~~**Phase 10 — Auth gap assessment**~~ **Documented** (2026-03-28): See **Phase 10 findings** above. No compat auth controllers until legacy contract is known.
-2. ~~**Phase 18 — `routes/api-compat.php`**~~ **Done** (2026-03-28): `bootstrap/app.php` + `config/maphapay_migration.php` + gated verification/send/request store routes.
+2. ~~**Phase 18 — `routes/api-compat.php`**~~ **Done** (2026-03-28).
 3. ~~**Phase 5 — `SendMoneyStoreController`**~~ **Done** (2026-03-28).
 4. ~~**Phase 5 — `RequestMoneyStoreController`**~~ **Done** (2026-03-28).
-5. ~~**Phase 5 — request-money accept / reject / history**~~ **Done** (2026-03-28). ~~**Phase 5 — scheduled send**~~ **Done** (2026-03-28): `ScheduledSendStoreController`, `ScheduledSendIndexController`, `ScheduledSendCancelController` + `scheduled_sends` + routes + handler `executed` update + tests.
-6. ~~**Phase 15 — MTN config + controllers**~~ **Done** (2026-03-28): `config/mtn_momo.php`, `enable_mtn_momo`, `MtnMomoClient`, `mtn_momo_transactions`, four compat controllers, IPN callback token verification, feature tests.
-7. ~~**MTN reconciliation command**~~ **Done** (2026-03-28): `ReconcileMtnMomoTransactions` command; `everyFifteenMinutes` schedule entry with `withoutOverlapping`; `MtnMomoClient` `final` removed for testability; 8 passing tests (`#[Large]`, `LazilyRefreshDatabase`). See session entry below.
-8. **Phase 13 — `ExecuteScheduledSends` command** — **Already existed** (discovered 2026-03-28). `app/Console/Commands/ExecuteScheduledSends.php` fully implemented with `lockForUpdate`, `AuthorizedTransactionManager::finalize()`, `everyMinute()->withoutOverlapping()` schedule entry.
-9. **Phase 14 — `MigrateLegacySocialGraph` command** — **Already existed** (discovered 2026-03-28). `app/Console/Commands/MigrateLegacySocialGraph.php` handles identity_map, friendships, friend_requests, pending_money_requests, device_tokens with `--dry-run`/`--table`/`--chunk`.
+5. ~~**Phase 5 — request-money accept / reject / history / scheduled send**~~ **Done** (2026-03-28).
+6. ~~**Phase 15 — MTN config + controllers**~~ **Done** (2026-03-28).
+7. ~~**MTN reconciliation command**~~ **Done** (2026-03-28).
+8. ~~**Phase 16 — per-user rate limiting**~~ **Done** (2026-03-28): renderable 429 envelope + 4 tests. Branch: `feat/phase-16-rate-limiting`.
+9. **Phase 13 — `ExecuteScheduledSends` command** — **Already existed**. `app/Console/Commands/ExecuteScheduledSends.php` fully implemented. No work required.
+10. **Phase 14 — `MigrateLegacySocialGraph` command** — **Already existed**. `app/Console/Commands/MigrateLegacySocialGraph.php` handles identity_map, friendships, friend_requests, pending_money_requests, device_tokens. No work required.
+11. ~~**Stream G — SZL currency config defaults**~~ **Audited & skipped** (2026-03-29): see findings below — no changes required.
+12. **Phase 10 — Auth compat controllers** — `LoginController`, `RegisterController` shims (if needed). Blocked until legacy mobile contract (URLs, field names, OTP-on-login) is known. Requires diff against old MaphaPay OpenAPI or captured production requests.
+13. **Phase 19 — End-to-end smoke tests** — full journey tests across compat flag groups once on MySQL (SQLite `:memory:` migration timeouts block full suite locally).
 
 ## In flight / next (old — serial or after parallel merge)
 
-- **Phase 5 compatibility controllers** — blocked on stabilizing Phase 3 + tests green.
-- **Domain operation idempotency** (`operation record` table) — single owner; new migrations.
+- ~~**Domain operation idempotency** (`operation record` table)~~ **Done** (2026-03-29): OperationRecord migration + service + wiring into AuthorizedTransactionManager + compat controllers.
 - **MTN / wallet-linking** — separate bounded context.
 
 ---
@@ -216,6 +220,33 @@ These do **not** touch files already changed above; assign one agent per row.
 3. Add **blockers** (e.g. “Transfer tests failing: …”) so the next agent reads one section.
 
 ---
+
+### Session **2026-03-28** — Phase 16 rate limiting
+
+| Area | What | Files |
+|------|------|--------|
+| Phase 16 | `RateLimiter::for('maphapay-send-money', ...)` — 10/min per user (user ID or IP fallback); `RateLimiter::for('maphapay-mtn-initiation', ...)` — 5/min per user | `app/Providers/AppServiceProvider.php` *(already present from earlier session)* |
+| Phase 16 | `throttle:maphapay-send-money` on `POST send-money/store`; `throttle:maphapay-mtn-initiation` on `POST mtn/disbursement` — both inside their `migration_flag` group | `routes/api-compat.php` *(already present from earlier session)* |
+| Phase 16 | Custom 429 compat envelope via `$exceptions->renderable(TooManyRequestsHttpException)` in `bootstrap/app.php`: `{ "status": "error", "message": "Too many requests. Please try again later." }` with `Retry-After` header pass-through; `respond()` callback still appends `error:"RATE_LIMITED"` and `request_id` | `bootstrap/app.php` |
+| Bugfix | `TransactionHistoryControllerTest::makeUserWithAccount()` missing `@return array{User, Account}` PHPDoc — pre-existing PHPStan level-8 error | `tests/Feature/Http/Controllers/Api/Compatibility/Transactions/TransactionHistoryControllerTest.php` |
+| Tests | `CompatRateLimitingTest` — 4 tests: send-money 10th not throttled (422), 11th → 429 envelope; MTN disbursement 5th not throttled, 6th → 429 envelope; users created with `kyc_status='approved'` to reach throttle middleware past `kyc_approved` gate; `Cache::flush()` in setUp | `tests/Feature/Http/Controllers/Api/Compatibility/RateLimiting/CompatRateLimitingTest.php` |
+
+### Session **2026-03-29** — Stream G audit: SZL config defaults
+
+**Conclusion: No changes required. Both config files are safe to leave as-is for the MaphaPay migration.**
+
+Audit performed as required by the handoff prompt before touching any config:
+
+| Config key | Read by | Verdict |
+|------------|---------|---------|
+| `machinepay.server.default_currency` | `MppDiscoveryService` (MPP discovery endpoint), `MultiProtocolBridgeService` | **Skip** — MPP is the Machine Payments Protocol for AI-agent HTTP 402 commerce. Has no connection to MaphaPay wallet flows. Changing to SZL would make the MPP discovery endpoint advertise a non-standard currency, breaking any MPP client. |
+| `agent_protocol.wallet.default_currency` | `AgentPaymentIntegrationService::getDefaultCurrency()`, `AIAgentProtocolBridgeService` | **Skip** — Agent Protocol wallet config governs AI-to-AI agent payments (DID-based, escrow, multi-currency). No MaphaPay compat controller reads this key. |
+
+**Why no MaphaPay code reads these configs:** MaphaPay compat controllers resolve currency via the `Asset` model (seeded SZL — Phase 3.1 ✅) and `MoneyConverter` (Phase 12 ✅). Config-layer currency defaults are irrelevant to those flows.
+
+**The plan's own recommendation** (Phase 3.2): *"For MaphaPay replacement APIs, prefer changing only what powers wallet/account/transfer display + reconciliation."* Both config files are exclusively consumed by Agent Protocol and MPP — separate bounded contexts from MaphaPay.
+
+26 files in `app/Domain/MachinePay/` and `app/Domain/AgentProtocol/` read `config('machinepay.*')` / `config('agent_protocol.*')`. Zero MaphaPay compat files do. Changing these defaults would regress AI agent features with no migration benefit.
 
 ### Session **2026-03-28** — Transaction History + Dashboard compat endpoints
 
@@ -246,8 +277,48 @@ These do **not** touch files already changed above; assign one agent per row.
 
 ---
 
+### Session **2026-03-29** — Domain idempotency guard + MTN disbursement failure refund
+
+| Area | What | Files |
+|------|------|--------|
+| OperationRecord migration | `operation_records` table: `(user_id, operation_type, idempotency_key)` UNIQUE index; `payload_hash` SHA-256; `status` enum(pending/completed/failed); `result_payload` JSON nullable | `database/migrations/2026_03_29_100000_create_operation_records_table.php` |
+| OperationRecord model | ULID primary key, typed `@property` annotations for PHPStan, `result_payload` cast to `array` | `app/Domain/Shared/OperationRecord/OperationRecord.php` |
+| OperationPayloadMismatchException | Maps to HTTP 409 — thrown when idempotency key is reused with a different payload hash | `app/Domain/Shared/OperationRecord/Exceptions/OperationPayloadMismatchException.php` |
+| OperationRecordService | `guardAndRun(int $userId, string $type, string $key, string $payloadHash, Closure $fn)`: cache hit returns `result_payload`, hash mismatch throws, `UniqueConstraintViolationException` caught and re-read, marks completed/failed around `$fn()` | `app/Domain/Shared/OperationRecord/OperationRecordService.php` |
+| AuthorizedTransactionManager | `initiate()` accepts optional `$idempotencyKey`; stores as `_idempotency_key` sentinel in payload; `finalizeAtomically()` calls `executeWithIdempotencyGuard()` → `guardAndRun()` only when key is present (backward-compat for keyless callers) | `app/Domain/AuthorizedTransaction/Services/AuthorizedTransactionManager.php` |
+| MTN disbursement refund | `CallbackController` detects `TYPE_DISBURSEMENT` + `STATUS_FAILED` + `wallet_debited_at ≠ null` + `wallet_refunded_at == null`; calls private `refundDisbursementIfNeeded()` with `lockForUpdate` inside `DB::transaction` | `app/Http/Controllers/Api/Compatibility/Mtn/CallbackController.php` |
+| KYC fix | `MtnMomoControllersTest` setUp now creates payer with `kyc_status='approved'` — required by `kyc_approved` middleware on all MTN routes | `tests/Feature/Http/Controllers/Api/Compatibility/Mtn/MtnMomoControllersTest.php` |
+| Tests | 7 test scenarios: normal path, failure marking, cache hit, hash mismatch 409, concurrent same-key unique-constraint retry, disbursement FAILED triggers refund, skip-refund when wallet not debited | `tests/Unit/Domain/Shared/OperationRecord/OperationRecordServiceTest.php`, `tests/Feature/Http/Controllers/Api/Compatibility/Mtn/MtnMomoControllersTest.php` |
+
+**Guard design:** `OperationRecord` participates in `finalizeAtomically()`'s outer DB transaction. On success, `completed` record is committed alongside handler writes — prevents duplicate execution even after the HTTP-layer cache (24 h) expires. On failure, the outer rollback reverts the `OperationRecord` (stays non-existent), allowing retries. Concurrent protection for within-session races is still provided by the `authorized_transactions` atomic claim.
+
+**Disbursement refund safety:** `lockForUpdate` on `mtn_momo_transactions` row prevents double-refund from concurrent callback vs. future reconciliation cron. `Log::critical` emitted if `walletOps.deposit()` throws (funds-loss path).
+
+---
+
+### Session **2026-03-29** — Domain idempotency wiring into compat controllers
+
+| Area | What | Files |
+|------|------|--------|
+| Task 1 | `SendMoneyStoreController` — extract `Idempotency-Key` / `X-Idempotency-Key` header and pass as 5th arg to `AuthorizedTransactionManager::initiate()` | `app/Http/Controllers/Api/Compatibility/SendMoney/SendMoneyStoreController.php` |
+| Task 1 | `RequestMoneyStoreController` — same; key extracted before `DB::transaction`, threaded through closure `use` list | `app/Http/Controllers/Api/Compatibility/RequestMoney/RequestMoneyStoreController.php` |
+| Task 1 | `RequestMoneyReceivedStoreController` — same; key threaded through existing `DB::transaction` closure | `app/Http/Controllers/Api/Compatibility/RequestMoney/RequestMoneyReceivedStoreController.php` |
+| Task 2 (audit) | `ReconcileMtnMomoTransactions` — already has `whereNull('wallet_refunded_at')` in the initial query (line 64). No change required. | `app/Console/Commands/ReconcileMtnMomoTransactions.php` |
+| KYC fix | All three send/request-money test setUp methods now create users with `kyc_status='approved'`; `$other` and `$frozenRecipient` inline users in `RequestMoneyReceivedStoreControllerTest` also fixed — previously all tests returned 403 instead of testing business logic | test files (see below) |
+| Tests | `test_store_embeds_idempotency_key_in_payload` (×3 controllers) — sends UUID idempotency key; asserts `payload['_idempotency_key']` persisted; validates both `Idempotency-Key` and `X-Idempotency-Key` header variants | `SendMoneyStoreControllerTest.php`, `RequestMoneyStoreControllerTest.php`, `RequestMoneyReceivedStoreControllerTest.php` |
+| Tests | `test_second_verify_with_same_idempotency_key_returns_cached_result_without_re_executing` — seeds completed `OperationRecord` for the same key; mocks `WalletOperationsService` to never call `transfer`; verifies PIN returns cached result without handler re-execution | `SendMoneyStoreControllerTest.php` |
+
+**Effect:** Without this wiring, `executeWithIdempotencyGuard()` inside `finalizeAtomically()` never activated — `_idempotency_key` was always absent from the payload. Domain-level deduplication is now live for all three money-moving initiate flows.
+
+**Idempotency key format constraint (discovered):** `IdempotencyMiddleware::isValidIdempotencyKey()` requires either a UUID or an alphanumeric string of 16–64 chars (`[a-zA-Z0-9_-]{16,64}`). Short keys like `'idem-send-1'` (< 16 chars) return 400. Tests use UUID-format keys.
+
+---
+
 ## Last updated
 
+- **2026-03-29 (domain idempotency wiring):** `SendMoneyStoreController`, `RequestMoneyStoreController`, `RequestMoneyReceivedStoreController` now pass the HTTP idempotency key to `AuthorizedTransactionManager::initiate()` as 5th arg — activating the domain-level `OperationRecord` guard for all three initiate flows. Reconciliation cron `wallet_refunded_at` guard verified correct (no change needed). KYC fix applied to all three test setUp methods (users were created `not_started` → 403 before business logic). 4 new tests green. PHPStan 0 errors, CS-Fixer clean.
+- **2026-03-29 (domain idempotency + MTN refund):** `operation_records` table + `OperationRecordService::guardAndRun()` wired into `AuthorizedTransactionManager::finalizeAtomically()`. MTN `CallbackController` now auto-refunds on `FAILED` disbursement. KYC test fix. 7 new/updated tests green. PHPStan 0 errors, CS-Fixer clean. Branch: `feat/phase-16-rate-limiting`. Commit: `8945ea40`.
+- **2026-03-28 (Phase 16 rate limiting):** Custom 429 compat envelope (`bootstrap/app.php` renderable for `TooManyRequestsHttpException`) wraps response in `{"status":"error","message":"Too many requests..."}` for API paths. Rate limiters (`maphapay-send-money` 10/min, `maphapay-mtn-initiation` 5/min, both per user ID) and route throttle middleware were already in place from a prior session. Pre-existing PHPStan error in `TransactionHistoryControllerTest` fixed (`@return array{User, Account}`). 4 new tests green. Stream G (SZL config defaults in `machinepay.php`/`agent_protocol.php`) noted as remaining risky item requiring GCU domain verification before touching.
 - **2026-03-28 (MTN reconciliation command):** `ReconcileMtnMomoTransactions` — polls MTN for pending+debited disbursements, refunds on FAILED, `DB::transaction+lockForUpdate` anti-double-refund, `--dry-run`/`--min-age`/`--chunk` options, `everyFifteenMinutes` schedule. `MtnMomoClient` `final` removed. 8 `#[Large]` tests green (38 assertions). PHPStan 0 errors, CS-Fixer clean. Discovered Phase 13 (`ExecuteScheduledSends`), Phase 14 (`MigrateLegacySocialGraph`), Stream E (`PaymentIntentController` idempotency) already done.
 - **2026-03-28 (Transaction History + Dashboard — canonical fields):** `GET /api/transactions` returns `type`/`subtype`/`reference`/`description` (no legacy `trx_type`/`remark` aliases). `GET /api/dashboard` returns user + balance. Mobile RN updated: `useTransactions`, `useTransactionDetail`, `walletDataSource`, `homeDataSource` all read canonical field names. 15 tests green (9 tx + 6 dashboard), PHPStan 0 errors, CS-Fixer clean.
 - **2026-03-28 (Phase 15 MTN MoMo — hardening):** Post-review fixes: `wallet_refunded_at` column; no MTN error body in API responses; `Log::critical` on failed refund; callback 404→200 for unknown refs; idempotency race fix in disbursement; `withoutMiddleware` route fix (class + alias); `WalletOperationsService` mocked in tests; all 7 tests green. PHPStan 0 errors, CS-Fixer clean.

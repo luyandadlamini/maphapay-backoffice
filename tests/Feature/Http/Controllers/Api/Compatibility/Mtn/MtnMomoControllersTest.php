@@ -36,7 +36,9 @@ class MtnMomoControllersTest extends ControllerTestCase
         $walletStub->method('deposit')->willReturn('stub-txn-id');
         $this->app->instance(WalletOperationsService::class, $walletStub);
 
-        $this->payer = User::factory()->create();
+        $this->payer = User::factory()->create([
+            'kyc_status' => 'approved',
+        ]);
 
         Asset::firstOrCreate(
             ['code' => 'SZL'],
@@ -284,6 +286,83 @@ class MtnMomoControllersTest extends ControllerTestCase
             'X-Callback-Token' => 'wrong',
             'X-Reference-Id'   => 'any',
         ])->assertUnauthorized();
+    }
+
+    #[Test]
+    public function test_callback_triggers_wallet_refund_on_failed_disbursement(): void
+    {
+        config([
+            'maphapay_migration.enable_mtn_momo' => true,
+            'mtn_momo.verify_callback_token'     => false,
+        ]);
+
+        // Override the stub with a mock that asserts deposit() is called exactly once.
+        $walletMock = $this->createMock(WalletOperationsService::class);
+        $walletMock->expects($this->once())->method('deposit')->willReturn('refund-txn-id');
+        $this->app->instance(WalletOperationsService::class, $walletMock);
+
+        $ref = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
+
+        MtnMomoTransaction::query()->create([
+            'id'                => 'ffffffff-ffff-ffff-ffff-ffffffffffff',
+            'user_id'           => $this->payer->id,
+            'idempotency_key'   => 'disb-fail-cb',
+            'type'              => MtnMomoTransaction::TYPE_DISBURSEMENT,
+            'amount'            => '50.00',
+            'currency'          => 'SZL',
+            'status'            => MtnMomoTransaction::STATUS_PENDING,
+            'party_msisdn'      => '26876000001',
+            'mtn_reference_id'  => $ref,
+            'wallet_debited_at' => now(),
+        ]);
+
+        $this->postJson('/api/mtn/callback', [
+            'status' => 'FAILED',
+        ], [
+            'X-Reference-Id' => $ref,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('mtn_momo_transactions', [
+            'mtn_reference_id' => $ref,
+            'status'           => MtnMomoTransaction::STATUS_FAILED,
+        ]);
+
+        $txn = MtnMomoTransaction::query()->where('mtn_reference_id', $ref)->firstOrFail();
+        $this->assertNotNull($txn->wallet_refunded_at, 'wallet_refunded_at should be set after refund');
+    }
+
+    #[Test]
+    public function test_callback_skips_refund_if_wallet_not_debited(): void
+    {
+        config([
+            'maphapay_migration.enable_mtn_momo' => true,
+            'mtn_momo.verify_callback_token'     => false,
+        ]);
+
+        $walletMock = $this->createMock(WalletOperationsService::class);
+        $walletMock->expects($this->never())->method('deposit');
+        $this->app->instance(WalletOperationsService::class, $walletMock);
+
+        $ref = 'aaaabbbb-cccc-dddd-eeee-ffffaaaabbbb';
+
+        // wallet_debited_at is null — no refund should happen.
+        MtnMomoTransaction::query()->create([
+            'id'               => 'aaaabbbb-cccc-dddd-eeee-ffffaaaabbbc',
+            'user_id'          => $this->payer->id,
+            'idempotency_key'  => 'disb-fail-no-debit',
+            'type'             => MtnMomoTransaction::TYPE_DISBURSEMENT,
+            'amount'           => '10.00',
+            'currency'         => 'SZL',
+            'status'           => MtnMomoTransaction::STATUS_PENDING,
+            'party_msisdn'     => '26876000002',
+            'mtn_reference_id' => $ref,
+        ]);
+
+        $this->postJson('/api/mtn/callback', [
+            'status' => 'FAILED',
+        ], [
+            'X-Reference-Id' => $ref,
+        ])->assertOk();
     }
 
     #[Test]

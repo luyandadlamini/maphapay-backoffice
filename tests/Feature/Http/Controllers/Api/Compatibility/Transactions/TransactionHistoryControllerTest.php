@@ -30,6 +30,7 @@ class TransactionHistoryControllerTest extends ControllerTestCase
 
     // ── Helpers ─────────────────────────────────────────────────────────────
 
+    /** @return array{User, Account} */
     private function makeUserWithAccount(): array
     {
         $user = User::factory()->create([

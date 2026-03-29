@@ -93,11 +93,15 @@ class SendMoneyStoreController extends Controller
             'note'              => $validated['note'] ?? '',
         ];
 
+        $idempotencyKey = (string) $request->header('Idempotency-Key', '')
+            ?: (string) $request->header('X-Idempotency-Key', '');
+
         $txn = $this->authorizedTransactionManager->initiate(
             (int) $authUser->getAuthIdentifier(),
             AuthorizedTransaction::REMARK_SEND_MONEY,
             $payload,
             $verificationType,
+            $idempotencyKey,
         );
 
         $codeSentMessage = null;
