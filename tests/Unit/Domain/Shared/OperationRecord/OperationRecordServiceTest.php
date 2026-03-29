@@ -150,25 +150,9 @@ describe('OperationRecordService::guardAndRun — hash mismatch', function () {
 // ---------------------------------------------------------------------------
 
 describe('OperationRecordService::guardAndRun — concurrent same-key', function () {
-    it('returns the cached result when a concurrent insert race produces a completed record', function () {
+    it('fails closed when an identical operation is already pending', function () {
         $user = User::factory()->create();
-        $cached = ['trx' => 'TRX-CONCURRENT'];
 
-        // Simulate "another process won the INSERT race" by pre-creating a completed record
-        // directly in the DB. When guardAndRun() attempts its own INSERT it will hit the
-        // unique constraint, re-read, and return the cached payload.
-        //
-        // We patch the service by calling guardAndRun() with a closed-over flag that
-        // creates the record right before the INSERT would happen — which is equivalent
-        // to the real concurrent-insert scenario where the DB returns a constraint error.
-        //
-        // In practice the UniqueConstraintViolationException path is exercised here via
-        // the pre-seeded completed record causing the initial ->first() check to trigger
-        // the cache-hit branch. To exercise the exception-catch branch specifically we
-        // create a PENDING record (the initial check won't short-circuit), then the
-        // INSERT fails with a unique-constraint error, we re-read the now-completed record.
-
-        // Create a pending record (simulates another request that started but not yet done).
         OperationRecord::create([
             'id'              => (string) Str::ulid(),
             'user_id'         => $user->id,
@@ -178,29 +162,25 @@ describe('OperationRecordService::guardAndRun — concurrent same-key', function
             'status'          => OperationRecord::STATUS_PENDING,
         ]);
 
-        // The INSERT in guardAndRun() will throw UniqueConstraintViolationException.
-        // After the catch, it re-reads the record — still PENDING, so $fn is called
-        // and the record is updated to COMPLETED with the fn result.
         $fnCalls = 0;
-        $result = makeService()->guardAndRun(
+        expect(fn () => makeService()->guardAndRun(
             $user->id,
             'send_money',
             'idem-concurrent-1',
             validHash(),
-            function () use (&$fnCalls, $cached): array {
+            function () use (&$fnCalls): array {
                 $fnCalls++;
 
-                return $cached;
+                return ['trx' => 'TRX-CONCURRENT'];
             },
-        );
+        ))->toThrow(RuntimeException::class, 'already in progress');
 
-        expect($result)->toBe($cached);
-        expect($fnCalls)->toBe(1);
+        expect($fnCalls)->toBe(0);
 
         $this->assertDatabaseHas('operation_records', [
             'user_id'         => $user->id,
             'idempotency_key' => 'idem-concurrent-1',
-            'status'          => OperationRecord::STATUS_COMPLETED,
+            'status'          => OperationRecord::STATUS_PENDING,
         ]);
     });
 });

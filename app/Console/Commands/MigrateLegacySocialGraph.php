@@ -348,11 +348,23 @@ class MigrateLegacySocialGraph extends Command
                         continue;
                     }
 
+                    // Reject rows with no usable currency — do not silently default to SZL.
+                    $assetCode = isset($row->currency) && is_string($row->currency) && trim($row->currency) !== ''
+                        ? strtoupper(trim($row->currency))
+                        : null;
+
+                    if ($assetCode === null) {
+                        $this->warn(sprintf('[pending_money_requests] Skipping money_request %s — missing currency', $row->id));
+                        $skipped++;
+
+                        continue;
+                    }
+
                     // Normalise amount to major-unit string with 2 decimal places.
                     $amount = number_format((float) $row->amount, 2, '.', '');
 
                     if ($this->dryRun) {
-                        $this->line(sprintf('[dry-run] Would insert money_request: requester=%d recipient=%d amount=%s', $requesterId, $recipientId, $amount));
+                        $this->line(sprintf('[dry-run] Would insert money_request: requester=%d recipient=%d amount=%s %s', $requesterId, $recipientId, $amount, $assetCode));
                         $inserted++;
 
                         continue;
@@ -367,7 +379,7 @@ class MigrateLegacySocialGraph extends Command
                             'requester_user_id' => $requesterId,
                             'recipient_user_id' => $recipientId,
                             'amount'            => $amount,
-                            'asset_code'        => 'SZL',
+                            'asset_code'        => $assetCode,
                             'note'              => $row->note ?? null,
                             'status'            => 'pending',
                             'trx'               => null,

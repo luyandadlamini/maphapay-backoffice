@@ -149,6 +149,8 @@ class OtpService
                 'type'    => $type,
                 'error'   => $e->getMessage(),
             ]);
+
+            throw new RuntimeException('Could not deliver the verification code right now. Please try again.');
         }
     }
 

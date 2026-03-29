@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\UserOtp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -57,37 +58,89 @@ class MobileAuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'dial_code' => 'required|string|max:10',
-            'mobile'    => 'required|string|max=20',
+            'dial_code'      => 'required|string|max:10',
+            'mobile'         => 'nullable|string|max:20|required_without:mobile_number',
+            'mobile_number'  => 'nullable|string|max:20|required_without:mobile',
+            'pin'            => 'sometimes|nullable|string|min:4|max:6',
+            'device_name'    => 'sometimes|string',
         ]);
 
         $dialCode = $validated['dial_code'];
-        $mobile = $validated['mobile'];
+        $mobile = (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '');
+        $pin = trim((string) ($validated['pin'] ?? ''));
 
         $user = User::where('dial_code', $dialCode)
             ->where('mobile', $mobile)
             ->first();
 
+        if ($pin !== '') {
+            if (
+                ! $user
+                || ! is_string($user->transaction_pin)
+                || $user->transaction_pin === ''
+                || ! Hash::check($pin, $user->transaction_pin)
+            ) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The provided credentials are incorrect.',
+                ], 401);
+            }
+
+            if ($user->mobile_verified_at === null) {
+                $user->update(['mobile_verified_at' => now()]);
+            }
+
+            $tokenPair = $this->createTokenPair($user, $validated['device_name'] ?? 'mobile');
+            $this->enforceSessionLimits($user);
+
+            return response()->json([
+                'success' => true,
+                'remark'  => 'login_success',
+                'data'    => [
+                    'user'               => $this->transformUser($user),
+                    'access_token'       => $tokenPair['access_token'],
+                    'refresh_token'      => $tokenPair['refresh_token'],
+                    'token_type'         => 'Bearer',
+                    'expires_in'         => $tokenPair['expires_in'],
+                    'refresh_expires_in' => $tokenPair['refresh_expires_in'],
+                ],
+            ]);
+        }
+
         $isNewUser = false;
 
         if (! $user) {
-            $isNewUser = true;
             $user = DB::transaction(function () use ($dialCode, $mobile) {
-                return User::create([
+                return User::firstOrCreate([
+                    'dial_code' => $dialCode,
+                    'mobile'    => $mobile,
+                ], [
                     'name'       => '',
                     'email'      => null,
                     'password'   => Hash::make(Str::random(32)),
-                    'dial_code'  => $dialCode,
-                    'mobile'     => $mobile,
                     'kyc_status' => 'not_started',
                 ]);
             });
+
+            $isNewUser = $user->wasRecentlyCreated;
         }
 
-        $this->otpService->generateAndSend($user, UserOtp::TYPE_LOGIN);
+        try {
+            $this->otpService->generateAndSend($user, UserOtp::TYPE_LOGIN);
+        } catch (RuntimeException $e) {
+            if ($isNewUser && $user->mobile_verified_at === null && ! $user->has_completed_onboarding) {
+                $user->delete();
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 503);
+        }
 
         return response()->json([
             'success' => true,
+            'remark'  => 'mobile_verification_required',
             'message' => 'OTP sent to your mobile number',
             'data'    => [
                 'user'        => $this->transformUser($user),
@@ -134,20 +187,23 @@ class MobileAuthController extends Controller
     public function verifyOtp(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'dial_code'   => 'required|string|max:10',
-            'mobile'      => 'required|string|max:20',
-            'otp'         => 'required|string|size:6',
-            'device_name' => 'string',
+            'dial_code'      => 'required|string|max:10',
+            'mobile'         => 'nullable|string|max:20|required_without:mobile_number',
+            'mobile_number'  => 'nullable|string|max:20|required_without:mobile',
+            'otp'            => 'required|string|size:6',
+            'device_name'    => 'sometimes|string',
         ]);
 
+        $mobile = (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '');
+
         $user = User::where('dial_code', $validated['dial_code'])
-            ->where('mobile', $validated['mobile'])
+            ->where('mobile', $mobile)
             ->first();
 
         if (! $user) {
             return response()->json([
                 'success' => false,
-                'message' => 'User not found',
+                'message' => 'Invalid or expired OTP',
             ], 401);
         }
 
@@ -163,6 +219,7 @@ class MobileAuthController extends Controller
         $user->update(['mobile_verified_at' => now()]);
 
         $tokenPair = $this->createTokenPair($user, $validated['device_name'] ?? 'mobile');
+        $this->enforceSessionLimits($user);
 
         return response()->json([
             'success' => true,
@@ -208,19 +265,23 @@ class MobileAuthController extends Controller
     public function resendOtp(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'dial_code' => 'required|string|max:10',
-            'mobile'    => 'required|string|max:20',
+            'dial_code'      => 'required|string|max:10',
+            'mobile'         => 'nullable|string|max:20|required_without:mobile_number',
+            'mobile_number'  => 'nullable|string|max:20|required_without:mobile',
         ]);
 
+        $mobile = (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '');
+
         $user = User::where('dial_code', $validated['dial_code'])
-            ->where('mobile', $validated['mobile'])
+            ->where('mobile', $mobile)
             ->first();
 
         if (! $user) {
             return response()->json([
-                'success' => false,
-                'message' => 'User not found',
-            ], 401);
+                'success' => true,
+                'message' => 'If the account exists, a new OTP has been sent.',
+                'data'    => ['can_resend' => true, 'remaining_seconds' => 0],
+            ]);
         }
 
         try {
@@ -271,22 +332,32 @@ class MobileAuthController extends Controller
     public function forgotPin(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'dial_code' => 'required|string|max:10',
-            'mobile'    => 'required|string|max:20',
+            'dial_code'      => 'required|string|max:10',
+            'mobile'         => 'nullable|string|max:20|required_without:mobile_number',
+            'mobile_number'  => 'nullable|string|max:20|required_without:mobile',
         ]);
 
+        $mobile = (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '');
+
         $user = User::where('dial_code', $validated['dial_code'])
-            ->where('mobile', $validated['mobile'])
+            ->where('mobile', $mobile)
             ->first();
 
         if (! $user) {
             return response()->json([
-                'success' => false,
-                'message' => 'User not found',
-            ], 404);
+                'success' => true,
+                'message' => 'If the account exists, a reset code has been sent to the mobile number.',
+            ]);
         }
 
-        $this->otpService->generateAndSend($user, UserOtp::TYPE_PIN_RESET);
+        try {
+            $this->otpService->generateAndSend($user, UserOtp::TYPE_PIN_RESET);
+        } catch (RuntimeException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 503);
+        }
 
         return response()->json([
             'success' => true,
@@ -325,19 +396,22 @@ class MobileAuthController extends Controller
     public function verifyResetCode(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'dial_code' => 'required|string|max:10',
-            'mobile'    => 'required|string|max:20',
-            'otp'       => 'required|string|size:6',
+            'dial_code'      => 'required|string|max:10',
+            'mobile'         => 'nullable|string|max:20|required_without:mobile_number',
+            'mobile_number'  => 'nullable|string|max:20|required_without:mobile',
+            'otp'            => 'required|string|size:6',
         ]);
 
+        $mobile = (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '');
+
         $user = User::where('dial_code', $validated['dial_code'])
-            ->where('mobile', $validated['mobile'])
+            ->where('mobile', $mobile)
             ->first();
 
         if (! $user) {
             return response()->json([
                 'success' => false,
-                'message' => 'User not found',
+                'message' => 'Invalid or expired reset code',
             ], 401);
         }
 
@@ -350,22 +424,32 @@ class MobileAuthController extends Controller
             ], 401);
         }
 
+        // Issue a short-lived reset grant so reset-pin does not need to re-verify the OTP.
+        // The OTP is now consumed (verified_at set); the grant is the only valid proof.
+        $grant = Str::random(64);
+        Cache::put(
+            'pin_reset_grant:' . $user->id . ':' . hash('sha256', $grant),
+            true,
+            now()->addMinutes(10),
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Reset code verified',
+            'data'    => ['reset_grant' => $grant],
         ]);
     }
 
     #[OA\Post(
         path: '/api/auth/mobile/reset-pin',
         summary: 'Reset PIN',
-        description: 'Resets the user PIN after verified reset code',
+        description: 'Resets the user PIN using the reset grant issued by verify-reset-code',
         operationId: 'resetPin',
         tags: ['Authentication'],
-        requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(required: ['mobile', 'dial_code', 'otp', 'pin'], properties: [
+        requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(required: ['mobile', 'dial_code', 'reset_grant', 'pin'], properties: [
             new OA\Property(property: 'dial_code', type: 'string', example: '+268'),
             new OA\Property(property: 'mobile', type: 'string', example: '76123456'),
-            new OA\Property(property: 'otp', type: 'string', example: '123456'),
+            new OA\Property(property: 'reset_grant', type: 'string', description: 'Token returned by verify-reset-code'),
             new OA\Property(property: 'pin', type: 'string', minLength: 4, maxLength: 6, example: '1234'),
         ]))
     )]
@@ -379,7 +463,7 @@ class MobileAuthController extends Controller
     )]
     #[OA\Response(
         response: 401,
-        description: 'Invalid or expired reset code',
+        description: 'Invalid or expired reset grant',
         content: new OA\JsonContent(properties: [
             new OA\Property(property: 'success', type: 'boolean', example: false),
             new OA\Property(property: 'message', type: 'string'),
@@ -388,31 +472,36 @@ class MobileAuthController extends Controller
     public function resetPin(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'dial_code' => 'required|string|max:10',
-            'mobile'    => 'required|string|max:20',
-            'otp'       => 'required|string|size:6',
-            'pin'       => 'required|string|min:4|max:6',
+            'dial_code'      => 'required|string|max:10',
+            'mobile'         => 'nullable|string|max:20|required_without:mobile_number',
+            'mobile_number'  => 'nullable|string|max:20|required_without:mobile',
+            'reset_grant'    => 'required|string|size:64',
+            'pin'            => 'required|string|min:4|max:6|confirmed',
         ]);
 
+        $mobile = (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '');
+
         $user = User::where('dial_code', $validated['dial_code'])
-            ->where('mobile', $validated['mobile'])
+            ->where('mobile', $mobile)
             ->first();
 
         if (! $user) {
             return response()->json([
                 'success' => false,
-                'message' => 'User not found',
+                'message' => 'Invalid or expired reset grant',
             ], 401);
         }
 
-        $verified = $this->otpService->verify($user, UserOtp::TYPE_PIN_RESET, $validated['otp']);
+        $grantKey = 'pin_reset_grant:' . $user->id . ':' . hash('sha256', $validated['reset_grant']);
 
-        if (! $verified) {
+        if (! Cache::has($grantKey)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid or expired reset code',
+                'message' => 'Invalid or expired reset grant',
             ], 401);
         }
+
+        Cache::forget($grantKey);
 
         $user->update(['transaction_pin' => Hash::make($validated['pin'])]);
 
@@ -459,9 +548,13 @@ class MobileAuthController extends Controller
         $authUser = $request->user();
 
         $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email,' . $authUser->id,
-            'username' => 'nullable|string|min:3|max:30|unique:users,username,' . $authUser->id,
+            'name'             => 'nullable|string|max:255',
+            'firstname'        => 'nullable|string|max:120|required_without:name',
+            'lastname'         => 'nullable|string|max:120|required_without:name',
+            'email'            => 'required|email|unique:users,email,' . $authUser->id,
+            'username'         => 'nullable|string|min:3|max:30|unique:users,username,' . $authUser->id,
+            'pin'              => 'required|string|min:4|max:6|confirmed',
+            'pin_confirmation' => 'required|string|min:4|max:6',
         ]);
 
         /** @var User $user */
@@ -474,10 +567,21 @@ class MobileAuthController extends Controller
             ], 422);
         }
 
+        $fullName = trim((string) ($validated['name'] ?? ''));
+
+        if ($fullName === '') {
+            $fullName = trim(sprintf(
+                '%s %s',
+                (string) ($validated['firstname'] ?? ''),
+                (string) ($validated['lastname'] ?? ''),
+            ));
+        }
+
         $user->update([
-            'name'                     => $validated['name'],
+            'name'                     => $fullName,
             'email'                    => $validated['email'],
             'username'                 => $validated['username'] ?? null,
+            'transaction_pin'          => Hash::make($validated['pin']),
             'has_completed_onboarding' => true,
             'onboarding_completed_at'  => now(),
         ]);
@@ -507,14 +611,18 @@ class MobileAuthController extends Controller
     }
 
     /**
-     * @return array{id: int, uuid: string, name: ?string, email: ?string, username: ?string, mobile: ?string, dial_code: ?string, mobile_verified_at: ?string, kyc_status: ?string, has_completed_onboarding: bool}
+     * @return array{id: int, uuid: string, name: ?string, firstname: ?string, lastname: ?string, email: ?string, username: ?string, mobile: ?string, dial_code: ?string, mobile_verified_at: ?string, kyc_status: ?string, has_completed_onboarding: bool}
      */
     private function transformUser(User $user): array
     {
+        [$firstName, $lastName] = $this->splitName($user->name);
+
         return [
             'id'                       => $user->id,
             'uuid'                     => $user->uuid,
             'name'                     => $user->name,
+            'firstname'                => $firstName,
+            'lastname'                 => $lastName,
             'email'                    => $user->email,
             'username'                 => $user->username,
             'mobile'                   => $user->mobile,
@@ -523,5 +631,44 @@ class MobileAuthController extends Controller
             'kyc_status'               => $user->kyc_status,
             'has_completed_onboarding' => $user->has_completed_onboarding,
         ];
+    }
+
+    /**
+     * @return array{0: ?string, 1: ?string}
+     */
+    private function splitName(?string $name): array
+    {
+        $trimmed = trim((string) $name);
+
+        if ($trimmed === '') {
+            return [null, null];
+        }
+
+        $parts = preg_split('/\s+/', $trimmed) ?: [];
+        $firstName = array_shift($parts);
+        $lastName = $parts !== [] ? implode(' ', $parts) : null;
+
+        return [$firstName ?: null, $lastName ?: null];
+    }
+
+    private function enforceSessionLimits(User $user): void
+    {
+        $maxSessions = (int) config('auth.max_concurrent_sessions', 5);
+
+        $accessTokenCount = $user->tokens()
+            ->where('abilities', '!=', '["refresh"]')
+            ->count();
+
+        if ($accessTokenCount <= $maxSessions) {
+            return;
+        }
+
+        $tokensToDelete = $accessTokenCount - $maxSessions;
+
+        $user->tokens()
+            ->where('abilities', '!=', '["refresh"]')
+            ->orderBy('created_at', 'asc')
+            ->limit($tokensToDelete)
+            ->delete();
     }
 }

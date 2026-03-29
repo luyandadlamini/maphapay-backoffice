@@ -8,6 +8,7 @@ use App\Domain\Shared\OperationRecord\Exceptions\OperationPayloadMismatchExcepti
 use Closure;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -62,6 +63,8 @@ class OperationRecordService
                     'Idempotency key reused with a different request payload.'
                 );
             }
+
+            throw new RuntimeException('An identical operation is already in progress. Please retry shortly.');
         }
 
         try {
@@ -85,7 +88,8 @@ class OperationRecordService
                 && $record->result_payload !== null) {
                 return $record->result_payload;
             }
-            // Record exists but not yet completed — fall through and execute $fn.
+
+            throw new RuntimeException('An identical operation is already in progress. Please retry shortly.');
         }
 
         try {

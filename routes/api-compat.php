@@ -46,7 +46,7 @@ Route::middleware(['migration_flag:enable_send_money', 'kyc_approved', 'idempote
 
 Route::middleware(['migration_flag:enable_request_money', 'kyc_approved'])->group(function () {
     Route::post('request-money/store', RequestMoneyStoreController::class)
-        ->middleware('throttle:maphapay-request-money')
+        ->middleware(['idempotency', 'throttle:maphapay-request-money'])
         ->name('maphapay.compat.request-money.store');
 
     Route::post('request-money/received-store/{moneyRequest}', RequestMoneyReceivedStoreController::class)

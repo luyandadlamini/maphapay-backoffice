@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MtnMomoTransaction;
 use App\Models\User;
 use App\Rules\MajorUnitAmountString;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -67,18 +68,31 @@ class RequestToPayController extends Controller
         $referenceId = (string) Str::uuid();
         $recordId = (string) Str::uuid();
 
-        $txn = MtnMomoTransaction::query()->create([
-            'id'               => $recordId,
-            'user_id'          => $authUser->id,
-            'idempotency_key'  => $validated['idempotency_key'],
-            'type'             => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
-            'amount'           => $normalizedAmount,
-            'currency'         => $currency,
-            'status'           => MtnMomoTransaction::STATUS_PENDING,
-            'party_msisdn'     => (string) $validated['payer_msisdn'],
-            'mtn_reference_id' => $referenceId,
-            'note'             => $validated['note'] ?? null,
-        ]);
+        try {
+            $txn = MtnMomoTransaction::query()->create([
+                'id'               => $recordId,
+                'user_id'          => $authUser->id,
+                'idempotency_key'  => $validated['idempotency_key'],
+                'type'             => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
+                'amount'           => $normalizedAmount,
+                'currency'         => $currency,
+                'status'           => MtnMomoTransaction::STATUS_PENDING,
+                'party_msisdn'     => (string) $validated['payer_msisdn'],
+                'mtn_reference_id' => $referenceId,
+                'note'             => $validated['note'] ?? null,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            $existing = MtnMomoTransaction::query()
+                ->where('user_id', $authUser->id)
+                ->where('idempotency_key', $validated['idempotency_key'])
+                ->first();
+
+            if ($existing !== null) {
+                return $this->successResponse($existing);
+            }
+
+            return $this->errorResponse('MTN request-to-pay could not be completed.', 503);
+        }
 
         try {
             $this->mtnMomoClient->assertConfigured();

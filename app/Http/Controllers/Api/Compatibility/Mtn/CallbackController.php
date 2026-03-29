@@ -11,6 +11,7 @@ use App\Domain\Shared\Money\MoneyConverter;
 use App\Domain\Wallet\Services\WalletOperationsService;
 use App\Http\Controllers\Controller;
 use App\Models\MtnMomoTransaction;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -54,6 +55,29 @@ class CallbackController extends Controller
         /** @var array<string, mixed> $body */
         $body = $request->all();
 
+        $remoteStatus = $this->mtnStatusFrom($body);
+        $normalized = MtnMomoTransaction::normaliseRemoteStatus($remoteStatus);
+        $financialId = $this->mtnFinancialIdFrom($body);
+
+        // Replay protection: terminal-state callbacks (SUCCESSFUL / FAILED) are processed
+        // exactly once per reference ID. A duplicate unique key means the work is already done.
+        $terminalStatuses = [MtnMomoTransaction::STATUS_SUCCESSFUL, MtnMomoTransaction::STATUS_FAILED];
+        if (in_array($normalized, $terminalStatuses, true)) {
+            try {
+                DB::table('mtn_callback_log')->insert([
+                    'mtn_reference_id' => $referenceId,
+                    'terminal_status'  => $normalized,
+                    'body_sha256'      => hash('sha256', $request->getContent()),
+                    'received_at'      => now(),
+                    'created_at'       => now(),
+                    'updated_at'       => now(),
+                ]);
+            } catch (QueryException) {
+                // Duplicate: already processed this terminal state for this reference.
+                return response('', 200);
+            }
+        }
+
         $txn = MtnMomoTransaction::query()
             ->where('mtn_reference_id', $referenceId)
             ->first();
@@ -66,10 +90,6 @@ class CallbackController extends Controller
             // Return 200 to prevent MTN from retrying; do not leak whether the ID exists.
             return response('', 200);
         }
-
-        $remoteStatus = $this->mtnStatusFrom($body);
-        $normalized = MtnMomoTransaction::normaliseRemoteStatus($remoteStatus);
-        $financialId = $this->mtnFinancialIdFrom($body);
 
         $txn->update([
             'last_mtn_status'              => $remoteStatus,
