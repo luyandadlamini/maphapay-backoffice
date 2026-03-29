@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api\Compatibility\Budget;
+namespace App\Http\Controllers\API\Compatibility\Budget;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;

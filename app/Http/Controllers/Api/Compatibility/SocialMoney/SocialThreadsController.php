@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api\Compatibility\SocialMoney;
+namespace App\Http\Controllers\API\Compatibility\SocialMoney;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;

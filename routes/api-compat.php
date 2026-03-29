@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Api\Compatibility\Budget\BudgetCategoriesController;
-use App\Http\Controllers\Api\Compatibility\Dashboard\DashboardController;
-use App\Http\Controllers\Api\Compatibility\Mtn\CallbackController;
-use App\Http\Controllers\Api\Compatibility\Mtn\DisbursementController;
-use App\Http\Controllers\Api\Compatibility\Mtn\RequestToPayController;
-use App\Http\Controllers\Api\Compatibility\Mtn\TransactionStatusController;
-use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyHistoryController;
-use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialThreadsController;
-use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyReceivedHistoryController;
-use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyReceivedStoreController;
-use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyRejectController;
-use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyStoreController;
-use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendCancelController;
-use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendIndexController;
-use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendStoreController;
-use App\Http\Controllers\Api\Compatibility\SendMoney\SendMoneyStoreController;
-use App\Http\Controllers\Api\Compatibility\Transactions\TransactionHistoryController;
-use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyOtpController;
-use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyPinController;
+use App\Http\Controllers\API\Compatibility\Budget\BudgetCategoriesController;
+use App\Http\Controllers\API\Compatibility\Dashboard\DashboardController;
+use App\Http\Controllers\API\Compatibility\Mtn\CallbackController;
+use App\Http\Controllers\API\Compatibility\Mtn\DisbursementController;
+use App\Http\Controllers\API\Compatibility\Mtn\RequestToPayController;
+use App\Http\Controllers\API\Compatibility\Mtn\TransactionStatusController;
+use App\Http\Controllers\API\Compatibility\RequestMoney\RequestMoneyHistoryController;
+use App\Http\Controllers\API\Compatibility\SocialMoney\SocialThreadsController;
+use App\Http\Controllers\API\Compatibility\RequestMoney\RequestMoneyReceivedHistoryController;
+use App\Http\Controllers\API\Compatibility\RequestMoney\RequestMoneyReceivedStoreController;
+use App\Http\Controllers\API\Compatibility\RequestMoney\RequestMoneyRejectController;
+use App\Http\Controllers\API\Compatibility\RequestMoney\RequestMoneyStoreController;
+use App\Http\Controllers\API\Compatibility\ScheduledSend\ScheduledSendCancelController;
+use App\Http\Controllers\API\Compatibility\ScheduledSend\ScheduledSendIndexController;
+use App\Http\Controllers\API\Compatibility\ScheduledSend\ScheduledSendStoreController;
+use App\Http\Controllers\API\Compatibility\SendMoney\SendMoneyStoreController;
+use App\Http\Controllers\API\Compatibility\Transactions\TransactionHistoryController;
+use App\Http\Controllers\API\Compatibility\VerificationProcess\VerifyOtpController;
+use App\Http\Controllers\API\Compatibility\VerificationProcess\VerifyPinController;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Support\Facades\Route;
 
