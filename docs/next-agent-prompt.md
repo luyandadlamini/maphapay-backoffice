@@ -4,21 +4,23 @@
 
 ## Current state
 
-Branch `main` is 17 commits ahead of `origin/main`. Latest commit: `chore: remove duplicate Phase 10 files` (2026-03-29).
+Branch `main` is **20 commits ahead of `origin/main`**. Latest commits:
+- `feat: add Phase 17 migration_delta_log + MigrateLegacyBalances command + Phase 19 load test files`
+- `feat: implement Phase 17 backfill + Phase 19 load test infrastructure`
 
 ### What was just completed
 
-**Phase 10 backend controllers — actually created:**
-- `MobileAuthController` — login (auto-register + OTP), verifyOtp, resendOtp, completeProfile, forgotPin, verifyResetCode, resetPin
-- `AuthorizationController` — GET /api/auth/authorization (pending steps: mobile/email/kyc), POST resend
-- `CountriesController` — GET /api/countries (active countries list)
-- `DeviceTokenController` — POST /api/device-tokens (stores in mobile_preferences)
-- User model `@property` annotations added for `mobile`, `dial_code`, `username`, `kyc_approved_at`, `kyc_submitted_at`, `kyc_rejected_at`, `mobile_preferences`
+**Phase 17 — Stage 1 Backfill (Option A — Rolling snapshot with delta reconciliation):**
+- `migration_delta_log` table migration — `legacy_user_id`, `currency`, `amount_major`, `direction`, `legacy_trx_id`, `legacy_table`, `legacy_created_at`, `captured_at`. Uses `try/catch` so it skips gracefully when legacy DB is unavailable (SQLite test environments).
+- `MigrateLegacyBalances` command — `legacy:migrate-balances [--dry-run][--snapshot][--chunk=500][--threshold=0.01][--cohort=ids]`. Loads identity map, reads legacy `users.balance` + `migration_balance_snapshots`, applies `migration_delta_log` deltas, parity-checks each user before enabling FinAegis writes. Exits FAILURE if any user exceeds threshold.
+- `database.connections.legacy` config — `LEGACY_DB_*` env vars (url, host, port, database, username, password, socket, charset, collation).
 
-**Cleanup done:**
-- Removed redundant migrations `2026_03_29_140000` (mobile_verified_at), `2026_03_29_150000` (username) — columns already exist via earlier migrations
-- Removed outdated docs `docs/phase-10-auth-implementation-plan.md`, `docs/laravel-cloud-envars.md`
-- Removed `.env copy` file
+**Phase 19 — Performance & Load Testing:**
+- `Phase19LoadTest` — 4 `#[Large]` tests: send-money idempotency (same key replays, unique keys create separate rows, no deadlock on `authorized_transactions`), balance consistency after verification.
+- `docs/phase-19-load-test-k6.md` — k6 scripts for staging: send-money 100 VU throughput, MTN burst 50 VU, MTN callback flood 20 VU, balance-read under write load. P95 SLA targets from plan line 2041.
+- MTN HTTP-level tests deferred to k6 staging (PHP single-threaded test environment cannot exercise true concurrent HTTP).
+
+**Tests:** 73 compat tests pass, 4 Phase19LoadTest pass (SQLite).
 
 **PHP binary:** `/Users/Lihle/Library/Application Support/Herd/bin/php85`
 
@@ -26,41 +28,45 @@ Branch `main` is 17 commits ahead of `origin/main`. Latest commit: `chore: remov
 
 ## Remaining work (priority order)
 
-### 1. Phase 17 — Stage 1 Backfill (highest complexity)
+### 1. Full suite MySQL smoke test (highest operational safety)
 
-Read Phase 17 in `docs/maphapay-backend-replacement-plan.md` (line 1924). Key decisions:
-
-- **Option A — Rolling snapshot with delta reconciliation (recommended)**
-- `migration_delta_log` table in **legacy** DB to record all transactions during backfill
-- Before enabling FinAegis writes for any user cohort, verify balance parity (Phase 17.3 parity check query)
-- Implement `MigrateLegacyBalances` command
-
-This is the most operationally dangerous part of the migration due to the "moving target" problem.
-
-### 2. Phase 19 — Performance & Load Testing
-
-Read Phase 19 in `docs/maphapay-backend-replacement-plan.md` (line 2008). Implement:
-
-- k6 or Pest-based load tests for:
-  - send-money throughput (100 concurrent users, no deadlocks)
-  - MTN initiation burst (50 concurrent RTP with different idempotency keys)
-  - MTN callback flood (20 concurrent callbacks, wallet credited exactly once)
-  - balance read under write load (eventual consistency < 1s)
-- Define P95 latency SLAs per endpoint (see table at line 2041)
-- Run with at least 100 concurrent users in staging
-
-### 3. Full suite MySQL smoke test
+Run against MySQL (not SQLite) before any production cutover:
 
 ```bash
 PHP85="/Users/Lihle/Library/Application Support/Herd/bin/php85"
 XDEBUG_MODE=off "$PHP85" vendor/bin/pest --configuration=phpunit.ci.xml --parallel
 ```
 
-SQLite may timeout for the full domain suite. MySQL recommended.
+SQLite may timeout for the full domain suite. MySQL required for this run.
 
-### 4. Manual QA — Login/OTP flows
+### 2. Manual QA — Login/OTP flows
 
-Test login, OTP verification, profile completion, and forgot PIN flows end-to-end with a real device or Postman.
+Test login, OTP verification, profile completion, and forgot PIN flows end-to-end with Postman or a real device:
+- `POST /api/auth/mobile/login` — auto-register + OTP send
+- `POST /api/auth/mobile/verify-otp` — OTP verification
+- `POST /api/auth/mobile/resend-otp` — OTP resend
+- `POST /api/auth/mobile/complete-profile` — profile completion
+- `POST /api/auth/mobile/forgot-pin` — forgot PIN
+- `POST /api/auth/mobile/verify-reset-code` — verify reset code
+- `POST /api/auth/mobile/reset-pin` — reset PIN
+- `GET /api/auth/authorization` — pending auth steps
+- `GET /api/countries` — active countries list
+- `POST /api/device-tokens` — device token storage
+
+### 3. Phase 17 prerequisites before running `legacy:migrate-balances`
+
+Ensure these are in place before the command can succeed:
+1. Set `LEGACY_DB_*` env vars in `.env` pointing to legacy MaphaPay MySQL
+2. Run `php artisan legacy:migrate-social-graph --table=identity_map` to populate `migration_identity_map`
+3. Implement a migration observer on the legacy DB that writes to `migration_delta_log` (not yet built — requires a separate observer process or DB triggers)
+4. Seed the `SZL` asset in FinAegis: `Asset::firstOrCreate(['code' => 'SZL'], [...])`
+5. Take initial balance snapshot in `migration_balance_snapshots` table (legacy side)
+
+### 4. Push to remote when ready
+
+```bash
+git push origin main
+```
 
 ---
 
