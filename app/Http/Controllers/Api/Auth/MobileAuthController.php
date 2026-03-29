@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use OpenApi\Attributes as OA;
 use RuntimeException;
@@ -196,9 +197,20 @@ class MobileAuthController extends Controller
 
         $mobile = (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '');
 
+        Log::info('MobileAuthController: verifyOtp called', [
+            'dial_code' => $validated['dial_code'],
+            'mobile' => $mobile,
+            'otp' => $validated['otp'],
+        ]);
+
         $user = User::where('dial_code', $validated['dial_code'])
             ->where('mobile', $mobile)
             ->first();
+
+        Log::info('MobileAuthController: user lookup', [
+            'user_found' => $user !== null,
+            'user_id' => $user?->id,
+        ]);
 
         if (! $user) {
             return response()->json([
@@ -208,6 +220,10 @@ class MobileAuthController extends Controller
         }
 
         $verified = $this->otpService->verify($user, UserOtp::TYPE_LOGIN, $validated['otp']);
+
+        Log::info('MobileAuthController: OTP verification result', [
+            'verified' => $verified,
+        ]);
 
         if (! $verified) {
             return response()->json([
@@ -220,6 +236,10 @@ class MobileAuthController extends Controller
 
         $tokenPair = $this->createTokenPair($user, $validated['device_name'] ?? 'mobile');
         $this->enforceSessionLimits($user, $tokenPair['newly_created_token_ids']);
+
+        Log::info('MobileAuthController: verifyOtp success', [
+            'user_id' => $user->id,
+        ]);
 
         return response()->json([
             'success' => true,

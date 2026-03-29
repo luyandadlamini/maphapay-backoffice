@@ -51,23 +51,48 @@ class OtpService
 
     public function verify(User $user, string $type, string $plainOtp): bool
     {
+        Log::info('OtpService: verify called', [
+            'user_id' => $user->id,
+            'dial_code' => $user->dial_code,
+            'mobile' => $user->mobile,
+            'type' => $type,
+            'otp_length' => strlen($plainOtp),
+        ]);
+
         if ($this->isTwilioProvider()) {
             $to = $user->dial_code . $user->mobile;
 
-            return $this->twilioVerify->checkVerification($to, $plainOtp);
+            Log::info('OtpService: using Twilio Verify', ['to' => $to]);
+
+            $result = $this->twilioVerify->checkVerification($to, $plainOtp);
+
+            Log::info('OtpService: Twilio Verify result', ['result' => $result]);
+
+            return $result;
         }
 
         $record = $this->getActiveOtp($user, $type);
+
+        Log::info('OtpService: local OTP record lookup', [
+            'user_id' => $user->id,
+            'type' => $type,
+            'record_found' => $record !== null,
+        ]);
 
         if ($record === null) {
             return false;
         }
 
         if ($record->isExpired()) {
+            Log::info('OtpService: OTP record is expired', [
+                'expires_at' => $record->expires_at,
+                'now' => now(),
+            ]);
             return false;
         }
 
         if (! Hash::check($plainOtp, $record->otp_hash)) {
+            Log::info('OtpService: OTP hash mismatch');
             return false;
         }
 
