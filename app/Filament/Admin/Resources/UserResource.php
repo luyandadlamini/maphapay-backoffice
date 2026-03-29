@@ -1,14 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
+use App\Domain\Shared\Services\OtpService;
 use App\Filament\Admin\Resources\UserResource\Pages;
 use App\Models\User;
+use App\Models\UserOtp;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Throwable;
 
 class UserResource extends Resource
 {
@@ -115,6 +121,52 @@ class UserResource extends Resource
             )
             ->actions(
                 [
+                    Tables\Actions\Action::make('resend_otp')
+                        ->label('Resend OTP')
+                        ->icon('heroicon-o-device-phone-mobile')
+                        ->color('warning')
+                        ->requiresConfirmation(false)
+                        ->form([
+                            Forms\Components\Select::make('otp_type')
+                                ->label('OTP Type')
+                                ->options([
+                                    UserOtp::TYPE_LOGIN               => 'Login',
+                                    UserOtp::TYPE_MOBILE_VERIFICATION => 'Mobile Verification',
+                                    UserOtp::TYPE_PIN_RESET           => 'PIN Reset',
+                                ])
+                                ->default(UserOtp::TYPE_LOGIN)
+                                ->required(),
+                        ])
+                        ->action(function (User $record, array $data): void {
+                            if (! $record->dial_code || ! $record->mobile) {
+                                Notification::make()
+                                    ->title('No mobile number')
+                                    ->body('This user has no mobile number on record.')
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
+                            try {
+                                /** @var OtpService $otpService */
+                                $otpService = app(OtpService::class);
+                                $otpService->generateAndSend($record, $data['otp_type']);
+
+                                Notification::make()
+                                    ->title('OTP sent')
+                                    ->body("A new {$data['otp_type']} OTP has been dispatched to {$record->dial_code}{$record->mobile}.")
+                                    ->success()
+                                    ->send();
+                            } catch (Throwable $e) {
+                                Notification::make()
+                                    ->title('Failed to send OTP')
+                                    ->body($e->getMessage())
+                                    ->danger()
+                                    ->send();
+                            }
+                        })
+                        ->visible(fn (User $record): bool => (bool) $record->mobile),
                     Tables\Actions\EditAction::make(),
                 ]
             )

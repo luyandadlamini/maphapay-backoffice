@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Shared\Services;
 
+use App\Domain\SMS\Clients\TwilioVerifyClient;
 use App\Domain\SMS\Services\SmsService;
 use App\Models\User;
 use App\Models\UserOtp;
@@ -22,11 +23,25 @@ class OtpService
 
     public function __construct(
         private readonly SmsService $smsService,
+        private readonly TwilioVerifyClient $twilioVerify,
     ) {
     }
 
     public function generateAndSend(User $user, string $type, string $channel = 'sms'): string
     {
+        if ($channel === 'sms' && $this->isTwilioProvider()) {
+            $to = $user->dial_code . $user->mobile;
+            $this->twilioVerify->startVerification($to);
+
+            Log::info('OtpService: Twilio OTP dispatched', [
+                'user_id' => $user->id,
+                'type'    => $type,
+                'to'      => $to,
+            ]);
+
+            return '';
+        }
+
         $otp = $this->generateOtp();
         $this->store($user, $type, $otp);
         $this->deliver($user, $otp, $type, $channel);
@@ -36,6 +51,12 @@ class OtpService
 
     public function verify(User $user, string $type, string $plainOtp): bool
     {
+        if ($this->isTwilioProvider()) {
+            $to = $user->dial_code . $user->mobile;
+
+            return $this->twilioVerify->checkVerification($to, $plainOtp);
+        }
+
         $record = $this->getActiveOtp($user, $type);
 
         if ($record === null) {
@@ -60,6 +81,12 @@ class OtpService
      */
     public function canResend(User $user, string $type): array
     {
+        // Twilio manages its own rate limiting — we report always ready.
+        // Twilio enforces max 5 sends per phone per service by default.
+        if ($this->isTwilioProvider()) {
+            return ['can_resend' => true, 'remaining_seconds' => 0];
+        }
+
         $record = UserOtp::where('user_id', $user->id)
             ->where('type', $type)
             ->whereNull('verified_at')
@@ -81,14 +108,23 @@ class OtpService
 
     public function resend(User $user, string $type, string $channel = 'sms'): string
     {
-        $check = $this->canResend($user, $type);
-        if (! $check['can_resend']) {
-            throw new RuntimeException(
-                "Please wait {$check['remaining_seconds']} seconds before requesting a new code."
-            );
+        // For Twilio: skip the local cooldown check — Twilio handles rate limiting.
+        if (! $this->isTwilioProvider()) {
+            $check = $this->canResend($user, $type);
+            if (! $check['can_resend']) {
+                throw new RuntimeException(
+                    "Please wait {$check['remaining_seconds']} seconds before requesting a new code."
+                );
+            }
         }
 
         return $this->generateAndSend($user, $type, $channel);
+    }
+
+    private function isTwilioProvider(): bool
+    {
+        return config('sms.otp_provider') === 'twilio'
+            && $this->twilioVerify->isConfigured();
     }
 
     private function generateOtp(): string
@@ -133,7 +169,7 @@ class OtpService
         $message = $this->smsMessageForType($type, $plainOtp);
 
         try {
-            $to = $user->dial_code . $user->mobile;
+            $to   = $user->dial_code . $user->mobile;
             $from = (string) config('sms.defaults.from', 'FinAegis');
 
             $this->smsService->send($to, $from, $message);

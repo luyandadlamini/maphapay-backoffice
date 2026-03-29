@@ -8,14 +8,30 @@ return [
     | SMS Service Configuration
     |--------------------------------------------------------------------------
     |
-    | Configuration for the SMS sending service. Currently supports VertexSMS
-    | as the provider, with x402/MPP multi-rail payment gating.
+    | Configuration for the SMS sending service. Supports VertexSMS and Twilio
+    | as providers, with x402/MPP multi-rail payment gating.
     |
     */
 
     'enabled' => (bool) env('SMS_ENABLED', false),
 
     'default_provider' => env('SMS_PROVIDER', 'mock'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | OTP Provider
+    |--------------------------------------------------------------------------
+    |
+    | The provider used specifically for OTP / 2FA delivery.
+    | Set to "twilio" to delegate OTP lifecycle to Twilio Verify (recommended).
+    | When set to "twilio", Twilio generates, stores, and validates the code —
+    | the local user_otps table is not used for OTP flows.
+    |
+    | Supported: "twilio", "vertexsms", "mock"
+    |
+    */
+
+    'otp_provider' => env('SMS_OTP_PROVIDER', env('SMS_PROVIDER', 'mock')),
 
     'providers' => [
         'mock' => [
@@ -28,6 +44,13 @@ return [
             'base_url'  => env('VERTEXSMS_BASE_URL', 'https://api.vertexsms.com'),
             'sender_id' => env('VERTEXSMS_SENDER_ID', 'Zelta'),
             'enabled'   => (bool) env('VERTEXSMS_ENABLED', false),
+        ],
+        'twilio' => [
+            'driver'             => 'twilio',
+            'account_sid'        => env('TWILIO_ACCOUNT_SID', ''),
+            'auth_token'         => env('TWILIO_AUTH_TOKEN', ''),
+            'verify_service_sid' => env('TWILIO_VERIFY_SERVICE_SID', ''),
+            'enabled'            => (bool) env('TWILIO_ENABLED', false),
         ],
     ],
 
