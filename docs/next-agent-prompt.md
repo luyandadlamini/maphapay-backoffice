@@ -1,142 +1,124 @@
-# MaphaPay → FinAegis — Next Agent Handoff Prompt
+# Next Agent Prompt
 
-You are continuing the MaphaPay → FinAegis backend migration.
+**Read first:** `docs/maphapay-backend-replacement-progress.md`
 
-**Working directory:** `/Users/Lihle/Development/Coding/maphapay-backoffice`
-**Current branch:** `main` — 13 commits ahead of `origin/main` (not pushed yet — user will push manually)
-**PHP binary:** `/Users/Lihle/Library/Application\ Support/Herd/bin/php85` (use this — php84 has a dyld error)
+## Current state
 
-Read `docs/maphapay-backend-replacement-progress.md` before touching anything — it is the authoritative
-progress handoff. The immediately relevant context is summarised below.
+Branch `main` is 15 commits ahead of `origin/main`. Latest commit: `feat: Phase 10 — mobile auth endpoints` (2026-03-29).
 
----
+### What was just completed (Phase 10)
 
-## What has been built (do not re-implement)
+**Backend (`maphapay-backoffice`):**
+- `MobileAuthController` — mobile+pin login (auto-registers if not found, sends OTP), OTP verify/resend, profile completion, forgot-pin / verify-reset-code / reset-pin
+- `AuthorizationController` — GET `/api/auth/authorization` (pending steps: sms/email/kyc), POST resend
+- `CountriesController` — GET `/api/countries`
+- `DeviceTokenController` — POST `/api/device-tokens`
+- `OtpService` — generates 6-digit OTPs, sends via SMS, verifies, 10-min TTL, 120s resend cooldown
+- `user_otps` table + `UserOtp` model (types: `mobile_verification | pin_reset | login`)
+- `countries` table + `CountrySeeder` + `Country` model
+- `mobile` + `dial_code` columns on `users` (via migration `2026_03_29_110000`)
+- `mobile_verified_at` + `username` on User (via separate migrations `2026_03_29_140000` and `150000`)
+- PHP 8.5 PDO deprecation fix (`Pdo\Mysql::ATTR_SSL_CA`)
+- PHPStan: User model `@property Carbon` for datetime fields; `Country::users()` and `UserOtp::user()` generic return types
 
-| Phase | Status | Key files |
-|-------|--------|-----------|
-| Phase 3.1 | ✅ | `database/seeders/AssetSeeder.php` — SZL seeded |
-| Phase 3.3 | ✅ | `TransactionProjection::formatted_amount` uses `Asset.precision` |
-| Phase 11 | ✅ | `AuthorizedTransaction` domain: migration, model, 3 handlers, `AuthorizedTransactionManager`, `VerifyOtpController`, `VerifyPinController` |
-| Phase 12 | ✅ | `MoneyConverter` (bcmath), `MajorUnitAmountString` validation rule |
-| Phase 5 | ✅ | `SendMoneyStoreController`, `RequestMoneyStoreController`, received-store, reject, history, scheduled send — all with tests |
-| Phase 15 | ✅ | MTN MoMo: `MtnMomoClient`, 4 compat controllers, reconciliation cron, callback IPN, 17 tests |
-| Phase 16 | ✅ | Per-user throttle on `send-money/store` (10/min) and `mtn/disbursement` (5/min); 429 compat envelope; 4 tests |
-| Phase 18 | ✅ | `routes/api-compat.php` — all money-moving routes, migration-flag gated |
-| Transactions / Dashboard | ✅ | `GET /api/transactions`, `GET /api/dashboard` compat endpoints |
-| Phase 13 | ✅ already existed | `ExecuteScheduledSends` command |
-| Phase 14 | ✅ already existed | `MigrateLegacySocialGraph` command |
-| Idempotency | ✅ | `IdempotencyMiddleware` accepts both `Idempotency-Key` and `X-Idempotency-Key` |
-| Domain idempotency | ✅ | `OperationRecord` + `OperationRecordService::guardAndRun()` wired into `AuthorizedTransactionManager`; `operation_records` migration |
-| MTN disbursement refund | ✅ | `CallbackController` auto-refunds on `FAILED` disbursement with `lockForUpdate` guard |
-| Idempotency key wiring | ✅ | `SendMoneyStoreController`, `RequestMoneyStoreController`, `RequestMoneyReceivedStoreController` all extract `Idempotency-Key` / `X-Idempotency-Key` and pass as 5th arg to `AuthorizedTransactionManager::initiate()` |
-| Phase 19 | ✅ | Full compat suite passes on SQLite (281 assertions). Fixed 3 tests missing `kyc_status='approved'` in request-money history and reject controllers. |
-| Stream G | ✅ audited & skipped | `config/machinepay.php` + `config/agent_protocol.php` — do **not** change these |
+**Mobile (`maphapayrn`):**
+- `apiClient.ts`: refresh → `POST /api/auth/refresh`, reads `data.data.access_token`
+- `authStore.ts`: login → `/api/auth/mobile/login` (dial_code: `+268`), logout → `POST /api/auth/logout`, refreshUser → `/api/auth/user`, countries → `/api/countries`
+- `register.tsx`: all 3 steps now call FinAegis endpoints
+- `useProfileSettings.ts`: device token → `/api/device-tokens` with FinAegis payload shape
 
----
+### What's remaining
 
-## What still needs to be done
+#### 1. CRITICAL: Remove duplicate files
 
-### 1. Phase 10 — Auth compatibility controllers (blocked)
+A previous agent created duplicate files in `app/Http/Controllers/API/` (uppercase `API`). These are wrong and must be deleted:
 
-**Blocked until:** The legacy MaphaPay mobile contract for login/register is known.
-
-**What to do when unblocked:**
-1. Diff against old MaphaPay OpenAPI spec or captured production requests.
-2. If the existing `routes/api.php` auth matches the mobile contract — no compat shims needed.
-3. If they diverge — add thin compat controllers in `app/Http/Controllers/Api/Compatibility/Auth/`.
-4. Do NOT add aliases — backend is source of truth; mobile adapts.
-
-**Key findings already documented (2026-03-28):**
-- `personal_access_tokens` — standard Sanctum schema; mobile Bearer auth works if token creation matches.
-- `transaction_pin` column — confirm it exists in the real DB; `AuthorizedTransactionManager::verifyPin()` requires it. Not visible in tracked migrations (may be in an untracked migration).
-- Login/Register shims — only needed if URLs, field names, or error JSON diverge from current Fortify/Jetstream.
-
----
-
-### 2. Phase 19 (follow-up) — Full-domain MySQL smoke test
-
-The compat sub-suite (`tests/Feature/Http/Controllers/Api/Compatibility/`) is fully green on SQLite.
-
-For a **full-domain** MySQL smoke test (recommended before production cutover):
-- Use `phpunit.ci.xml` or a local MySQL instance.
-- Ensure all migrations run in order (no FK ordering issues).
-- Fix any failures (likely nullable FK constraints or timestamp precision).
-
-This is **not blocking** for further compat work — only needed before live traffic.
-
----
-
-### 3. PDO::MYSQL_ATTR_SSL_CA deprecation (PHP 8.5 noise)
-
-Every test run logs: `Constant PDO::MYSQL_ATTR_SSL_CA is deprecated since PHP 8.4`
-
-**Root cause:** `config/database.php:71` unconditionally references `PDO::MYSQL_ATTR_SSL_CA` even on SQLite test runs.
-
-**Fix (optional but clean):**
-```php
-// config/database.php — inside the mysql connection options array:
-'options' => extension_loaded('pdo_mysql') ? array_filter([
-    PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-]) : [],
 ```
-This already exists — but `PDO::MYSQL_ATTR_SSL_CA` is referenced even when evaluating the condition. Wrap the constant reference:
-```php
-'options' => (extension_loaded('pdo_mysql') && defined('PDO::MYSQL_ATTR_SSL_CA'))
-    ? array_filter([PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA')])
-    : [],
+app/Http/Controllers/API/Auth/AuthorizationController.php  ← DELETE
+app/Http/Controllers/API/Auth/MobileAuthController.php     ← DELETE
+app/Http/Controllers/API/DeviceTokenController.php       ← DELETE
+app/Http/Controllers/API/General/CountriesController.php ← DELETE
 ```
-This eliminates the 73 deprecation warnings per test run without changing runtime behaviour.
 
----
+The correct files are in `app/Http/Controllers/Api/` (lowercase `Api`). Also remove:
+```
+database/migrations/2026_03_29_140000_add_mobile_verified_at_to_users_table.php   ← DELETE (column already exists)
+database/migrations/2026_03_29_150000_add_username_to_users_table.php              ← DELETE (column already exists)
+docs/phase-10-auth-implementation-plan.md                                          ← DELETE (outdated plan doc)
+docs/laravel-cloud-envars.md                                                       ← DELETE (unrelated)
+.env copy                                                                           ← DELETE
+```
 
-## CI commands
+#### 2. Phase 17 — Stage 1 Backfill (moving-target problem)
 
+This is the hardest part. Read Phase 17 in `docs/maphapay-backend-replacement-plan.md` (line 1924). Key decisions to make:
+- Rolling snapshot with delta reconciliation (Option A) is recommended
+- You need a `migration_delta_log` table in the **legacy** DB to record all transactions that happen during backfill
+- Before enabling FinAegis writes for any user, verify balance parity (Phase 17.3 parity check query)
+- Implement the `MigrateLegacyBalances` command
+
+#### 3. Phase 19 — Performance & Load Testing
+
+Read Phase 19 in `docs/maphapay-backend-replacement-plan.md` (line 2008). Implement:
+- k6 or Pest-based load tests for send-money throughput, MTN initiation burst, MTN callback flood, balance read under write load
+- Define P95 latency SLAs per endpoint
+- Run with at least 100 concurrent users in staging
+
+#### 4. Full suite MySQL smoke test
+
+Run the full compat test suite against MySQL (not just SQLite):
 ```bash
 PHP85="/Users/Lihle/Library/Application Support/Herd/bin/php85"
+XDEBUG_MODE=off "$PHP85" vendor/bin/pest --configuration=phpunit.ci.xml --parallel
+```
 
-# Static analysis
-XDEBUG_MODE=off "$PHP85" vendor/bin/phpstan analyse --memory-limit=2G
+SQLite timeout did NOT occur for compat sub-suite in prior runs, but the full suite with all domains may need MySQL.
 
-# Code style
-"$PHP85" vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php
+#### 5. Legacy auth endpoint audit (low priority)
 
-# Full compat suite (green on SQLite)
-"$PHP85" vendor/bin/pest tests/Feature/Http/Controllers/Api/Compatibility/ --stop-on-failure
+Confirm all legacy auth endpoints the mobile still calls have FinAegis equivalents:
+- `POST /api/authentication` → `/api/auth/mobile/login` ✅ (done)
+- `POST /api/verify-mobile` → `/api/auth/mobile/verify-otp` ✅ (done)
+- `POST /api/user-data-submit` → `/api/auth/mobile/complete-profile` ✅ (done)
+- `POST /api/auth/token/refresh/` → `/api/auth/refresh` ✅ (already existed, response shape verified)
+- `GET /api/user-info` → `/api/auth/user` ✅ (done)
+- `POST /api/auth/logout` (was GET) → `POST /api/auth/logout` ✅ (done)
+- `POST /api/password/mobile` → `/api/auth/mobile/forgot-pin` ✅ (done)
+- `POST /api/password/verify-code` → `/api/auth/mobile/verify-reset-code` ✅ (done)
+- `POST /api/password/reset` → `/api/auth/mobile/reset-pin` ✅ (done)
+- `GET /api/get-countries` → `/api/countries` ✅ (done)
+- `GET /api/authorization` → `/api/auth/authorization` ✅ (done)
+- `POST /api/add-device-token` → `/api/device-tokens` ✅ (done)
 
-# Key unit tests
-"$PHP85" vendor/bin/pest \
-  tests/Unit/Domain/Shared/Money/MoneyConverterTest.php \
-  tests/Unit/Domain/Shared/OperationRecord/OperationRecordServiceTest.php
+Also check if there are **forgot PIN UI flows** in the mobile app — they need to call the new endpoints. Search `maphapayrn` for `forgotPin`, `resetPin`, `password` to find if there are screens calling those legacy endpoints.
+
+#### 6. Commit after cleanup
+
+After removing the duplicate files:
+```bash
+git add -u && git commit -m "chore: remove duplicate Phase 10 files (wrong API/ dir, spurious migrations)
+
+Duplicate controllers were created in app/Http/Controllers/API/ (uppercase)
+instead of app/Http/Controllers/Api/. Remove the wrong copies.
+Also remove redundant migrations whose columns (mobile_verified_at,
+username) are already present in the User model.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 ```
 
 ---
 
-## Key conventions (from CLAUDE.md — do not deviate)
+## Running tests
 
-- `declare(strict_types=1)` at top of every PHP file.
-- Import order: `App\Domain` → `App\Http` → `App\Models` → `Illuminate` → Third-party.
-- Compat controllers return **canonical domain field names** — never legacy aliases.
-- Error envelope shape: `{ "status": "error", "remark": "<remark>", "message": ["..."] }`.
-- Tests: always pass `['read', 'write', 'delete']` abilities to `Sanctum::actingAs()`.
-- **Compat test users must have `kyc_status = 'approved'`** for money-moving routes (routes in `kyc_approved` middleware groups: send-money, request-money, MTN MoMo).
-- **Idempotency keys** passed to HTTP endpoints must be UUID format or alphanumeric 16–64 chars.
-- Commits: `feat:` / `fix:` / `test:` prefix + `Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>`.
-- Work in feature branches — never commit directly to `main`.
-- Update `docs/maphapay-backend-replacement-progress.md` after every completed slice.
+```bash
+# Quick validation
+PHP85="/Users/Lihle/Library/Application Support/Herd/bin/php85"
+XDEBUG_MODE=off "$PHP85" vendor/bin/php-cs-fixer fix
+XDEBUG_MODE=off "$PHP85" vendor/bin/phpstan analyse --memory-limit=2G
+XDEBUG_MODE=off "$PHP85" vendor/bin/pest --parallel
 
----
+# Mobile app TypeScript check
+cd maphapayrn && npx tsc --noEmit
+```
 
-## Architecture reminders
-
-- **`AuthorizedTransactionManager::initiate()`** — 5th param `string $idempotencyKey = ''`. When
-  provided, stores as `'_idempotency_key'` in `payload`; `finalizeAtomically()` calls
-  `OperationRecordService::guardAndRun()` via `executeWithIdempotencyGuard()`.
-- **`OperationRecordService::guardAndRun(int $userId, string $type, string $key, string $payloadHash, Closure $fn): array`**
-  — cache hit returns `result_payload`; hash mismatch throws `OperationPayloadMismatchException`;
-  unique-constraint race retried; marks completed/failed around `$fn()`.
-- **`MoneyConverter`** — all amount conversions (bcmath, half-up rounding).
-- **`WalletOperationsService`** — mock in HTTP-layer tests to avoid workflow dispatch mismatches.
-- **`config/machinepay.php` and `config/agent_protocol.php`** — do NOT change these for MaphaPay.
-- **`kyc_approved` middleware** — blocks requests with 403 if user lacks `kyc_status = 'approved'`.
-  Always set this on test users in compat tests for routes inside that middleware group.
+PHP binary: `/Users/Lihle/Library/Application Support/Herd/bin/php85` (php84 has dyld error on this machine).
