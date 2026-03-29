@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\Compatibility\Budget\BudgetCategoriesController;
 use App\Http\Controllers\Api\Compatibility\Dashboard\DashboardController;
 use App\Http\Controllers\Api\Compatibility\Mtn\CallbackController;
 use App\Http\Controllers\Api\Compatibility\Mtn\DisbursementController;
 use App\Http\Controllers\Api\Compatibility\Mtn\RequestToPayController;
 use App\Http\Controllers\Api\Compatibility\Mtn\TransactionStatusController;
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyHistoryController;
+use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialThreadsController;
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyReceivedHistoryController;
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyReceivedStoreController;
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyRejectController;
@@ -99,3 +101,11 @@ Route::middleware('migration_flag:enable_transaction_history')
 Route::middleware('migration_flag:enable_dashboard')
     ->get('dashboard', DashboardController::class)
     ->name('maphapay.compat.dashboard');
+
+Route::middleware('auth:sanctum')
+    ->get('budget/categories', BudgetCategoriesController::class)
+    ->name('maphapay.compat.budget.categories');
+
+Route::middleware('auth:sanctum')
+    ->get('social-money/threads', SocialThreadsController::class)
+    ->name('maphapay.compat.social-money.threads');
