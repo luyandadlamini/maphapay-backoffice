@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Services\IpBlockingService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 
 class UnblockIp extends Command
 {
@@ -28,13 +29,22 @@ class UnblockIp extends Command
             return self::FAILURE;
         }
 
-        if (! $this->ipBlockingService->isBlocked($ip)) {
-            $this->info("IP {$ip} is not blocked.");
-            return self::SUCCESS;
+        // Clear IpBlockingService blocks (database + cache)
+        $this->ipBlockingService->unblockIp($ip);
+
+        // Clear IpBlocking middleware blocks (different cache keys)
+        Cache::forget("ip_blocked:{$ip}");
+        Cache::forget("ip_failed_attempts:{$ip}");
+
+        // Remove from permanent blacklist if present
+        $blacklistKey = 'ip_blacklist';
+        $blacklist = Cache::get($blacklistKey, []);
+        if (in_array($ip, $blacklist)) {
+            $blacklist = array_values(array_filter($blacklist, fn ($i) => $i !== $ip));
+            Cache::forever($blacklistKey, $blacklist);
         }
 
-        $this->ipBlockingService->unblockIp($ip);
-        $this->info("IP {$ip} has been unblocked.");
+        $this->info("IP {$ip} has been unblocked (all systems).");
 
         return self::SUCCESS;
     }
