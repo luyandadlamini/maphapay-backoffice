@@ -91,7 +91,7 @@ class MobileAuthController extends Controller
             }
 
             $tokenPair = $this->createTokenPair($user, $validated['device_name'] ?? 'mobile');
-            $this->enforceSessionLimits($user);
+            $this->enforceSessionLimits($user, $tokenPair['newly_created_token_ids']);
 
             return response()->json([
                 'success' => true,
@@ -219,7 +219,7 @@ class MobileAuthController extends Controller
         $user->update(['mobile_verified_at' => now()]);
 
         $tokenPair = $this->createTokenPair($user, $validated['device_name'] ?? 'mobile');
-        $this->enforceSessionLimits($user);
+        $this->enforceSessionLimits($user, $tokenPair['newly_created_token_ids']);
 
         return response()->json([
             'success' => true,
@@ -595,18 +595,27 @@ class MobileAuthController extends Controller
     }
 
     /**
-     * @return array{access_token: string, refresh_token: string, expires_in: int, refresh_expires_in: int}
+     * @return array{access_token: string, refresh_token: string, expires_in: int, refresh_expires_in: int, newly_created_token_ids: array<int>}
      */
     private function createTokenPair(User $user, string $deviceName): array
     {
         $accessToken = $user->createToken($deviceName, ['read', 'write']);
         $refreshToken = $user->createToken($deviceName . '-refresh', ['refresh']);
 
+        $plainAccessToken = $accessToken->plainTextToken;
+        $plainRefreshToken = $refreshToken->plainTextToken;
+
+        $newlyCreatedTokenIds = array_filter([
+            $accessToken->accessToken->id ?? null,
+            $refreshToken->accessToken->id ?? null,
+        ]);
+
         return [
-            'access_token'       => $accessToken->plainTextToken,
-            'refresh_token'      => $refreshToken->plainTextToken,
-            'expires_in'         => config('sanctum.expiration', 86400),
-            'refresh_expires_in' => config('sanctum.refresh_token_expiration', 2592000),
+            'access_token'           => $plainAccessToken,
+            'refresh_token'          => $plainRefreshToken,
+            'expires_in'             => config('sanctum.expiration', 86400),
+            'refresh_expires_in'     => config('sanctum.refresh_token_expiration', 2592000),
+            'newly_created_token_ids' => array_values($newlyCreatedTokenIds),
         ];
     }
 
@@ -651,16 +660,20 @@ class MobileAuthController extends Controller
         return [$firstName ?: null, $lastName ?: null];
     }
 
-    private function enforceSessionLimits(User $user): void
+    /**
+     * @param array<int> $newlyCreatedTokenIds Token IDs to exclude from deletion (just created in this request)
+     */
+    private function enforceSessionLimits(User $user, array $newlyCreatedTokenIds = []): void
     {
         $maxSessions = (int) config('auth.max_concurrent_sessions', 5);
 
-        $newestTokenId = $user->tokens()->max('id');
+        $query = $user->tokens()->where('abilities', '!=', '["refresh"]');
 
-        $accessTokenCount = $user->tokens()
-            ->where('id', '!=', $newestTokenId)
-            ->where('abilities', '!=', '["refresh"]')
-            ->count();
+        if ($newlyCreatedTokenIds !== []) {
+            $query->whereNotIn('id', $newlyCreatedTokenIds);
+        }
+
+        $accessTokenCount = $query->count();
 
         if ($accessTokenCount <= $maxSessions) {
             return;
@@ -668,10 +681,14 @@ class MobileAuthController extends Controller
 
         $tokensToDelete = $accessTokenCount - $maxSessions;
 
-        $user->tokens()
-            ->where('id', '!=', $newestTokenId)
-            ->where('abilities', '!=', '["refresh"]')
-            ->orderBy('created_at', 'asc')
+        $deleteQuery = $user->tokens()
+            ->where('abilities', '!=', '["refresh"]');
+
+        if ($newlyCreatedTokenIds !== []) {
+            $deleteQuery->whereNotIn('id', $newlyCreatedTokenIds);
+        }
+
+        $deleteQuery->orderBy('created_at', 'asc')
             ->limit($tokensToDelete)
             ->delete();
     }

@@ -113,8 +113,8 @@ class LoginController extends Controller
         // Create access/refresh token pair
         $tokenPair = $this->createTokenPair($user, $request->device_name ?? 'web');
 
-        // Check and enforce concurrent session limits
-        $this->enforceSessionLimits($user);
+        // Check and enforce concurrent session limits (excluding newly created tokens)
+        $this->enforceSessionLimits($user, $tokenPair['newly_created_token_ids']);
 
         return response()->json(
             [
@@ -383,21 +383,32 @@ class LoginController extends Controller
      *
      * Refresh tokens (abilities = ['refresh']) are excluded from the count
      * since they are not active sessions.
+     *
+     * @param array<int> $newlyCreatedTokenIds Token IDs to exclude from deletion (just created in this request)
      */
-    private function enforceSessionLimits(User $user): void
+    private function enforceSessionLimits(User $user, array $newlyCreatedTokenIds = []): void
     {
         $maxSessions = config('auth.max_concurrent_sessions', 5);
 
-        // Count only access tokens (exclude refresh tokens)
-        $accessTokenCount = $user->tokens()
-            ->where('abilities', '!=', '["refresh"]')
-            ->count();
+        $query = $user->tokens()->where('abilities', '!=', '["refresh"]');
+
+        if ($newlyCreatedTokenIds !== []) {
+            $query->whereNotIn('id', $newlyCreatedTokenIds);
+        }
+
+        $accessTokenCount = $query->count();
 
         if ($accessTokenCount > $maxSessions) {
             $tokensToDelete = $accessTokenCount - $maxSessions;
-            $user->tokens()
-                ->where('abilities', '!=', '["refresh"]')
-                ->orderBy('created_at', 'asc')
+
+            $deleteQuery = $user->tokens()
+                ->where('abilities', '!=', '["refresh"]');
+
+            if ($newlyCreatedTokenIds !== []) {
+                $deleteQuery->whereNotIn('id', $newlyCreatedTokenIds);
+            }
+
+            $deleteQuery->orderBy('created_at', 'asc')
                 ->limit($tokensToDelete)
                 ->delete();
         }

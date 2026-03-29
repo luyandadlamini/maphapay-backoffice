@@ -56,9 +56,9 @@ trait HasApiScopes
      * @param  User  $user
      * @param  string  $tokenName
      * @param  array<string>|null  $requestedScopes
-     * @return string
+     * @return array{plain_text_token: string, token_id: int}
      */
-    protected function createTokenWithScopes(User $user, string $tokenName, ?array $requestedScopes = null): string
+    protected function createTokenWithScopes(User $user, string $tokenName, ?array $requestedScopes = null): array
     {
         $scopes = $this->resolveScopes($requestedScopes, $user);
 
@@ -74,7 +74,10 @@ trait HasApiScopes
             $token->accessToken->save();
         }
 
-        return $token->plainTextToken;
+        return [
+            'plain_text_token' => $token->plainTextToken,
+            'token_id' => $token->accessToken->id,
+        ];
     }
 
     /**
@@ -82,9 +85,9 @@ trait HasApiScopes
      *
      * @param  User  $user
      * @param  string  $tokenName
-     * @return string
+     * @return array{plain_text_token: string, token_id: int}
      */
-    protected function createRefreshToken(User $user, string $tokenName): string
+    protected function createRefreshToken(User $user, string $tokenName): array
     {
         $token = $user->createToken($tokenName . '-refresh', ['refresh']);
 
@@ -94,7 +97,10 @@ trait HasApiScopes
             $token->accessToken->save();
         }
 
-        return $token->plainTextToken;
+        return [
+            'plain_text_token' => $token->plainTextToken,
+            'token_id' => $token->accessToken->id,
+        ];
     }
 
     /**
@@ -103,21 +109,22 @@ trait HasApiScopes
      * @param  User  $user
      * @param  string  $tokenName
      * @param  array<string>|null  $requestedScopes
-     * @return array{access_token: string, refresh_token: string, expires_in: int|null, refresh_expires_in: int|null}
+     * @return array{access_token: string, refresh_token: string, expires_in: int|null, refresh_expires_in: int|null, newly_created_token_ids: array<int>}
      */
     protected function createTokenPair(User $user, string $tokenName, ?array $requestedScopes = null): array
     {
-        $accessToken = $this->createTokenWithScopes($user, $tokenName, $requestedScopes);
-        $refreshToken = $this->createRefreshToken($user, $tokenName);
+        $accessTokenResult = $this->createTokenWithScopes($user, $tokenName, $requestedScopes);
+        $refreshTokenResult = $this->createRefreshToken($user, $tokenName);
 
         $expirationMinutes = config('sanctum.expiration');
         $refreshExpirationMinutes = config('sanctum.refresh_token_expiration');
 
         return [
-            'access_token'       => $accessToken,
-            'refresh_token'      => $refreshToken,
-            'expires_in'         => $expirationMinutes ? (int) $expirationMinutes * 60 : null,
+            'access_token' => $accessTokenResult['plain_text_token'],
+            'refresh_token' => $refreshTokenResult['plain_text_token'],
+            'expires_in' => $expirationMinutes ? (int) $expirationMinutes * 60 : null,
             'refresh_expires_in' => $refreshExpirationMinutes ? (int) $refreshExpirationMinutes * 60 : null,
+            'newly_created_token_ids' => [$accessTokenResult['token_id'], $refreshTokenResult['token_id']],
         ];
     }
 }
