@@ -21,8 +21,8 @@ class RequestMoneyRejectControllerTest extends ControllerTestCase
     {
         parent::setUp();
 
-        $this->requester = User::factory()->create();
-        $this->recipient = User::factory()->create();
+        $this->requester = User::factory()->create(['kyc_status' => 'approved']);
+        $this->recipient = User::factory()->create(['kyc_status' => 'approved']);
     }
 
     #[Test]
@@ -67,7 +67,7 @@ class RequestMoneyRejectControllerTest extends ControllerTestCase
             'maphapay_migration.enable_request_money' => true,
         ]);
 
-        $other = User::factory()->create();
+        $other = User::factory()->create(['kyc_status' => 'approved']);
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([

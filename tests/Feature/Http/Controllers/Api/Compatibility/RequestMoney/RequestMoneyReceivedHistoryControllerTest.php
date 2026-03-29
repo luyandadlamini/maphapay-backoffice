@@ -20,8 +20,8 @@ class RequestMoneyReceivedHistoryControllerTest extends ControllerTestCase
             'maphapay_migration.enable_request_money' => true,
         ]);
 
-        $requester = User::factory()->create();
-        $recipient = User::factory()->create();
+        $requester = User::factory()->create(['kyc_status' => 'approved']);
+        $recipient = User::factory()->create(['kyc_status' => 'approved']);
 
         $idA = (string) Str::uuid();
         MoneyRequest::query()->create([
