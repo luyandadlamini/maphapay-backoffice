@@ -4,13 +4,17 @@
 // Copyright (c) 2024-2026 FinAegis Contributors
 
 use App\Http\Controllers\Api\Auth\AccountDeletionController;
+use App\Http\Controllers\Api\Auth\AuthorizationController;
 use App\Http\Controllers\Api\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\Auth\LoginController;
+use App\Http\Controllers\Api\Auth\MobileAuthController;
 use App\Http\Controllers\Api\Auth\PasskeyController;
 use App\Http\Controllers\Api\Auth\PasswordResetController;
 use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\Auth\SocialAuthController;
 use App\Http\Controllers\Api\Auth\TwoFactorAuthController;
+use App\Http\Controllers\Api\DeviceTokenController;
+use App\Http\Controllers\Api\General\CountriesController;
 use App\Http\Controllers\Api\KycController;
 use App\Infrastructure\Domain\ModuleRouteLoader;
 use Illuminate\Http\Request;
@@ -56,6 +60,9 @@ Route::prefix('monitoring')->group(function () {
     Route::get('/alive', [App\Http\Controllers\Api\MonitoringController::class, 'alive'])->name('monitoring.alive');
 });
 
+// General endpoints (public)
+Route::get('/countries', [CountriesController::class, 'index']);
+
 // WebSocket configuration endpoints (public - for client initialization)
 Route::prefix('websocket')->name('api.websocket.')->group(function () {
     Route::get('/config', [App\Http\Controllers\Api\WebSocketController::class, 'config'])->name('config');
@@ -83,6 +90,16 @@ Route::prefix('auth')->middleware('api.rate_limit:auth')->group(function () {
     // Password reset endpoints (public)
     Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
     Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
+
+    // Mobile/PIN-based authentication (public)
+    Route::prefix('mobile')->group(function () {
+        Route::post('/login', [MobileAuthController::class, 'login']);
+        Route::post('/verify-otp', [MobileAuthController::class, 'verifyOtp']);
+        Route::post('/resend-otp', [MobileAuthController::class, 'resendOtp']);
+        Route::post('/forgot-pin', [MobileAuthController::class, 'forgotPin']);
+        Route::post('/verify-reset-code', [MobileAuthController::class, 'verifyResetCode']);
+        Route::post('/reset-pin', [MobileAuthController::class, 'resetPin']);
+    });
 
     // Email verification endpoints
     Route::get('/verify-email/{id}/{hash}', [EmailVerificationController::class, 'verify'])
@@ -114,6 +131,13 @@ Route::prefix('auth')->middleware('api.rate_limit:auth')->group(function () {
             Route::post('/recovery-codes', [TwoFactorAuthController::class, 'regenerateRecoveryCodes']);
         });
 
+        // Mobile auth profile completion
+        Route::post('/mobile/complete-profile', [MobileAuthController::class, 'completeProfile']);
+
+        // Authorization status
+        Route::get('/authorization', [AuthorizationController::class, 'index']);
+        Route::post('/authorization/resend', [AuthorizationController::class, 'resend']);
+
         // UserOperation signing with auth shard (v2.6.0)
         Route::post('/sign-userop', [App\Http\Controllers\Api\Auth\UserOpSigningController::class, 'sign'])
             ->middleware('throttle:10,1')
@@ -138,6 +162,11 @@ Route::prefix('auth')->middleware('api.rate_limit:auth')->group(function () {
 Route::prefix('v1/users')->middleware(['auth:sanctum'])->group(function () {
     Route::post('/avatar', [App\Http\Controllers\Api\UserProfileController::class, 'uploadAvatar'])->middleware('throttle:10,1')->name('api.users.avatar.upload');
     Route::delete('/avatar', [App\Http\Controllers\Api\UserProfileController::class, 'deleteAvatar'])->middleware('api.rate_limit:query')->name('api.users.avatar.delete');
+});
+
+// Device token management (authenticated)
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
 });
 
 // Legacy profile route for backward compatibility

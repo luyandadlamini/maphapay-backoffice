@@ -356,3 +356,67 @@ SQLite timeout did **not** occur for the compat sub-suite (`tests/Feature/Http/C
 - **2026-03-28 (later):** Phase 18 `api-compat` routes (verification + send-money + request-money store), `MoneyRequest` + `RequestMoneyHandler`, compat controllers, feature tests. Registration via `bootstrap/app.php` (Laravel 12).
 - **2026-03-28:** CI green (PHPStan + CS Fixer + tests). Built Phase 12 (`MoneyConverter` + `MajorUnitAmountString` rule). Built Phase 11 (`AuthorizedTransaction` domain: migration, model, 3 handlers, `AuthorizedTransactionManager`, `VerifyOtpController`, `VerifyPinController`). Updated plan with Phases 10–19 (gaps review). Updated `docs/maphapay-backend-replacement-plan.md`.
 - **2026-03-27:** Documented parallel streams A–D as completed; added merge checklist and next exclusive streams E–G.
+
+---
+
+## Phase 10 — Auth & User Identity Migration (in progress)
+
+**Goal:** Build FinAegis auth endpoints that cover all legacy mobile auth flows, then update `maphapayrn` to call FinAegis.
+
+**Backend source of truth — no compat shim.** Mobile adapts to FinAegis.
+
+### Backend implementation checklist
+
+- [x] 1. Migration: add `mobile` + `dial_code` columns to `users` table
+- [x] 2. Migration: create `user_otps` table + `UserOtp` model
+- [x] 3. Migration: create `countries` table + `CountrySeeder` + `Country` model
+- [x] 4. `OtpService`: OTP generation, SMS via SmsService, verification, expiry
+- [x] 5. `MobileAuthController`: login, verify-otp, resend-otp, complete-profile, forgot-pin, verify-reset-code, reset-pin
+- [x] 6. `AuthorizationController`: GET authorization status, resend code
+- [x] 7. `CountriesController`: GET countries list
+- [x] 8. `DeviceTokenController`: POST device token
+- [x] 9. Wire routes into `routes/api.php`
+- [x] 10. Fix PDO `MYSQL_ATTR_SSL_CA` deprecation in `config/database.php`
+- [x] 11. PHPStan + CS Fixer + tests
+- [x] 12. Update progress doc
+
+### Mobile app update checklist (`maphapayrn`)
+
+- [x] 13. `apiClient.ts` — refresh endpoint `/api/auth/refresh`, response path `data.data.access_token`
+- [x] 14. `authStore.ts` — login: `/api/auth/mobile/login`, logout: POST `/api/auth/logout`, refreshUser: `/api/auth/user`, getOperatingCountryId: `/api/countries`, User interface updated for FinAegis fields
+- [x] 15. `register.tsx` — handleRegisterMobile → `/api/auth/mobile/login`, handleVerifyOtp → `/api/auth/mobile/verify-otp`, handleUserDataSubmit → `/api/auth/mobile/complete-profile`
+- [x] 16. `useProfileSettings.ts` — `/api/device-tokens` with FinAegis payload shape
+- [ ] 17. Test login, OTP, profile completion, forgot PIN flows
+
+---
+
+### Session **2026-03-29** — Phase 10 plan written
+
+| Area | What | Files |
+|------|------|-------|
+| Phase 10 | Plan documented in progress doc | `docs/maphapay-backend-replacement-progress.md` |
+
+**Last updated**
+
+- **2026-03-29 (Phase 10 plan):** Plan written and saved to progress doc. Awaiting implementation.
+
+### Session **2026-03-29** — Phase 10 backend implementation
+
+| Area | What | Files |
+|------|------|-------|
+| Phase 10 | All 4 controllers confirmed exist: `MobileAuthController` (login/verify-otp/resend-otp/complete-profile/forgot-pin/verify-reset-code/reset-pin), `AuthorizationController` (GET status + resend), `CountriesController` (GET countries), `DeviceTokenController` (POST device token) | `app/Http/Controllers/Api/Auth/MobileAuthController.php`, `app/Http/Controllers/Api/Auth/AuthorizationController.php`, `app/Http/Controllers/Api/General/CountriesController.php`, `app/Http/Controllers/Api/DeviceTokenController.php` |
+| Phase 10 | `mobile` + `dial_code` columns migration confirmed | `database/migrations/2026_03_29_110000_add_mobile_to_users_table.php` |
+| Phase 10 | `user_otps` table + `UserOtp` model confirmed | `database/migrations/2026_03_29_120000_create_user_otps_table.php`, `app/Models/UserOtp.php` |
+| Phase 10 | `countries` table + `CountrySeeder` + `Country` model confirmed | `database/migrations/2026_03_29_130000_create_countries_table.php`, `database/seeders/CountrySeeder.php`, `app/Models/Country.php` |
+| Phase 10 | `OtpService` (OTP generation, SMS via SmsService, verification, expiry) confirmed | `app/Domain/Shared/Services/OtpService.php` |
+| Phase 10 | Routes wired in `routes/api.php` confirmed | routes/api.php |
+| Phase 10 | Fixed `UserOtp` + `Country` PHPDoc generic type for PHPStan | `app/Models/UserOtp.php`, `app/Models/Country.php` |
+| Phase 10 | Fixed `User` model `@property` annotations for `email_verified_at` + `mobile_verified_at` (datetime) | `app/Models/User.php` |
+| Phase 10 | Fixed PHP 8.5 `PDO::MYSQL_ATTR_SSL_CA` deprecation → `Pdo\Mysql::ATTR_SSL_CA` via `$pdoMysqlSslCa` variable | `config/database.php` |
+| Phase 10 | PHPStan 0 errors on mobile auth files; CS Fixer applied; 16 tests pass (no deprecation warnings) | various |
+
+**Last updated**
+
+- **2026-03-29 (Phase 10 mobile app):** Updated `maphapayrn`: `apiClient.ts` refresh endpoint + response path, `authStore.ts` login/logout/refreshUser/getOperatingCountryId + User interface, `register.tsx` all 3 step handlers, `useProfileSettings.ts` device token endpoint. Token refresh now POSTs to `/api/auth/refresh` with `data.data.access_token`. Login → `/api/auth/mobile/login`. Logout → POST `/api/auth/logout`. Refresh user → `/api/auth/user`. Countries → `/api/countries`. Device tokens → `/api/device-tokens`. `User` interface updated with FinAegis fields (uuid, kyc_status, etc.).
+
+- **2026-03-29 (Phase 10 backend complete):** All 4 controllers confirmed implemented, migrations/models/services verified, PHPStan + CS Fixer clean, 16 tests pass, PDO deprecation fixed. Mobile app updates (apiClient + authStore) remain.

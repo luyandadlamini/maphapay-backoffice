@@ -32,6 +32,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property int $sponsored_tx_used
  * @property int $sponsored_tx_limit
  * @property string|null $transaction_pin
+ * @property \Illuminate\Support\Carbon|null $email_verified_at
+ * @property \Illuminate\Support\Carbon|null $mobile_verified_at
  */
 class User extends Authenticatable implements FilamentUser
 {
@@ -91,6 +93,10 @@ class User extends Authenticatable implements FilamentUser
         'referral_code',
         'referred_by',
         'transaction_pin',
+        'mobile',
+        'dial_code',
+        'mobile_verified_at',
+        'username',
     ];
 
     /**
@@ -124,6 +130,7 @@ class User extends Authenticatable implements FilamentUser
     {
         return [
             'email_verified_at'          => 'datetime',
+            'mobile_verified_at'         => 'datetime',
             'password'                   => 'hashed',
             'kyc_submitted_at'           => 'datetime',
             'kyc_approved_at'            => 'datetime',
