@@ -6,10 +6,14 @@ use App\Domain\Account\Aggregates\LedgerAggregate;
 use App\Domain\Account\Aggregates\TransactionAggregate;
 use App\Domain\Account\Aggregates\TransferAggregate;
 use App\Domain\Account\DataObjects\Account;
+use App\Domain\Account\Events\AccountCreated;
+use App\Domain\Account\Models\Account as AccountModel;
+use App\Domain\Account\Repositories\AccountRepository;
 use App\Domain\Account\Workflows\CreateAccountWorkflow;
 use App\Domain\Account\Workflows\DepositAccountWorkflow;
 use App\Domain\Account\Workflows\DestroyAccountWorkflow;
 use App\Domain\Account\Workflows\WithdrawAccountWorkflow;
+use Illuminate\Support\Str;
 use Workflow\WorkflowStub;
 
 class AccountService
@@ -17,7 +21,8 @@ class AccountService
     public function __construct(
         protected LedgerAggregate $ledger,
         protected TransactionAggregate $transaction,
-        protected TransferAggregate $transfer
+        protected TransferAggregate $transfer,
+        protected AccountRepository $accountRepository
     ) {
     }
 
@@ -28,6 +33,26 @@ class AccountService
     {
         $workflow = WorkflowStub::make(CreateAccountWorkflow::class);
         return $workflow->execute(__account($account));
+    }
+
+    /**
+     * Create account directly without workflow (for admin use).
+     */
+    public function createDirect(Account|array $account): string
+    {
+        $accountData = __account($account);
+        $uuid = $accountData->getUuid() ?: Str::uuid()->toString();
+        $accountDataWithUuid = $accountData->withUuid($uuid);
+
+        // Record the event
+        $this->ledger->retrieve($uuid)
+            ->createAccount($accountDataWithUuid)
+            ->persist();
+
+        // Directly create the account model (projector would do this async via queue)
+        $this->accountRepository->create($accountDataWithUuid);
+
+        return $uuid;
     }
 
     public function destroy(mixed $uuid): void
@@ -55,6 +80,6 @@ class AccountService
             userUuid: $userUuid
         );
 
-        return $this->create($account);
+        return $this->createDirect($account);
     }
 }
