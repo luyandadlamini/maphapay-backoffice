@@ -16,9 +16,48 @@ use Illuminate\Support\Facades\Cache;
 
 /**
  * Demo implementation of card issuer for development and testing.
+ *
+ * Uses SZL (Swazi Lilangeni) currency with realistic local merchants.
+ * All state is persisted in cache for the duration of development sessions.
  */
 class DemoCardIssuerAdapter implements CardIssuerInterface
 {
+    private const CACHE_TTL_DAYS = 30;
+
+    /** @var array<array{name: string, mcc: string, amount: int, category: string}> */
+    private const DEMO_MERCHANTS = [
+        ['name' => 'Pick n Pay Mbabane',       'mcc' => '5411', 'amount' => 28650, 'category' => 'Groceries'],
+        ['name' => 'Shoprite Manzini',          'mcc' => '5411', 'amount' => 19200, 'category' => 'Groceries'],
+        ['name' => 'Eswatini Mobile (MTN)',     'mcc' => '4814', 'amount' => 10000, 'category' => 'Airtime'],
+        ['name' => 'Nandos Swazi Plaza',        'mcc' => '5812', 'amount' => 15500, 'category' => 'Dining'],
+        ['name' => 'Game Mbabane',              'mcc' => '5732', 'amount' => 54900, 'category' => 'Electronics'],
+        ['name' => 'Engen Petrol Manzini',      'mcc' => '5541', 'amount' => 38000, 'category' => 'Fuel'],
+        ['name' => 'Woolworths Swazi Plaza',    'mcc' => '5621', 'amount' => 23400, 'category' => 'Clothing'],
+        ['name' => 'Clicks Pharmacy Mbabane',   'mcc' => '5912', 'amount' => 8750,  'category' => 'Pharmacy'],
+    ];
+
+    private function demoCurrency(): string
+    {
+        return (string) config('cardissuance.issuers.demo.currency', 'SZL');
+    }
+
+    /** @var array{daily: float, monthly: float, single_transaction: float, atm_withdrawal: float, contactless: float} */
+    private const DEFAULT_LIMITS = [
+        'daily'              => 2000.00,
+        'monthly'            => 10000.00,
+        'single_transaction' => 1500.00,
+        'atm_withdrawal'     => 1000.00,
+        'contactless'        => 500.00,
+    ];
+
+    /** @var array{contactless: bool, online_transactions: bool, international: bool, atm_withdrawals: bool} */
+    private const DEFAULT_SECURITY = [
+        'contactless'        => true,
+        'online_transactions' => true,
+        'international'      => false,
+        'atm_withdrawals'    => true,
+    ];
+
     public function getName(): string
     {
         return 'demo';
@@ -45,16 +84,30 @@ class DemoCardIssuerAdapter implements CardIssuerInterface
             status: CardStatus::ACTIVE,
             cardholderName: $cardholderName,
             expiresAt: $expiresAt,
-            metadata: array_merge($metadata, ['user_id' => $userId, 'label' => $label]),
+            metadata: array_merge($metadata, [
+                'user_id'  => $userId,
+                'label'    => $label,
+                'lifecycle' => $metadata['lifecycle'] ?? 'standard',
+            ]),
             label: $label,
         );
 
-        // Store in cache for demo purposes
-        Cache::put("card:{$cardToken}", $card, now()->addDays(30));
-        Cache::put("user_cards:{$userId}", array_merge(
-            Cache::get("user_cards:{$userId}", []),
-            [$cardToken]
-        ), now()->addDays(30));
+        $ttl = now()->addDays(self::CACHE_TTL_DAYS);
+
+        Cache::put("card:{$cardToken}", $card, $ttl);
+        Cache::put("card_state:{$cardToken}", [
+            'balance'           => 0.00,
+            'spending_limit'    => self::DEFAULT_LIMITS['daily'],
+            'current_spend'     => 0.00,
+            'limits'            => self::DEFAULT_LIMITS,
+            'security_settings' => self::DEFAULT_SECURITY,
+            'lifecycle'         => $metadata['lifecycle'] ?? 'standard',
+            'merchant_binding'  => $metadata['merchant_binding'] ?? null,
+        ], $ttl);
+
+        /** @var array<string> $existing */
+        $existing = Cache::get("user_cards:{$userId}", []);
+        Cache::put("user_cards:{$userId}", array_merge($existing, [$cardToken]), $ttl);
 
         return $card;
     }
@@ -68,7 +121,6 @@ class DemoCardIssuerAdapter implements CardIssuerInterface
         string $deviceId,
         array $certificates = []
     ): ProvisioningData {
-        // Demo provisioning data - in production, this would come from the card issuer
         return new ProvisioningData(
             cardId: $cardToken,
             walletType: $walletType,
@@ -90,7 +142,7 @@ class DemoCardIssuerAdapter implements CardIssuerInterface
             return false;
         }
 
-        $frozenCard = new VirtualCard(
+        Cache::put("card:{$cardToken}", new VirtualCard(
             cardToken: $card->cardToken,
             last4: $card->last4,
             network: $card->network,
@@ -99,9 +151,7 @@ class DemoCardIssuerAdapter implements CardIssuerInterface
             expiresAt: $card->expiresAt,
             metadata: $card->metadata,
             label: $card->label,
-        );
-
-        Cache::put("card:{$cardToken}", $frozenCard, now()->addDays(30));
+        ), now()->addDays(self::CACHE_TTL_DAYS));
 
         return true;
     }
@@ -113,7 +163,7 @@ class DemoCardIssuerAdapter implements CardIssuerInterface
             return false;
         }
 
-        $activeCard = new VirtualCard(
+        Cache::put("card:{$cardToken}", new VirtualCard(
             cardToken: $card->cardToken,
             last4: $card->last4,
             network: $card->network,
@@ -122,9 +172,7 @@ class DemoCardIssuerAdapter implements CardIssuerInterface
             expiresAt: $card->expiresAt,
             metadata: $card->metadata,
             label: $card->label,
-        );
-
-        Cache::put("card:{$cardToken}", $activeCard, now()->addDays(30));
+        ), now()->addDays(self::CACHE_TTL_DAYS));
 
         return true;
     }
@@ -136,7 +184,7 @@ class DemoCardIssuerAdapter implements CardIssuerInterface
             return false;
         }
 
-        $cancelledCard = new VirtualCard(
+        Cache::put("card:{$cardToken}", new VirtualCard(
             cardToken: $card->cardToken,
             last4: $card->last4,
             network: $card->network,
@@ -145,9 +193,7 @@ class DemoCardIssuerAdapter implements CardIssuerInterface
             expiresAt: $card->expiresAt,
             metadata: array_merge($card->metadata, ['cancellation_reason' => $reason]),
             label: $card->label,
-        );
-
-        Cache::put("card:{$cardToken}", $cancelledCard, now()->addDays(30));
+        ), now()->addDays(self::CACHE_TTL_DAYS));
 
         return true;
     }
@@ -177,31 +223,106 @@ class DemoCardIssuerAdapter implements CardIssuerInterface
     }
 
     /**
-     * Get demo transaction history for a card.
+     * Add funds to the card balance.
+     */
+    public function addFunds(string $cardToken, float $amountMajorUnit): string
+    {
+        /** @var array<string, mixed> $state */
+        $state = Cache::get("card_state:{$cardToken}", []);
+        $current = (float) ($state['balance'] ?? 0.00);
+        $state['balance'] = round($current + $amountMajorUnit, 2);
+
+        Cache::put("card_state:{$cardToken}", $state, now()->addDays(self::CACHE_TTL_DAYS));
+
+        return number_format($state['balance'], 2, '.', '');
+    }
+
+    /**
+     * Get the current card balance.
+     */
+    public function getBalance(string $cardToken): string
+    {
+        /** @var array<string, mixed> $state */
+        $state = Cache::get("card_state:{$cardToken}", []);
+
+        return number_format((float) ($state['balance'] ?? 0.00), 2, '.', '');
+    }
+
+    /**
+     * Update per-category spending limits.
      *
-     * Generates 5 deterministic demo transactions seeded by card token.
+     * @param array{daily?: float, monthly?: float, single_transaction?: float, atm_withdrawal?: float, contactless?: float} $limits
+     */
+    public function updateSpendingLimits(string $cardToken, array $limits): bool
+    {
+        /** @var array<string, mixed> $state */
+        $state = Cache::get("card_state:{$cardToken}", []);
+
+        /** @var array<string, float> $existing */
+        $existing = $state['limits'] ?? self::DEFAULT_LIMITS;
+        $state['limits'] = array_merge($existing, $limits);
+        $state['spending_limit'] = $state['limits']['daily'];
+
+        Cache::put("card_state:{$cardToken}", $state, now()->addDays(self::CACHE_TTL_DAYS));
+
+        return true;
+    }
+
+    /**
+     * Update security settings (channel toggles).
+     *
+     * @param array{contactless?: bool, online_transactions?: bool, international?: bool, atm_withdrawals?: bool} $settings
+     */
+    public function updateSecuritySettings(string $cardToken, array $settings): bool
+    {
+        /** @var array<string, mixed> $state */
+        $state = Cache::get("card_state:{$cardToken}", []);
+
+        /** @var array<string, bool> $existing */
+        $existing = $state['security_settings'] ?? self::DEFAULT_SECURITY;
+        $state['security_settings'] = array_merge($existing, $settings);
+
+        Cache::put("card_state:{$cardToken}", $state, now()->addDays(self::CACHE_TTL_DAYS));
+
+        return true;
+    }
+
+    /**
+     * Get the card's financial and settings state.
+     *
+     * @return array<string, mixed>
+     */
+    public function getCardState(string $cardToken): array
+    {
+        /** @var array<string, mixed> $state */
+        $state = Cache::get("card_state:{$cardToken}", []);
+
+        return array_merge([
+            'balance'           => 0.00,
+            'spending_limit'    => self::DEFAULT_LIMITS['daily'],
+            'current_spend'     => 0.00,
+            'limits'            => self::DEFAULT_LIMITS,
+            'security_settings' => self::DEFAULT_SECURITY,
+            'lifecycle'         => 'standard',
+            'merchant_binding'  => null,
+        ], $state);
+    }
+
+    /**
+     * Generate deterministic SZL demo transactions seeded by card token.
      *
      * @return array{transactions: array<CardTransaction>, next_cursor: string|null}
      */
     public function getTransactions(string $cardToken, int $limit = 20, ?string $cursor = null): array
     {
-        $demoMerchants = [
-            ['name' => 'Starbucks',  'mcc' => '5814', 'amount' => 475,  'currency' => 'USD'],
-            ['name' => 'Amazon',     'mcc' => '5942', 'amount' => 2999, 'currency' => 'USD'],
-            ['name' => 'Uber Eats',  'mcc' => '5812', 'amount' => 1850, 'currency' => 'USD'],
-            ['name' => 'Netflix',    'mcc' => '4899', 'amount' => 1599, 'currency' => 'USD'],
-            ['name' => 'Shell',      'mcc' => '5541', 'amount' => 4520, 'currency' => 'USD'],
-        ];
-
         $startIndex = $cursor !== null ? (int) $cursor : 0;
-        $statuses = ['settled', 'settled', 'pending', 'settled', 'settled'];
-
+        $merchants = self::DEMO_MERCHANTS;
+        $statuses = ['settled', 'settled', 'pending', 'settled', 'settled', 'settled', 'settled', 'settled'];
         $transactions = [];
-        $baseTime = new DateTimeImmutable('2026-03-01T12:00:00Z');
+        $baseTime = new DateTimeImmutable('2026-03-25T10:00:00+02:00');
 
-        for ($i = $startIndex; $i < min($startIndex + $limit, count($demoMerchants)); $i++) {
-            $merchant = $demoMerchants[$i];
-            // Deterministic transaction ID seeded from card token
+        for ($i = $startIndex; $i < min($startIndex + $limit, count($merchants)); $i++) {
+            $merchant = $merchants[$i];
             $seed = hash('sha256', $cardToken . ':' . $i);
 
             $transactions[] = new CardTransaction(
@@ -210,18 +331,17 @@ class DemoCardIssuerAdapter implements CardIssuerInterface
                 merchantName: $merchant['name'],
                 merchantCategory: $merchant['mcc'],
                 amountCents: $merchant['amount'],
-                currency: $merchant['currency'],
-                status: $statuses[$i],
-                timestamp: $baseTime->modify("-{$i} hours"),
+                currency: $this->demoCurrency(),
+                status: $statuses[$i] ?? 'settled',
+                timestamp: $baseTime->modify('-' . ($i * 6) . ' hours'),
             );
         }
 
-        $hasMore = ($startIndex + $limit) < count($demoMerchants);
-        $nextCursor = $hasMore ? (string) ($startIndex + $limit) : null;
+        $hasMore = ($startIndex + $limit) < count($merchants);
 
         return [
             'transactions' => $transactions,
-            'next_cursor'  => $nextCursor,
+            'next_cursor'  => $hasMore ? (string) ($startIndex + $limit) : null,
         ];
     }
 }

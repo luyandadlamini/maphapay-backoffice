@@ -14,7 +14,7 @@ use Throwable;
 /**
  * Syncs card transactions from issuer webhooks and polling.
  *
- * Receives transaction events from Rain/Marqeta webhooks and persists them
+ * Receives transaction events from card issuer webhooks and persists them
  * to the local database. Also supports polling for missed transactions.
  */
 class CardTransactionSyncService

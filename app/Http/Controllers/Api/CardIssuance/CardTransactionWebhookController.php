@@ -13,7 +13,7 @@ use OpenApi\Attributes as OA;
 use Throwable;
 
 /**
- * Webhook controller for card transaction sync from Rain/Marqeta.
+ * Webhook controller for card transaction sync from the card issuer.
  */
 #[OA\Tag(
     name: 'Card Webhooks',

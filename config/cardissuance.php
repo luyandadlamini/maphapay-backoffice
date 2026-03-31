@@ -18,8 +18,8 @@ return [
     | Default Card Issuer
     |--------------------------------------------------------------------------
     |
-    | The card issuer provider to use. Supported: "demo", "marqeta", "lithic",
-    | "stripe_issuing"
+    | The card issuer provider to use. Currently: "demo".
+    | Add a local bank adapter here when the bank partnership is finalised.
     |
     */
 
@@ -33,31 +33,13 @@ return [
 
     'issuers' => [
         'demo' => [
-            'driver' => 'demo',
+            'driver'   => 'demo',
+            // ISO 4217 currency code for demo transactions and balances.
+            // Default: SZL (Swazi Lilangeni). Set CARD_DEMO_CURRENCY=ZAR or USD as needed.
+            'currency' => env('CARD_DEMO_CURRENCY', 'SZL'),
         ],
 
-        'marqeta' => [
-            'driver'             => 'marqeta',
-            'base_url'           => env('MARQETA_BASE_URL', 'https://sandbox-api.marqeta.com/v3'),
-            'application_token'  => env('MARQETA_APPLICATION_TOKEN'),
-            'admin_access_token' => env('MARQETA_ADMIN_ACCESS_TOKEN'),
-            'webhook_secret'     => env('MARQETA_WEBHOOK_SECRET'),
-            'webhook_username'   => env('MARQETA_WEBHOOK_USERNAME'),
-            'webhook_password'   => env('MARQETA_WEBHOOK_PASSWORD'),
-        ],
-
-        'lithic' => [
-            'driver'         => 'lithic',
-            'base_url'       => env('LITHIC_BASE_URL', 'https://sandbox.lithic.com/v1'),
-            'api_key'        => env('LITHIC_API_KEY'),
-            'webhook_secret' => env('LITHIC_WEBHOOK_SECRET'),
-        ],
-
-        'stripe_issuing' => [
-            'driver'         => 'stripe_issuing',
-            'api_key'        => env('STRIPE_SECRET'),
-            'webhook_secret' => env('STRIPE_ISSUING_WEBHOOK_SECRET'),
-        ],
+        // Future: add 'local_bank' => [...] when the bank partnership is finalised.
     ],
 
     /*

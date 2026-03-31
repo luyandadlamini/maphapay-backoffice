@@ -158,4 +158,40 @@ class CardProvisioningService
     {
         return $this->cardIssuer->getTransactions($cardToken, $limit, $cursor);
     }
+
+    /**
+     * Add funds to a card. Returns the new balance as a decimal string.
+     */
+    public function addFunds(string $cardToken, float $amountMajorUnit): string
+    {
+        return $this->cardIssuer->addFunds($cardToken, $amountMajorUnit);
+    }
+
+    /**
+     * Get the current card balance.
+     */
+    public function getBalance(string $cardToken): string
+    {
+        return $this->cardIssuer->getBalance($cardToken);
+    }
+
+    /**
+     * Update per-category spending limits.
+     *
+     * @param array<string, float> $limits
+     */
+    public function updateSpendingLimits(string $cardToken, array $limits): bool
+    {
+        return $this->cardIssuer->updateSpendingLimits($cardToken, $limits);
+    }
+
+    /**
+     * Update security settings (channel toggles).
+     *
+     * @param array<string, bool> $settings
+     */
+    public function updateSecuritySettings(string $cardToken, array $settings): bool
+    {
+        return $this->cardIssuer->updateSecuritySettings($cardToken, $settings);
+    }
 }

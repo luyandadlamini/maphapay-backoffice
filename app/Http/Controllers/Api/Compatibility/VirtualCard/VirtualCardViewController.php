@@ -26,25 +26,34 @@ class VirtualCardViewController extends Controller
             ], 404);
         }
 
-        $pan = '4242424242424242';
-        $cvv = '123';
+        $balance = $cardService->getBalance($id);
+
+        $txResult = $cardService->getTransactions($id, 20);
+        $transactions = array_map(fn ($tx) => [
+            'id'              => $tx->transactionId,
+            'merchant'        => $tx->merchantName,
+            'amount'          => number_format($tx->amountCents / 100, 2, '.', ''),
+            'currency'        => $tx->currency,
+            'status'          => $tx->status,
+            'created_at'      => $tx->timestamp->format('Y-m-d H:i:s'),
+        ], $txResult['transactions']);
 
         return response()->json([
             'remark' => 'Card details retrieved successfully',
             'status' => 'success',
             'message' => ['Virtual card details retrieved successfully'],
             'data' => [
-                'number' => base64_encode($pan),
-                'cvc' => base64_encode($cvv),
+                'number' => base64_encode('4000' . $card->last4 . '00000000'),
+                'cvc'    => base64_encode('737'),
                 'card' => [
                     'id' => 1,
                     'user_id' => $user->uuid,
                     'last4' => $card->last4,
                     'exp_month' => $card->expiresAt->format('m'),
                     'exp_year' => $card->expiresAt->format('Y'),
-                    'balance' => '0.00',
+                    'balance' => $balance,
                     'brand' => $card->network->value,
-                    'spending_limit' => '0.00',
+                    'spending_limit' => '2000.00',
                     'current_spend' => '0.00',
                     'cardholder_id' => $user->uuid,
                     'card_id' => $card->cardToken,
@@ -58,9 +67,9 @@ class VirtualCardViewController extends Controller
                         'name' => $card->cardholderName,
                     ],
                 ],
-                'transactions' => [],
-                'current_balance' => '0.00',
-                'charge' => null,
+                'transactions'    => $transactions,
+                'current_balance' => $balance,
+                'charge'          => null,
             ],
         ]);
     }

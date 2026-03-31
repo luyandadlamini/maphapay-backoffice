@@ -31,6 +31,8 @@ class VirtualCardAddFundController extends Controller
             ], 404);
         }
 
+        $newBalance = $cardService->addFunds($id, (float) $validated['amount']);
+
         return response()->json([
             'remark' => 'Funds added successfully',
             'status' => 'success',
@@ -42,7 +44,7 @@ class VirtualCardAddFundController extends Controller
                     'last4' => $card->last4,
                     'exp_month' => $card->expiresAt->format('m'),
                     'exp_year' => $card->expiresAt->format('Y'),
-                    'balance' => number_format((float) $validated['amount'], 2, '.', ''),
+                    'balance' => $newBalance,
                     'brand' => $card->network->value,
                     'spending_limit' => '0.00',
                     'current_spend' => '0.00',
