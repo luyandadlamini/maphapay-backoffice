@@ -762,6 +762,11 @@ class MobileAuthController extends Controller
 
     private static function normalizeMobileLocalPart(string $mobile): string
     {
-        return str_replace([' ', '-', '(', ')'], '', trim($mobile));
+        $digits = str_replace([' ', '-', '(', ')'], '', trim($mobile));
+        if ($digits !== '' && str_starts_with($digits, '0')) {
+            $digits = substr($digits, 1);
+        }
+
+        return $digits;
     }
 }

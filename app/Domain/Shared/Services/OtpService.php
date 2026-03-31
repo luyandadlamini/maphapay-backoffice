@@ -29,8 +29,22 @@ class OtpService
 
     public function generateAndSend(User $user, string $type, string $channel = 'sms'): string
     {
-        if ($channel === 'sms' && $this->isTwilioProvider()) {
+        if ($channel === 'sms' && $this->twilioVerifyMisconfiguredInProduction()) {
+            throw new RuntimeException(
+                'Twilio Verify is not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and '
+                . 'TWILIO_VERIFY_SERVICE_SID in the server environment, or set SMS_OTP_PROVIDER=mock.'
+            );
+        }
+
+        if ($channel === 'sms' && $this->usesTwilioVerifyForOtp()) {
             $to = $this->e164ForUser($user);
+            if (! $this->isPlausibleE164($to)) {
+                throw new RuntimeException(
+                    'This phone number cannot receive a verification SMS. Enter the full mobile number '
+                    . 'with country code (no leading 0 after the code), e.g. +26876123456.'
+                );
+            }
+
             $this->twilioVerify->startVerification($to);
 
             Log::info('OtpService: Twilio OTP dispatched', [
@@ -45,7 +59,6 @@ class OtpService
         $otp = $this->generateOtp();
         $this->store($user, $type, $otp);
 
-        // Default env uses SMS_OTP_PROVIDER=mock — skip real carriers; Twilio Verify is handled above.
         if ($this->isOtpDeliveryLogOnly()) {
             $this->logMockOtpDispatched($user, $type, $otp);
 
@@ -76,7 +89,7 @@ class OtpService
             return true;
         }
 
-        if ($this->isTwilioProvider()) {
+        if ($this->usesTwilioVerifyForOtp()) {
             $to = $this->e164ForUser($user);
 
             Log::info('OtpService: using Twilio Verify', ['to' => $to]);
@@ -132,7 +145,7 @@ class OtpService
     {
         // Twilio manages its own rate limiting — we report always ready.
         // Twilio enforces max 5 sends per phone per service by default.
-        if ($this->isTwilioProvider()) {
+        if ($this->usesTwilioVerifyForOtp()) {
             return ['can_resend' => true, 'remaining_seconds' => 0];
         }
 
@@ -158,7 +171,7 @@ class OtpService
     public function resend(User $user, string $type, string $channel = 'sms'): string
     {
         // For Twilio: skip the local cooldown check — Twilio handles rate limiting.
-        if (! $this->isTwilioProvider()) {
+        if (! $this->usesTwilioVerifyForOtp()) {
             $check = $this->canResend($user, $type);
             if (! $check['can_resend']) {
                 throw new RuntimeException(
@@ -170,19 +183,46 @@ class OtpService
         return $this->generateAndSend($user, $type, $channel);
     }
 
-    private function isTwilioProvider(): bool
+    /**
+     * Use Twilio Verify API for OTP when configured and requested.
+     */
+    private function usesTwilioVerifyForOtp(): bool
     {
-        return config('sms.otp_provider') === 'twilio'
+        return (string) config('sms.otp_provider', 'mock') === 'twilio'
             && $this->twilioVerify->isConfigured();
     }
 
+    private function twilioVerifyMisconfiguredInProduction(): bool
+    {
+        return app()->environment('production')
+            && (string) config('sms.otp_provider', 'mock') === 'twilio'
+            && ! $this->twilioVerify->isConfigured();
+    }
+
     /**
-     * When OTP provider is "mock", we persist the code for verify() but skip real SMS.
-     * This matches config/sms.php (default SMS_OTP_PROVIDER / SMS_PROVIDER = mock).
+     * Persist OTP locally and skip Programmable SMS (mock), or non-production fallback when
+     * SMS_OTP_PROVIDER=twilio but Verify credentials are missing.
      */
     private function isOtpDeliveryLogOnly(): bool
     {
-        return (string) config('sms.otp_provider', 'mock') === 'mock';
+        if ((string) config('sms.otp_provider', 'mock') === 'mock') {
+            return true;
+        }
+
+        if ((string) config('sms.otp_provider', 'mock') === 'twilio' && ! $this->twilioVerify->isConfigured()) {
+            return ! app()->environment('production');
+        }
+
+        return false;
+    }
+
+    private function isPlausibleE164(string $to): bool
+    {
+        if ($to === '' || $to === '+') {
+            return false;
+        }
+
+        return (bool) preg_match('/^\+[1-9]\d{6,14}$/', $to);
     }
 
     private function logMockOtpDispatched(User $user, string $type, string $plainOtp): void
@@ -214,6 +254,10 @@ class OtpService
         }
 
         $mobile = str_replace([' ', '-', '(', ')'], '', (string) $user->mobile);
+        // National format often includes a trunk prefix "0" (e.g. 076123456 with +27).
+        if ($mobile !== '' && str_starts_with($mobile, '0')) {
+            $mobile = substr($mobile, 1);
+        }
 
         return $dial . $mobile;
     }
