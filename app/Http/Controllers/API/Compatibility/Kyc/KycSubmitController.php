@@ -13,7 +13,9 @@ use Illuminate\Validation\Rule;
 
 class KycSubmitController extends Controller
 {
-    public function __construct(private readonly KycService $kycService) {}
+    public function __construct(private readonly KycService $kycService)
+    {
+    }
 
     public function __invoke(Request $request): JsonResponse
     {
@@ -22,10 +24,19 @@ class KycSubmitController extends Controller
 
         if ($user->kyc_status === 'approved') {
             return response()->json([
-                'status' => 'error',
-                'remark' => 'kyc_submit',
+                'status'  => 'error',
+                'remark'  => 'kyc_submit',
                 'message' => 'Your identity is already verified.',
-                'data' => [],
+                'data'    => [],
+            ], 400);
+        }
+
+        if (in_array($user->kyc_status, ['pending', 'in_review'], true)) {
+            return response()->json([
+                'status'  => 'error',
+                'remark'  => 'kyc_submit',
+                'message' => 'Your verification is already being reviewed.',
+                'data'    => [],
             ], 400);
         }
 
@@ -34,11 +45,11 @@ class KycSubmitController extends Controller
         return match ($progress['current_step']) {
             KycService::STEP_IDENTITY_TYPE => $this->submitIdentityType($request, $user),
             KycService::STEP_IDENTITY_DOCUMENT,
-            KycService::STEP_SELFIE => $this->submitIdentityDocuments($request, $user),
-            KycService::STEP_ADDRESS => $this->submitAddress($request, $user),
+            KycService::STEP_SELFIE        => $this->submitIdentityDocuments($request, $user),
+            KycService::STEP_ADDRESS       => $this->submitAddress($request, $user),
             KycService::STEP_ADDRESS_PROOF => $this->submitAddressProof($request, $user),
-            'review' => $this->finalize($request, $user),
-            default => $this->submitIdentityType($request, $user),
+            'review'                       => $this->finalize($request, $user),
+            default                        => $this->submitIdentityType($request, $user),
         };
     }
 
@@ -61,25 +72,33 @@ class KycSubmitController extends Controller
             $documents[] = ['type' => 'selfie', 'file' => $selfie];
         }
 
-        if (empty($documents)) {
+        if ($documents === []) {
+            $this->kycService->selectIdentityType($user, $identityType);
+            $user->refresh();
+            $progress = $this->kycService->getKycProgress($user);
+
             return response()->json([
-                'status' => 'error',
-                'remark' => 'kyc_submit',
-                'message' => 'Please upload your identity document and selfie.',
-                'data' => [],
-            ], 422);
+                'status'  => 'success',
+                'remark'  => 'kyc_submit',
+                'message' => 'Identity type saved. Please upload your document and selfie.',
+                'data'    => [
+                    'kyc_status'      => KycCompatStatus::normalizeForMobile((string) $progress['status']),
+                    'current_step'    => $progress['current_step'],
+                    'steps_completed' => $progress['steps_completed'],
+                ],
+            ]);
         }
 
         $this->kycService->submitIdentityStep($user, $identityType, $documents);
         $progress = $this->kycService->getKycProgress($user);
 
         return response()->json([
-            'status' => 'success',
-            'remark' => 'kyc_submit',
+            'status'  => 'success',
+            'remark'  => 'kyc_submit',
             'message' => 'Identity documents uploaded. Please continue with your address information.',
-            'data' => [
-                'kyc_status' => KycCompatStatus::normalizeForMobile((string) $progress['status']),
-                'current_step' => $progress['current_step'],
+            'data'    => [
+                'kyc_status'      => KycCompatStatus::normalizeForMobile((string) $progress['status']),
+                'current_step'    => $progress['current_step'],
                 'steps_completed' => $progress['steps_completed'],
             ],
         ]);
@@ -87,7 +106,16 @@ class KycSubmitController extends Controller
 
     public function submitIdentityDocuments(Request $request, User $user): JsonResponse
     {
-        $identityType = $user->kyc_identity_type ?? 'national_id';
+        $identityType = $user->kyc_identity_type;
+        if (! in_array($identityType, ['passport', 'national_id'], true)) {
+            return response()->json([
+                'status'  => 'error',
+                'remark'  => 'kyc_submit',
+                'message' => 'Select an identity type before uploading documents.',
+                'data'    => [],
+            ], 422);
+        }
+
         $documents = [];
 
         $file = $request->file($identityType);
@@ -100,25 +128,25 @@ class KycSubmitController extends Controller
             $documents[] = ['type' => 'selfie', 'file' => $selfie];
         }
 
-        if (empty($documents)) {
+        if ($documents === []) {
             return response()->json([
-                'status' => 'error',
-                'remark' => 'kyc_submit',
+                'status'  => 'error',
+                'remark'  => 'kyc_submit',
                 'message' => 'Please upload your identity document and selfie.',
-                'data' => [],
+                'data'    => [],
             ], 422);
         }
 
-        $this->kycService->submitIdentityStep($user, $identityType, $documents);
+        $this->kycService->submitIdentityDocumentAndSelfie($user, $documents);
         $progress = $this->kycService->getKycProgress($user);
 
         return response()->json([
-            'status' => 'success',
-            'remark' => 'kyc_submit',
+            'status'  => 'success',
+            'remark'  => 'kyc_submit',
             'message' => 'Identity documents uploaded. Please continue with your address information.',
-            'data' => [
-                'kyc_status' => KycCompatStatus::normalizeForMobile((string) $progress['status']),
-                'current_step' => $progress['current_step'],
+            'data'    => [
+                'kyc_status'      => KycCompatStatus::normalizeForMobile((string) $progress['status']),
+                'current_step'    => $progress['current_step'],
                 'steps_completed' => $progress['steps_completed'],
             ],
         ]);
@@ -129,10 +157,10 @@ class KycSubmitController extends Controller
         $request->validate([
             'address_line1' => 'required|string|max:255',
             'address_line2' => 'nullable|string|max:255',
-            'city' => 'required|string|max:100',
-            'state' => 'nullable|string|max:100',
-            'postal_code' => 'nullable|string|max:20',
-            'country' => 'required|string|max:100',
+            'city'          => 'required|string|max:100',
+            'state'         => 'nullable|string|max:100',
+            'postal_code'   => 'nullable|string|max:20',
+            'country'       => 'required|string|max:100',
         ]);
 
         $this->kycService->submitAddressStep($user, $request->only([
@@ -146,12 +174,12 @@ class KycSubmitController extends Controller
         $progress = $this->kycService->getKycProgress($user);
 
         return response()->json([
-            'status' => 'success',
-            'remark' => 'kyc_submit',
+            'status'  => 'success',
+            'remark'  => 'kyc_submit',
             'message' => 'Address information saved. Please upload your address proof.',
-            'data' => [
-                'kyc_status' => KycCompatStatus::normalizeForMobile((string) $progress['status']),
-                'current_step' => $progress['current_step'],
+            'data'    => [
+                'kyc_status'      => KycCompatStatus::normalizeForMobile((string) $progress['status']),
+                'current_step'    => $progress['current_step'],
                 'steps_completed' => $progress['steps_completed'],
             ],
         ]);
@@ -159,25 +187,35 @@ class KycSubmitController extends Controller
 
     public function submitAddressProof(Request $request, User $user): JsonResponse
     {
+        $proofFile = $request->file('address_proof') ?? $request->file('file');
         $request->validate([
-            'proof_type' => ['required', Rule::in(['utility_bill', 'bank_statement'])],
-            'file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'proof_type'    => ['required', Rule::in(['utility_bill', 'bank_statement'])],
+            'address_proof' => 'sometimes|file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'file'          => 'sometimes|file|mimes:jpg,jpeg,png,pdf|max:10240',
         ]);
+        if ($proofFile === null) {
+            return response()->json([
+                'status'  => 'error',
+                'remark'  => 'kyc_submit',
+                'message' => 'Please upload your address proof document.',
+                'data'    => [],
+            ], 422);
+        }
 
         $this->kycService->submitAddressProofStep($user, [
-            ['type' => $request->input('proof_type'), 'file' => $request->file('file')],
+            ['type' => $request->input('proof_type'), 'file' => $proofFile],
         ]);
         $progress = $this->kycService->getKycProgress($user);
 
         return response()->json([
-            'status' => 'success',
-            'remark' => 'kyc_submit',
+            'status'  => 'success',
+            'remark'  => 'kyc_submit',
             'message' => 'Address proof uploaded. Review your information and submit.',
-            'data' => [
-                'kyc_status' => KycCompatStatus::normalizeForMobile((string) $progress['status']),
-                'current_step' => $progress['current_step'],
+            'data'    => [
+                'kyc_status'      => KycCompatStatus::normalizeForMobile((string) $progress['status']),
+                'current_step'    => $progress['current_step'],
                 'steps_completed' => $progress['steps_completed'],
-                'can_finalize' => $progress['can_finalize'],
+                'can_finalize'    => $progress['can_finalize'],
             ],
         ]);
     }
@@ -186,20 +224,20 @@ class KycSubmitController extends Controller
     {
         if (! $this->kycService->canFinalize($user)) {
             return response()->json([
-                'status' => 'error',
-                'remark' => 'kyc_submit',
+                'status'  => 'error',
+                'remark'  => 'kyc_submit',
                 'message' => 'Please complete all required steps before submitting.',
-                'data' => [],
+                'data'    => [],
             ], 400);
         }
 
         $this->kycService->finalizeKyc($user);
 
         return response()->json([
-            'status' => 'success',
-            'remark' => 'kyc_submit',
+            'status'  => 'success',
+            'remark'  => 'kyc_submit',
             'message' => 'Documents submitted. Your verification is under review.',
-            'data' => ['kyc_status' => 'pending'],
+            'data'    => ['kyc_status' => 'pending'],
         ]);
     }
 }
