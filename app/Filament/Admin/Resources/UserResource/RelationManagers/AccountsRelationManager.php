@@ -148,11 +148,12 @@ class AccountsRelationManager extends RelationManager
                             ->numeric()
                             ->required()
                             ->minValue(0.01)
-                            ->prefix('$')
+                            ->prefix(\App\Domain\Asset\Models\Asset::find(config('banking.default_currency', 'SZL'))?->getSymbol() ?? 'E')
                             ->helperText('Enter the amount to deposit'),
                     ])
                     ->action(function (Account $record, array $data): void {
                         try {
+                            $currencySymbol = \App\Domain\Asset\Models\Asset::find(config('banking.default_currency', 'SZL'))?->getSymbol() ?? 'E';
                             $accountService = app(AccountService::class);
                             $amountInCents = (int) ($data['amount'] * 100);
                             $accountService->depositDirect($record->uuid, $amountInCents, 'Admin deposit to ' . $record->name);
@@ -160,7 +161,7 @@ class AccountsRelationManager extends RelationManager
                             Notification::make()
                                 ->title('Deposit Successful')
                                 ->success()
-                                ->body(config('banking.currency_symbol', 'E') . number_format($data['amount'], 2) . ' has been deposited to ' . $record->name)
+                                ->body($currencySymbol . number_format($data['amount'], 2) . ' has been deposited to ' . $record->name)
                                 ->send();
 
                             $this->refresh();
@@ -183,11 +184,12 @@ class AccountsRelationManager extends RelationManager
                             ->numeric()
                             ->required()
                             ->minValue(0.01)
-                            ->prefix('$')
+                            ->prefix(\App\Domain\Asset\Models\Asset::find(config('banking.default_currency', 'SZL'))?->getSymbol() ?? 'E')
                             ->helperText('Enter the amount to withdraw'),
                     ])
                     ->action(function (Account $record, array $data): void {
                         try {
+                            $currencySymbol = \App\Domain\Asset\Models\Asset::find(config('banking.default_currency', 'SZL'))?->getSymbol() ?? 'E';
                             $accountService = app(AccountService::class);
                             $amountInCents = (int) ($data['amount'] * 100);
                             $accountService->withdrawDirect($record->uuid, $amountInCents, 'Admin withdrawal from ' . $record->name);
@@ -195,7 +197,7 @@ class AccountsRelationManager extends RelationManager
                             Notification::make()
                                 ->title('Withdrawal Successful')
                                 ->success()
-                                ->body(config('banking.currency_symbol', 'E') . number_format($data['amount'], 2) . ' has been withdrawn from ' . $record->name)
+                                ->body($currencySymbol . number_format($data['amount'], 2) . ' has been withdrawn from ' . $record->name)
                                 ->send();
 
                             $this->refresh();

@@ -72,8 +72,24 @@ class AccountService
      */
     public function depositDirect(mixed $uuid, mixed $amount, string $description = 'Admin deposit'): string
     {
+        $assetCode = config('banking.default_currency', 'SZL');
+
+        // Record the event
         $transactionAggregate = $this->transaction->retrieve($uuid);
         $transactionAggregate->credit(__money($amount))->persist();
+
+        // Update the AccountBalance directly
+        $balance = \App\Domain\Account\Models\AccountBalance::firstOrCreate(
+            [
+                'account_uuid' => $uuid,
+                'asset_code' => $assetCode,
+            ],
+            [
+                'balance' => 0,
+            ]
+        );
+        $balance->balance += $amount;
+        $balance->save();
 
         return $this->recordDepositTransaction($uuid, $amount, $description);
     }
@@ -89,8 +105,24 @@ class AccountService
      */
     public function withdrawDirect(mixed $uuid, mixed $amount, string $description = 'Admin withdrawal'): string
     {
+        $assetCode = config('banking.default_currency', 'SZL');
+
+        // Record the event
         $transactionAggregate = $this->transaction->retrieve($uuid);
         $transactionAggregate->debit(__money($amount))->persist();
+
+        // Update the AccountBalance directly
+        $balance = \App\Domain\Account\Models\AccountBalance::firstOrCreate(
+            [
+                'account_uuid' => $uuid,
+                'asset_code' => $assetCode,
+            ],
+            [
+                'balance' => 0,
+            ]
+        );
+        $balance->balance -= $amount;
+        $balance->save();
 
         return $this->recordWithdrawTransaction($uuid, $amount, $description);
     }
