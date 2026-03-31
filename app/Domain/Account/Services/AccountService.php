@@ -74,10 +74,6 @@ class AccountService
     {
         $assetCode = config('banking.default_currency', 'SZL');
 
-        // Record the event
-        $transactionAggregate = $this->transaction->retrieve($uuid);
-        $transactionAggregate->credit(__money($amount))->persist();
-
         // Update the AccountBalance directly
         $balance = \App\Domain\Account\Models\AccountBalance::firstOrCreate(
             [
