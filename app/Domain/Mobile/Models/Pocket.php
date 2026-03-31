@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Mobile\Models;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -11,7 +12,6 @@ use Illuminate\Support\Str;
 
 class Pocket extends Model
 {
-
     protected $table = 'pockets';
 
     protected static function boot(): void
@@ -23,6 +23,7 @@ class Pocket extends Model
     }
 
     protected $fillable = [
+        'uuid',
         'user_uuid',
         'name',
         'target_amount',
@@ -41,12 +42,19 @@ class Pocket extends Model
     ];
 
     public const CATEGORY_TRAVEL = 'travel';
+
     public const CATEGORY_TRANSPORT = 'transport';
+
     public const CATEGORY_TECH = 'tech';
+
     public const CATEGORY_EMERGENCY = 'emergency';
+
     public const CATEGORY_FOOD = 'food';
+
     public const CATEGORY_HEALTH = 'health';
+
     public const CATEGORY_EDUCATION = 'education';
+
     public const CATEGORY_GENERAL = 'general';
 
     public const CATEGORIES = [
@@ -62,7 +70,7 @@ class Pocket extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'user_uuid', 'uuid');
+        return $this->belongsTo(User::class, 'user_uuid', 'uuid');
     }
 
     public function smartRule(): HasOne
@@ -79,7 +87,7 @@ class Pocket extends Model
         return min(100, ($this->current_amount / $this->target_amount) * 100);
     }
 
-    public function getDaysLeftAttribute(): int|null
+    public function getDaysLeftAttribute(): ?int
     {
         if (! $this->target_date) {
             return null;

@@ -49,43 +49,57 @@ class DashboardController extends Controller
 
         $balanceCacheKey = "maphapay.dashboard.balance.{$user->id}";
 
-        $balanceStr = Cache::remember($balanceCacheKey, self::CACHE_TTL_SECONDS, function () use ($user): string {
-            $account = Account::where('user_uuid', $user->uuid)->first();
-
-            $balanceMinor = $account !== null ? $account->getBalance('SZL') : 0;
-
+        $dashboardData = Cache::remember($balanceCacheKey, self::CACHE_TTL_SECONDS, function () use ($user): array {
             $szlAsset = Asset::find('SZL');
             $precision = $szlAsset !== null ? $szlAsset->precision : 2;
             $divisor = 10 ** $precision;
+            $currencySymbol = config('banking.currency_symbol', 'E');
 
-            return number_format($balanceMinor / $divisor, $precision, '.', '');
+            $account = Account::where('user_uuid', $user->uuid)->first();
+            $balanceMinor = $account !== null ? $account->getBalance('SZL') : 0;
+            $balanceStr = number_format($balanceMinor / $divisor, $precision, '.', '');
+
+            $totalBalanceMinor = $user->total_balance;
+            $totalBalanceStr = number_format($totalBalanceMinor / $divisor, $precision, '.', '');
+
+            return [
+                'balance' => $balanceStr,
+                'total_balance' => $totalBalanceStr,
+                'currency_symbol' => $currencySymbol,
+            ];
         });
 
         Log::info('[compat:dashboard] response', [
-            'user_id'                  => $user->id,
-            'mobile'                   => $user->mobile,
-            'mobile_verified_at'       => $user->mobile_verified_at?->toISOString(),
-            'kyc_status'               => $user->kyc_status,
+            'user_id' => $user->id,
+            'mobile' => $user->mobile,
+            'mobile_verified_at' => $user->mobile_verified_at?->toISOString(),
+            'kyc_status' => $user->kyc_status,
             'has_completed_onboarding' => $user->has_completed_onboarding,
-            'balance'                  => $balanceStr,
+            'balance' => $dashboardData['balance'],
+            'total_balance' => $dashboardData['total_balance'],
+            'currency_symbol' => $dashboardData['currency_symbol'],
         ]);
 
         return response()->json([
             'status' => 'success',
             'remark' => 'dashboard',
-            'data'   => [
+            'data' => [
                 'user' => [
-                    'id'                       => $user->id,
-                    'email'                    => $user->email,
-                    'mobile'                   => $user->mobile,
-                    'dial_code'                => $user->dial_code,
-                    'mobile_verified_at'       => $user->mobile_verified_at?->toISOString(),
-                    'kyc_status'               => $user->kyc_status,
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'mobile' => $user->mobile,
+                    'dial_code' => $user->dial_code,
+                    'mobile_verified_at' => $user->mobile_verified_at?->toISOString(),
+                    'kyc_status' => $user->kyc_status,
                     'has_completed_onboarding' => $user->has_completed_onboarding,
-                    'balance'                  => $balanceStr,
+                    'balance' => $dashboardData['balance'],
+                    'total_balance' => $dashboardData['total_balance'],
+                    'currency_symbol' => $dashboardData['currency_symbol'],
                 ],
-                'balance' => $balanceStr,
-                'offers'  => [],
+                'balance' => $dashboardData['balance'],
+                'total_balance' => $dashboardData['total_balance'],
+                'currency_symbol' => $dashboardData['currency_symbol'],
+                'offers' => [],
             ],
         ]);
     }

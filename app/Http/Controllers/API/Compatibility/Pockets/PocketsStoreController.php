@@ -9,6 +9,7 @@ use App\Domain\Mobile\Models\PocketSmartRule;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class PocketsStoreController extends Controller
@@ -19,30 +20,34 @@ class PocketsStoreController extends Controller
             'name' => 'required|string|max:100',
             'target_amount' => 'required|numeric|min:0',
             'target_date' => 'nullable|date_format:Y-m-d',
-            'category' => 'nullable|string|in:' . implode(',', Pocket::CATEGORIES),
+            'category' => 'nullable|string|in:'.implode(',', Pocket::CATEGORIES),
             'color' => 'nullable|string|max:20',
         ]);
 
         $user = $request->user();
 
-        $pocket = Pocket::create([
-            'uuid' => Str::uuid()->toString(),
-            'user_uuid' => $user->uuid,
-            'name' => $validated['name'],
-            'target_amount' => $validated['target_amount'],
-            'current_amount' => 0,
-            'target_date' => $validated['target_date'] ?? null,
-            'category' => $validated['category'] ?? 'general',
-            'color' => $validated['color'] ?? '#4F8CFF',
-            'is_completed' => false,
-        ]);
+        $pocket = DB::transaction(function () use ($user, $validated) {
+            $pocket = Pocket::create([
+                'uuid' => Str::uuid()->toString(),
+                'user_uuid' => $user->uuid,
+                'name' => $validated['name'],
+                'target_amount' => $validated['target_amount'],
+                'current_amount' => 0,
+                'target_date' => $validated['target_date'] ?? null,
+                'category' => $validated['category'] ?? 'general',
+                'color' => $validated['color'] ?? '#4F8CFF',
+                'is_completed' => false,
+            ]);
 
-        PocketSmartRule::create([
-            'pocket_id' => $pocket->uuid,
-            ...PocketSmartRule::defaults(),
-        ]);
+            PocketSmartRule::create([
+                'pocket_id' => $pocket->uuid,
+                ...PocketSmartRule::defaults(),
+            ]);
 
-        $pocket->load('smartRule');
+            $pocket->load('smartRule');
+
+            return $pocket;
+        });
 
         return response()->json([
             'status' => 'success',
