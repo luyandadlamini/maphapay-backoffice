@@ -62,4 +62,9 @@ class RewardProfile extends Model
 
         return $needed > 0 ? min(1.0, (float) $this->xp / $needed) : 0.0;
     }
+
+    public function getXpProgressAttribute(): float
+    {
+        return round($this->xpProgress() * 100, 1);
+    }
 }

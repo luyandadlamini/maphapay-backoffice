@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Domain\Compliance\Services\KycService;
 use App\Domain\Shared\Services\OtpService;
 use App\Filament\Admin\Resources\UserResource\Pages;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\AccountsRelationManager;
@@ -13,6 +14,7 @@ use App\Filament\Admin\Resources\UserResource\RelationManagers\RewardProfilesRel
 use App\Filament\Admin\Resources\UserResource\RelationManagers\TransactionsRelationManager;
 use App\Models\User;
 use App\Models\UserOtp;
+use Exception;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -231,35 +233,86 @@ class UserResource extends Resource
                                 ->label('Approve KYC')
                                 ->icon('heroicon-o-check-badge')
                                 ->color('success')
+                                ->requiresConfirmation()
+                                ->modalHeading('Approve KYC')
+                                ->modalDescription('Are you sure you want to approve KYC for the selected user(s)?')
+                                ->modalSubmitActionLabel('Yes, approve')
                                 ->action(function ($records): void {
+                                    $kycService = app(KycService::class);
+                                    $adminEmail = auth()->user()->email ?? 'unknown';
+                                    $success = 0;
+                                    $failed = 0;
+
                                     foreach ($records as $record) {
-                                        $record->update([
-                                            'kyc_status'      => 'approved',
-                                            'kyc_approved_at' => now(),
-                                        ]);
+                                        try {
+                                            $kycService->verifyKyc($record, $adminEmail);
+                                            $success++;
+                                        } catch (Exception $e) {
+                                            $failed++;
+                                        }
                                     }
-                                    Notification::make()
-                                        ->title('KYC Approved')
-                                        ->success()
-                                        ->body(count($records) . ' user(s) KYC approved.')
-                                        ->send();
+
+                                    if ($success > 0) {
+                                        Notification::make()
+                                            ->title('KYC Approved')
+                                            ->success()
+                                            ->body("{$success} user(s) KYC approved.")
+                                            ->send();
+                                    }
+
+                                    if ($failed > 0) {
+                                        Notification::make()
+                                            ->title('Some Approvals Failed')
+                                            ->warning()
+                                            ->body("{$failed} user(s) could not be approved.")
+                                            ->send();
+                                    }
                                 }),
                             Tables\Actions\BulkAction::make('rejectKyc')
                                 ->label('Reject KYC')
                                 ->icon('heroicon-o-x-mark')
                                 ->color('danger')
-                                ->action(function ($records): void {
+                                ->requiresConfirmation()
+                                ->modalHeading('Reject KYC')
+                                ->modalDescription('Are you sure you want to reject KYC for the selected user(s)?')
+                                ->modalSubmitActionLabel('Yes, reject')
+                                ->form([
+                                    Forms\Components\Textarea::make('reason')
+                                        ->label('Rejection Reason')
+                                        ->required()
+                                        ->placeholder('Enter the reason for rejection'),
+                                ])
+                                ->action(function ($records, array $data): void {
+                                    $kycService = app(KycService::class);
+                                    $adminEmail = auth()->user()->email ?? 'unknown';
+                                    $reason = $data['reason'] ?? 'Admin rejection';
+                                    $success = 0;
+                                    $failed = 0;
+
                                     foreach ($records as $record) {
-                                        $record->update([
-                                            'kyc_status'      => 'rejected',
-                                            'kyc_rejected_at' => now(),
-                                        ]);
+                                        try {
+                                            $kycService->rejectKyc($record, $adminEmail, $reason);
+                                            $success++;
+                                        } catch (Exception $e) {
+                                            $failed++;
+                                        }
                                     }
-                                    Notification::make()
-                                        ->title('KYC Rejected')
-                                        ->warning()
-                                        ->body(count($records) . ' user(s) KYC rejected.')
-                                        ->send();
+
+                                    if ($success > 0) {
+                                        Notification::make()
+                                            ->title('KYC Rejected')
+                                            ->warning()
+                                            ->body("{$success} user(s) KYC rejected.")
+                                            ->send();
+                                    }
+
+                                    if ($failed > 0) {
+                                        Notification::make()
+                                            ->title('Some Rejections Failed')
+                                            ->danger()
+                                            ->body("{$failed} user(s) could not be rejected.")
+                                            ->send();
+                                    }
                                 }),
                         ]
                     ),
@@ -274,7 +327,6 @@ class UserResource extends Resource
             TransactionsRelationManager::class,
             BankAccountsRelationManager::class,
             KycStatusRelationManager::class,
-            RewardProfilesRelationManager::class,
         ];
     }
 

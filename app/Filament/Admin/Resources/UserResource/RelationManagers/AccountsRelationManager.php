@@ -25,7 +25,7 @@ class AccountsRelationManager extends RelationManager
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static ?string $title = 'Bank Accounts';
+    protected static ?string $title = 'Wallet Accounts';
 
     public function form(Form $form): Form
     {
@@ -101,12 +101,10 @@ class AccountsRelationManager extends RelationManager
                     ])
                     ->action(function (Account $record, array $data): void {
                         try {
-                            DB::beginTransaction();
-
-                            $accountService = app(AccountService::class);
-                            $accountService->deposit($record->uuid, (int) ($data['amount'] * 100));
-
-                            DB::commit();
+                            DB::transaction(function () use ($record, $data): void {
+                                $accountService = app(AccountService::class);
+                                $accountService->deposit($record->uuid, (int) ($data['amount'] * 100));
+                            });
 
                             Notification::make()
                                 ->title('Deposit Successful')
@@ -114,8 +112,6 @@ class AccountsRelationManager extends RelationManager
                                 ->body('$' . number_format($data['amount'], 2) . ' has been deposited to ' . $record->name)
                                 ->send();
                         } catch (Exception $e) {
-                            DB::rollBack();
-
                             Notification::make()
                                 ->title('Deposit Failed')
                                 ->danger()
@@ -139,12 +135,10 @@ class AccountsRelationManager extends RelationManager
                     ])
                     ->action(function (Account $record, array $data): void {
                         try {
-                            DB::beginTransaction();
-
-                            $accountService = app(AccountService::class);
-                            $accountService->withdraw($record->uuid, (int) ($data['amount'] * 100));
-
-                            DB::commit();
+                            DB::transaction(function () use ($record, $data): void {
+                                $accountService = app(AccountService::class);
+                                $accountService->withdraw($record->uuid, (int) ($data['amount'] * 100));
+                            });
 
                             Notification::make()
                                 ->title('Withdrawal Successful')
@@ -152,8 +146,6 @@ class AccountsRelationManager extends RelationManager
                                 ->body('$' . number_format($data['amount'], 2) . ' has been withdrawn from ' . $record->name)
                                 ->send();
                         } catch (Exception $e) {
-                            DB::rollBack();
-
                             Notification::make()
                                 ->title('Withdrawal Failed')
                                 ->danger()

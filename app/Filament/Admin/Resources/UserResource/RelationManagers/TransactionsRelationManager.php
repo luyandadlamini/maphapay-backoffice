@@ -29,17 +29,16 @@ class TransactionsRelationManager extends RelationManager
                     ->badge()
                     ->color(
                         fn (string $state): string => match ($state) {
-                            'deposit'      => 'success',
-                            'withdrawal'   => 'warning',
-                            'transfer_in'  => 'info',
-                            'transfer_out' => 'danger',
-                            default        => 'gray',
+                            'deposit'    => 'success',
+                            'withdrawal' => 'warning',
+                            'transfer'   => 'info',
+                            default      => 'gray',
                         }
                     ),
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Amount')
                     ->money('USD', 100)
-                    ->color(fn ($record): string => in_array($record->type, ['deposit', 'transfer_in']) ? 'success' : 'danger')
+                    ->color(fn ($record): string => $record->type === 'deposit' || ($record->type === 'transfer' && $record->amount > 0) ? 'success' : 'danger')
                     ->weight('bold'),
                 Tables\Columns\TextColumn::make('balance_after')
                     ->label('Balance After')
@@ -62,10 +61,9 @@ class TransactionsRelationManager extends RelationManager
             ->filters([
                 Tables\Filters\SelectFilter::make('type')
                     ->options([
-                        'deposit'      => 'Deposit',
-                        'withdrawal'   => 'Withdrawal',
-                        'transfer_in'  => 'Transfer In',
-                        'transfer_out' => 'Transfer Out',
+                        'deposit'    => 'Deposit',
+                        'withdrawal' => 'Withdrawal',
+                        'transfer'   => 'Transfer',
                     ]),
             ])
             ->actions([
