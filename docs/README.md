@@ -81,6 +81,7 @@ Welcome to the FinAegis documentation. This guide covers the platform's 49 domai
 ### Technical Reference
 - [Database Schema](14-TECHNICAL/DATABASE_SCHEMA.md) - Data model
 - [Admin Dashboard](14-TECHNICAL/ADMIN_DASHBOARD.md) - Filament admin
+- [Backoffice Audit](BACKOFFICE_AUDIT.md) - Comprehensive audit and implementation plan
 
 ### Troubleshooting
 - [Common Issues](08-TROUBLESHOOTING/TROUBLESHOOTING.md) - Problem resolution

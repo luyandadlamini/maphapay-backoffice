@@ -6,6 +6,10 @@ namespace App\Filament\Admin\Resources;
 
 use App\Domain\Shared\Services\OtpService;
 use App\Filament\Admin\Resources\UserResource\Pages;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\AccountsRelationManager;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\BankAccountsRelationManager;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\KycStatusRelationManager;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\TransactionsRelationManager;
 use App\Models\User;
 use App\Models\UserOtp;
 use Filament\Forms;
@@ -79,44 +83,63 @@ class UserResource extends Resource
             ->columns(
                 [
                     Tables\Columns\TextColumn::make('uuid')
-                        ->label('UUID'),
+                        ->label('UUID')
+                        ->copyable()
+                        ->searchable(),
                     Tables\Columns\TextColumn::make('name')
                         ->searchable(),
                     Tables\Columns\TextColumn::make('email')
                         ->searchable(),
-                    Tables\Columns\TextColumn::make('email_verified_at')
-                        ->dateTime()
+                    Tables\Columns\BadgeColumn::make('kyc_status')
+                        ->label('KYC')
+                        ->colors([
+                            'warning' => 'not_started',
+                            'info'    => 'pending',
+                            'success' => 'approved',
+                            'danger'  => 'rejected',
+                        ])
                         ->sortable(),
-                    Tables\Columns\TextColumn::make('two_factor_confirmed_at')
-                        ->dateTime()
-                        ->sortable(),
-                    Tables\Columns\TextColumn::make('current_team_id')
-                        ->numeric()
-                        ->sortable(),
-                    Tables\Columns\TextColumn::make('profile_photo_path')
-                        ->searchable(),
+                    Tables\Columns\TextColumn::make('accounts_sum_balance')
+                        ->label('Total Balance')
+                        ->money('USD', 100)
+                        ->sum('accounts', 'balance')
+                        ->color(fn ($state): string => ($state ?? 0) < 0 ? 'danger' : 'success')
+                        ->weight('bold'),
+                    Tables\Columns\TextColumn::make('accounts_count')
+                        ->label('Accounts')
+                        ->counts('accounts'),
+                    Tables\Columns\IconColumn::make('email_verified_at')
+                        ->label('Email Verified')
+                        ->boolean()
+                        ->trueIcon('heroicon-o-check-badge')
+                        ->falseIcon('heroicon-o-x-mark')
+                        ->trueColor('success')
+                        ->falseColor('danger'),
+                    Tables\Columns\IconColumn::make('two_factor_confirmed_at')
+                        ->label('2FA')
+                        ->boolean()
+                        ->trueIcon('heroicon-o-check-badge')
+                        ->falseIcon('heroicon-o-x-mark')
+                        ->trueColor('success')
+                        ->falseColor('gray'),
+                    Tables\Columns\TextColumn::make('mobile')
+                        ->label('Mobile')
+                        ->toggleable(),
                     Tables\Columns\TextColumn::make('created_at')
-                        ->dateTime()
-                        ->sortable()
-                        ->toggleable(isToggledHiddenByDefault: true),
-                    Tables\Columns\TextColumn::make('updated_at')
-                        ->dateTime()
-                        ->sortable()
-                        ->toggleable(isToggledHiddenByDefault: true),
-                    Tables\Columns\TextColumn::make('stripe_id')
-                        ->searchable(),
-                    Tables\Columns\TextColumn::make('pm_type')
-                        ->searchable(),
-                    Tables\Columns\TextColumn::make('pm_last_four')
-                        ->searchable(),
-                    Tables\Columns\TextColumn::make('trial_ends_at')
                         ->dateTime()
                         ->sortable(),
                 ]
             )
             ->filters(
                 [
-                    //
+                    Tables\Filters\SelectFilter::make('kyc_status')
+                        ->label('KYC Status')
+                        ->options([
+                            'not_started' => 'Not Started',
+                            'pending'     => 'Pending',
+                            'approved'    => 'Approved',
+                            'rejected'    => 'Rejected',
+                        ]),
                 ]
             )
             ->actions(
@@ -167,6 +190,34 @@ class UserResource extends Resource
                             }
                         })
                         ->visible(fn (User $record): bool => (bool) $record->mobile),
+                    Tables\Actions\Action::make('resetPassword')
+                        ->label('Reset Password')
+                        ->icon('heroicon-o-key')
+                        ->color('info')
+                        ->requiresConfirmation()
+                        ->modalHeading('Reset User Password')
+                        ->modalDescription('This will send a password reset link to the user\'s email address.')
+                        ->modalSubmitActionLabel('Send Reset Link')
+                        ->action(function (User $record): void {
+                            try {
+                                $record->sendPasswordResetNotification(
+                                    app(\Illuminate\Auth\Passwords\PasswordBroker::class)->createToken($record)
+                                );
+
+                                Notification::make()
+                                    ->title('Password Reset Sent')
+                                    ->success()
+                                    ->body('A password reset link has been sent to ' . $record->email)
+                                    ->send();
+                            } catch (Throwable $e) {
+                                Notification::make()
+                                    ->title('Failed to Send Reset')
+                                    ->danger()
+                                    ->body($e->getMessage())
+                                    ->send();
+                            }
+                        }),
+                    Tables\Actions\ViewAction::make(),
                     Tables\Actions\EditAction::make(),
                 ]
             )
@@ -184,7 +235,10 @@ class UserResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            AccountsRelationManager::class,
+            TransactionsRelationManager::class,
+            BankAccountsRelationManager::class,
+            KycStatusRelationManager::class,
         ];
     }
 
@@ -193,6 +247,7 @@ class UserResource extends Resource
         return [
             'index'  => Pages\ListUsers::route('/'),
             'create' => Pages\CreateUser::route('/create'),
+            'view'   => Pages\ViewUser::route('/{record}'),
             'edit'   => Pages\EditUser::route('/{record}/edit'),
         ];
     }
