@@ -3,10 +3,19 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\API\Compatibility\Budget\BudgetCategoriesController;
+use App\Http\Controllers\API\Compatibility\Budget\BudgetCategoriesStoreController;
+use App\Http\Controllers\API\Compatibility\Budget\BudgetCategoriesUpdateController;
+use App\Http\Controllers\API\Compatibility\Budget\BudgetCategoriesDeleteController;
 use App\Http\Controllers\API\Compatibility\Budget\BudgetController;
+use App\Http\Controllers\API\Compatibility\Budget\BudgetUpdateController;
 use App\Http\Controllers\API\Compatibility\Kyc\KycFormController;
 use App\Http\Controllers\API\Compatibility\Kyc\KycSubmitController;
 use App\Http\Controllers\API\Compatibility\Pockets\PocketsController;
+use App\Http\Controllers\API\Compatibility\Pockets\PocketsStoreController;
+use App\Http\Controllers\API\Compatibility\Pockets\PocketsUpdateController;
+use App\Http\Controllers\API\Compatibility\Pockets\PocketsAddFundsController;
+use App\Http\Controllers\API\Compatibility\Pockets\PocketsWithdrawFundsController;
+use App\Http\Controllers\API\Compatibility\Pockets\PocketsUpdateRulesController;
 use App\Http\Controllers\API\Compatibility\Rewards\RewardsController;
 use App\Http\Controllers\API\Compatibility\Rewards\RewardsPointsController;
 use App\Http\Controllers\API\Compatibility\SocialMoney\SocialSummaryController;
@@ -142,12 +151,48 @@ Route::middleware('auth:sanctum')
     ->name('maphapay.compat.pockets');
 
 Route::middleware('auth:sanctum')
+    ->post('pockets/store', PocketsStoreController::class)
+    ->name('maphapay.compat.pockets.store');
+
+Route::middleware('auth:sanctum')
+    ->post('pockets/update/{id}', PocketsUpdateController::class)
+    ->name('maphapay.compat.pockets.update');
+
+Route::middleware('auth:sanctum')
+    ->post('pockets/add-funds/{id}', PocketsAddFundsController::class)
+    ->name('maphapay.compat.pockets.add-funds');
+
+Route::middleware('auth:sanctum')
+    ->post('pockets/withdraw-funds/{id}', PocketsWithdrawFundsController::class)
+    ->name('maphapay.compat.pockets.withdraw-funds');
+
+Route::middleware('auth:sanctum')
+    ->post('pockets/update-rules/{id}', PocketsUpdateRulesController::class)
+    ->name('maphapay.compat.pockets.update-rules');
+
+Route::middleware('auth:sanctum')
     ->get('wallet-linking', WalletLinkingController::class)
     ->name('maphapay.compat.wallet-linking');
 
 Route::middleware('auth:sanctum')
     ->get('budget', BudgetController::class)
     ->name('maphapay.compat.budget');
+
+Route::middleware('auth:sanctum')
+    ->post('budget/update', BudgetUpdateController::class)
+    ->name('maphapay.compat.budget.update');
+
+Route::middleware('auth:sanctum')
+    ->post('budget/categories', BudgetCategoriesStoreController::class)
+    ->name('maphapay.compat.budget.categories.store');
+
+Route::middleware('auth:sanctum')
+    ->put('budget/categories/{id}', BudgetCategoriesUpdateController::class)
+    ->name('maphapay.compat.budget.categories.update');
+
+Route::middleware('auth:sanctum')
+    ->delete('budget/categories/{id}', BudgetCategoriesDeleteController::class)
+    ->name('maphapay.compat.budget.categories.delete');
 
 // Catch-all: log any compat-prefix requests that don't match a defined route.
 // This helps identify missing endpoints the mobile app is calling.
