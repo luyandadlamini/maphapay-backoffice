@@ -28,8 +28,11 @@ class DemoRailAdapter implements PaymentRailInterface
 
     public function processPayment(MppCredential $credential, array $context = []): MppReceipt
     {
-        if (app()->environment('production')) {
-            throw new MppException('Demo rail adapter cannot be used in production.');
+        if (app()->environment('production') && ! config('machinepay.allow_demo', false)) {
+            throw new MppException(
+                'Demo rail adapter cannot be used in production. ' .
+                'Set MACHINEPAY_ALLOW_DEMO=true in .env to override.'
+            );
         }
 
         $challengeId = $context['challenge_id'] ?? $credential->challengeId;
@@ -48,8 +51,11 @@ class DemoRailAdapter implements PaymentRailInterface
 
     public function verifyPayment(MppCredential $credential): bool
     {
-        if (app()->environment('production')) {
-            throw new MppException('Demo rail adapter cannot be used in production.');
+        if (app()->environment('production') && ! config('machinepay.allow_demo', false)) {
+            throw new MppException(
+                'Demo rail adapter cannot be used in production. ' .
+                'Set MACHINEPAY_ALLOW_DEMO=true in .env to override.'
+            );
         }
 
         return true;
@@ -57,8 +63,11 @@ class DemoRailAdapter implements PaymentRailInterface
 
     public function refund(string $settlementReference, int $amountCents): bool
     {
-        if (app()->environment('production')) {
-            throw new MppException('Demo rail adapter cannot be used in production.');
+        if (app()->environment('production') && ! config('machinepay.allow_demo', false)) {
+            throw new MppException(
+                'Demo rail adapter cannot be used in production. ' .
+                'Set MACHINEPAY_ALLOW_DEMO=true in .env to override.'
+            );
         }
 
         return true;

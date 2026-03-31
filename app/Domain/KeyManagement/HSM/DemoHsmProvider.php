@@ -22,8 +22,12 @@ class DemoHsmProvider implements HsmProviderInterface
 
     public function __construct()
     {
-        if (app()->environment('production')) {
-            throw new RuntimeException('DemoHsmProvider cannot be used in production');
+        if (app()->environment('production') && ! config('keymanagement.demo_mode', false)) {
+            throw new RuntimeException(
+                'DemoHsmProvider cannot be used in production. ' .
+                'Set KEY_MANAGEMENT_DEMO_MODE=true in your .env to override, ' .
+                'or configure a real HSM provider (aws/azure) in HSM_PROVIDER.'
+            );
         }
     }
 

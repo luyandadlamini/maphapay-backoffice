@@ -5,12 +5,23 @@ declare(strict_types=1);
 return [
     /*
     |--------------------------------------------------------------------------
+    | Demo Mode
+    |--------------------------------------------------------------------------
+    |
+    | Set TRUSTCERT_ALLOW_DEMO=false in .env to disallow demo mode in production.
+    | Default is true for development/testing convenience.
+    |
+    */
+    'allow_demo' => (bool) env('TRUSTCERT_ALLOW_DEMO', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Certificate Authority Configuration
     |--------------------------------------------------------------------------
     */
     'certificate_authority' => [
         'ca_id'            => env('TRUSTCERT_CA_ID', 'finaegis-root-ca'),
-        'ca_signing_key'   => env('TRUSTCERT_CA_SIGNING_KEY'),
+        'ca_signing_key'   => env('TRUSTCERT_CA_SIGNING_KEY', 'demo-ca-signing-key-for-testing'),
         'default_validity' => [
             'days' => 365,
         ],

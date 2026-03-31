@@ -9,11 +9,11 @@ use RuntimeException;
 
 class HsmIntegrationService
 {
-    private HsmProviderInterface $provider;
+    private ?HsmProviderInterface $provider = null;
 
     public function __construct(?HsmProviderInterface $provider = null)
     {
-        $this->provider = $provider ?? $this->resolveProvider();
+        $this->provider = $provider;
     }
 
     public function encrypt(string $data): string
@@ -53,12 +53,12 @@ class HsmIntegrationService
 
     public function isAvailable(): bool
     {
-        return $this->provider->isAvailable();
+        return $this->getProvider()->isAvailable();
     }
 
     public function getProviderName(): string
     {
-        return $this->provider->getProviderName();
+        return $this->getProvider()->getProviderName();
     }
 
     /**
@@ -110,6 +110,15 @@ class HsmIntegrationService
         return (new HsmProviderFactory())->create((string) $providerType);
     }
 
+    private function getProvider(): HsmProviderInterface
+    {
+        if ($this->provider === null) {
+            $this->provider = $this->resolveProvider();
+        }
+
+        return $this->provider;
+    }
+
     private function getKeyId(): string
     {
         return config('keymanagement.hsm.key_id', 'default');
@@ -122,9 +131,9 @@ class HsmIntegrationService
 
     private function ensureAvailable(): void
     {
-        if (! $this->provider->isAvailable()) {
+        if (! $this->getProvider()->isAvailable()) {
             throw new RuntimeException(
-                "HSM provider '{$this->provider->getProviderName()}' is not available"
+                "HSM provider '{$this->getProvider()->getProviderName()}' is not available"
             );
         }
     }

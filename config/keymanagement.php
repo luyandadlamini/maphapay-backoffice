@@ -82,7 +82,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | When enabled, uses simulated HSM instead of real cloud HSM.
-    | Should always be false in production.
+    | Default is true for development/testing convenience.
+    | Set KEY_MANAGEMENT_DEMO_MODE=false in .env to disable.
     |
     */
     'demo_mode' => (bool) env('KEY_MANAGEMENT_DEMO_MODE', true),

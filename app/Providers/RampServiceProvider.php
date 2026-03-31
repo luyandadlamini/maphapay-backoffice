@@ -24,7 +24,7 @@ class RampServiceProvider extends ServiceProvider
             return new OnramperClient();
         });
 
-        $this->app->bind(RampProviderInterface::class, function ($app) {
+        $this->app->singleton(RampProviderInterface::class, function ($app) {
             $provider = config('ramp.default_provider', 'mock');
 
             return match ($provider) {
@@ -33,7 +33,7 @@ class RampServiceProvider extends ServiceProvider
             };
         });
 
-        $this->app->bind(RampService::class, function ($app) {
+        $this->app->singleton(RampService::class, function ($app) {
             return new RampService(
                 $app->make(RampProviderInterface::class)
             );

@@ -12,8 +12,12 @@ class MockRampProvider implements RampProviderInterface
 {
     public function __construct()
     {
-        if (app()->environment('production')) {
-            throw new RuntimeException('Mock ramp provider must not be used in production.');
+        if (app()->environment('production') && ! config('ramp.allow_mock', false)) {
+            throw new RuntimeException(
+                'Mock ramp provider must not be used in production. ' .
+                'Set RAMP_ALLOW_MOCK=true in .env to override, ' .
+                'or configure a real ramp provider (onramper) in RAMP_DEFAULT_PROVIDER.'
+            );
         }
     }
 

@@ -43,8 +43,11 @@ class CertificateAuthorityService implements CertificateAuthorityInterface
         if (empty($this->signingKey)) {
             $this->signingKey = (string) config('trustcert.certificate_authority.ca_signing_key', '');
         }
-        if (app()->environment('production') && empty($this->signingKey)) {
-            throw new RuntimeException('CA signing key must be configured in production');
+        if (app()->environment('production') && ! config('trustcert.allow_demo', false) && empty($this->signingKey)) {
+            throw new RuntimeException(
+                'CA signing key must be configured in production. ' .
+                'Set TRUSTCERT_CA_SIGNING_KEY in .env or TRUSTCERT_ALLOW_DEMO=true to allow demo mode.'
+            );
         }
     }
 

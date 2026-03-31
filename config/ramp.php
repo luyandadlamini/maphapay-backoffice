@@ -13,6 +13,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Allow Mock Provider in Production
+    |--------------------------------------------------------------------------
+    |
+    | Set RAMP_ALLOW_MOCK=false in .env to disallow mock provider in production.
+    | Default is true for development/testing convenience.
+    |
+    */
+
+    'allow_mock' => (bool) env('RAMP_ALLOW_MOCK', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Provider Configuration
     |--------------------------------------------------------------------------
     */

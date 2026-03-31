@@ -17,6 +17,18 @@ return [
 
     'enabled' => (bool) env('MPP_ENABLED', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Allow Demo Rail in Production
+    |--------------------------------------------------------------------------
+    |
+    | Set MPP_ALLOW_DEMO=false in .env to disallow demo rail in production.
+    | Default is true for development/testing convenience.
+    |
+    */
+
+    'allow_demo' => (bool) env('MPP_ALLOW_DEMO', true),
+
     'version' => 1,
 
     // Subdomain prefix for protocol-specific routing (e.g. mpp.api.zelta.app)

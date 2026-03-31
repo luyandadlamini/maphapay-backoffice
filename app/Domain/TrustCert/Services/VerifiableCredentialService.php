@@ -35,8 +35,11 @@ class VerifiableCredentialService
         if (empty($this->signingKey)) {
             $this->signingKey = (string) config('trustcert.credentials.credential_signing_key', '');
         }
-        if (app()->environment('production') && empty($this->signingKey)) {
-            throw new RuntimeException('Credential signing key must be configured in production');
+        if (app()->environment('production') && ! config('trustcert.allow_demo', false) && empty($this->signingKey)) {
+            throw new RuntimeException(
+                'Credential signing key must be configured in production. ' .
+                'Set TRUSTCERT_CREDENTIAL_SIGNING_KEY in .env or TRUSTCERT_ALLOW_DEMO=true to allow demo mode.'
+            );
         }
     }
 
