@@ -67,10 +67,68 @@ class AccountService
         $workflow->start(__account_uuid($uuid), __money($amount));
     }
 
+    /**
+     * Deposit directly without workflow (for admin use).
+     */
+    public function depositDirect(mixed $uuid, mixed $amount, string $description = 'Admin deposit'): string
+    {
+        $transactionAggregate = $this->transaction->retrieve($uuid);
+        $transactionAggregate->credit(__money($amount))->persist();
+
+        return $this->recordDepositTransaction($uuid, $amount, $description);
+    }
+
     public function withdraw(mixed $uuid, mixed $amount): void
     {
         $workflow = WorkflowStub::make(WithdrawAccountWorkflow::class);
         $workflow->start(__account_uuid($uuid), __money($amount));
+    }
+
+    /**
+     * Withdraw directly without workflow (for admin use).
+     */
+    public function withdrawDirect(mixed $uuid, mixed $amount, string $description = 'Admin withdrawal'): string
+    {
+        $transactionAggregate = $this->transaction->retrieve($uuid);
+        $transactionAggregate->debit(__money($amount))->persist();
+
+        return $this->recordWithdrawTransaction($uuid, $amount, $description);
+    }
+
+    protected function recordDepositTransaction(mixed $uuid, mixed $amount, string $description): string
+    {
+        $reference = 'dep_' . Str::uuid()->toString();
+        
+        \App\Domain\Account\Models\TransactionProjection::create([
+            'uuid' => $reference,
+            'account_uuid' => $uuid,
+            'asset_code' => config('banking.default_currency', 'SZL'),
+            'amount' => $amount,
+            'type' => 'deposit',
+            'description' => $description,
+            'reference' => $reference,
+            'status' => 'completed',
+        ]);
+
+        return $reference;
+    }
+
+    protected function recordWithdrawTransaction(mixed $uuid, mixed $amount, string $description): string
+    {
+        $reference = 'wd_' . Str::uuid()->toString();
+        
+        \App\Domain\Account\Models\TransactionProjection::create([
+            'uuid' => $reference,
+            'account_uuid' => $uuid,
+            'asset_code' => config('banking.default_currency', 'SZL'),
+            'amount' => -abs($amount),
+            'type' => 'withdrawal',
+            'description' => $description,
+            'reference' => $reference,
+            'status' => 'completed',
+        ]);
+
+        return $reference;
     }
 
     public function createForUser(string $userUuid, string $accountName): string

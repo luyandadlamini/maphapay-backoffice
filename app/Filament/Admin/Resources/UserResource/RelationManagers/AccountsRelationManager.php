@@ -91,18 +91,25 @@ class AccountsRelationManager extends RelationManager
                     }),
             ])
             ->columns([
+                Tables\Columns\TextColumn::make('account_number')
+                    ->label('Account No.')
+                    ->copyable()
+                    ->copyMessage('Account number copied')
+                    ->searchable()
+                    ->weight('bold'),
                 Tables\Columns\TextColumn::make('uuid')
                     ->label('Account ID')
                     ->copyable()
                     ->copyMessage('Account ID copied')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Account Name')
                     ->sortable()
                     ->weight('bold'),
                 Tables\Columns\TextColumn::make('balance')
                     ->label('Balance')
-                    ->money('USD', 100)
+                    ->money(config('banking.default_currency', 'SZL'), 100)
                     ->sortable()
                     ->color(fn ($state): string => $state < 0 ? 'danger' : 'success')
                     ->weight('bold'),
@@ -146,16 +153,17 @@ class AccountsRelationManager extends RelationManager
                     ])
                     ->action(function (Account $record, array $data): void {
                         try {
-                            DB::transaction(function () use ($record, $data): void {
-                                $accountService = app(AccountService::class);
-                                $accountService->deposit($record->uuid, (int) ($data['amount'] * 100));
-                            });
+                            $accountService = app(AccountService::class);
+                            $amountInCents = (int) ($data['amount'] * 100);
+                            $accountService->depositDirect($record->uuid, $amountInCents, 'Admin deposit to ' . $record->name);
 
                             Notification::make()
                                 ->title('Deposit Successful')
                                 ->success()
-                                ->body('$' . number_format($data['amount'], 2) . ' has been deposited to ' . $record->name)
+                                ->body(config('banking.currency_symbol', 'E') . number_format($data['amount'], 2) . ' has been deposited to ' . $record->name)
                                 ->send();
+
+                            $this->refresh();
                         } catch (Exception $e) {
                             Notification::make()
                                 ->title('Deposit Failed')
@@ -180,16 +188,17 @@ class AccountsRelationManager extends RelationManager
                     ])
                     ->action(function (Account $record, array $data): void {
                         try {
-                            DB::transaction(function () use ($record, $data): void {
-                                $accountService = app(AccountService::class);
-                                $accountService->withdraw($record->uuid, (int) ($data['amount'] * 100));
-                            });
+                            $accountService = app(AccountService::class);
+                            $amountInCents = (int) ($data['amount'] * 100);
+                            $accountService->withdrawDirect($record->uuid, $amountInCents, 'Admin withdrawal from ' . $record->name);
 
                             Notification::make()
                                 ->title('Withdrawal Successful')
                                 ->success()
-                                ->body('$' . number_format($data['amount'], 2) . ' has been withdrawn from ' . $record->name)
+                                ->body(config('banking.currency_symbol', 'E') . number_format($data['amount'], 2) . ' has been withdrawn from ' . $record->name)
                                 ->send();
+
+                            $this->refresh();
                         } catch (Exception $e) {
                             Notification::make()
                                 ->title('Withdrawal Failed')

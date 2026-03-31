@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $id
  * @property string $uuid
  * @property string $name
+ * @property string|null $account_number
  * @property string $user_uuid
  * @property int $balance
  * @property bool $frozen
@@ -52,6 +53,11 @@ class Account extends Model
                     'Account must have a user_uuid. Use SystemUserService to get a system user for platform accounts.'
                 );
             }
+
+            // Auto-generate account number if not set
+            if (empty($account->account_number)) {
+                $account->account_number = self::generateAccountNumber();
+            }
         });
     }
 
@@ -62,7 +68,21 @@ class Account extends Model
      */
     public function uniqueIds(): array
     {
-        return ['uuid'];
+        return ['uuid', 'account_number'];
+    }
+
+    /**
+     * Generate a unique account number.
+     */
+    public static function generateAccountNumber(): string
+    {
+        do {
+            // Generate a 10-digit account number starting with bank code
+            $accountNumber = config('banking.account_prefix', '8')
+                . str_pad(random_int(0, 999999999), 9, '0', STR_PAD_LEFT);
+        } while (self::where('account_number', $accountNumber)->exists());
+
+        return $accountNumber;
     }
 
     /**
