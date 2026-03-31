@@ -44,7 +44,52 @@ class AccountsRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
+        $owner = $this->getOwner();
+
         return $table
+            ->headerActions([
+                Tables\Actions\Action::make('createAccount')
+                    ->label('Create Account')
+                    ->icon('heroicon-o-plus')
+                    ->color('primary')
+                    ->form([
+                        Forms\Components\TextInput::make('name')
+                            ->label('Account Name')
+                            ->required()
+                            ->placeholder(fn () => $owner?->name . "'s Main Account"),
+                    ])
+                    ->action(function (array $data) use ($owner): void {
+                        if (! $owner) {
+                            Notification::make()
+                                ->title('Error')
+                                ->body('Could not determine user context.')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        try {
+                            $accountService = app(AccountService::class);
+                            $accountName = $data['name'] ?? $owner->name . "'s Main Account";
+                            $accountUuid = $accountService->createForUser($owner->uuid, $accountName);
+
+                            Notification::make()
+                                ->title('Account Created')
+                                ->success()
+                                ->body("Account '{$accountName}' created successfully.")
+                                ->send();
+
+                            $this->refresh();
+                        } catch (Exception $e) {
+                            Notification::make()
+                                ->title('Failed to Create Account')
+                                ->danger()
+                                ->body($e->getMessage())
+                                ->send();
+                        }
+                    }),
+            ])
             ->columns([
                 Tables\Columns\TextColumn::make('uuid')
                     ->label('Account ID')

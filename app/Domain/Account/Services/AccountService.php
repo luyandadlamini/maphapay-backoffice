@@ -24,10 +24,10 @@ class AccountService
     /**
      * @param  mixed  $account
      */
-    public function create(Account|array $account): void
+    public function create(Account|array $account): string
     {
         $workflow = WorkflowStub::make(CreateAccountWorkflow::class);
-        $workflow->start(__account($account));
+        return $workflow->execute(__account($account));
     }
 
     public function destroy(mixed $uuid): void
@@ -46,5 +46,15 @@ class AccountService
     {
         $workflow = WorkflowStub::make(WithdrawAccountWorkflow::class);
         $workflow->start(__account_uuid($uuid), __money($amount));
+    }
+
+    public function createForUser(string $userUuid, string $accountName): string
+    {
+        $account = new Account(
+            name: $accountName,
+            userUuid: $userUuid
+        );
+
+        return $this->create($account);
     }
 }
