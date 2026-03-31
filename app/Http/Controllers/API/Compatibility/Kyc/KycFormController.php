@@ -66,10 +66,8 @@ class KycFormController extends Controller
 
         [$message, $formAvailable] = match ($status) {
             'approved' => ['KYC verification complete.', false],
-            'pending',
-            'in_review' => ['Your verification is being reviewed. We will notify you once complete.', false],
-            'rejected',
-            'expired' => ['Your verification was rejected. Please resubmit to unlock full access.', true],
+            'pending', 'in_review' => ['Your verification is being reviewed. We will notify you once complete.', false],
+            'rejected', 'expired' => ['Your verification was rejected. Please resubmit to unlock full access.', true],
             default => ['Verify your identity to unlock higher limits and all features.', true],
         };
 
