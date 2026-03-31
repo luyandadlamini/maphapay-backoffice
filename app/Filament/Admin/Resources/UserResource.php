@@ -15,6 +15,7 @@ use App\Filament\Admin\Resources\UserResource\RelationManagers\PocketsRelationMa
 use App\Filament\Admin\Resources\UserResource\RelationManagers\ReferralsRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\RewardProfilesRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\TransactionsRelationManager;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use App\Models\User;
 use App\Models\UserOtp;
 use Exception;
@@ -24,11 +25,12 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Auth\Passwords\PasswordBroker;
 use Throwable;
 
 class UserResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = User::class;
 
@@ -100,9 +102,9 @@ class UserResource extends Resource
                         ->label('KYC')
                         ->colors([
                             'warning' => 'not_started',
-                            'info'    => 'pending',
+                            'info' => 'pending',
                             'success' => 'approved',
-                            'danger'  => 'rejected',
+                            'danger' => 'rejected',
                         ])
                         ->sortable(),
                     Tables\Columns\IconColumn::make('frozen_at')
@@ -113,12 +115,11 @@ class UserResource extends Resource
                         ->trueColor('danger')
                         ->falseColor('success')
                         ->tooltip(fn (User $record): string => $record->frozen_at
-                            ? 'Frozen: ' . ($record->frozen_reason ?? 'No reason')
+                            ? 'Frozen: '.($record->frozen_reason ?? 'No reason')
                             : 'Active'),
-                    Tables\Columns\TextColumn::make('accounts_sum_balance')
+                    Tables\Columns\TextColumn::make('total_balance')
                         ->label('Total Balance')
-                        ->money('USD', 100)
-                        ->sum('accounts', 'balance')
+                        ->money('SZL', 100)
                         ->color(fn ($state): string => ($state ?? 0) < 0 ? 'danger' : 'success')
                         ->weight('bold'),
                     Tables\Columns\TextColumn::make('accounts_count')
@@ -152,9 +153,9 @@ class UserResource extends Resource
                         ->label('KYC Status')
                         ->options([
                             'not_started' => 'Not Started',
-                            'pending'     => 'Pending',
-                            'approved'    => 'Approved',
-                            'rejected'    => 'Rejected',
+                            'pending' => 'Pending',
+                            'approved' => 'Approved',
+                            'rejected' => 'Rejected',
                         ]),
                 ]
             )
@@ -169,9 +170,9 @@ class UserResource extends Resource
                             Forms\Components\Select::make('otp_type')
                                 ->label('OTP Type')
                                 ->options([
-                                    UserOtp::TYPE_LOGIN               => 'Login',
+                                    UserOtp::TYPE_LOGIN => 'Login',
                                     UserOtp::TYPE_MOBILE_VERIFICATION => 'Mobile Verification',
-                                    UserOtp::TYPE_PIN_RESET           => 'PIN Reset',
+                                    UserOtp::TYPE_PIN_RESET => 'PIN Reset',
                                 ])
                                 ->default(UserOtp::TYPE_LOGIN)
                                 ->required(),
@@ -217,13 +218,13 @@ class UserResource extends Resource
                         ->action(function (User $record): void {
                             try {
                                 $record->sendPasswordResetNotification(
-                                    app(\Illuminate\Auth\Passwords\PasswordBroker::class)->createToken($record)
+                                    app(PasswordBroker::class)->createToken($record)
                                 );
 
                                 Notification::make()
                                     ->title('Password Reset Sent')
                                     ->success()
-                                    ->body('A password reset link has been sent to ' . $record->email)
+                                    ->body('A password reset link has been sent to '.$record->email)
                                     ->send();
                             } catch (Throwable $e) {
                                 Notification::make()
@@ -254,7 +255,7 @@ class UserResource extends Resource
                                 Notification::make()
                                     ->title('User Frozen')
                                     ->success()
-                                    ->body($record->name . ' has been frozen.')
+                                    ->body($record->name.' has been frozen.')
                                     ->send();
                             } catch (Throwable $e) {
                                 Notification::make()
@@ -280,7 +281,7 @@ class UserResource extends Resource
                                 Notification::make()
                                     ->title('User Unfrozen')
                                     ->success()
-                                    ->body($record->name . ' has been unfrozen.')
+                                    ->body($record->name.' has been unfrozen.')
                                     ->send();
                             } catch (Throwable $e) {
                                 Notification::make()
@@ -408,10 +409,10 @@ class UserResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListUsers::route('/'),
+            'index' => Pages\ListUsers::route('/'),
             'create' => Pages\CreateUser::route('/create'),
-            'view'   => Pages\ViewUser::route('/{record}'),
-            'edit'   => Pages\EditUser::route('/{record}/edit'),
+            'view' => Pages\ViewUser::route('/{record}'),
+            'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
     }
 }

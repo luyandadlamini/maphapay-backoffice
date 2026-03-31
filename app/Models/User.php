@@ -6,21 +6,28 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Account\Models\Transaction;
 use App\Domain\Account\Models\TransactionProjection;
 use App\Domain\Banking\Models\BankAccountModel;
 use App\Domain\Banking\Models\UserBankPreference;
+use App\Domain\CardIssuance\Models\Card;
 use App\Domain\Cgo\Models\CgoInvestment;
 use App\Domain\Compliance\Models\KycDocument;
+use App\Domain\Mobile\Models\Pocket;
+use App\Domain\Rewards\Models\RewardProfile;
 use App\Domain\User\Values\UserRoles;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Laravel\Cashier\Billable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
@@ -29,34 +36,34 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
- * @property \Illuminate\Support\Carbon|null $free_tx_until
+ * @property Carbon|null $free_tx_until
  * @property int $sponsored_tx_used
  * @property int $sponsored_tx_limit
  * @property string|null $transaction_pin
- * @property \Illuminate\Support\Carbon|null $email_verified_at
- * @property \Illuminate\Support\Carbon|null $mobile_verified_at
+ * @property Carbon|null $email_verified_at
+ * @property Carbon|null $mobile_verified_at
  * @property string|null $mobile
  * @property string|null $dial_code
  * @property string|null $username
- * @property \Illuminate\Support\Carbon|null $kyc_approved_at
- * @property \Illuminate\Support\Carbon|null $kyc_submitted_at
- * @property \Illuminate\Support\Carbon|null $kyc_rejected_at
+ * @property Carbon|null $kyc_approved_at
+ * @property Carbon|null $kyc_submitted_at
+ * @property Carbon|null $kyc_rejected_at
  * @property array<string, mixed>|null $mobile_preferences
- * @property \Illuminate\Support\Carbon|null $frozen_at
+ * @property Carbon|null $frozen_at
  * @property string|null $frozen_reason
  * @property string|null $frozen_by
  */
 class User extends Authenticatable implements FilamentUser
 {
+    use Billable;
     use HasApiTokens;
     use HasFactory;
     use HasProfilePhoto;
+    use HasRoles;
     use HasTeams;
     use HasUuids;
     use Notifiable;
     use TwoFactorAuthenticatable;
-    use HasRoles;
-    use Billable;
 
     /**
      * Get the columns that should receive a unique identifier.
@@ -87,6 +94,9 @@ class User extends Authenticatable implements FilamentUser
         'kyc_rejected_at',
         'kyc_expires_at',
         'kyc_level',
+        'kyc_identity_type',
+        'kyc_current_step',
+        'kyc_steps_completed',
         'pep_status',
         'risk_rating',
         'kyc_data',
@@ -143,32 +153,30 @@ class User extends Authenticatable implements FilamentUser
     protected function casts(): array
     {
         return [
-            'email_verified_at'          => 'datetime',
-            'mobile_verified_at'         => 'datetime',
-            'password'                   => 'hashed',
-            'kyc_submitted_at'           => 'datetime',
-            'kyc_approved_at'            => 'datetime',
-            'kyc_expires_at'             => 'datetime',
-            'pep_status'                 => 'boolean',
-            'kyc_data'                   => 'encrypted:array',
+            'email_verified_at' => 'datetime',
+            'mobile_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'kyc_submitted_at' => 'datetime',
+            'kyc_approved_at' => 'datetime',
+            'kyc_expires_at' => 'datetime',
+            'pep_status' => 'boolean',
+            'kyc_data' => 'encrypted:array',
+            'kyc_steps_completed' => 'array',
             'privacy_policy_accepted_at' => 'datetime',
-            'terms_accepted_at'          => 'datetime',
-            'marketing_consent_at'       => 'datetime',
-            'data_retention_consent'     => 'boolean',
-            'has_completed_onboarding'   => 'boolean',
-            'onboarding_completed_at'    => 'datetime',
-            'transaction_pin'            => 'hashed',
-            'mobile_preferences'         => 'array',
-            'free_tx_until'              => 'datetime',
-            'sponsored_tx_used'          => 'integer',
-            'sponsored_tx_limit'         => 'integer',
-            'frozen_at'                  => 'datetime',
+            'terms_accepted_at' => 'datetime',
+            'marketing_consent_at' => 'datetime',
+            'data_retention_consent' => 'boolean',
+            'has_completed_onboarding' => 'boolean',
+            'onboarding_completed_at' => 'datetime',
+            'transaction_pin' => 'hashed',
+            'mobile_preferences' => 'array',
+            'free_tx_until' => 'datetime',
+            'sponsored_tx_used' => 'integer',
+            'sponsored_tx_limit' => 'integer',
+            'frozen_at' => 'datetime',
         ];
     }
 
-    /**
-     * @return string
-     */
     public function getRouteKeyName(): string
     {
         return 'uuid';
@@ -194,11 +202,26 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * Get total balance across all accounts in default currency (SZL).
+     */
+    public function getTotalBalanceAttribute(): int
+    {
+        $accountUuids = $this->accounts()->pluck('uuid');
+        if ($accountUuids->isEmpty()) {
+            return 0;
+        }
+
+        return AccountBalance::whereIn('account_uuid', $accountUuids)
+            ->where('asset_code', 'SZL')
+            ->sum('balance');
+    }
+
+    /**
      * Get the primary account for the user.
      * This returns the first account which is typically the default one created on registration.
      */
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     * @return HasOne
      */
     public function account()
     {
@@ -289,8 +312,8 @@ class User extends Authenticatable implements FilamentUser
     {
         $this->update(
             [
-            'has_completed_onboarding' => true,
-            'onboarding_completed_at'  => now(),
+                'has_completed_onboarding' => true,
+                'onboarding_completed_at' => now(),
             ]
         );
     }
@@ -344,9 +367,9 @@ class User extends Authenticatable implements FilamentUser
     /**
      * Get the user who referred this user.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<User, $this>
+     * @return BelongsTo<User, $this>
      */
-    public function referrer(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function referrer(): BelongsTo
     {
         return $this->belongsTo(self::class, 'referred_by');
     }
@@ -364,31 +387,31 @@ class User extends Authenticatable implements FilamentUser
     /**
      * Get the reward profile for this user.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne<\App\Domain\Rewards\Models\RewardProfile, $this>
+     * @return HasOne<RewardProfile, $this>
      */
-    public function rewardProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function rewardProfile(): HasOne
     {
-        return $this->hasOne(\App\Domain\Rewards\Models\RewardProfile::class);
+        return $this->hasOne(RewardProfile::class);
     }
 
     /**
      * Get the cards for this user.
      *
-     * @return HasMany<\App\Domain\CardIssuance\Models\Card, $this>
+     * @return HasMany<Card, $this>
      */
     public function cards(): HasMany
     {
-        return $this->hasMany(\App\Domain\CardIssuance\Models\Card::class);
+        return $this->hasMany(Card::class);
     }
 
     /**
      * Get the pockets for this user.
      *
-     * @return HasMany<\App\Domain\Mobile\Models\Pocket, $this>
+     * @return HasMany<Pocket, $this>
      */
     public function pockets(): HasMany
     {
-        return $this->hasMany(\App\Domain\Mobile\Models\Pocket::class, 'user_uuid', 'uuid');
+        return $this->hasMany(Pocket::class, 'user_uuid', 'uuid');
     }
 
     public function isFrozen(): bool
@@ -399,18 +422,18 @@ class User extends Authenticatable implements FilamentUser
     public function freeze(string $reason, ?string $frozenBy = null): void
     {
         $this->update([
-            'frozen_at'     => now(),
+            'frozen_at' => now(),
             'frozen_reason' => $reason,
-            'frozen_by'     => $frozenBy ?? auth()->user()?->email,
+            'frozen_by' => $frozenBy ?? auth()->user()?->email,
         ]);
     }
 
     public function unfreeze(): void
     {
         $this->update([
-            'frozen_at'     => null,
+            'frozen_at' => null,
             'frozen_reason' => null,
-            'frozen_by'     => null,
+            'frozen_by' => null,
         ]);
     }
 }

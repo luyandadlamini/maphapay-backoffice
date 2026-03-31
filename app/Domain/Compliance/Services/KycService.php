@@ -13,8 +13,30 @@ use InvalidArgumentException;
 
 class KycService
 {
+    public const STEP_IDENTITY_TYPE = 'identity_type';
+
+    public const STEP_IDENTITY_DOCUMENT = 'identity_document';
+
+    public const STEP_ADDRESS = 'address';
+
+    public const STEP_ADDRESS_PROOF = 'address_proof';
+
+    public const STEP_SELFIE = 'selfie';
+
+    public const IDENTITY_TYPE_PASSPORT = 'passport';
+
+    public const IDENTITY_TYPE_NATIONAL_ID = 'national_id';
+
+    public const ALL_STEPS = [
+        self::STEP_IDENTITY_TYPE,
+        self::STEP_IDENTITY_DOCUMENT,
+        self::STEP_SELFIE,
+        self::STEP_ADDRESS,
+        self::STEP_ADDRESS_PROOF,
+    ];
+
     /**
-     * Submit KYC documents for a user.
+     * Submit KYC documents for a user (legacy method for backward compatibility).
      */
     public function submitKyc(User $user, array $documents): void
     {
@@ -23,7 +45,7 @@ class KycService
                 // Update user KYC status
                 $user->update(
                     [
-                        'kyc_status'       => 'pending',
+                        'kyc_status' => 'pending',
                         'kyc_submitted_at' => now(),
                     ]
                 );
@@ -38,12 +60,213 @@ class KycService
                     'kyc.submitted',
                     $user,
                     null,
-                    ['documents'      => count($documents)],
+                    ['documents' => count($documents)],
                     ['document_types' => array_column($documents, 'type')],
                     'kyc,compliance'
                 );
             }
         );
+    }
+
+    /**
+     * Submit identity step - user selects identity type and uploads identity document.
+     */
+    public function submitIdentityStep(User $user, string $identityType, array $documents): void
+    {
+        if (! in_array($identityType, [self::IDENTITY_TYPE_PASSPORT, self::IDENTITY_TYPE_NATIONAL_ID])) {
+            throw new InvalidArgumentException('Invalid identity type. Must be passport or national_id.');
+        }
+
+        $validDocumentTypes = [self::STEP_SELFIE, $identityType];
+        foreach ($documents as $document) {
+            if (! in_array($document['type'], $validDocumentTypes)) {
+                throw new InvalidArgumentException("Invalid document type for identity step: {$document['type']}");
+            }
+        }
+
+        DB::transaction(function () use ($user, $identityType, $documents) {
+            $stepsCompleted = $user->kyc_steps_completed ?? [];
+
+            $user->update([
+                'kyc_identity_type' => $identityType,
+                'kyc_current_step' => self::STEP_ADDRESS,
+                'kyc_status' => 'partial_identity',
+                'kyc_steps_completed' => array_unique(array_merge($stepsCompleted, [self::STEP_IDENTITY_TYPE, self::STEP_IDENTITY_DOCUMENT, self::STEP_SELFIE])),
+            ]);
+
+            foreach ($documents as $document) {
+                $this->storeDocument($user, $document);
+            }
+
+            AuditLog::log(
+                'kyc.identity_step_completed',
+                $user,
+                null,
+                ['identity_type' => $identityType, 'documents' => count($documents)],
+                ['document_types' => array_column($documents, 'type')],
+                'kyc,compliance'
+            );
+        });
+    }
+
+    /**
+     * Submit address step - user provides address information.
+     */
+    public function submitAddressStep(User $user, array $addressData): void
+    {
+        $requiredFields = ['address_line1', 'city', 'country'];
+        foreach ($requiredFields as $field) {
+            if (empty($addressData[$field])) {
+                throw new InvalidArgumentException("Address field '{$field}' is required.");
+            }
+        }
+
+        DB::transaction(function () use ($user, $addressData) {
+            $kycData = $user->kyc_data ?? [];
+            $kycData['address'] = [
+                'address_line1' => $addressData['address_line1'],
+                'address_line2' => $addressData['address_line2'] ?? null,
+                'city' => $addressData['city'],
+                'state' => $addressData['state'] ?? null,
+                'postal_code' => $addressData['postal_code'] ?? null,
+                'country' => $addressData['country'],
+            ];
+
+            $stepsCompleted = $user->kyc_steps_completed ?? [];
+            $user->update([
+                'kyc_data' => $kycData,
+                'kyc_current_step' => self::STEP_ADDRESS_PROOF,
+                'kyc_steps_completed' => array_unique(array_merge($stepsCompleted, [self::STEP_ADDRESS])),
+            ]);
+
+            AuditLog::log(
+                'kyc.address_step_completed',
+                $user,
+                null,
+                null,
+                ['city' => $addressData['city'], 'country' => $addressData['country']],
+                'kyc,compliance'
+            );
+        });
+    }
+
+    /**
+     * Submit address proof step - user uploads utility bill or bank statement.
+     */
+    public function submitAddressProofStep(User $user, array $documents): void
+    {
+        $validTypes = [self::STEP_ADDRESS_PROOF];
+        foreach ($documents as $document) {
+            if (! in_array($document['type'], ['utility_bill', 'bank_statement'])) {
+                throw new InvalidArgumentException('Address proof must be utility_bill or bank_statement.');
+            }
+        }
+
+        DB::transaction(function () use ($user, $documents) {
+            $stepsCompleted = $user->kyc_steps_completed ?? [];
+
+            foreach ($documents as $document) {
+                $this->storeDocument($user, [
+                    'type' => self::STEP_ADDRESS_PROOF,
+                    'file' => $document['file'],
+                    'subtype' => $document['type'],
+                ]);
+            }
+
+            $user->update([
+                'kyc_current_step' => 'review',
+                'kyc_steps_completed' => array_unique(array_merge($stepsCompleted, [self::STEP_ADDRESS_PROOF])),
+            ]);
+
+            AuditLog::log(
+                'kyc.address_proof_step_completed',
+                $user,
+                null,
+                ['documents' => count($documents)],
+                ['document_types' => array_column($documents, 'type')],
+                'kyc,compliance'
+            );
+        });
+    }
+
+    /**
+     * Finalize KYC submission - all steps complete, submit for review.
+     */
+    public function finalizeKyc(User $user): void
+    {
+        $stepsCompleted = $user->kyc_steps_completed ?? [];
+        $requiredSteps = [self::STEP_IDENTITY_TYPE, self::STEP_IDENTITY_DOCUMENT, self::STEP_SELFIE, self::STEP_ADDRESS, self::STEP_ADDRESS_PROOF];
+
+        foreach ($requiredSteps as $step) {
+            if (! in_array($step, $stepsCompleted)) {
+                throw new InvalidArgumentException("Cannot finalize KYC: step '{$step}' is not complete.");
+            }
+        }
+
+        DB::transaction(function () use ($user) {
+            $user->update([
+                'kyc_status' => 'pending',
+                'kyc_submitted_at' => now(),
+                'kyc_current_step' => 'pending',
+            ]);
+
+            AuditLog::log(
+                'kyc.submitted',
+                $user,
+                null,
+                ['identity_type' => $user->kyc_identity_type],
+                null,
+                'kyc,compliance'
+            );
+        });
+    }
+
+    /**
+     * Get KYC progress for a user.
+     */
+    public function getKycProgress(User $user): array
+    {
+        $stepsCompleted = $user->kyc_steps_completed ?? [];
+        $currentStep = $user->kyc_current_step ?? self::STEP_IDENTITY_TYPE;
+
+        return [
+            'status' => $user->kyc_status ?? 'not_started',
+            'identity_type' => $user->kyc_identity_type,
+            'current_step' => $currentStep,
+            'steps_completed' => $stepsCompleted,
+            'is_complete' => $this->isKycComplete($user),
+            'can_finalize' => $this->canFinalize($user),
+            'address' => $user->kyc_data['address'] ?? null,
+        ];
+    }
+
+    /**
+     * Check if all required KYC steps are complete.
+     */
+    public function isKycComplete(User $user): bool
+    {
+        $stepsCompleted = $user->kyc_steps_completed ?? [];
+        $requiredSteps = [self::STEP_IDENTITY_TYPE, self::STEP_IDENTITY_DOCUMENT, self::STEP_SELFIE, self::STEP_ADDRESS, self::STEP_ADDRESS_PROOF];
+
+        foreach ($requiredSteps as $step) {
+            if (! in_array($step, $stepsCompleted)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if KYC can be finalized.
+     */
+    public function canFinalize(User $user): bool
+    {
+        if ($user->kyc_status === 'pending' || $user->kyc_status === 'approved') {
+            return false;
+        }
+
+        return $this->isKycComplete($user);
     }
 
     /**
@@ -56,15 +279,15 @@ class KycService
 
         return KycDocument::create(
             [
-                'user_uuid'     => $user->uuid,
+                'user_uuid' => $user->uuid,
                 'document_type' => $documentData['type'],
-                'file_path'     => $path,
-                'file_hash'     => $hash,
-                'uploaded_at'   => now(),
-                'metadata'      => [
+                'file_path' => $path,
+                'file_hash' => $hash,
+                'uploaded_at' => now(),
+                'metadata' => [
                     'original_name' => $documentData['file']->getClientOriginalName(),
-                    'mime_type'     => $documentData['file']->getMimeType(),
-                    'size'          => $documentData['file']->getSize(),
+                    'mime_type' => $documentData['file']->getMimeType(),
+                    'size' => $documentData['file']->getSize(),
                 ],
             ]
         );
@@ -82,12 +305,12 @@ class KycService
                 // Update user status
                 $user->update(
                     [
-                        'kyc_status'      => 'approved',
+                        'kyc_status' => 'approved',
                         'kyc_approved_at' => now(),
-                        'kyc_expires_at'  => $options['expires_at'] ?? now()->addYears(2),
-                        'kyc_level'       => $options['level'] ?? 'enhanced',
-                        'risk_rating'     => $options['risk_rating'] ?? 'low',
-                        'pep_status'      => $options['pep_status'] ?? false,
+                        'kyc_expires_at' => $options['expires_at'] ?? now()->addYears(2),
+                        'kyc_level' => $options['level'] ?? 'enhanced',
+                        'risk_rating' => $options['risk_rating'] ?? 'low',
+                        'pep_status' => $options['pep_status'] ?? false,
                     ]
                 );
 
@@ -104,8 +327,8 @@ class KycService
                 AuditLog::log(
                     'kyc.approved',
                     $user,
-                    ['kyc_status'  => $oldStatus],
-                    ['kyc_status'  => 'approved', 'kyc_level' => $user->kyc_level],
+                    ['kyc_status' => $oldStatus],
+                    ['kyc_status' => 'approved', 'kyc_level' => $user->kyc_level],
                     ['verified_by' => $verifiedBy, 'options' => $options],
                     'kyc,compliance,verification'
                 );
@@ -125,7 +348,7 @@ class KycService
                 // Update user status
                 $user->update(
                     [
-                        'kyc_status'      => 'rejected',
+                        'kyc_status' => 'rejected',
                         'kyc_rejected_at' => now(),
                     ]
                 );
@@ -143,8 +366,8 @@ class KycService
                 AuditLog::log(
                     'kyc.rejected',
                     $user,
-                    ['kyc_status'  => $oldStatus],
-                    ['kyc_status'  => 'rejected'],
+                    ['kyc_status' => $oldStatus],
+                    ['kyc_status' => 'rejected'],
                     ['rejected_by' => $rejectedBy, 'reason' => $reason],
                     'kyc,compliance,rejection'
                 );
@@ -183,26 +406,26 @@ class KycService
         return match ($level) {
             'basic' => [
                 'documents' => ['national_id', 'passport', 'selfie'],
-                'limits'    => [
-                    'daily_transaction'   => 100000, // $1,000
+                'limits' => [
+                    'daily_transaction' => 100000, // $1,000
                     'monthly_transaction' => 500000, // $5,000
-                    'max_balance'         => 1000000, // $10,000
+                    'max_balance' => 1000000, // $10,000
                 ],
             ],
             'enhanced' => [
                 'documents' => ['passport', 'utility_bill', 'selfie'],
-                'limits'    => [
-                    'daily_transaction'   => 1000000, // $10,000
+                'limits' => [
+                    'daily_transaction' => 1000000, // $10,000
                     'monthly_transaction' => 5000000, // $50,000
-                    'max_balance'         => 10000000, // $100,000
+                    'max_balance' => 10000000, // $100,000
                 ],
             ],
             'full' => [
                 'documents' => ['passport', 'utility_bill', 'bank_statement', 'selfie', 'proof_of_income'],
-                'limits'    => [
-                    'daily_transaction'   => null, // No limit
+                'limits' => [
+                    'daily_transaction' => null, // No limit
                     'monthly_transaction' => null, // No limit
-                    'max_balance'         => null, // No limit
+                    'max_balance' => null, // No limit
                 ],
             ],
             default => throw new InvalidArgumentException("Unknown KYC level: {$level}"),

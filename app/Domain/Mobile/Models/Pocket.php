@@ -75,7 +75,7 @@ class Pocket extends Model
 
     public function smartRule(): HasOne
     {
-        return $this->hasOne(PocketSmartRule::class, 'pocket_id');
+        return $this->hasOne(PocketSmartRule::class, 'pocket_id', 'uuid');
     }
 
     public function getProgressPercentageAttribute(): float
