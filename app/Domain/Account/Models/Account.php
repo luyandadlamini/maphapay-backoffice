@@ -114,13 +114,13 @@ class Account extends Model
     protected $appends = [];
 
     /**
-     * Get the balance attribute (USD balance for backward compatibility).
+     * Get the balance attribute for default currency.
      *
      * @return int
      */
     public function getBalanceAttribute(): int
     {
-        return $this->getBalance('USD');
+        return $this->getBalance(config('banking.default_currency', 'SZL'));
     }
 
     /**

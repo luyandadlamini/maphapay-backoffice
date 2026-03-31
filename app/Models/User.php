@@ -7,6 +7,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\Transaction;
+use App\Domain\Account\Models\TransactionProjection;
 use App\Domain\Banking\Models\BankAccountModel;
 use App\Domain\Banking\Models\UserBankPreference;
 use App\Domain\Cgo\Models\CgoInvestment;
@@ -322,6 +323,21 @@ class User extends Authenticatable implements FilamentUser
             'aggregate_uuid', // Foreign key on transactions table
             'uuid', // Local key on users table
             'uuid' // Local key on accounts table
+        );
+    }
+
+    /**
+     * Get all transaction projections for the user through their accounts.
+     */
+    public function transactionProjections(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            TransactionProjection::class,
+            Account::class,
+            'user_uuid',
+            'account_uuid',
+            'uuid',
+            'uuid'
         );
     }
 
