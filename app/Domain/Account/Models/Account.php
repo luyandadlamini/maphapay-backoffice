@@ -42,6 +42,19 @@ class Account extends Model
     use HasUuids;
     use BelongsToTeam;
 
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (Account $account) {
+            if (empty($account->user_uuid)) {
+                throw new \InvalidArgumentException(
+                    'Account must have a user_uuid. Use SystemUserService to get a system user for platform accounts.'
+                );
+            }
+        });
+    }
+
     /**
      * Get the columns that should receive a unique identifier.
      *

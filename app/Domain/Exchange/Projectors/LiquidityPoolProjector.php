@@ -22,22 +22,13 @@ class LiquidityPoolProjector extends Projector
 {
     public function onLiquidityPoolCreated(LiquidityPoolCreated $event): void
     {
-        // Get system user for pool accounts
-        $systemUser = \App\Models\User::firstOrCreate(
-            ['email' => 'system@finaegis.com'],
-            [
-            'name'     => 'System',
-            'password' => bcrypt('system'),
-            'uuid'     => Str::uuid()->toString(),
-            ]
-        );
+        $poolUser = app(\App\Services\SystemUserService::class)->getPoolUser();
 
-        // Create a system account for the pool
         $poolAccount = Account::create(
             [
             'uuid'      => Str::uuid()->toString(),
             'name'      => "Liquidity Pool {$event->baseCurrency}/{$event->quoteCurrency}",
-            'user_uuid' => $systemUser->uuid,
+            'user_uuid' => $poolUser->uuid,
             'balance'   => 0,
             'frozen'    => false,
             ]
