@@ -38,6 +38,13 @@ use App\Http\Controllers\API\Compatibility\SendMoney\SendMoneyStoreController;
 use App\Http\Controllers\API\Compatibility\Transactions\TransactionHistoryController;
 use App\Http\Controllers\API\Compatibility\VerificationProcess\VerifyOtpController;
 use App\Http\Controllers\API\Compatibility\VerificationProcess\VerifyPinController;
+use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardListController;
+use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardViewController;
+use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardEnsureDefaultController;
+use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardStoreAdditionalController;
+use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardAddFundController;
+use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardCancelController;
+use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardTransactionController;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Support\Facades\Route;
 
@@ -193,6 +200,34 @@ Route::middleware('auth:sanctum')
 Route::middleware('auth:sanctum')
     ->delete('budget/categories/{id}', BudgetCategoriesDeleteController::class)
     ->name('maphapay.compat.budget.categories.delete');
+
+Route::middleware('auth:sanctum')
+    ->get('virtual-card/list', VirtualCardListController::class)
+    ->name('maphapay.compat.virtual-card.list');
+
+Route::middleware('auth:sanctum')
+    ->get('virtual-card/view/{id}', VirtualCardViewController::class)
+    ->name('maphapay.compat.virtual-card.view');
+
+Route::middleware('auth:sanctum')
+    ->post('virtual-card/ensure-default', VirtualCardEnsureDefaultController::class)
+    ->name('maphapay.compat.virtual-card.ensure-default');
+
+Route::middleware('auth:sanctum')
+    ->post('virtual-card/store-additional', VirtualCardStoreAdditionalController::class)
+    ->name('maphapay.compat.virtual-card.store-additional');
+
+Route::middleware('auth:sanctum')
+    ->post('virtual-card/add/fund/{id}', VirtualCardAddFundController::class)
+    ->name('maphapay.compat.virtual-card.add-fund');
+
+Route::middleware('auth:sanctum')
+    ->post('virtual-card/cancel/{id}', VirtualCardCancelController::class)
+    ->name('maphapay.compat.virtual-card.cancel');
+
+Route::middleware('auth:sanctum')
+    ->get('virtual-card/transaction', VirtualCardTransactionController::class)
+    ->name('maphapay.compat.virtual-card.transaction');
 
 // Catch-all: log any compat-prefix requests that don't match a defined route.
 // This helps identify missing endpoints the mobile app is calling.
