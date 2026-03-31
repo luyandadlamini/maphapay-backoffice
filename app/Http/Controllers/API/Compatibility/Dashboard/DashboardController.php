@@ -61,7 +61,7 @@ class DashboardController extends Controller
                 'user' => [
                     'id'      => $user->id,
                     'email'   => $user->email,
-                    'mobile'  => null,
+                    'mobile'  => $user->mobile,
                     'balance' => $balanceStr,
                 ],
                 'balance' => $balanceStr,
