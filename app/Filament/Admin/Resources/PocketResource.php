@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Filament\Admin\Resources\PocketResource;
+namespace App\Filament\Admin\Resources;
 
 use App\Domain\Mobile\Models\Pocket;
 use App\Filament\Admin\Resources\PocketResource\Pages;
