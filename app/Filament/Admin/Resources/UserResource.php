@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Compliance\Services\KycService;
 use App\Domain\Shared\Services\OtpService;
 use App\Filament\Admin\Resources\UserResource\Pages;
@@ -120,7 +121,14 @@ class UserResource extends Resource
                     Tables\Columns\TextColumn::make('accounts_sum_balance')
                         ->label('Total Balance')
                         ->money('SZL', 100)
-                        ->sum('accounts', 'balance')
+                        ->state(function (User $record): int {
+                            return AccountBalance::query()
+                                ->whereHas('account', function ($query) use ($record): void {
+                                    $query->where('user_uuid', $record->uuid);
+                                })
+                                ->where('asset_code', config('banking.default_currency', 'SZL'))
+                                ->sum('balance');
+                        })
                         ->color(fn ($state): string => ($state ?? 0) < 0 ? 'danger' : 'success')
                         ->weight('bold'),
                     Tables\Columns\TextColumn::make('accounts_count')

@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\AccountResource\Widgets;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Account\Models\Transaction;
 use App\Domain\Account\Models\Turnover;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -20,7 +21,9 @@ class AccountStatsOverview extends BaseWidget
             $totalAccounts = Account::count();
             $activeAccounts = Account::where('frozen', false)->count();
             $frozenAccounts = Account::where('frozen', true)->count();
-            $totalBalance = Account::sum('balance');
+            $totalBalance = AccountBalance::query()
+                ->where('asset_code', config('banking.default_currency', 'SZL'))
+                ->sum('balance');
 
             return [
                 Stat::make('Total Accounts', number_format($totalAccounts))
