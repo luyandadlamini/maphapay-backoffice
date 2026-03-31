@@ -61,13 +61,15 @@ class KycFormController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $status = $user->kyc_status ?? 'not_started';
+        $rawStatus = $user->kyc_status ?? 'not_started';
+        $status = $this->normalizeStatusForCompat($rawStatus);
         $progress = $this->kycService->getKycProgress($user);
 
-        [$message, $formAvailable] = match ($status) {
+        [$message, $formAvailable] = match ($rawStatus) {
             'approved' => ['KYC verification complete.', false],
             'pending', 'in_review' => ['Your verification is being reviewed. We will notify you once complete.', false],
             'rejected', 'expired' => ['Your verification was rejected. Please resubmit to unlock full access.', true],
+            'partial_identity' => ['Continue your verification to unlock higher limits and all features.', true],
             default => ['Verify your identity to unlock higher limits and all features.', true],
         };
 
@@ -85,6 +87,12 @@ class KycFormController extends Controller
         }
 
         return response()->json(['status' => 'success', 'data' => $data]);
+    }
+
+    private function normalizeStatusForCompat(string $status): string
+    {
+        // Mobile compat clients do not understand partial/in-progress status values.
+        return $status === 'partial_identity' ? 'not_started' : $status;
     }
 
     private function buildStepForm(User $user, string $currentStep, array $stepsCompleted): array

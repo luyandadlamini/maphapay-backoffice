@@ -15,6 +15,12 @@ class KycSubmitController extends Controller
 {
     public function __construct(private readonly KycService $kycService) {}
 
+    private function normalizeStatusForCompat(string $status): string
+    {
+        // Mobile compat clients do not understand partial/in-progress status values.
+        return $status === 'partial_identity' ? 'not_started' : $status;
+    }
+
     public function __invoke(Request $request): JsonResponse
     {
         /** @var User $user */
@@ -73,7 +79,7 @@ class KycSubmitController extends Controller
             'status' => 'success',
             'message' => 'Identity documents uploaded. Please continue with your address information.',
             'data' => [
-                'kyc_status' => $progress['status'],
+                'kyc_status' => $this->normalizeStatusForCompat((string) $progress['status']),
                 'current_step' => $progress['current_step'],
                 'steps_completed' => $progress['steps_completed'],
             ],
@@ -109,7 +115,7 @@ class KycSubmitController extends Controller
             'status' => 'success',
             'message' => 'Identity documents uploaded. Please continue with your address information.',
             'data' => [
-                'kyc_status' => $progress['status'],
+                'kyc_status' => $this->normalizeStatusForCompat((string) $progress['status']),
                 'current_step' => $progress['current_step'],
                 'steps_completed' => $progress['steps_completed'],
             ],
@@ -141,7 +147,7 @@ class KycSubmitController extends Controller
             'status' => 'success',
             'message' => 'Address information saved. Please upload your address proof.',
             'data' => [
-                'kyc_status' => $progress['status'],
+                'kyc_status' => $this->normalizeStatusForCompat((string) $progress['status']),
                 'current_step' => $progress['current_step'],
                 'steps_completed' => $progress['steps_completed'],
             ],
@@ -164,7 +170,7 @@ class KycSubmitController extends Controller
             'status' => 'success',
             'message' => 'Address proof uploaded. Review your information and submit.',
             'data' => [
-                'kyc_status' => $progress['status'],
+                'kyc_status' => $this->normalizeStatusForCompat((string) $progress['status']),
                 'current_step' => $progress['current_step'],
                 'steps_completed' => $progress['steps_completed'],
                 'can_finalize' => $progress['can_finalize'],
