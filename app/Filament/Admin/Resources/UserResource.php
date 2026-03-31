@@ -121,11 +121,18 @@ class UserResource extends Resource
                     Tables\Columns\TextColumn::make('accounts_sum_balance')
                         ->label('Total Balance')
                         ->money('SZL', 100)
-                        ->state(function (User $record): int {
-                            return AccountBalance::query()
-                                ->whereHas('account', function ($query) use ($record): void {
-                                    $query->where('user_uuid', $record->uuid);
-                                })
+                        ->state(function (?User $record): ?int {
+                            if ($record === null) {
+                                return null;
+                            }
+
+                            $accountUuids = $record->accounts()->pluck('uuid');
+                            if ($accountUuids->isEmpty()) {
+                                return 0;
+                            }
+
+                            return (int) AccountBalance::query()
+                                ->whereIn('account_uuid', $accountUuids)
                                 ->where('asset_code', config('banking.default_currency', 'SZL'))
                                 ->sum('balance');
                         })
