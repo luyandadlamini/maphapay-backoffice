@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\API\Compatibility\Dashboard;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Asset\Models\Asset;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -59,7 +60,10 @@ class DashboardController extends Controller
             $balanceMinor = $account !== null ? $account->getBalance('SZL') : 0;
             $balanceStr = number_format($balanceMinor / $divisor, $precision, '.', '');
 
-            $totalBalanceMinor = $user->total_balance;
+            $accountUuids = $user->accounts()->pluck('uuid');
+            $totalBalanceMinor = $accountUuids->isNotEmpty()
+                ? AccountBalance::whereIn('account_uuid', $accountUuids)->where('asset_code', 'SZL')->sum('balance')
+                : 0;
             $totalBalanceStr = number_format($totalBalanceMinor / $divisor, $precision, '.', '');
 
             return [

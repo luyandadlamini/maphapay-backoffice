@@ -117,9 +117,10 @@ class UserResource extends Resource
                         ->tooltip(fn (User $record): string => $record->frozen_at
                             ? 'Frozen: '.($record->frozen_reason ?? 'No reason')
                             : 'Active'),
-                    Tables\Columns\TextColumn::make('total_balance')
+                    Tables\Columns\TextColumn::make('accounts_sum_balance')
                         ->label('Total Balance')
                         ->money('SZL', 100)
+                        ->sum('accounts', 'balance')
                         ->color(fn ($state): string => ($state ?? 0) < 0 ? 'danger' : 'success')
                         ->weight('bold'),
                     Tables\Columns\TextColumn::make('accounts_count')

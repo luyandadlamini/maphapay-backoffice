@@ -6,7 +6,6 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Domain\Account\Models\Account;
-use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Account\Models\Transaction;
 use App\Domain\Account\Models\TransactionProjection;
 use App\Domain\Banking\Models\BankAccountModel;
@@ -199,21 +198,6 @@ class User extends Authenticatable implements FilamentUser
     public function accounts()
     {
         return $this->hasMany(Account::class, 'user_uuid', 'uuid');
-    }
-
-    /**
-     * Get total balance across all accounts in default currency (SZL).
-     */
-    public function getTotalBalanceAttribute(): int
-    {
-        $accountUuids = $this->accounts()->pluck('uuid');
-        if ($accountUuids->isEmpty()) {
-            return 0;
-        }
-
-        return AccountBalance::whereIn('account_uuid', $accountUuids)
-            ->where('asset_code', 'SZL')
-            ->sum('balance');
     }
 
     /**
