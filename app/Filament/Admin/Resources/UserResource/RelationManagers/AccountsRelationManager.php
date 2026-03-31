@@ -44,7 +44,7 @@ class AccountsRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
-        $owner = $this->getOwner();
+        $owner = $this->getOwnerRecord();
 
         return $table
             ->headerActions([
