@@ -9,6 +9,7 @@ use App\Filament\Admin\Resources\UserResource\Pages;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\AccountsRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\BankAccountsRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\KycStatusRelationManager;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\RewardProfilesRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\TransactionsRelationManager;
 use App\Models\User;
 use App\Models\UserOtp;
@@ -226,6 +227,40 @@ class UserResource extends Resource
                     Tables\Actions\BulkActionGroup::make(
                         [
                             Tables\Actions\DeleteBulkAction::make(),
+                            Tables\Actions\BulkAction::make('approveKyc')
+                                ->label('Approve KYC')
+                                ->icon('heroicon-o-check-badge')
+                                ->color('success')
+                                ->action(function ($records): void {
+                                    foreach ($records as $record) {
+                                        $record->update([
+                                            'kyc_status'      => 'approved',
+                                            'kyc_approved_at' => now(),
+                                        ]);
+                                    }
+                                    Notification::make()
+                                        ->title('KYC Approved')
+                                        ->success()
+                                        ->body(count($records) . ' user(s) KYC approved.')
+                                        ->send();
+                                }),
+                            Tables\Actions\BulkAction::make('rejectKyc')
+                                ->label('Reject KYC')
+                                ->icon('heroicon-o-x-mark')
+                                ->color('danger')
+                                ->action(function ($records): void {
+                                    foreach ($records as $record) {
+                                        $record->update([
+                                            'kyc_status'      => 'rejected',
+                                            'kyc_rejected_at' => now(),
+                                        ]);
+                                    }
+                                    Notification::make()
+                                        ->title('KYC Rejected')
+                                        ->warning()
+                                        ->body(count($records) . ' user(s) KYC rejected.')
+                                        ->send();
+                                }),
                         ]
                     ),
                 ]
@@ -239,6 +274,7 @@ class UserResource extends Resource
             TransactionsRelationManager::class,
             BankAccountsRelationManager::class,
             KycStatusRelationManager::class,
+            RewardProfilesRelationManager::class,
         ];
     }
 

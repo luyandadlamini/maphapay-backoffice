@@ -337,4 +337,14 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->hasMany(Referral::class, 'referrer_id');
     }
+
+    /**
+     * Get the reward profile for this user.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne<\App\Domain\Rewards\Models\RewardProfile, $this>
+     */
+    public function rewardProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Domain\Rewards\Models\RewardProfile::class);
+    }
 }
