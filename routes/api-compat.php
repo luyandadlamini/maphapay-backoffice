@@ -3,6 +3,13 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\API\Compatibility\Budget\BudgetCategoriesController;
+use App\Http\Controllers\API\Compatibility\Budget\BudgetController;
+use App\Http\Controllers\API\Compatibility\Kyc\KycFormController;
+use App\Http\Controllers\API\Compatibility\Pockets\PocketsController;
+use App\Http\Controllers\API\Compatibility\Rewards\RewardsController;
+use App\Http\Controllers\API\Compatibility\Rewards\RewardsPointsController;
+use App\Http\Controllers\API\Compatibility\SocialMoney\SocialSummaryController;
+use App\Http\Controllers\API\Compatibility\WalletLinking\WalletLinkingController;
 use App\Http\Controllers\API\Compatibility\Dashboard\DashboardController;
 use App\Http\Controllers\API\Compatibility\Mtn\CallbackController;
 use App\Http\Controllers\API\Compatibility\Mtn\DisbursementController;
@@ -109,6 +116,33 @@ Route::middleware('auth:sanctum')
 Route::middleware('auth:sanctum')
     ->get('social-money/threads', SocialThreadsController::class)
     ->name('maphapay.compat.social-money.threads');
+
+Route::middleware('auth:sanctum')
+    ->get('social-money/summary', SocialSummaryController::class)
+    ->name('maphapay.compat.social-money.summary');
+
+Route::middleware('auth:sanctum')
+    ->get('kyc-form', KycFormController::class)
+    ->name('maphapay.compat.kyc-form');
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('rewards', RewardsController::class)
+        ->name('maphapay.compat.rewards.index');
+    Route::get('rewards/points', RewardsPointsController::class)
+        ->name('maphapay.compat.rewards.points');
+});
+
+Route::middleware('auth:sanctum')
+    ->get('pockets', PocketsController::class)
+    ->name('maphapay.compat.pockets');
+
+Route::middleware('auth:sanctum')
+    ->get('wallet-linking', WalletLinkingController::class)
+    ->name('maphapay.compat.wallet-linking');
+
+Route::middleware('auth:sanctum')
+    ->get('budget', BudgetController::class)
+    ->name('maphapay.compat.budget');
 
 // Catch-all: log any compat-prefix requests that don't match a defined route.
 // This helps identify missing endpoints the mobile app is calling.
