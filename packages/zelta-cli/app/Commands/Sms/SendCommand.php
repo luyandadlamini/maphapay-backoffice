@@ -25,7 +25,7 @@ class SendCommand extends Command
     public function __construct()
     {
         parent::__construct('sms:send');
-        $this->setDescription('Send an SMS via VertexSMS');
+        $this->setDescription('Send an SMS via the Zelta API (Twilio or mock)');
     }
 
     protected function configure(): void

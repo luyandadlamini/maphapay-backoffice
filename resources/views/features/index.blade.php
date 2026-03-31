@@ -544,7 +544,7 @@
                         <span class="inline-flex items-center px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full font-medium">New</span>
                     </div>
                     <p class="text-slate-500 mb-4">
-                        Three payment protocols for AI agents: x402 (USDC), MPP (Stripe + Lightning + stablecoins), and AP2 enterprise mandates. Multi-rail SMS payments via VertexSMS.
+                        Three payment protocols for AI agents: x402 (USDC), MPP (Stripe + Lightning + stablecoins), and AP2 enterprise mandates. Multi-rail SMS payments via Twilio or mock transport.
                     </p>
                     <a href="{{ route('features.show', 'machine-payments') }}" class="text-orange-600 font-medium hover:text-orange-700">
                         Learn more &rarr;

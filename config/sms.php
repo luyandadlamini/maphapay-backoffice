@@ -8,8 +8,8 @@ return [
     | SMS Service Configuration
     |--------------------------------------------------------------------------
     |
-    | Configuration for the SMS sending service. Supports VertexSMS and Twilio
-    | as providers, with x402/MPP multi-rail payment gating.
+    | Transactional SMS uses sms.default_provider: "mock" (no carrier) or "twilio"
+    | (Programmable SMS). OTP uses sms.otp_provider: "twilio" (Verify) or "mock".
     |
     */
 
@@ -22,12 +22,8 @@ return [
     | OTP Provider
     |--------------------------------------------------------------------------
     |
-    | The provider used specifically for OTP / 2FA delivery.
-    | Set to "twilio" to delegate OTP lifecycle to Twilio Verify (recommended).
-    | When set to "twilio", Twilio generates, stores, and validates the code —
-    | the local user_otps table is not used for OTP flows.
-    |
-    | Supported: "twilio", "vertexsms", "mock"
+    | "twilio" — Twilio Verify (lifecycle owned by Twilio).
+    | "mock" — code stored locally; no SMS (see logs in non-production).
     |
     */
 
@@ -38,20 +34,30 @@ return [
             'driver'  => 'mock',
             'enabled' => true,
         ],
-        'vertexsms' => [
-            'driver'    => 'vertexsms',
-            'api_token' => env('VERTEXSMS_API_TOKEN', ''),
-            'base_url'  => env('VERTEXSMS_BASE_URL', 'https://api.vertexsms.com'),
-            'sender_id' => env('VERTEXSMS_SENDER_ID', 'Zelta'),
-            'enabled'   => (bool) env('VERTEXSMS_ENABLED', false),
-        ],
         'twilio' => [
-            'driver'             => 'twilio',
-            'account_sid'        => env('TWILIO_ACCOUNT_SID', ''),
-            'auth_token'         => env('TWILIO_AUTH_TOKEN', ''),
-            'verify_service_sid' => env('TWILIO_VERIFY_SERVICE_SID', ''),
-            'enabled'            => (bool) env('TWILIO_ENABLED', false),
+            'driver'                  => 'twilio',
+            'account_sid'             => env('TWILIO_ACCOUNT_SID', ''),
+            'auth_token'              => env('TWILIO_AUTH_TOKEN', ''),
+            'verify_service_sid'      => env('TWILIO_VERIFY_SERVICE_SID', ''),
+            'from_number'             => env('TWILIO_FROM_NUMBER', ''),
+            'messaging_service_sid'   => env('TWILIO_MESSAGING_SERVICE_SID', ''),
+            'enabled'                 => (bool) env('TWILIO_ENABLED', false),
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Static rate card (optional)
+    |--------------------------------------------------------------------------
+    |
+    | Used for MPP pricing display. Each row: CountryCode (ISO2), Country name,
+    | Operator label, Rate (EUR per SMS as decimal string).
+    | When empty, pricing falls back to sms.pricing.fallback_usdc.
+    |
+    */
+
+    'rate_card' => [
+        // Example: ['CountryCode' => 'LT', 'Country' => 'Lithuania', 'Operator' => '*', 'Rate' => '0.039'],
     ],
 
     /*
@@ -61,31 +67,24 @@ return [
     */
 
     'pricing' => [
-        // Margin applied on top of provider rate (1.15 = 15% margin)
         'margin_multiplier' => (float) env('SMS_PRICING_MARGIN', 1.15),
-
-        // EUR/USD conversion rate (updated periodically or via exchange rate service)
-        'eur_usd_rate' => (float) env('SMS_EUR_USD_RATE', 1.08),
-
-        // Fallback price in atomic USDC if rate lookup fails ($0.05)
-        'fallback_usdc' => env('SMS_FALLBACK_PRICE_USDC', '50000'),
-
-        // Cache TTL for rate card (seconds)
-        'rate_cache_ttl' => (int) env('SMS_RATE_CACHE_TTL', 3600),
+        'eur_usd_rate'      => (float) env('SMS_EUR_USD_RATE', 1.08),
+        'fallback_usdc'     => env('SMS_FALLBACK_PRICE_USDC', '50000'),
+        'rate_cache_ttl'    => (int) env('SMS_RATE_CACHE_TTL', 3600),
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Webhook
+    | Webhook (optional)
     |--------------------------------------------------------------------------
+    |
+    | HMAC-SHA256 secret for custom delivery-report callbacks you wire to
+    | SmsService::handleDeliveryReport().
+    |
     */
 
     'webhook' => [
-        // Shared secret for verifying DLR webhook signatures
-        'secret' => env('VERTEXSMS_WEBHOOK_SECRET', ''),
-
-        // Allowed IPs for DLR webhook delivery (VertexSMS IP range)
-        'allowed_ips' => array_filter(explode(',', env('VERTEXSMS_WEBHOOK_IPS', '178.33.133.192/28'))),
+        'secret' => env('SMS_WEBHOOK_SECRET', ''),
     ],
 
     /*
@@ -95,7 +94,7 @@ return [
     */
 
     'defaults' => [
-        'sender_id'       => env('VERTEXSMS_SENDER_ID', 'Zelta'),
+        'sender_id'       => env('SMS_SENDER_ID', 'Zelta'),
         'max_message_len' => 1600,
         'test_mode'       => (bool) env('SMS_TEST_MODE', false),
     ],

@@ -49,7 +49,7 @@ FinAegis provides the foundation for building digital banking applications. The 
 | Machine payments | MPP multi-rail (Stripe, USDC, Lightning), AP2 mandates, x402 Solana (v6.4.0) |
 | Payment orchestration | HyperSwitch 150+ connectors, smart routing, failover (v6.4.2) |
 | Mobile launch readiness | Quest auto-triggers, device attestation, JIT funding, rewards (v6.5.0) |
-| SMS multi-rail payments | VertexSMS integration, MPP-gated SMS, MCP tool for AI agents (v6.5.0) |
+| SMS multi-rail payments | Twilio or mock SMS, MPP-gated SMS, MCP tool for AI agents (v6.5.0) |
 | Learning modern architecture | Complete DDD + CQRS + Event Sourcing example |
 
 ---

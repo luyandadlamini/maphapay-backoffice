@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\SMS\Models\SmsMessage;
+use App\Domain\SMS\Services\SmsService;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Sanctum\Sanctum;
@@ -105,7 +106,7 @@ describe('SMS Endpoints', function (): void {
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
 
         SmsMessage::create([
-            'provider'     => 'vertexsms',
+            'provider'     => 'twilio',
             'provider_id'  => 'test-msg-123',
             'to'           => '+37069912345',
             'from'         => 'Zelta',
@@ -125,12 +126,10 @@ describe('SMS Endpoints', function (): void {
     });
 });
 
-describe('SMS DLR Webhook', function (): void {
+describe('SMS delivery reports (SmsService)', function (): void {
     it('accepts valid delivery report', function (): void {
-        config(['sms.webhook.secret' => '']);
-
         SmsMessage::create([
-            'provider'     => 'vertexsms',
+            'provider'     => 'twilio',
             'provider_id'  => 'dlr-test-001',
             'to'           => '+37069912345',
             'from'         => 'Zelta',
@@ -142,44 +141,27 @@ describe('SMS DLR Webhook', function (): void {
             'test_mode'    => true,
         ]);
 
-        $response = $this->postJson('/api/v1/webhooks/vertexsms/dlr', [
+        app(SmsService::class)->handleDeliveryReport([
             'message_id' => 'dlr-test-001',
             'status'     => 'delivered',
         ]);
-
-        $response->assertOk();
-        $response->assertJson(['received' => true]);
 
         $sms = SmsMessage::where('provider_id', 'dlr-test-001')->first();
         expect($sms->status)->toBe(SmsMessage::STATUS_DELIVERED);
     });
 
-    it('rejects DLR without message_id', function (): void {
-        config(['sms.webhook.secret' => '']);
-
-        $response = $this->postJson('/api/v1/webhooks/vertexsms/dlr', [
-            'status' => 'delivered',
-        ]);
-
-        $response->assertUnprocessable();
-    });
-
     it('ignores DLR for unknown messages', function (): void {
-        config(['sms.webhook.secret' => '']);
-
-        $response = $this->postJson('/api/v1/webhooks/vertexsms/dlr', [
+        app(SmsService::class)->handleDeliveryReport([
             'message_id' => 'does-not-exist',
             'status'     => 'delivered',
         ]);
 
-        $response->assertOk();
+        expect(true)->toBeTrue();
     });
 
     it('enforces forward-only status transitions', function (): void {
-        config(['sms.webhook.secret' => '']);
-
         SmsMessage::create([
-            'provider'     => 'vertexsms',
+            'provider'     => 'twilio',
             'provider_id'  => 'dlr-fwd-001',
             'to'           => '+37069912345',
             'from'         => 'Zelta',
@@ -191,7 +173,7 @@ describe('SMS DLR Webhook', function (): void {
             'test_mode'    => true,
         ]);
 
-        $this->postJson('/api/v1/webhooks/vertexsms/dlr', [
+        app(SmsService::class)->handleDeliveryReport([
             'message_id' => 'dlr-fwd-001',
             'status'     => 'sent',
         ]);

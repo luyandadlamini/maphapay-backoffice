@@ -48,9 +48,8 @@ use OpenApi\Attributes as OA;
 #[OA\Tag(name: 'Mobile Wallet', description: 'Mobile wallet: token balances, transaction history, address management, and transfers')]
 #[OA\Tag(name: 'Treasury', description: 'Treasury management: liquidity forecasting, alerts, and workflow orchestration')]
 #[OA\Tag(name: 'Lending', description: 'P2P lending: loan applications, payments, early settlement, and loan management')]
-#[OA\Tag(name: 'SMS', description: 'SMS messaging: send messages, check rates, delivery status, and service info')]
+#[OA\Tag(name: 'SMS', description: 'SMS messaging: send messages (Twilio or mock), check rates, delivery status, and service info')]
 #[OA\Tag(name: 'Machine Payments', description: 'Machine Payments Protocol (MPP): multi-rail HTTP 402 payments with Stripe, USDC, Lightning, and x402')]
-#[OA\Tag(name: 'SMS Webhooks', description: 'SMS delivery report webhooks from VertexSMS')]
 class OpenApiDoc
 {
 }

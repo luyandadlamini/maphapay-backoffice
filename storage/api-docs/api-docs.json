@@ -54300,58 +54300,6 @@
                 }
             }
         },
-        "/api/v1/webhooks/vertexsms/dlr": {
-            "post": {
-                "tags": [
-                    "SMS Webhooks"
-                ],
-                "summary": "VertexSMS delivery report webhook",
-                "description": "Receives SMS delivery status updates from VertexSMS. Verifies HMAC-SHA256 signature from X-VertexSMS-Signature header.",
-                "operationId": "vertexSmsDlr",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "message_id",
-                                    "status"
-                                ],
-                                "properties": {
-                                    "message_id": {
-                                        "type": "string"
-                                    },
-                                    "status": {
-                                        "type": "string",
-                                        "enum": [
-                                            "sent",
-                                            "delivered",
-                                            "failed"
-                                        ]
-                                    },
-                                    "delivered_at": {
-                                        "type": "string",
-                                        "nullable": true
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Delivery report accepted"
-                    },
-                    "401": {
-                        "description": "Invalid webhook signature"
-                    },
-                    "422": {
-                        "description": "Missing message_id"
-                    }
-                }
-            }
-        },
         "/api/workflows": {
             "get": {
                 "tags": [
@@ -61205,9 +61153,6 @@
         },
         {
             "name": "Machine Payments"
-        },
-        {
-            "name": "SMS Webhooks"
         },
         {
             "name": "Exchange Rates",

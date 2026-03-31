@@ -26,7 +26,7 @@ it('creates the SMS monetized endpoint', function () {
     expect($endpoint->asset)->toBe('USDC');
     expect($endpoint->scheme)->toBe('exact');
     expect($endpoint->is_active)->toBeTrue();
-    expect($endpoint->extra)->toHaveKey('provider', 'vertexsms');
+    expect($endpoint->extra)->toHaveKey('provider', 'twilio');
 });
 
 it('creates a demo SMS spending limit', function () {
@@ -74,7 +74,7 @@ it('is idempotent on repeated runs', function () {
 
     $endpointCount = X402MonetizedEndpoint::where('path', '/api/v1/sms/send')->count();
     $limitCount = X402SpendingLimit::where('agent_id', 'demo-sms-agent')->count();
-    $msgCount = SmsMessage::where('provider_id', 'like', 'demo-vtx-%')->count();
+    $msgCount = SmsMessage::where('provider_id', 'like', 'demo-sms-%')->count();
 
     expect($endpointCount)->toBe(1);
     expect($limitCount)->toBe(1);

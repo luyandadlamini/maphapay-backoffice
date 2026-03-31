@@ -30,7 +30,7 @@ class OtpService
     public function generateAndSend(User $user, string $type, string $channel = 'sms'): string
     {
         if ($channel === 'sms' && $this->isTwilioProvider()) {
-            $to = $user->dial_code . $user->mobile;
+            $to = $this->e164ForUser($user);
             $this->twilioVerify->startVerification($to);
 
             Log::info('OtpService: Twilio OTP dispatched', [
@@ -44,31 +44,40 @@ class OtpService
 
         $otp = $this->generateOtp();
         $this->store($user, $type, $otp);
+
+        // Default env uses SMS_OTP_PROVIDER=mock — skip real carriers; Twilio Verify is handled above.
+        if ($this->isOtpDeliveryLogOnly()) {
+            $this->logMockOtpDispatched($user, $type, $otp);
+
+            return '';
+        }
+
         $this->deliver($user, $otp, $type, $channel);
 
-        return $otp;
+        return '';
     }
 
     public function verify(User $user, string $type, string $plainOtp): bool
     {
         Log::info('OtpService: verify called', [
-            'user_id' => $user->id,
-            'dial_code' => $user->dial_code,
-            'mobile' => $user->mobile,
-            'type' => $type,
+            'user_id'    => $user->id,
+            'dial_code'  => $user->dial_code,
+            'mobile'     => $user->mobile,
+            'type'       => $type,
             'otp_length' => strlen($plainOtp),
         ]);
 
         if ($this->isDebugOtpEnabled() && $plainOtp === config('otp.debug_code', '123456')) {
             Log::info('OtpService: DEBUG MODE - OTP accepted without verification', [
-                'user_id' => $user->id,
+                'user_id'         => $user->id,
                 'debug_code_used' => $plainOtp,
             ]);
+
             return true;
         }
 
         if ($this->isTwilioProvider()) {
-            $to = $user->dial_code . $user->mobile;
+            $to = $this->e164ForUser($user);
 
             Log::info('OtpService: using Twilio Verify', ['to' => $to]);
 
@@ -82,8 +91,8 @@ class OtpService
         $record = $this->getActiveOtp($user, $type);
 
         Log::info('OtpService: local OTP record lookup', [
-            'user_id' => $user->id,
-            'type' => $type,
+            'user_id'      => $user->id,
+            'type'         => $type,
             'record_found' => $record !== null,
         ]);
 
@@ -94,13 +103,15 @@ class OtpService
         if ($record->isExpired()) {
             Log::info('OtpService: OTP record is expired', [
                 'expires_at' => $record->expires_at,
-                'now' => now(),
+                'now'        => now(),
             ]);
+
             return false;
         }
 
         if (! Hash::check($plainOtp, $record->otp_hash)) {
             Log::info('OtpService: OTP hash mismatch');
+
             return false;
         }
 
@@ -165,6 +176,48 @@ class OtpService
             && $this->twilioVerify->isConfigured();
     }
 
+    /**
+     * When OTP provider is "mock", we persist the code for verify() but skip real SMS.
+     * This matches config/sms.php (default SMS_OTP_PROVIDER / SMS_PROVIDER = mock).
+     */
+    private function isOtpDeliveryLogOnly(): bool
+    {
+        return (string) config('sms.otp_provider', 'mock') === 'mock';
+    }
+
+    private function logMockOtpDispatched(User $user, string $type, string $plainOtp): void
+    {
+        if (app()->environment('production')) {
+            Log::warning('OtpService: OTP provider is mock — no SMS was sent (misconfiguration for production)', [
+                'user_id' => $user->id,
+                'type'    => $type,
+            ]);
+
+            return;
+        }
+
+        Log::info('OtpService: mock OTP (SMS skipped — stored for verify-otp)', [
+            'user_id' => $user->id,
+            'type'    => $type,
+            'otp'     => $plainOtp,
+        ]);
+    }
+
+    /**
+     * E.164 destination for SMS / Twilio (normalized dial + national number).
+     */
+    private function e164ForUser(User $user): string
+    {
+        $dial = trim(str_replace(' ', '', (string) $user->dial_code));
+        if ($dial !== '' && ! str_starts_with($dial, '+')) {
+            $dial = '+' . ltrim($dial, '+');
+        }
+
+        $mobile = str_replace([' ', '-', '(', ')'], '', (string) $user->mobile);
+
+        return $dial . $mobile;
+    }
+
     private function generateOtp(): string
     {
         return (string) random_int(10 ** (self::OTP_LENGTH - 1), 999999);
@@ -207,8 +260,8 @@ class OtpService
         $message = $this->smsMessageForType($type, $plainOtp);
 
         try {
-            $to   = $user->dial_code . $user->mobile;
-            $from = (string) config('sms.defaults.from', 'FinAegis');
+            $to = $this->e164ForUser($user);
+            $from = (string) config('sms.defaults.sender_id', 'FinAegis');
 
             $this->smsService->send($to, $from, $message);
 

@@ -15,8 +15,7 @@ use Illuminate\Database\Seeder;
  * - Agent spending limits for demo SMS usage
  * - Sample SMS messages in various delivery statuses
  *
- * @see app/Domain/SMS/ — VertexSMS integration
- * @see docs/BACKEND_PRODUCTION_HANDOVER.md (vertexsms-partnership)
+ * @see app/Domain/SMS/ — Twilio / mock SMS
  */
 class SmsDemoSeeder extends Seeder
 {
@@ -44,11 +43,11 @@ class SmsDemoSeeder extends Seeder
                 'network'     => 'eip155:8453',
                 'asset'       => 'USDC',
                 'scheme'      => 'exact',
-                'description' => 'Send an SMS via VertexSMS (per-message pricing)',
+                'description' => 'Send an SMS via Twilio or mock transport (per-message pricing)',
                 'mime_type'   => 'application/json',
                 'is_active'   => true,
                 'extra'       => [
-                    'provider'         => 'vertexsms',
+                    'provider'         => 'twilio',
                     'supports_testnet' => true,
                     'rate_card_url'    => '/api/v1/sms/rates',
                 ],
@@ -89,8 +88,8 @@ class SmsDemoSeeder extends Seeder
         $messages = [
             // --- delivered ---
             [
-                'provider'     => 'vertexsms',
-                'provider_id'  => 'demo-vtx-001',
+                'provider'     => 'twilio',
+                'provider_id'  => 'demo-sms-001',
                 'to'           => '+37069912345',
                 'from'         => 'Zelta',
                 'message'      => 'Your OTP code is 483920. Valid for 5 minutes.',
@@ -104,8 +103,8 @@ class SmsDemoSeeder extends Seeder
                 'delivered_at' => now()->subHours(2),
             ],
             [
-                'provider'     => 'vertexsms',
-                'provider_id'  => 'demo-vtx-002',
+                'provider'     => 'twilio',
+                'provider_id'  => 'demo-sms-002',
                 'to'           => '+49170123456',
                 'from'         => 'Zelta',
                 'message'      => 'Payment of 250.00 GCU received. Ref: TXN-8829.',
@@ -120,8 +119,8 @@ class SmsDemoSeeder extends Seeder
             ],
             // --- sent (awaiting DLR) ---
             [
-                'provider'     => 'vertexsms',
-                'provider_id'  => 'demo-vtx-003',
+                'provider'     => 'twilio',
+                'provider_id'  => 'demo-sms-003',
                 'to'           => '+34612345678',
                 'from'         => 'Zelta',
                 'message'      => 'Your weekly account summary is ready. Log in to view.',
@@ -134,8 +133,8 @@ class SmsDemoSeeder extends Seeder
                 'test_mode'    => true,
             ],
             [
-                'provider'     => 'vertexsms',
-                'provider_id'  => 'demo-vtx-004',
+                'provider'     => 'twilio',
+                'provider_id'  => 'demo-sms-004',
                 'to'           => '+33612345678',
                 'from'         => 'Zelta',
                 'message'      => 'Suspicious login attempt detected. Reply BLOCK to freeze account.',
@@ -149,8 +148,8 @@ class SmsDemoSeeder extends Seeder
             ],
             // --- failed ---
             [
-                'provider'     => 'vertexsms',
-                'provider_id'  => 'demo-vtx-005',
+                'provider'     => 'twilio',
+                'provider_id'  => 'demo-sms-005',
                 'to'           => '+447911123456',
                 'from'         => 'Zelta',
                 'message'      => 'Your card ending in 4829 has been activated.',
@@ -164,8 +163,8 @@ class SmsDemoSeeder extends Seeder
             ],
             // --- pending ---
             [
-                'provider'     => 'vertexsms',
-                'provider_id'  => 'demo-vtx-006',
+                'provider'     => 'twilio',
+                'provider_id'  => 'demo-sms-006',
                 'to'           => '+37069998877',
                 'from'         => 'Zelta',
                 'message'      => 'Reminder: Your GCU staking rewards have been distributed.',
@@ -179,8 +178,8 @@ class SmsDemoSeeder extends Seeder
             ],
             // --- multi-part message ---
             [
-                'provider'     => 'vertexsms',
-                'provider_id'  => 'demo-vtx-007',
+                'provider'     => 'twilio',
+                'provider_id'  => 'demo-sms-007',
                 'to'           => '+37069912345',
                 'from'         => 'Zelta',
                 'message'      => 'Dear valued customer, your cross-border transfer of 1,500.00 EUR to DE89370400440532013000 has been processed. The exchange rate used was 1 EUR = 1.0842 GCU. Settlement will complete within 2 business days. Reference: XFR-20260324-7891. Contact support@zelta.app for questions.',

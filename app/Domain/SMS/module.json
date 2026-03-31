@@ -2,7 +2,7 @@
     "$schema": "https://finaegis.io/schemas/module.json",
     "name": "finaegis/sms",
     "version": "1.0.0",
-    "description": "SMS service — VertexSMS integration with x402/MPP multi-rail payment gating",
+    "description": "SMS service — Twilio Verify / Programmable SMS or mock transport, with x402/MPP multi-rail payment gating",
     "type": "feature",
     "dependencies": {
         "required": {

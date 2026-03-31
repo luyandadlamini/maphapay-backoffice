@@ -4,22 +4,24 @@ declare(strict_types=1);
 
 namespace App\Domain\SMS\Services;
 
-use App\Domain\SMS\Clients\VertexSmsClient;
+use App\Domain\SMS\Clients\TwilioMessagingClient;
 use App\Domain\SMS\Events\SmsDelivered;
 use App\Domain\SMS\Events\SmsFailed;
 use App\Domain\SMS\Events\SmsSent;
 use App\Domain\SMS\Models\SmsMessage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use RuntimeException;
 
 /**
- * Core SMS business logic. Sends messages via VertexSMS,
- * records them in the database, and links to MPP payments.
+ * Core SMS business logic. Sends via Twilio Programmable SMS or mock transport,
+ * records messages in the database, and links to MPP payments.
  */
 class SmsService
 {
     public function __construct(
-        private readonly VertexSmsClient $client,
+        private readonly TwilioMessagingClient $twilioMessaging,
         private readonly SmsPricingService $pricing,
     ) {
     }
@@ -38,18 +40,14 @@ class SmsService
     ): array {
         $testMode = (bool) config('sms.defaults.test_mode', false);
 
-        // Get pricing before sending (for record)
         $price = $this->pricing->getPriceForNumber($to);
 
-        // Send via provider
-        $result = $this->client->sendSms($to, $from, $message, $testMode);
+        $result = $this->dispatchToProvider($to, $from, $message, $testMode);
 
-        // Update price if multi-part
         if ($result['parts'] > 1) {
             $price = $this->pricing->getPriceForNumber($to, $result['parts']);
         }
 
-        // Record in database — wrap in transaction for consistency
         $sms = DB::transaction(fn () => SmsMessage::create([
             'provider'        => (string) config('sms.default_provider', 'mock'),
             'provider_id'     => $result['message_id'],
@@ -94,10 +92,7 @@ class SmsService
     }
 
     /**
-     * Handle a delivery report from VertexSMS.
-     *
-     * Uses pessimistic locking to prevent race conditions from
-     * concurrent DLR webhooks for the same message.
+     * Handle a delivery report from an external webhook (generic shape).
      *
      * @param  array{message_id: string, status: string, delivered_at?: string|null}  $dlr
      */
@@ -117,7 +112,6 @@ class SmsService
             $newStatus = $this->normalizeDlrStatus($dlr['status'] ?? '');
             $currentStatus = (string) $sms->status;
 
-            // Only allow forward state transitions
             if (! $this->isValidTransition($currentStatus, $newStatus)) {
                 Log::debug('SMS: DLR skipped (invalid transition)', [
                     'provider_id' => $dlr['message_id'],
@@ -148,8 +142,6 @@ class SmsService
     }
 
     /**
-     * Get message status by provider ID.
-     *
      * @return array{message_id: string, status: string, delivered_at: string|null, payment_status: string|null}|null
      */
     public function getStatus(string $providerMessageId): ?array
@@ -169,8 +161,6 @@ class SmsService
     }
 
     /**
-     * Get supported info (for public endpoint).
-     *
      * @return array{provider: string, enabled: bool, test_mode: bool, networks: array<string>}
      */
     public function getSupportedInfo(): array
@@ -180,6 +170,35 @@ class SmsService
             'enabled'   => (bool) config('sms.enabled', false),
             'test_mode' => (bool) config('sms.defaults.test_mode', false),
             'networks'  => ['eip155:8453', 'eip155:1'],
+        ];
+    }
+
+    /**
+     * @return array{message_id: string, parts: int}
+     */
+    private function dispatchToProvider(string $to, string $from, string $message, bool $testMode): array
+    {
+        $provider = (string) config('sms.default_provider', 'mock');
+
+        return match ($provider) {
+            'mock'   => $this->sendViaMock($message),
+            'twilio' => $this->twilioMessaging->sendSms($to, $from, $message, $testMode),
+            default  => throw new RuntimeException(
+                "Unsupported sms.default_provider \"{$provider}\". Use \"mock\" or \"twilio\"."
+            ),
+        };
+    }
+
+    /**
+     * @return array{message_id: string, parts: int}
+     */
+    private function sendViaMock(string $message): array
+    {
+        $parts = max(1, (int) ceil(mb_strlen($message) / 160));
+
+        return [
+            'message_id' => 'mock_' . Str::lower(Str::random(24)),
+            'parts'      => $parts,
         ];
     }
 
@@ -194,12 +213,6 @@ class SmsService
         };
     }
 
-    /**
-     * Check if a DLR status transition is valid (forward-only).
-     *
-     * pending → sent → delivered (terminal)
-     * pending → sent → failed (terminal)
-     */
     private function isValidTransition(string $current, string $new): bool
     {
         $order = [

@@ -58,7 +58,7 @@ readonly class SmsIntentMandate
             'delegator_did'    => $this->delegatorDid,
             'agent_did'        => $this->agentDid,
             'expires_at'       => $this->expiresAt,
-            'service_provider' => 'vertexsms',
+            'service_provider' => 'twilio',
             'payment_methods'  => ['x402', 'mpp'],
         ], fn ($v) => $v !== null);
     }

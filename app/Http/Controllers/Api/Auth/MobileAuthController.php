@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
 use RuntimeException;
 
@@ -59,15 +60,17 @@ class MobileAuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'dial_code'      => 'required|string|max:10',
-            'mobile'         => 'nullable|string|max:20|required_without:mobile_number',
-            'mobile_number'  => 'nullable|string|max:20|required_without:mobile',
-            'pin'            => 'sometimes|nullable|string|min:4|max:6',
-            'device_name'    => 'sometimes|string',
+            'dial_code'     => 'required|string|max:10',
+            'mobile'        => 'nullable|string|max:20|required_without:mobile_number',
+            'mobile_number' => 'nullable|string|max:20|required_without:mobile',
+            'pin'           => 'sometimes|nullable|string|min:4|max:6',
+            'device_name'   => 'sometimes|string',
         ]);
 
-        $dialCode = $validated['dial_code'];
-        $mobile = (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '');
+        $dialCode = self::normalizeDialCode($validated['dial_code']);
+        $mobile = self::normalizeMobileLocalPart(
+            (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '')
+        );
         $pin = trim((string) ($validated['pin'] ?? ''));
 
         $user = User::where('dial_code', $dialCode)
@@ -188,28 +191,38 @@ class MobileAuthController extends Controller
     public function verifyOtp(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'dial_code'      => 'required|string|max:10',
-            'mobile'         => 'nullable|string|max:20|required_without:mobile_number',
-            'mobile_number'  => 'nullable|string|max:20|required_without:mobile',
-            'otp'            => 'required|string|size:6',
-            'device_name'    => 'sometimes|string',
+            'dial_code'     => 'required|string|max:10',
+            'mobile'        => 'nullable|string|max:20|required_without:mobile_number',
+            'mobile_number' => 'nullable|string|max:20|required_without:mobile',
+            'otp'           => 'required|string|max:32',
+            'device_name'   => 'sometimes|string',
         ]);
 
-        $mobile = (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '');
+        $dialCode = self::normalizeDialCode($validated['dial_code']);
+        $mobile = self::normalizeMobileLocalPart(
+            (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '')
+        );
+        $otpDigits = preg_replace('/\D+/', '', $validated['otp']) ?? '';
+
+        if (strlen($otpDigits) !== 6) {
+            throw ValidationException::withMessages([
+                'otp' => ['The OTP must be 6 digits.'],
+            ]);
+        }
 
         Log::info('MobileAuthController: verifyOtp called', [
-            'dial_code' => $validated['dial_code'],
-            'mobile' => $mobile,
-            'otp' => $validated['otp'],
+            'dial_code' => $dialCode,
+            'mobile'    => $mobile,
+            'otp'       => $otpDigits,
         ]);
 
-        $user = User::where('dial_code', $validated['dial_code'])
+        $user = User::where('dial_code', $dialCode)
             ->where('mobile', $mobile)
             ->first();
 
         Log::info('MobileAuthController: user lookup', [
             'user_found' => $user !== null,
-            'user_id' => $user?->id,
+            'user_id'    => $user?->id,
         ]);
 
         if (! $user) {
@@ -219,7 +232,7 @@ class MobileAuthController extends Controller
             ], 401);
         }
 
-        $verified = $this->otpService->verify($user, UserOtp::TYPE_LOGIN, $validated['otp']);
+        $verified = $this->otpService->verify($user, UserOtp::TYPE_LOGIN, $otpDigits);
 
         Log::info('MobileAuthController: OTP verification result', [
             'verified' => $verified,
@@ -289,14 +302,17 @@ class MobileAuthController extends Controller
     public function resendOtp(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'dial_code'      => 'required|string|max:10',
-            'mobile'         => 'nullable|string|max:20|required_without:mobile_number',
-            'mobile_number'  => 'nullable|string|max:20|required_without:mobile',
+            'dial_code'     => 'required|string|max:10',
+            'mobile'        => 'nullable|string|max:20|required_without:mobile_number',
+            'mobile_number' => 'nullable|string|max:20|required_without:mobile',
         ]);
 
-        $mobile = (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '');
+        $dialCode = self::normalizeDialCode($validated['dial_code']);
+        $mobile = self::normalizeMobileLocalPart(
+            (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '')
+        );
 
-        $user = User::where('dial_code', $validated['dial_code'])
+        $user = User::where('dial_code', $dialCode)
             ->where('mobile', $mobile)
             ->first();
 
@@ -356,14 +372,17 @@ class MobileAuthController extends Controller
     public function forgotPin(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'dial_code'      => 'required|string|max:10',
-            'mobile'         => 'nullable|string|max:20|required_without:mobile_number',
-            'mobile_number'  => 'nullable|string|max:20|required_without:mobile',
+            'dial_code'     => 'required|string|max:10',
+            'mobile'        => 'nullable|string|max:20|required_without:mobile_number',
+            'mobile_number' => 'nullable|string|max:20|required_without:mobile',
         ]);
 
-        $mobile = (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '');
+        $dialCode = self::normalizeDialCode($validated['dial_code']);
+        $mobile = self::normalizeMobileLocalPart(
+            (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '')
+        );
 
-        $user = User::where('dial_code', $validated['dial_code'])
+        $user = User::where('dial_code', $dialCode)
             ->where('mobile', $mobile)
             ->first();
 
@@ -420,15 +439,25 @@ class MobileAuthController extends Controller
     public function verifyResetCode(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'dial_code'      => 'required|string|max:10',
-            'mobile'         => 'nullable|string|max:20|required_without:mobile_number',
-            'mobile_number'  => 'nullable|string|max:20|required_without:mobile',
-            'otp'            => 'required|string|size:6',
+            'dial_code'     => 'required|string|max:10',
+            'mobile'        => 'nullable|string|max:20|required_without:mobile_number',
+            'mobile_number' => 'nullable|string|max:20|required_without:mobile',
+            'otp'           => 'required|string|max:32',
         ]);
 
-        $mobile = (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '');
+        $dialCode = self::normalizeDialCode($validated['dial_code']);
+        $mobile = self::normalizeMobileLocalPart(
+            (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '')
+        );
+        $otpDigits = preg_replace('/\D+/', '', $validated['otp']) ?? '';
 
-        $user = User::where('dial_code', $validated['dial_code'])
+        if (strlen($otpDigits) !== 6) {
+            throw ValidationException::withMessages([
+                'otp' => ['The reset code must be 6 digits.'],
+            ]);
+        }
+
+        $user = User::where('dial_code', $dialCode)
             ->where('mobile', $mobile)
             ->first();
 
@@ -439,7 +468,7 @@ class MobileAuthController extends Controller
             ], 401);
         }
 
-        $verified = $this->otpService->verify($user, UserOtp::TYPE_PIN_RESET, $validated['otp']);
+        $verified = $this->otpService->verify($user, UserOtp::TYPE_PIN_RESET, $otpDigits);
 
         if (! $verified) {
             return response()->json([
@@ -496,16 +525,19 @@ class MobileAuthController extends Controller
     public function resetPin(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'dial_code'      => 'required|string|max:10',
-            'mobile'         => 'nullable|string|max:20|required_without:mobile_number',
-            'mobile_number'  => 'nullable|string|max:20|required_without:mobile',
-            'reset_grant'    => 'required|string|size:64',
-            'pin'            => 'required|string|min:4|max:6|confirmed',
+            'dial_code'     => 'required|string|max:10',
+            'mobile'        => 'nullable|string|max:20|required_without:mobile_number',
+            'mobile_number' => 'nullable|string|max:20|required_without:mobile',
+            'reset_grant'   => 'required|string|size:64',
+            'pin'           => 'required|string|min:4|max:6|confirmed',
         ]);
 
-        $mobile = (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '');
+        $dialCode = self::normalizeDialCode($validated['dial_code']);
+        $mobile = self::normalizeMobileLocalPart(
+            (string) ($validated['mobile'] ?? $validated['mobile_number'] ?? '')
+        );
 
-        $user = User::where('dial_code', $validated['dial_code'])
+        $user = User::where('dial_code', $dialCode)
             ->where('mobile', $mobile)
             ->first();
 
@@ -635,10 +667,10 @@ class MobileAuthController extends Controller
         ]);
 
         return [
-            'access_token'           => $plainAccessToken,
-            'refresh_token'          => $plainRefreshToken,
-            'expires_in'             => config('sanctum.expiration', 86400),
-            'refresh_expires_in'     => config('sanctum.refresh_token_expiration', 2592000),
+            'access_token'            => $plainAccessToken,
+            'refresh_token'           => $plainRefreshToken,
+            'expires_in'              => config('sanctum.expiration', 86400),
+            'refresh_expires_in'      => config('sanctum.refresh_token_expiration', 2592000),
             'newly_created_token_ids' => array_values($newlyCreatedTokenIds),
         ];
     }
@@ -715,5 +747,21 @@ class MobileAuthController extends Controller
         $deleteQuery->orderBy('created_at', 'asc')
             ->limit($tokensToDelete)
             ->delete();
+    }
+
+    private static function normalizeDialCode(string $dialCode): string
+    {
+        $dial = trim(str_replace(' ', '', $dialCode));
+
+        if ($dial === '') {
+            return $dial;
+        }
+
+        return str_starts_with($dial, '+') ? $dial : '+' . ltrim($dial, '+');
+    }
+
+    private static function normalizeMobileLocalPart(string $mobile): string
+    {
+        return str_replace([' ', '-', '(', ')'], '', trim($mobile));
     }
 }

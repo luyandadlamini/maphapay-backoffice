@@ -42,7 +42,7 @@ class MobileRewardsDemoSeeder extends Seeder
             [
                 'slug'          => 'send-sms',
                 'title'         => 'Send Your First SMS',
-                'description'   => 'Send an SMS via the VertexSMS integration',
+                'description'   => 'Send an SMS via Twilio or mock transport',
                 'xp_reward'     => 25,
                 'points_reward' => 50,
                 'category'      => 'onboarding',

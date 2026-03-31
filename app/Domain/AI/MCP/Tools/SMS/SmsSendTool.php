@@ -12,7 +12,7 @@ use Exception;
 use Illuminate\Support\Facades\Log;
 
 /**
- * MCP tool that allows AI agents to send SMS via VertexSMS.
+ * MCP tool that allows AI agents to send SMS (Twilio or mock transport).
  *
  * Agents discover this tool automatically. In practice, the SMS endpoint
  * is MPP-gated — the agent must pay via one of the supported rails.
@@ -38,7 +38,7 @@ class SmsSendTool implements MCPToolInterface
 
     public function getDescription(): string
     {
-        return 'Send an SMS message via VertexSMS. The SMS endpoint requires payment '
+        return 'Send an SMS message via the configured SMS provider (Twilio or mock). The SMS endpoint requires payment '
             . 'via MPP (x402 USDC, Stripe card, or Lightning). Call sms.rates first '
             . 'to check pricing for the destination country.';
     }

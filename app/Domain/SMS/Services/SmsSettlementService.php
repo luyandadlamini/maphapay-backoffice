@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Settlement reconciliation for SMS payments.
  *
- * Generates reports of SMS payments for reconciliation with VertexSMS.
+ * Generates reports of SMS payments for reconciliation.
  * Tracks settled vs unsettled messages and payment rail breakdown.
  */
 class SmsSettlementService
