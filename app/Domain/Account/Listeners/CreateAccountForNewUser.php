@@ -23,16 +23,16 @@ class CreateAccountForNewUser
         /** @var \App\Models\User $user */
         $user = $event->user;
         try {
-            // Create a default personal account for the new user
-            $this->accountService->create(
+            // Create the user's main Maphapay Wallet directly (no workflow needed)
+            $this->accountService->createDirect(
                 new Account(
-                    name: $user->name . "'s Account",
+                    name: 'Maphapay Wallet',
                     userUuid: $user->uuid
                 )
             );
 
             Log::info(
-                'Created default account for new user',
+                'Created Maphapay Wallet for new user',
                 [
                     'user_uuid'  => $user->uuid,
                     'user_email' => $user->email,
@@ -41,7 +41,7 @@ class CreateAccountForNewUser
         } catch (Exception $e) {
             // Log the error but don't prevent user registration
             Log::error(
-                'Failed to create account for new user',
+                'Failed to create Maphapay Wallet for new user',
                 [
                     'user_uuid' => $user->uuid ?? 'unknown',
                     'error'     => $e->getMessage(),
