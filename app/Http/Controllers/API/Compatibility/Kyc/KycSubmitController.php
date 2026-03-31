@@ -15,12 +15,6 @@ class KycSubmitController extends Controller
 {
     public function __construct(private readonly KycService $kycService) {}
 
-    private function normalizeStatusForCompat(string $status): string
-    {
-        // Mobile compat clients do not understand partial/in-progress status values.
-        return $status === 'partial_identity' ? 'not_started' : $status;
-    }
-
     public function __invoke(Request $request): JsonResponse
     {
         /** @var User $user */
@@ -29,7 +23,9 @@ class KycSubmitController extends Controller
         if ($user->kyc_status === 'approved') {
             return response()->json([
                 'status' => 'error',
+                'remark' => 'kyc_submit',
                 'message' => 'Your identity is already verified.',
+                'data' => [],
             ], 400);
         }
 
@@ -68,7 +64,9 @@ class KycSubmitController extends Controller
         if (empty($documents)) {
             return response()->json([
                 'status' => 'error',
+                'remark' => 'kyc_submit',
                 'message' => 'Please upload your identity document and selfie.',
+                'data' => [],
             ], 422);
         }
 
@@ -77,9 +75,10 @@ class KycSubmitController extends Controller
 
         return response()->json([
             'status' => 'success',
+            'remark' => 'kyc_submit',
             'message' => 'Identity documents uploaded. Please continue with your address information.',
             'data' => [
-                'kyc_status' => $this->normalizeStatusForCompat((string) $progress['status']),
+                'kyc_status' => KycCompatStatus::normalizeForMobile((string) $progress['status']),
                 'current_step' => $progress['current_step'],
                 'steps_completed' => $progress['steps_completed'],
             ],
@@ -104,7 +103,9 @@ class KycSubmitController extends Controller
         if (empty($documents)) {
             return response()->json([
                 'status' => 'error',
+                'remark' => 'kyc_submit',
                 'message' => 'Please upload your identity document and selfie.',
+                'data' => [],
             ], 422);
         }
 
@@ -113,9 +114,10 @@ class KycSubmitController extends Controller
 
         return response()->json([
             'status' => 'success',
+            'remark' => 'kyc_submit',
             'message' => 'Identity documents uploaded. Please continue with your address information.',
             'data' => [
-                'kyc_status' => $this->normalizeStatusForCompat((string) $progress['status']),
+                'kyc_status' => KycCompatStatus::normalizeForMobile((string) $progress['status']),
                 'current_step' => $progress['current_step'],
                 'steps_completed' => $progress['steps_completed'],
             ],
@@ -145,9 +147,10 @@ class KycSubmitController extends Controller
 
         return response()->json([
             'status' => 'success',
+            'remark' => 'kyc_submit',
             'message' => 'Address information saved. Please upload your address proof.',
             'data' => [
-                'kyc_status' => $this->normalizeStatusForCompat((string) $progress['status']),
+                'kyc_status' => KycCompatStatus::normalizeForMobile((string) $progress['status']),
                 'current_step' => $progress['current_step'],
                 'steps_completed' => $progress['steps_completed'],
             ],
@@ -168,9 +171,10 @@ class KycSubmitController extends Controller
 
         return response()->json([
             'status' => 'success',
+            'remark' => 'kyc_submit',
             'message' => 'Address proof uploaded. Review your information and submit.',
             'data' => [
-                'kyc_status' => $this->normalizeStatusForCompat((string) $progress['status']),
+                'kyc_status' => KycCompatStatus::normalizeForMobile((string) $progress['status']),
                 'current_step' => $progress['current_step'],
                 'steps_completed' => $progress['steps_completed'],
                 'can_finalize' => $progress['can_finalize'],
@@ -183,7 +187,9 @@ class KycSubmitController extends Controller
         if (! $this->kycService->canFinalize($user)) {
             return response()->json([
                 'status' => 'error',
+                'remark' => 'kyc_submit',
                 'message' => 'Please complete all required steps before submitting.',
+                'data' => [],
             ], 400);
         }
 
@@ -191,6 +197,7 @@ class KycSubmitController extends Controller
 
         return response()->json([
             'status' => 'success',
+            'remark' => 'kyc_submit',
             'message' => 'Documents submitted. Your verification is under review.',
             'data' => ['kyc_status' => 'pending'],
         ]);

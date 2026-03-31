@@ -31,6 +31,7 @@ class KycFormControllerTest extends ControllerTestCase
 
         $response->assertOk()
             ->assertJsonPath('status', 'success')
+            ->assertJsonPath('remark', 'kyc_form')
             ->assertJsonPath('data.kyc_status', 'not_started')
             ->assertJsonPath('data.progress.status', 'not_started')
             ->assertJsonPath('data.form_available', true)

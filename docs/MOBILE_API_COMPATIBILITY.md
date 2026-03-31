@@ -329,6 +329,24 @@ Same as OTP verify but uses the user's transaction PIN.
 
 ---
 
+### KYC (MaphaPay compat — multi-step form)
+
+These endpoints use the same **standard compat envelope** as section 11 (`status`, **`remark`**, `data`). The mobile client should treat a missing or unexpected `remark` as a failed/unknown response when using shared compat parsing.
+
+| Endpoint | Method | Auth | `remark` (success) | Description |
+|----------|--------|------|--------------------|-------------|
+| `/api/kyc-form` | GET | Sanctum | `kyc_form` | Returns `data.form_available`, `data.message`, `data.progress`, `data.steps`, and when applicable `data.current_step_form` (fields for the active step). |
+| `/api/kyc-submit` | POST | Sanctum | `kyc_submit` | Submits the current step (multipart for uploads). Success and error bodies both include `remark: kyc_submit`. |
+
+**FinAegis-native KYC (separate from MaphaPay compat):**
+
+- **Ondato SDK flow** (documented for mobile): `docs/ondato/mobile-integration-guide.md` — `POST /api/compliance/kyc/ondato/start`, status polling, webhooks.
+- **Compliance API v2** (OpenAPI): `/api/v2/compliance/kyc/status`, `POST /api/v2/compliance/kyc/start`, document/selfie uploads on a verification id — see `ComplianceController` and domain compliance routes.
+
+The MaphaPay app should use **either** the compat multi-step form (`/api/kyc-form` + `/api/kyc-submit`) **or** the Ondato/v2 flows — not mix envelope parsers between them.
+
+---
+
 ## 12. What Mobile Should Update
 
 The following are breaking or notable changes that the mobile app should account for:

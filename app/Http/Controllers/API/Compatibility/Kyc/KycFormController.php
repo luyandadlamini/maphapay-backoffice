@@ -62,7 +62,7 @@ class KycFormController extends Controller
         $user = $request->user();
 
         $rawStatus = $user->kyc_status ?? 'not_started';
-        $status = $this->normalizeStatusForCompat($rawStatus);
+        $status = KycCompatStatus::normalizeForMobile($rawStatus);
         $progress = $this->kycService->getKycProgress($user);
         $progress['status'] = $status;
 
@@ -87,13 +87,11 @@ class KycFormController extends Controller
             $data['current_step_form'] = $this->buildStepForm($user, $progress['current_step'], $progress['steps_completed']);
         }
 
-        return response()->json(['status' => 'success', 'data' => $data]);
-    }
-
-    private function normalizeStatusForCompat(string $status): string
-    {
-        // Mobile compat clients do not understand partial/in-progress status values.
-        return $status === 'partial_identity' ? 'not_started' : $status;
+        return response()->json([
+            'status' => 'success',
+            'remark' => 'kyc_form',
+            'data' => $data,
+        ]);
     }
 
     private function buildStepForm(User $user, string $currentStep, array $stepsCompleted): array
