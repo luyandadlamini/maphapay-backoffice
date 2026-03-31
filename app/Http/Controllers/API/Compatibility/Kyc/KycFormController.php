@@ -64,6 +64,7 @@ class KycFormController extends Controller
         $rawStatus = $user->kyc_status ?? 'not_started';
         $status = $this->normalizeStatusForCompat($rawStatus);
         $progress = $this->kycService->getKycProgress($user);
+        $progress['status'] = $status;
 
         [$message, $formAvailable] = match ($rawStatus) {
             'approved' => ['KYC verification complete.', false],
