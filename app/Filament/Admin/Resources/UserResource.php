@@ -9,7 +9,10 @@ use App\Domain\Shared\Services\OtpService;
 use App\Filament\Admin\Resources\UserResource\Pages;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\AccountsRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\BankAccountsRelationManager;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\CardsRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\KycStatusRelationManager;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\PocketsRelationManager;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\ReferralsRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\RewardProfilesRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\TransactionsRelationManager;
 use App\Models\User;
@@ -102,6 +105,16 @@ class UserResource extends Resource
                             'danger'  => 'rejected',
                         ])
                         ->sortable(),
+                    Tables\Columns\IconColumn::make('frozen_at')
+                        ->label('Status')
+                        ->boolean()
+                        ->trueIcon('heroicon-o-lock-closed')
+                        ->falseIcon('heroicon-o-check-circle')
+                        ->trueColor('danger')
+                        ->falseColor('success')
+                        ->tooltip(fn (User $record): string => $record->frozen_at
+                            ? 'Frozen: ' . ($record->frozen_reason ?? 'No reason')
+                            : 'Active'),
                     Tables\Columns\TextColumn::make('accounts_sum_balance')
                         ->label('Total Balance')
                         ->money('USD', 100)
@@ -220,6 +233,64 @@ class UserResource extends Resource
                                     ->send();
                             }
                         }),
+                    Tables\Actions\Action::make('freeze')
+                        ->label('Freeze User')
+                        ->icon('heroicon-o-lock-closed')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading('Freeze User Account')
+                        ->modalDescription('This will prevent the user from logging in and performing any transactions.')
+                        ->modalSubmitActionLabel('Yes, freeze user')
+                        ->form([
+                            Forms\Components\Textarea::make('reason')
+                                ->label('Reason for freezing')
+                                ->required()
+                                ->maxLength(500),
+                        ])
+                        ->action(function (User $record, array $data): void {
+                            try {
+                                $record->freeze($data['reason']);
+
+                                Notification::make()
+                                    ->title('User Frozen')
+                                    ->success()
+                                    ->body($record->name . ' has been frozen.')
+                                    ->send();
+                            } catch (Throwable $e) {
+                                Notification::make()
+                                    ->title('Failed to Freeze User')
+                                    ->danger()
+                                    ->body($e->getMessage())
+                                    ->send();
+                            }
+                        })
+                        ->visible(fn (User $record): bool => ! $record->isFrozen()),
+                    Tables\Actions\Action::make('unfreeze')
+                        ->label('Unfreeze User')
+                        ->icon('heroicon-o-lock-open')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalHeading('Unfreeze User Account')
+                        ->modalDescription('This will allow the user to log in and perform transactions again.')
+                        ->modalSubmitActionLabel('Yes, unfreeze user')
+                        ->action(function (User $record): void {
+                            try {
+                                $record->unfreeze();
+
+                                Notification::make()
+                                    ->title('User Unfrozen')
+                                    ->success()
+                                    ->body($record->name . ' has been unfrozen.')
+                                    ->send();
+                            } catch (Throwable $e) {
+                                Notification::make()
+                                    ->title('Failed to Unfreeze User')
+                                    ->danger()
+                                    ->body($e->getMessage())
+                                    ->send();
+                            }
+                        })
+                        ->visible(fn (User $record): bool => $record->isFrozen()),
                     Tables\Actions\ViewAction::make(),
                     Tables\Actions\EditAction::make(),
                 ]
@@ -327,6 +398,10 @@ class UserResource extends Resource
             TransactionsRelationManager::class,
             BankAccountsRelationManager::class,
             KycStatusRelationManager::class,
+            RewardProfilesRelationManager::class,
+            CardsRelationManager::class,
+            PocketsRelationManager::class,
+            ReferralsRelationManager::class,
         ];
     }
 

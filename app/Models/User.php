@@ -41,6 +41,9 @@ use Spatie\Permission\Traits\HasRoles;
  * @property \Illuminate\Support\Carbon|null $kyc_submitted_at
  * @property \Illuminate\Support\Carbon|null $kyc_rejected_at
  * @property array<string, mixed>|null $mobile_preferences
+ * @property \Illuminate\Support\Carbon|null $frozen_at
+ * @property string|null $frozen_reason
+ * @property string|null $frozen_by
  */
 class User extends Authenticatable implements FilamentUser
 {
@@ -104,6 +107,9 @@ class User extends Authenticatable implements FilamentUser
         'dial_code',
         'mobile_verified_at',
         'username',
+        'frozen_at',
+        'frozen_reason',
+        'frozen_by',
     ];
 
     /**
@@ -155,6 +161,7 @@ class User extends Authenticatable implements FilamentUser
             'free_tx_until'              => 'datetime',
             'sponsored_tx_used'          => 'integer',
             'sponsored_tx_limit'         => 'integer',
+            'frozen_at'                  => 'datetime',
         ];
     }
 
@@ -346,5 +353,48 @@ class User extends Authenticatable implements FilamentUser
     public function rewardProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(\App\Domain\Rewards\Models\RewardProfile::class);
+    }
+
+    /**
+     * Get the cards for this user.
+     *
+     * @return HasMany<\App\Domain\CardIssuance\Models\Card, $this>
+     */
+    public function cards(): HasMany
+    {
+        return $this->hasMany(\App\Domain\CardIssuance\Models\Card::class);
+    }
+
+    /**
+     * Get the pockets for this user.
+     *
+     * @return HasMany<\App\Domain\Mobile\Models\Pocket, $this>
+     */
+    public function pockets(): HasMany
+    {
+        return $this->hasMany(\App\Domain\Mobile\Models\Pocket::class, 'user_uuid', 'uuid');
+    }
+
+    public function isFrozen(): bool
+    {
+        return $this->frozen_at !== null;
+    }
+
+    public function freeze(string $reason, ?string $frozenBy = null): void
+    {
+        $this->update([
+            'frozen_at'     => now(),
+            'frozen_reason' => $reason,
+            'frozen_by'     => $frozenBy ?? auth()->user()?->email,
+        ]);
+    }
+
+    public function unfreeze(): void
+    {
+        $this->update([
+            'frozen_at'     => null,
+            'frozen_reason' => null,
+            'frozen_by'     => null,
+        ]);
     }
 }
