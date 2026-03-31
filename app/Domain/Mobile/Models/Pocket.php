@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Mobile\Models;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -12,6 +13,8 @@ use Illuminate\Support\Str;
 
 class Pocket extends Model
 {
+    use HasUlids;
+
     protected $table = 'pockets';
 
     protected static function boot(): void
@@ -35,10 +38,10 @@ class Pocket extends Model
     ];
 
     protected $casts = [
-        'target_amount' => 'decimal:2',
+        'target_amount'  => 'decimal:2',
         'current_amount' => 'decimal:2',
-        'target_date' => 'date',
-        'is_completed' => 'boolean',
+        'target_date'    => 'date',
+        'is_completed'   => 'boolean',
     ];
 
     public const CATEGORY_TRAVEL = 'travel';
@@ -68,11 +71,17 @@ class Pocket extends Model
         self::CATEGORY_GENERAL,
     ];
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_uuid', 'uuid');
     }
 
+    /**
+     * @return HasOne<PocketSmartRule, $this>
+     */
     public function smartRule(): HasOne
     {
         return $this->hasOne(PocketSmartRule::class, 'pocket_id', 'uuid');
