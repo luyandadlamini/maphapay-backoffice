@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\UserResource\RelationManagers;
 
+use App\Domain\Account\Exceptions\NotEnoughFunds;
 use App\Domain\Mobile\Models\Pocket;
+use App\Domain\Mobile\Services\PocketTransferService;
 use Exception;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -12,7 +14,6 @@ use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\DB;
 
 class PocketsRelationManager extends RelationManager
 {
@@ -116,20 +117,25 @@ class PocketsRelationManager extends RelationManager
                     ])
                     ->action(function (Pocket $record, array $data): void {
                         try {
-                            DB::beginTransaction();
-
-                            $record->addFunds((float) $data['amount']);
-
-                            DB::commit();
+                            app(PocketTransferService::class)->transferToPocket(
+                                user: $record->user,
+                                pocket: $record,
+                                amountMajor: (float) $data['amount'],
+                            );
+                            $record->refresh();
 
                             Notification::make()
                                 ->title('Funds Added')
                                 ->success()
                                 ->body('$' . number_format((float) $data['amount'], 2) . ' added to ' . $record->name)
                                 ->send();
+                        } catch (NotEnoughFunds) {
+                            Notification::make()
+                                ->title('Failed to Add Funds')
+                                ->danger()
+                                ->body('Insufficient balance in wallet.')
+                                ->send();
                         } catch (Exception $e) {
-                            DB::rollBack();
-
                             Notification::make()
                                 ->title('Failed to Add Funds')
                                 ->danger()
@@ -150,11 +156,12 @@ class PocketsRelationManager extends RelationManager
                     ])
                     ->action(function (Pocket $record, array $data): void {
                         try {
-                            DB::beginTransaction();
-
-                            $record->withdrawFunds((float) $data['amount']);
-
-                            DB::commit();
+                            app(PocketTransferService::class)->transferFromPocket(
+                                user: $record->user,
+                                pocket: $record,
+                                amountMajor: (float) $data['amount'],
+                            );
+                            $record->refresh();
 
                             Notification::make()
                                 ->title('Funds Withdrawn')
@@ -162,8 +169,6 @@ class PocketsRelationManager extends RelationManager
                                 ->body('$' . number_format((float) $data['amount'], 2) . ' withdrawn from ' . $record->name)
                                 ->send();
                         } catch (Exception $e) {
-                            DB::rollBack();
-
                             Notification::make()
                                 ->title('Failed to Withdraw Funds')
                                 ->danger()

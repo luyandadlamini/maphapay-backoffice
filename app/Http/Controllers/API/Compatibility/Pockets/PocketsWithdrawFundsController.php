@@ -5,12 +5,19 @@ declare(strict_types=1);
 namespace App\Http\Controllers\API\Compatibility\Pockets;
 
 use App\Domain\Mobile\Models\Pocket;
+use App\Domain\Mobile\Services\PocketTransferService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 
 class PocketsWithdrawFundsController extends Controller
 {
+    public function __construct(
+        private readonly PocketTransferService $pocketTransferService,
+    ) {
+    }
+
     public function __invoke(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
@@ -18,6 +25,12 @@ class PocketsWithdrawFundsController extends Controller
         ]);
 
         $user = $request->user();
+        if (! $user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => ['Unauthenticated'],
+            ], 401);
+        }
 
         $pocket = Pocket::where('uuid', $id)
             ->where('user_uuid', $user->uuid)
@@ -38,24 +51,40 @@ class PocketsWithdrawFundsController extends Controller
             ], 400);
         }
 
-        if ((float) $pocket->current_amount < (float) $validated['amount']) {
+        $pocketAmountStr = number_format((float) $pocket->current_amount, 2, '.', '');
+        $withdrawAmountStr = number_format((float) $validated['amount'], 2, '.', '');
+        if (bccomp($pocketAmountStr, $withdrawAmountStr, 2) < 0) {
             return response()->json([
                 'status' => 'error',
                 'message' => ['Insufficient funds in pocket'],
             ], 400);
         }
 
-        $pocket->withdrawFunds((float) $validated['amount']);
+        try {
+            $pocket = $this->pocketTransferService->transferFromPocket(
+                user: $user,
+                pocket: $pocket,
+                amountMajor: (float) $validated['amount'],
+            );
+        } catch (InvalidArgumentException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => [$e->getMessage()],
+            ], 400);
+        }
 
         return response()->json([
             'status' => 'success',
             'message' => ['Funds withdrawn successfully'],
             'data' => [
-                'pocket' => $this->formatPocket($pocket->fresh()),
+                'pocket' => $this->formatPocket($pocket),
             ],
         ]);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function formatPocket(Pocket $pocket): array
     {
         $smartRule = $pocket->smartRule;

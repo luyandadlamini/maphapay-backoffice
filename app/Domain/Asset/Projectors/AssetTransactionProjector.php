@@ -6,7 +6,6 @@ namespace App\Domain\Asset\Projectors;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
-use App\Domain\Account\Models\Transaction;
 use App\Domain\Asset\Events\AssetTransactionCreated;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -19,12 +18,8 @@ class AssetTransactionProjector extends Projector
      */
     public function onAssetTransactionCreated(AssetTransactionCreated $event): void
     {
-        /** @var Account|null $account */
-        $account = null;
         try {
-            // Find the account
-            /** @var \Illuminate\Database\Eloquent\Model|null $$account */
-            $$account = Account::where('uuid', (string) $event->accountUuid)->first();
+            $account = Account::where('uuid', (string) $event->accountUuid)->first();
 
             if (! $account) {
                 Log::error(
