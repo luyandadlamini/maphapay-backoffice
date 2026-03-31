@@ -238,7 +238,11 @@ class MobileAuthController extends Controller
         $this->enforceSessionLimits($user, $tokenPair['newly_created_token_ids']);
 
         Log::info('MobileAuthController: verifyOtp success', [
-            'user_id' => $user->id,
+            'user_id'                  => $user->id,
+            'mobile_verified_at'       => $user->mobile_verified_at?->toISOString(),
+            'kyc_status'               => $user->kyc_status,
+            'has_completed_onboarding' => $user->has_completed_onboarding,
+            'transaction_pin_set'      => ! empty($user->transaction_pin),
         ]);
 
         return response()->json([
