@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api\Compatibility\Transactions;
+namespace App\Http\Controllers\API\Compatibility\Transactions;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\TransactionProjection;

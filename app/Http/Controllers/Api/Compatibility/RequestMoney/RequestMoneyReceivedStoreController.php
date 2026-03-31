@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api\Compatibility\RequestMoney;
+namespace App\Http\Controllers\API\Compatibility\RequestMoney;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;

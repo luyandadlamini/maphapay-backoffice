@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api\Compatibility\RequestMoney;
+namespace App\Http\Controllers\API\Compatibility\RequestMoney;
 
 use App\Http\Controllers\Controller;
 use App\Models\MoneyRequest;

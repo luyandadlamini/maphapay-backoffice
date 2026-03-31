@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api\Compatibility\ScheduledSend;
+namespace App\Http\Controllers\API\Compatibility\ScheduledSend;
 
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Http\Controllers\Controller;

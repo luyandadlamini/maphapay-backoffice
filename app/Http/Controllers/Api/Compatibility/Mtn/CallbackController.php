@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api\Compatibility\Mtn;
+namespace App\Http\Controllers\API\Compatibility\Mtn;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Asset\Models\Asset;

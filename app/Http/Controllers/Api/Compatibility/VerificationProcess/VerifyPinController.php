@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Api\Compatibility\VerificationProcess;
+namespace App\Http\Controllers\API\Compatibility\VerificationProcess;
 
 use App\Domain\AuthorizedTransaction\Exceptions\InvalidTransactionPinException;
 use App\Domain\AuthorizedTransaction\Exceptions\TransactionNotFoundException;
