@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\API\Compatibility\Budget\BudgetCategoriesController;
 use App\Http\Controllers\API\Compatibility\Budget\BudgetController;
 use App\Http\Controllers\API\Compatibility\Kyc\KycFormController;
+use App\Http\Controllers\API\Compatibility\Kyc\KycSubmitController;
 use App\Http\Controllers\API\Compatibility\Pockets\PocketsController;
 use App\Http\Controllers\API\Compatibility\Rewards\RewardsController;
 use App\Http\Controllers\API\Compatibility\Rewards\RewardsPointsController;
@@ -124,6 +125,10 @@ Route::middleware('auth:sanctum')
 Route::middleware('auth:sanctum')
     ->get('kyc-form', KycFormController::class)
     ->name('maphapay.compat.kyc-form');
+
+Route::middleware('auth:sanctum')
+    ->post('kyc-submit', KycSubmitController::class)
+    ->name('maphapay.compat.kyc-submit');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('rewards', RewardsController::class)
