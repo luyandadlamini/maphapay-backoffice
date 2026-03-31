@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 /**
  * MaphaPay compatibility endpoint: dashboard snapshot for the authenticated user.
@@ -59,6 +60,15 @@ class DashboardController extends Controller
 
             return number_format($balanceMinor / $divisor, $precision, '.', '');
         });
+
+        Log::info('[compat:dashboard] response', [
+            'user_id'                  => $user->id,
+            'mobile'                   => $user->mobile,
+            'mobile_verified_at'       => $user->mobile_verified_at?->toISOString(),
+            'kyc_status'               => $user->kyc_status,
+            'has_completed_onboarding' => $user->has_completed_onboarding,
+            'balance'                  => $balanceStr,
+        ]);
 
         return response()->json([
             'status' => 'success',

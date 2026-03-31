@@ -109,3 +109,16 @@ Route::middleware('auth:sanctum')
 Route::middleware('auth:sanctum')
     ->get('social-money/threads', SocialThreadsController::class)
     ->name('maphapay.compat.social-money.threads');
+
+// Catch-all: log any compat-prefix requests that don't match a defined route.
+// This helps identify missing endpoints the mobile app is calling.
+Route::any('{path}', function (string $path) {
+    \Illuminate\Support\Facades\Log::warning('[compat:404] unmatched route', [
+        'method' => request()->method(),
+        'path'   => $path,
+        'user'   => request()->user()?->id,
+        'body'   => request()->except(['password', 'pin', 'otp']),
+    ]);
+
+    return response()->json(['message' => 'Not found.'], 404);
+})->where('path', '.*')->name('maphapay.compat.fallback');
