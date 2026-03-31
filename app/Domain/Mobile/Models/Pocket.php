@@ -4,16 +4,23 @@ declare(strict_types=1);
 
 namespace App\Domain\Mobile\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Str;
 
 class Pocket extends Model
 {
-    use HasUuids;
 
     protected $table = 'pockets';
+
+    protected static function boot(): void
+    {
+        parent::boot();
+        static::creating(function (self $model): void {
+            $model->uuid ??= (string) Str::uuid();
+        });
+    }
 
     protected $fillable = [
         'user_uuid',

@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
+        if (app()->isProduction()) {
+            return;
+        }
+
         Schema::create('test_fundings', function (Blueprint $table): void {
             $table->ulid('id')->primary();
             $table->uuid('uuid')->unique();
@@ -47,6 +51,10 @@ return new class () extends Migration {
 
     public function down(): void
     {
+        if (app()->isProduction()) {
+            return;
+        }
+
         Schema::dropIfExists('test_fundings');
     }
 };

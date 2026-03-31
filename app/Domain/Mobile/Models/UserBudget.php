@@ -4,15 +4,22 @@ declare(strict_types=1);
 
 namespace App\Domain\Mobile\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class UserBudget extends Model
 {
-    use HasUuids;
 
     protected $table = 'user_budgets';
+
+    protected static function boot(): void
+    {
+        parent::boot();
+        static::creating(function (self $model): void {
+            $model->uuid ??= (string) Str::uuid();
+        });
+    }
 
     protected $fillable = [
         'user_uuid',

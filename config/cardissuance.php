@@ -25,6 +25,8 @@ return [
 
     'default_issuer' => env('CARD_ISSUER', 'demo'),
 
+    'webhook_secret' => env('CARD_ISSUER_WEBHOOK_SECRET'),
+
     /*
     |--------------------------------------------------------------------------
     | Issuer Configurations

@@ -17,9 +17,8 @@ class VirtualCardViewController extends Controller
         $cardService = app(CardProvisioningService::class);
         $card = $cardService->getCard($id);
 
-        if (! $card) {
+        if (! $card || ($card->metadata['user_id'] ?? null) !== $user->uuid) {
             return response()->json([
-                'remark' => 'Card not found',
                 'status' => 'error',
                 'message' => ['Virtual card not found'],
                 'data' => null,
@@ -39,9 +38,8 @@ class VirtualCardViewController extends Controller
         ], $txResult['transactions']);
 
         return response()->json([
-            'remark' => 'Card details retrieved successfully',
             'status' => 'success',
-            'message' => ['Virtual card details retrieved successfully'],
+            'message' => 'Card details retrieved successfully',
             'data' => [
                 'number' => base64_encode('4000' . $card->last4 . '00000000'),
                 'cvc'    => base64_encode('737'),

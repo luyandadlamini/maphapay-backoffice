@@ -20,9 +20,8 @@ class VirtualCardEnsureDefaultController extends Controller
         if (count($existingCards) > 0) {
             $card = $existingCards[0];
             return response()->json([
-                'remark' => 'Default card already exists',
                 'status' => 'success',
-                'message' => ['Default virtual card already exists'],
+                'message' => 'Default virtual card already exists',
                 'data' => [
                     'card' => [
                         'id' => 1,
@@ -57,9 +56,8 @@ class VirtualCardEnsureDefaultController extends Controller
         );
 
         return response()->json([
-            'remark' => 'Default card created',
             'status' => 'success',
-            'message' => ['Default virtual card created successfully'],
+            'message' => 'Default virtual card created successfully',
             'data' => [
                 'card' => [
                     'id' => 1,

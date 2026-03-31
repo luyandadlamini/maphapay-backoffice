@@ -25,6 +25,7 @@ class ValidateWebhookSignature
             'paysera'     => $this->validatePayseraSignature($request),
             'santander'   => $this->validateSantanderSignature($request),
             'openbanking' => $this->validateOpenBankingSignature($request),
+            'demo'        => $this->validateDemoSignature($request),
             default       => false,
         };
 
@@ -151,6 +152,20 @@ class ValidateWebhookSignature
         $expectedSignature = hash_hmac('sha512', $dataToSign, $secret);
 
         return hash_equals($expectedSignature, $signature);
+    }
+
+    /**
+     * Validate demo card-issuer webhook via shared secret header.
+     */
+    private function validateDemoSignature(Request $request): bool
+    {
+        $secret = config('cardissuance.webhook_secret');
+
+        if (! $secret) {
+            return false;
+        }
+
+        return hash_equals($secret, (string) $request->header('X-Webhook-Secret'));
     }
 
     /**

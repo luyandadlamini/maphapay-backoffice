@@ -12,9 +12,8 @@ class VirtualCardTransactionController extends Controller
     public function __invoke(): JsonResponse
     {
         return response()->json([
-            'remark' => 'Transactions retrieved successfully',
             'status' => 'success',
-            'message' => ['Virtual card transactions retrieved successfully'],
+            'message' => 'Transactions retrieved successfully',
             'data' => [
                 'transactions' => [],
             ],

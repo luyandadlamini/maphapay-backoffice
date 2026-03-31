@@ -43,9 +43,8 @@ class VirtualCardListController extends Controller
         }, $cards);
 
         return response()->json([
-            'remark' => 'Cards retrieved successfully',
             'status' => 'success',
-            'message' => ['Virtual cards retrieved successfully'],
+            'message' => 'Cards retrieved successfully',
             'data' => [
                 'cards' => $formattedCards,
             ],

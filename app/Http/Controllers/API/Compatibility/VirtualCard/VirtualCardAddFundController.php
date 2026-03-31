@@ -7,25 +7,34 @@ namespace App\Http\Controllers\API\Compatibility\VirtualCard;
 use App\Domain\CardIssuance\Services\CardProvisioningService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
-class VirtualCardStoreAdditionalController extends Controller
+class VirtualCardAddFundController extends Controller
 {
-    public function __invoke(): JsonResponse
+    public function __invoke(Request $request, string $id): JsonResponse
     {
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+        ]);
+
         $user = request()->user();
 
         $cardService = app(CardProvisioningService::class);
+        $card = $cardService->getCard($id);
 
-        $card = $cardService->createCard(
-            userId: $user->uuid,
-            cardholderName: $user->name ?? 'Card Holder',
-            metadata: ['is_default' => false],
-        );
+        if (! $card || ($card->metadata['user_id'] ?? null) !== $user->uuid) {
+            return response()->json([
+                'status' => 'error',
+                'message' => ['Virtual card not found'],
+                'data' => null,
+            ], 404);
+        }
+
+        $newBalance = $cardService->addFunds($id, (float) $validated['amount']);
 
         return response()->json([
-            'remark' => 'Additional card created',
             'status' => 'success',
-            'message' => ['Additional virtual card created successfully'],
+            'message' => 'Funds added to virtual card successfully',
             'data' => [
                 'card' => [
                     'id' => 1,
@@ -33,7 +42,7 @@ class VirtualCardStoreAdditionalController extends Controller
                     'last4' => $card->last4,
                     'exp_month' => $card->expiresAt->format('m'),
                     'exp_year' => $card->expiresAt->format('Y'),
-                    'balance' => '0.00',
+                    'balance' => $newBalance,
                     'brand' => $card->network->value,
                     'spending_limit' => '0.00',
                     'current_spend' => '0.00',
@@ -50,6 +59,6 @@ class VirtualCardStoreAdditionalController extends Controller
                     ],
                 ],
             ],
-        ], 201);
+        ]);
     }
 }

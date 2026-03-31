@@ -5,20 +5,16 @@ declare(strict_types=1);
 namespace App\Http\Controllers\API\Compatibility\Pockets;
 
 use App\Domain\Mobile\Models\Pocket;
-use App\Domain\Mobile\Models\PocketSmartRule;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class PocketsUpdateRulesController extends Controller
+class PocketsAddFundsController extends Controller
 {
     public function __invoke(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
-            'round_up_change' => 'nullable|boolean',
-            'auto_save_deposits' => 'nullable|boolean',
-            'auto_save_salary' => 'nullable|boolean',
-            'lock_pocket' => 'nullable|boolean',
+            'amount' => 'required|numeric|min:0.01',
         ]);
 
         $user = $request->user();
@@ -34,25 +30,18 @@ class PocketsUpdateRulesController extends Controller
             ], 404);
         }
 
-        $smartRule = $pocket->smartRule;
-
-        if (! $smartRule) {
-            $smartRule = PocketSmartRule::create([
-                'pocket_id' => $pocket->uuid,
-                ...PocketSmartRule::defaults(),
-            ]);
+        if ($pocket->is_completed) {
+            return response()->json([
+                'status' => 'error',
+                'message' => ['Pocket has already reached its target'],
+            ], 400);
         }
 
-        $smartRule->update(array_filter([
-            'round_up_change' => $validated['round_up_change'] ?? null,
-            'auto_save_deposits' => $validated['auto_save_deposits'] ?? null,
-            'auto_save_salary' => $validated['auto_save_salary'] ?? null,
-            'lock_pocket' => $validated['lock_pocket'] ?? null,
-        ], fn ($value) => $value !== null));
+        $pocket->addFunds((float) $validated['amount']);
 
         return response()->json([
             'status' => 'success',
-            'message' => ['Smart rules updated successfully'],
+            'message' => ['Funds added successfully'],
             'data' => [
                 'pocket' => $this->formatPocket($pocket->fresh()),
             ],
@@ -64,7 +53,7 @@ class PocketsUpdateRulesController extends Controller
         $smartRule = $pocket->smartRule;
 
         return [
-            'id' => (string) $pocket->id,
+            'id' => $pocket->uuid,
             'user_id' => $pocket->user_uuid,
             'name' => $pocket->name,
             'target_amount' => number_format((float) $pocket->target_amount, 2, '.', ''),

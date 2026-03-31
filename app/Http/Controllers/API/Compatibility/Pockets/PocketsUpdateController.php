@@ -9,12 +9,16 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class PocketsAddFundsController extends Controller
+class PocketsUpdateController extends Controller
 {
     public function __invoke(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
-            'amount' => 'required|numeric|min:0.01',
+            'name' => 'sometimes|string|max:100',
+            'target_amount' => 'sometimes|numeric|min:0',
+            'target_date' => 'nullable|date_format:Y-m-d',
+            'category' => 'sometimes|string|in:' . implode(',', Pocket::CATEGORIES),
+            'color' => 'sometimes|string|max:20',
         ]);
 
         $user = $request->user();
@@ -30,18 +34,11 @@ class PocketsAddFundsController extends Controller
             ], 404);
         }
 
-        if ($pocket->is_completed) {
-            return response()->json([
-                'status' => 'error',
-                'message' => ['Pocket has already reached its target'],
-            ], 400);
-        }
-
-        $pocket->addFunds((float) $validated['amount']);
+        $pocket->update($validated);
 
         return response()->json([
             'status' => 'success',
-            'message' => ['Funds added successfully'],
+            'message' => ['Pocket updated successfully'],
             'data' => [
                 'pocket' => $this->formatPocket($pocket->fresh()),
             ],
@@ -53,7 +50,7 @@ class PocketsAddFundsController extends Controller
         $smartRule = $pocket->smartRule;
 
         return [
-            'id' => (string) $pocket->id,
+            'id' => $pocket->uuid,
             'user_id' => $pocket->user_uuid,
             'name' => $pocket->name,
             'target_amount' => number_format((float) $pocket->target_amount, 2, '.', ''),

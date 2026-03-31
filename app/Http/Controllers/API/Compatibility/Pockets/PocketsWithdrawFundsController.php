@@ -61,7 +61,7 @@ class PocketsWithdrawFundsController extends Controller
         $smartRule = $pocket->smartRule;
 
         return [
-            'id' => (string) $pocket->id,
+            'id' => $pocket->uuid,
             'user_id' => $pocket->user_uuid,
             'name' => $pocket->name,
             'target_amount' => number_format((float) $pocket->target_amount, 2, '.', ''),
