@@ -182,7 +182,7 @@ class KycService
     {
         return match ($level) {
             'basic' => [
-                'documents' => ['national_id', 'selfie'],
+                'documents' => ['national_id', 'passport', 'selfie'],
                 'limits'    => [
                     'daily_transaction'   => 100000, // $1,000
                     'monthly_transaction' => 500000, // $5,000
