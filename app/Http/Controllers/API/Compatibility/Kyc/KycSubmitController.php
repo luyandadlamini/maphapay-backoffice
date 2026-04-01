@@ -67,6 +67,7 @@ class KycSubmitController extends Controller
                 'user_id' => $user->id,
                 'step' => $user->kyc_current_step,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
