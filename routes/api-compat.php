@@ -19,6 +19,7 @@ use App\Http\Controllers\API\Compatibility\Pockets\PocketsUpdateRulesController;
 use App\Http\Controllers\API\Compatibility\Rewards\RewardsController;
 use App\Http\Controllers\API\Compatibility\Rewards\RewardsPointsController;
 use App\Http\Controllers\API\Compatibility\SocialMoney\SocialFriendsController;
+use App\Http\Controllers\API\Compatibility\SocialMoney\SocialChatCompatController;
 use App\Http\Controllers\API\Compatibility\SocialMoney\SocialFriendRequestsController;
 use App\Http\Controllers\API\Compatibility\SocialMoney\SocialFriendshipStatusController;
 use App\Http\Controllers\API\Compatibility\SocialMoney\SocialSummaryController;
@@ -142,6 +143,21 @@ Route::middleware('auth:sanctum')
 Route::middleware('auth:sanctum')
     ->get('social-money/summary', SocialSummaryController::class)
     ->name('maphapay.compat.social-money.summary');
+
+Route::middleware('auth:sanctum')
+    ->controller(SocialChatCompatController::class)
+    ->prefix('social-money')
+    ->group(function (): void {
+        Route::get('messages/{friendId}', 'messages')->name('maphapay.compat.social-money.messages');
+        Route::post('send', 'send')->name('maphapay.compat.social-money.send');
+        Route::post('send-bill-split', 'sendBillSplit')->name('maphapay.compat.social-money.send-bill-split');
+        Route::post('mark-paid', 'markPaid')->name('maphapay.compat.social-money.mark-paid');
+        Route::post('send-payment-message', 'sendPaymentMessage')->name('maphapay.compat.social-money.send-payment-message');
+        Route::post('send-request-message', 'sendRequestMessage')->name('maphapay.compat.social-money.send-request-message');
+        Route::post('amend-request-message', 'amendRequestMessage')->name('maphapay.compat.social-money.amend-request-message');
+        Route::post('decline-request-message', 'declineRequestMessage')->name('maphapay.compat.social-money.decline-request-message');
+        Route::post('cancel-request-message', 'cancelRequestMessage')->name('maphapay.compat.social-money.cancel-request-message');
+    });
 
 Route::middleware('auth:sanctum')
     ->get('social-money/friends', SocialFriendsController::class)
