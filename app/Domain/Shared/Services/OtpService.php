@@ -24,15 +24,14 @@ class OtpService
     public function __construct(
         private readonly SmsService $smsService,
         private readonly TwilioVerifyClient $twilioVerify,
-    ) {
-    }
+    ) {}
 
     public function generateAndSend(User $user, string $type, string $channel = 'sms'): string
     {
         if ($channel === 'sms' && $this->twilioVerifyMisconfiguredInProduction()) {
             throw new RuntimeException(
                 'Twilio Verify is not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and '
-                . 'TWILIO_VERIFY_SERVICE_SID in the server environment, or set SMS_OTP_PROVIDER=mock.'
+                .'TWILIO_VERIFY_SERVICE_SID in the server environment, or set SMS_OTP_PROVIDER=mock.'
             );
         }
 
@@ -41,7 +40,7 @@ class OtpService
             if (! $this->isPlausibleE164($to)) {
                 throw new RuntimeException(
                     'This phone number cannot receive a verification SMS. Enter the full mobile number '
-                    . 'with country code (no leading 0 after the code), e.g. +26876123456.'
+                    .'with country code (no leading 0 after the code), e.g. +26876123456.'
                 );
             }
 
@@ -49,8 +48,8 @@ class OtpService
 
             Log::info('OtpService: Twilio OTP dispatched', [
                 'user_id' => $user->id,
-                'type'    => $type,
-                'to'      => $to,
+                'type' => $type,
+                'to' => $to,
             ]);
 
             return '';
@@ -73,16 +72,16 @@ class OtpService
     public function verify(User $user, string $type, string $plainOtp): bool
     {
         Log::info('OtpService: verify called', [
-            'user_id'    => $user->id,
-            'dial_code'  => $user->dial_code,
-            'mobile'     => $user->mobile,
-            'type'       => $type,
+            'user_id' => $user->id,
+            'dial_code' => $user->dial_code,
+            'mobile' => $user->mobile,
+            'type' => $type,
             'otp_length' => strlen($plainOtp),
         ]);
 
         if ($this->isDebugOtpEnabled() && $plainOtp === config('otp.debug_code', '123456')) {
             Log::info('OtpService: DEBUG MODE - OTP accepted without verification', [
-                'user_id'         => $user->id,
+                'user_id' => $user->id,
                 'debug_code_used' => $plainOtp,
             ]);
 
@@ -104,8 +103,8 @@ class OtpService
         $record = $this->getActiveOtp($user, $type);
 
         Log::info('OtpService: local OTP record lookup', [
-            'user_id'      => $user->id,
-            'type'         => $type,
+            'user_id' => $user->id,
+            'type' => $type,
             'record_found' => $record !== null,
         ]);
 
@@ -116,7 +115,7 @@ class OtpService
         if ($record->isExpired()) {
             Log::info('OtpService: OTP record is expired', [
                 'expires_at' => $record->expires_at,
-                'now'        => now(),
+                'now' => now(),
             ]);
 
             return false;
@@ -163,7 +162,7 @@ class OtpService
         $remaining = max(0, self::RESEND_COOLDOWN_SECONDS - $elapsed);
 
         return [
-            'can_resend'        => $remaining === 0,
+            'can_resend' => $remaining === 0,
             'remaining_seconds' => (int) $remaining,
         ];
     }
@@ -227,10 +226,14 @@ class OtpService
 
     private function logMockOtpDispatched(User $user, string $type, string $plainOtp): void
     {
-        if (app()->environment('production')) {
-            Log::warning('OtpService: OTP provider is mock — no SMS was sent (misconfiguration for production)', [
+        $shouldLogCode = ! app()->environment('production')
+            || (bool) config('otp.mock_log_plaintext', false)
+            || $this->isDebugOtpEnabled();
+
+        if (! $shouldLogCode) {
+            Log::warning('OtpService: mock OTP — no SMS; code not logged (set OTP_MOCK_LOG_PLAINTEXT=true or OTP_DEBUG_ENABLED=true for sandbox)', [
                 'user_id' => $user->id,
-                'type'    => $type,
+                'type' => $type,
             ]);
 
             return;
@@ -238,8 +241,8 @@ class OtpService
 
         Log::info('OtpService: mock OTP (SMS skipped — stored for verify-otp)', [
             'user_id' => $user->id,
-            'type'    => $type,
-            'otp'     => $plainOtp,
+            'type' => $type,
+            'otp' => $plainOtp,
         ]);
     }
 
@@ -250,7 +253,7 @@ class OtpService
     {
         $dial = trim(str_replace(' ', '', (string) $user->dial_code));
         if ($dial !== '' && ! str_starts_with($dial, '+')) {
-            $dial = '+' . ltrim($dial, '+');
+            $dial = '+'.ltrim($dial, '+');
         }
 
         $mobile = str_replace([' ', '-', '(', ')'], '', (string) $user->mobile);
@@ -259,7 +262,7 @@ class OtpService
             $mobile = substr($mobile, 1);
         }
 
-        return $dial . $mobile;
+        return $dial.$mobile;
     }
 
     private function generateOtp(): string
@@ -269,15 +272,17 @@ class OtpService
 
     private function store(User $user, string $type, string $plainOtp): UserOtp
     {
+        // `user_otps` enforces a single row per (user_id, type). A previously verified OTP
+        // still occupies that slot; deleting only unverified rows left verified rows behind and
+        // caused duplicate-key errors on the next send. Replace the slot entirely.
         UserOtp::where('user_id', $user->id)
             ->where('type', $type)
-            ->whereNull('verified_at')
             ->delete();
 
         return UserOtp::create([
-            'user_id'    => $user->id,
-            'type'       => $type,
-            'otp_hash'   => Hash::make($plainOtp),
+            'user_id' => $user->id,
+            'type' => $type,
+            'otp_hash' => Hash::make($plainOtp),
             'expires_at' => now()->addMinutes(self::OTP_TTL_MINUTES),
         ]);
     }
@@ -311,14 +316,14 @@ class OtpService
 
             Log::info('OtpService: SMS OTP sent', [
                 'user_id' => $user->id,
-                'type'    => $type,
-                'to'      => $to,
+                'type' => $type,
+                'to' => $to,
             ]);
         } catch (Throwable $e) {
             Log::error('OtpService: Failed to send SMS OTP', [
                 'user_id' => $user->id,
-                'type'    => $type,
-                'error'   => $e->getMessage(),
+                'type' => $type,
+                'error' => $e->getMessage(),
             ]);
 
             throw new RuntimeException('Could not deliver the verification code right now. Please try again.');
@@ -329,9 +334,9 @@ class OtpService
     {
         return match ($type) {
             UserOtp::TYPE_MOBILE_VERIFICATION => "Your FinAegis verification code is: {$plainOtp}. Valid for 10 minutes.",
-            UserOtp::TYPE_PIN_RESET           => "Your FinAegis PIN reset code is: {$plainOtp}. Valid for 10 minutes. If you did not request this, please ignore.",
-            UserOtp::TYPE_LOGIN               => "Your FinAegis login code is: {$plainOtp}. Valid for 10 minutes.",
-            default                           => "Your FinAegis code is: {$plainOtp}. Valid for 10 minutes.",
+            UserOtp::TYPE_PIN_RESET => "Your FinAegis PIN reset code is: {$plainOtp}. Valid for 10 minutes. If you did not request this, please ignore.",
+            UserOtp::TYPE_LOGIN => "Your FinAegis login code is: {$plainOtp}. Valid for 10 minutes.",
+            default => "Your FinAegis code is: {$plainOtp}. Valid for 10 minutes.",
         };
     }
 }

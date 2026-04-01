@@ -13,7 +13,7 @@ it('stores mock-provider OTP without SMS and accepts spaced OTP when debug bypas
 
     $this->postJson('/api/auth/mobile/login', [
         'dial_code' => '+268',
-        'mobile'    => '76199901',
+        'mobile' => '76199901',
     ])->assertOk()
         ->assertJsonPath('success', true);
 
@@ -23,19 +23,46 @@ it('stores mock-provider OTP without SMS and accepts spaced OTP when debug bypas
 
     config([
         'otp.debug_enabled' => true,
-        'otp.debug_code'    => '123456',
+        'otp.debug_code' => '123456',
     ]);
 
     $this->postJson('/api/auth/mobile/login', [
         'dial_code' => '+268',
-        'mobile'    => '76199902',
+        'mobile' => '76199902',
     ])->assertOk();
 
     $this->postJson('/api/auth/mobile/verify-otp', [
         'dial_code' => '+268',
-        'mobile'    => '76199902',
-        'otp'       => '12 34 56',
+        'mobile' => '76199902',
+        'otp' => '12 34 56',
     ])->assertOk()
         ->assertJsonPath('success', true)
         ->assertJsonStructure(['data' => ['access_token', 'refresh_token']]);
+});
+
+it('can send a new login OTP after a previous OTP was verified (user_otps unique slot)', function (): void {
+    config([
+        'sms.otp_provider' => 'mock',
+        'otp.debug_enabled' => false,
+    ]);
+
+    $this->postJson('/api/auth/mobile/login', [
+        'dial_code' => '+268',
+        'mobile' => '76199904',
+    ])->assertOk();
+
+    $user = User::where('dial_code', '+268')->where('mobile', '76199904')->first();
+    expect($user)->not->toBeNull();
+
+    $otpRow = UserOtp::where('user_id', $user->id)->where('type', UserOtp::TYPE_LOGIN)->first();
+    expect($otpRow)->not->toBeNull();
+    $otpRow->forceFill(['verified_at' => now()])->save();
+
+    $this->postJson('/api/auth/mobile/login', [
+        'dial_code' => '+268',
+        'mobile' => '76199904',
+    ])->assertOk()
+        ->assertJsonPath('success', true);
+
+    expect(UserOtp::where('user_id', $user->id)->where('type', UserOtp::TYPE_LOGIN)->whereNull('verified_at')->count())->toBe(1);
 });
