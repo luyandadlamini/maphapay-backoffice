@@ -32,4 +32,18 @@ return [
     */
 
     'mock_log_plaintext' => (bool) env('OTP_MOCK_LOG_PLAINTEXT', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Allow skip_otp_send on mobile login (registration / OTP step)
+    |--------------------------------------------------------------------------
+    |
+    | When true, POST /api/auth/mobile/login may include skip_otp_send: true to
+    | create or resolve the user without generating or delivering an OTP. Pair
+    | with OTP_DEBUG_ENABLED so verify-otp accepts the debug code (e.g. 123456).
+    | Intended for sandbox and local dev only — keep false in production.
+    |
+    */
+
+    'allow_skip_send_on_register' => (bool) env('OTP_ALLOW_SKIP_SEND_ON_REGISTER', false),
 ];

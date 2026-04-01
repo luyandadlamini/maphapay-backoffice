@@ -60,11 +60,12 @@ class MobileAuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'dial_code'     => 'required|string|max:10',
-            'mobile'        => 'nullable|string|max:20|required_without:mobile_number',
-            'mobile_number' => 'nullable|string|max:20|required_without:mobile',
-            'pin'           => 'sometimes|nullable|string|min:4|max:6',
-            'device_name'   => 'sometimes|string',
+            'dial_code'       => 'required|string|max:10',
+            'mobile'          => 'nullable|string|max:20|required_without:mobile_number',
+            'mobile_number'   => 'nullable|string|max:20|required_without:mobile',
+            'pin'             => 'sometimes|nullable|string|min:4|max:6',
+            'device_name'     => 'sometimes|string',
+            'skip_otp_send'   => 'sometimes|boolean',
         ]);
 
         $dialCode = self::normalizeDialCode($validated['dial_code']);
@@ -127,6 +128,22 @@ class MobileAuthController extends Controller
             });
 
             $isNewUser = $user->wasRecentlyCreated;
+        }
+
+        if (
+            $request->boolean('skip_otp_send')
+            && (bool) config('otp.allow_skip_send_on_register', false)
+        ) {
+            return response()->json([
+                'success' => true,
+                'remark'  => 'mobile_verification_required',
+                'message' => 'Continue with OTP verification.',
+                'data'    => [
+                    'user'        => $this->transformUser($user),
+                    'otp_sent'    => false,
+                    'is_new_user' => $isNewUser,
+                ],
+            ]);
         }
 
         try {

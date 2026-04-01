@@ -66,3 +66,47 @@ it('can send a new login OTP after a previous OTP was verified (user_otps unique
 
     expect(UserOtp::where('user_id', $user->id)->where('type', UserOtp::TYPE_LOGIN)->whereNull('verified_at')->count())->toBe(1);
 });
+
+it('skip_otp_send creates user without OTP row when server allows it; verify works with debug code', function (): void {
+    config([
+        'sms.otp_provider' => 'mock',
+        'otp.allow_skip_send_on_register' => true,
+        'otp.debug_enabled' => true,
+        'otp.debug_code' => '123456',
+    ]);
+
+    $this->postJson('/api/auth/mobile/login', [
+        'dial_code' => '+268',
+        'mobile' => '76199906',
+        'skip_otp_send' => true,
+    ])->assertOk()
+        ->assertJsonPath('data.otp_sent', false);
+
+    $user = User::where('dial_code', '+268')->where('mobile', '76199906')->first();
+    expect($user)->not->toBeNull();
+    expect(UserOtp::where('user_id', $user->id)->where('type', UserOtp::TYPE_LOGIN)->count())->toBe(0);
+
+    $this->postJson('/api/auth/mobile/verify-otp', [
+        'dial_code' => '+268',
+        'mobile' => '76199906',
+        'otp' => '123456',
+    ])->assertOk()
+        ->assertJsonPath('success', true)
+        ->assertJsonStructure(['data' => ['access_token', 'refresh_token']]);
+});
+
+it('ignores skip_otp_send when allow_skip_send_on_register is false', function (): void {
+    config([
+        'sms.otp_provider' => 'mock',
+        'otp.allow_skip_send_on_register' => false,
+    ]);
+
+    $this->postJson('/api/auth/mobile/login', [
+        'dial_code' => '+268',
+        'mobile' => '76199907',
+        'skip_otp_send' => true,
+    ])->assertOk()
+        ->assertJsonPath('data.otp_sent', true);
+
+    expect(UserOtp::where('user_id', User::where('mobile', '76199907')->value('id'))->count())->toBe(1);
+});
