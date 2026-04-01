@@ -19,6 +19,7 @@ use App\Http\Controllers\API\Compatibility\Pockets\PocketsUpdateRulesController;
 use App\Http\Controllers\API\Compatibility\Rewards\RewardsController;
 use App\Http\Controllers\API\Compatibility\Rewards\RewardsPointsController;
 use App\Http\Controllers\API\Compatibility\SocialMoney\SocialSummaryController;
+use App\Http\Controllers\API\Compatibility\SocialMoney\SocialFriendRequestStoreController;
 use App\Http\Controllers\API\Compatibility\SocialMoney\SocialUserLookupController;
 use App\Http\Controllers\API\Compatibility\WalletLinking\WalletLinkingController;
 use App\Http\Controllers\API\Compatibility\Dashboard\DashboardController;
@@ -142,6 +143,10 @@ Route::middleware('auth:sanctum')
 Route::middleware('auth:sanctum')
     ->get('social-money/user-lookup/{query}', SocialUserLookupController::class)
     ->name('maphapay.compat.social-money.user-lookup');
+
+Route::middleware('auth:sanctum')
+    ->post('social-money/friend-requests', SocialFriendRequestStoreController::class)
+    ->name('maphapay.compat.social-money.friend-requests.store');
 
 Route::middleware('auth:sanctum')
     ->get('kyc-form', KycFormController::class)
