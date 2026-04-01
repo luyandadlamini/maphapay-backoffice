@@ -8,6 +8,7 @@ use App\Domain\Compliance\Models\AuditLog;
 use App\Domain\Compliance\Models\KycDocument;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 class KycService
@@ -222,7 +223,8 @@ class KycService
         }
 
         DB::transaction(function () use ($user, $addressData) {
-            $kycData = $user->kyc_data ?? [];
+            $rawKycData = $user->kyc_data;
+            $kycData = is_array($rawKycData) ? $rawKycData : [];
             $kycData['address'] = [
                 'address_line1' => $addressData['address_line1'],
                 'address_line2' => $addressData['address_line2'] ?? null,
@@ -232,7 +234,7 @@ class KycService
                 'country'       => $addressData['country'],
             ];
 
-            $stepsCompleted = $user->kyc_steps_completed ?? [];
+            $stepsCompleted = $this->kycStepsCompletedList($user);
             $user->update([
                 'kyc_data'            => $kycData,
                 'kyc_current_step'    => self::STEP_ADDRESS_PROOF,
@@ -263,7 +265,7 @@ class KycService
         }
 
         DB::transaction(function () use ($user, $documents) {
-            $stepsCompleted = $user->kyc_steps_completed ?? [];
+            $stepsCompleted = $this->kycStepsCompletedList($user);
 
             foreach ($documents as $document) {
                 $this->storeDocument($user, [
@@ -294,7 +296,7 @@ class KycService
      */
     public function finalizeKyc(User $user): void
     {
-        $stepsCompleted = $user->kyc_steps_completed ?? [];
+        $stepsCompleted = $this->kycStepsCompletedList($user);
         $requiredSteps = [self::STEP_IDENTITY_TYPE, self::STEP_IDENTITY_DOCUMENT, self::STEP_SELFIE, self::STEP_ADDRESS, self::STEP_ADDRESS_PROOF];
 
         foreach ($requiredSteps as $step) {
@@ -374,8 +376,9 @@ class KycService
      */
     protected function storeDocument(User $user, array $documentData): KycDocument
     {
+        $userUuid = $this->ensureUserUuid($user);
         $storageDisk = $this->resolveKycStorageDisk();
-        $path = $documentData['file']->store("kyc/{$user->uuid}", $storageDisk);
+        $path = $documentData['file']->store("kyc/{$userUuid}", $storageDisk);
 
         // Use the uploaded temp file for hashing so this works across local/S3 disks.
         $realPath = $documentData['file']->getRealPath();
@@ -398,6 +401,24 @@ class KycService
                 ],
             ]
         );
+    }
+
+    private function ensureUserUuid(User $user): string
+    {
+        $current = $user->uuid;
+        if (is_string($current) && $current !== '') {
+            return $current;
+        }
+
+        $uuid = (string) Str::uuid();
+        $user->forceFill(['uuid' => $uuid])->saveQuietly();
+        $user->refresh();
+
+        if (! is_string($user->uuid) || $user->uuid === '') {
+            throw new InvalidArgumentException('Unable to resolve user identity for KYC submission.');
+        }
+
+        return $user->uuid;
     }
 
     private function resolveKycStorageDisk(): string
