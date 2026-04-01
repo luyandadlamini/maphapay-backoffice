@@ -8,8 +8,10 @@ use App\Domain\Compliance\Models\AuditLog;
 use App\Domain\Compliance\Models\KycDocument;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use Throwable;
 
 class KycService
 {
@@ -241,7 +243,7 @@ class KycService
                 'kyc_steps_completed' => array_unique(array_merge($stepsCompleted, [self::STEP_ADDRESS])),
             ]);
 
-            AuditLog::log(
+            $this->logKycAuditSafely(
                 'kyc.address_step_completed',
                 $user,
                 null,
@@ -250,6 +252,28 @@ class KycService
                 'kyc,compliance'
             );
         });
+    }
+
+    /**
+     * Audit logging should never block KYC progression.
+     */
+    private function logKycAuditSafely(
+        string $action,
+        ?User $auditable = null,
+        ?array $oldValues = null,
+        ?array $newValues = null,
+        ?array $metadata = null,
+        ?string $tags = null
+    ): void {
+        try {
+            AuditLog::log($action, $auditable, $oldValues, $newValues, $metadata, $tags);
+        } catch (Throwable $e) {
+            Log::warning('KYC audit logging failed (continuing)', [
+                'action' => $action,
+                'user_id' => $auditable?->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

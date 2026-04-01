@@ -109,4 +109,37 @@ class KycSubmitControllerTest extends ControllerTestCase
             ->assertJsonPath('remark', 'kyc_submit')
             ->assertJsonPath('status', 'error');
     }
+
+    #[Test]
+    public function test_address_step_advances_to_address_proof(): void
+    {
+        $user = User::factory()->create([
+            'kyc_status'          => 'partial_identity',
+            'kyc_current_step'    => KycService::STEP_ADDRESS,
+            'kyc_steps_completed' => [
+                KycService::STEP_IDENTITY_TYPE,
+                KycService::STEP_IDENTITY_DOCUMENT,
+                KycService::STEP_SELFIE,
+            ],
+        ]);
+
+        Sanctum::actingAs($user, ['read', 'write', 'delete']);
+
+        $response = $this->postJson('/api/kyc-submit', [
+            'address_line1' => 'Mahwalala zone 6',
+            'address_line2' => 'Lot 2311',
+            'city'          => 'Mbabane',
+            'state'         => 'Hhohho',
+            'postal_code'   => 'H100',
+            'country'       => 'Eswatini',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('remark', 'kyc_submit')
+            ->assertJsonPath('data.current_step', KycService::STEP_ADDRESS_PROOF);
+
+        $user->refresh();
+        $this->assertContains(KycService::STEP_ADDRESS, $user->kyc_steps_completed ?? []);
+        $this->assertSame('Mbabane', $user->kyc_data['address']['city'] ?? null);
+    }
 }
