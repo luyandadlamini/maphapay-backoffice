@@ -224,6 +224,8 @@ class KycService
             }
         }
 
+        $auditMeta = ['city' => $addressData['city'], 'country' => $addressData['country']];
+
         DB::transaction(function () use ($user, $addressData) {
             $rawKycData = $user->kyc_data;
             $kycData = is_array($rawKycData) ? $rawKycData : [];
@@ -242,16 +244,16 @@ class KycService
                 'kyc_current_step'    => self::STEP_ADDRESS_PROOF,
                 'kyc_steps_completed' => array_unique(array_merge($stepsCompleted, [self::STEP_ADDRESS])),
             ]);
-
-            $this->logKycAuditSafely(
-                'kyc.address_step_completed',
-                $user,
-                null,
-                null,
-                ['city' => $addressData['city'], 'country' => $addressData['country']],
-                'kyc,compliance'
-            );
         });
+
+        $this->logKycAuditSafely(
+            'kyc.address_step_completed',
+            $user,
+            null,
+            null,
+            $auditMeta,
+            'kyc,compliance'
+        );
     }
 
     /**
