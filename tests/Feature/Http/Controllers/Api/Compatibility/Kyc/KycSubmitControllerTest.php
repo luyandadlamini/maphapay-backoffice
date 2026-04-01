@@ -83,4 +83,30 @@ class KycSubmitControllerTest extends ControllerTestCase
             ->assertStatus(400)
             ->assertJsonPath('remark', 'kyc_submit');
     }
+
+    #[Test]
+    public function test_returns_validation_error_when_identity_step_state_is_invalid(): void
+    {
+        Storage::fake('private');
+
+        $user = User::factory()->create([
+            'kyc_status'          => 'not_started',
+            'kyc_identity_type'   => 'national_id',
+            'kyc_current_step'    => KycService::STEP_IDENTITY_DOCUMENT,
+            'kyc_steps_completed' => [],
+        ]);
+
+        Sanctum::actingAs($user, ['read', 'write', 'delete']);
+
+        $response = $this->post('/api/kyc-submit', [
+            'national_id' => UploadedFile::fake()->image('nid.jpg', 800, 600),
+            'selfie'      => UploadedFile::fake()->image('selfie.jpg', 600, 600),
+        ], [
+            'Accept' => 'application/json',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('remark', 'kyc_submit')
+            ->assertJsonPath('status', 'error');
+    }
 }

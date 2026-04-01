@@ -9,7 +9,10 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use InvalidArgumentException;
+use Throwable;
 
 class KycSubmitController extends Controller
 {
@@ -40,17 +43,39 @@ class KycSubmitController extends Controller
             ], 400);
         }
 
-        $progress = $this->kycService->getKycProgress($user);
+        try {
+            $progress = $this->kycService->getKycProgress($user);
 
-        return match ($progress['current_step']) {
-            KycService::STEP_IDENTITY_TYPE => $this->submitIdentityType($request, $user),
-            KycService::STEP_IDENTITY_DOCUMENT,
-            KycService::STEP_SELFIE        => $this->submitIdentityDocuments($request, $user),
-            KycService::STEP_ADDRESS       => $this->submitAddress($request, $user),
-            KycService::STEP_ADDRESS_PROOF => $this->submitAddressProof($request, $user),
-            'review'                       => $this->finalize($request, $user),
-            default                        => $this->submitIdentityType($request, $user),
-        };
+            return match ($progress['current_step']) {
+                KycService::STEP_IDENTITY_TYPE => $this->submitIdentityType($request, $user),
+                KycService::STEP_IDENTITY_DOCUMENT,
+                KycService::STEP_SELFIE        => $this->submitIdentityDocuments($request, $user),
+                KycService::STEP_ADDRESS       => $this->submitAddress($request, $user),
+                KycService::STEP_ADDRESS_PROOF => $this->submitAddressProof($request, $user),
+                'review'                       => $this->finalize($request, $user),
+                default                        => $this->submitIdentityType($request, $user),
+            };
+        } catch (InvalidArgumentException $e) {
+            return response()->json([
+                'status'  => 'error',
+                'remark'  => 'kyc_submit',
+                'message' => $e->getMessage(),
+                'data'    => [],
+            ], 422);
+        } catch (Throwable $e) {
+            Log::error('KYC compat submit failed', [
+                'user_id' => $user->id,
+                'step' => $user->kyc_current_step,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status'  => 'error',
+                'remark'  => 'kyc_submit',
+                'message' => 'Unable to process KYC submission right now. Please try again.',
+                'data'    => [],
+            ], 500);
+        }
     }
 
     public function submitIdentityType(Request $request, User $user): JsonResponse
