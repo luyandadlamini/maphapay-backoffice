@@ -8,8 +8,10 @@ use App\Domain\CardIssuance\Contracts\CardIssuerInterface;
 use App\Domain\CardIssuance\Enums\CardNetwork;
 use App\Domain\CardIssuance\Enums\WalletType;
 use App\Domain\CardIssuance\Events\CardProvisioned;
+use App\Domain\CardIssuance\Models\Card;
 use App\Domain\CardIssuance\ValueObjects\ProvisioningData;
 use App\Domain\CardIssuance\ValueObjects\VirtualCard;
+use App\Models\User;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -48,6 +50,8 @@ class CardProvisioningService
             'card_token' => $card->cardToken,
             'last4'      => $card->last4,
         ]);
+
+        $this->persistCardRecord($userId, $card);
 
         return $card;
     }
@@ -147,6 +151,41 @@ class CardProvisioningService
     public function listUserCards(string $userId): array
     {
         return $this->cardIssuer->listUserCards($userId);
+    }
+
+    private function persistCardRecord(string $userId, VirtualCard $card): void
+    {
+        $user = User::query()
+            ->where('uuid', $userId)
+            ->orWhere('id', $userId)
+            ->first();
+
+        if (! $user) {
+            Log::warning('Skipping card persistence: user not found', [
+                'user_identifier' => $userId,
+                'card_token' => $card->cardToken,
+            ]);
+            return;
+        }
+
+        $issuer = $this->cardIssuer->getName();
+        $currency = (string) config("cardissuance.issuers.{$issuer}.currency", 'SZL');
+
+        Card::query()->updateOrCreate(
+            ['issuer_card_token' => $card->cardToken],
+            [
+                'user_id' => $user->id,
+                'cardholder_id' => $user->id,
+                'issuer' => $issuer,
+                'last4' => $card->last4,
+                'network' => $card->network->value,
+                'status' => $card->status->value,
+                'currency' => $currency,
+                'label' => $card->label,
+                'metadata' => $card->metadata,
+                'expires_at' => $card->expiresAt->format('Y-m-d H:i:s'),
+            ],
+        );
     }
 
     /**

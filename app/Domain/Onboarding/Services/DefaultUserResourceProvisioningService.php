@@ -7,6 +7,7 @@ namespace App\Domain\Onboarding\Services;
 use App\Domain\Account\DataObjects\Account as AccountData;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Services\AccountService;
+use App\Domain\CardIssuance\Models\Card;
 use App\Domain\CardIssuance\Services\CardProvisioningService;
 use App\Domain\Rewards\Services\RewardsService;
 use App\Models\User;
@@ -58,6 +59,14 @@ class DefaultUserResourceProvisioningService
 
     private function ensureDefaultMcard(User $user): void
     {
+        $hasPersistedCard = Card::query()
+            ->where('user_id', $user->id)
+            ->exists();
+
+        if ($hasPersistedCard) {
+            return;
+        }
+
         $existingCards = $this->cardProvisioningService->listUserCards($user->uuid);
         if (count($existingCards) > 0) {
             return;

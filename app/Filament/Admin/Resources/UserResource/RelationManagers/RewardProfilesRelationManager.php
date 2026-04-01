@@ -98,28 +98,13 @@ class RewardProfilesRelationManager extends RelationManager
                             ->maxLength(255),
                     ])
                     ->action(function (RewardProfile $record, array $data): void {
-                        try {
-                            DB::beginTransaction();
-
-                            $record->xp += (int) $data['xp_amount'];
-                            $record->save();
-
-                            DB::commit();
-
-                            Notification::make()
-                                ->title('XP Added')
-                                ->success()
-                                ->body("Added {$data['xp_amount']} XP to user. New total: {$record->xp}")
-                                ->send();
-                        } catch (Exception $e) {
-                            DB::rollBack();
-
-                            Notification::make()
-                                ->title('Failed to Add XP')
-                                ->danger()
-                                ->body($e->getMessage())
-                                ->send();
-                        }
+                        $this->updateProfileBalance(
+                            record: $record,
+                            field: 'xp',
+                            amount: (int) $data['xp_amount'],
+                            operation: 'add',
+                            label: 'XP',
+                        );
                     }),
                 Tables\Actions\Action::make('deductXp')
                     ->label('Deduct XP')
@@ -136,28 +121,13 @@ class RewardProfilesRelationManager extends RelationManager
                             ->maxLength(255),
                     ])
                     ->action(function (RewardProfile $record, array $data): void {
-                        try {
-                            DB::beginTransaction();
-
-                            $record->xp = max(0, $record->xp - (int) $data['xp_amount']);
-                            $record->save();
-
-                            DB::commit();
-
-                            Notification::make()
-                                ->title('XP Deducted')
-                                ->success()
-                                ->body("Deducted {$data['xp_amount']} XP from user. New total: {$record->xp}")
-                                ->send();
-                        } catch (Exception $e) {
-                            DB::rollBack();
-
-                            Notification::make()
-                                ->title('Failed to Deduct XP')
-                                ->danger()
-                                ->body($e->getMessage())
-                                ->send();
-                        }
+                        $this->updateProfileBalance(
+                            record: $record,
+                            field: 'xp',
+                            amount: (int) $data['xp_amount'],
+                            operation: 'deduct',
+                            label: 'XP',
+                        );
                     }),
                 Tables\Actions\Action::make('addPoints')
                     ->label('Add Points')
@@ -174,28 +144,13 @@ class RewardProfilesRelationManager extends RelationManager
                             ->maxLength(255),
                     ])
                     ->action(function (RewardProfile $record, array $data): void {
-                        try {
-                            DB::beginTransaction();
-
-                            $record->points_balance += (int) $data['points_amount'];
-                            $record->save();
-
-                            DB::commit();
-
-                            Notification::make()
-                                ->title('Points Added')
-                                ->success()
-                                ->body("Added {$data['points_amount']} points to user. New balance: {$record->points_balance}")
-                                ->send();
-                        } catch (Exception $e) {
-                            DB::rollBack();
-
-                            Notification::make()
-                                ->title('Failed to Add Points')
-                                ->danger()
-                                ->body($e->getMessage())
-                                ->send();
-                        }
+                        $this->updateProfileBalance(
+                            record: $record,
+                            field: 'points_balance',
+                            amount: (int) $data['points_amount'],
+                            operation: 'add',
+                            label: 'points',
+                        );
                     }),
                 Tables\Actions\Action::make('deductPoints')
                     ->label('Deduct Points')
@@ -212,30 +167,46 @@ class RewardProfilesRelationManager extends RelationManager
                             ->maxLength(255),
                     ])
                     ->action(function (RewardProfile $record, array $data): void {
-                        try {
-                            DB::beginTransaction();
-
-                            $record->points_balance = max(0, $record->points_balance - (int) $data['points_amount']);
-                            $record->save();
-
-                            DB::commit();
-
-                            Notification::make()
-                                ->title('Points Deducted')
-                                ->success()
-                                ->body("Deducted {$data['points_amount']} points from user. New balance: {$record->points_balance}")
-                                ->send();
-                        } catch (Exception $e) {
-                            DB::rollBack();
-
-                            Notification::make()
-                                ->title('Failed to Deduct Points')
-                                ->danger()
-                                ->body($e->getMessage())
-                                ->send();
-                        }
+                        $this->updateProfileBalance(
+                            record: $record,
+                            field: 'points_balance',
+                            amount: (int) $data['points_amount'],
+                            operation: 'deduct',
+                            label: 'points',
+                        );
                     }),
             ])
             ->bulkActions([]);
+    }
+
+    private function updateProfileBalance(
+        RewardProfile $record,
+        string $field,
+        int $amount,
+        string $operation,
+        string $label,
+    ): void {
+        try {
+            DB::transaction(function () use ($record, $field, $amount, $operation): void {
+                $current = (int) $record->{$field};
+                $record->{$field} = $operation === 'add'
+                    ? $current + $amount
+                    : max(0, $current - $amount);
+                $record->save();
+            });
+
+            $verb = $operation === 'add' ? 'Added' : 'Deducted';
+            Notification::make()
+                ->title("{$label} updated")
+                ->success()
+                ->body("{$verb} {$amount} {$label}. New total: {$record->{$field}}")
+                ->send();
+        } catch (Exception $e) {
+            Notification::make()
+                ->title("Failed to update {$label}")
+                ->danger()
+                ->body($e->getMessage())
+                ->send();
+        }
     }
 }

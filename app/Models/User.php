@@ -385,7 +385,7 @@ class User extends Authenticatable implements FilamentUser
      */
     public function cards(): HasMany
     {
-        return $this->hasMany(Card::class);
+        return $this->hasMany(Card::class, 'user_id', 'id');
     }
 
     /**
