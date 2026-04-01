@@ -374,7 +374,13 @@ class KycService
     protected function storeDocument(User $user, array $documentData): KycDocument
     {
         $path = $documentData['file']->store("kyc/{$user->uuid}", 'private');
-        $hash = hash_file('sha256', Storage::disk('private')->path($path));
+
+        // Use the uploaded temp file for hashing so this works across local/S3 disks.
+        $realPath = $documentData['file']->getRealPath();
+        if (! is_string($realPath) || $realPath === '') {
+            throw new InvalidArgumentException('Unable to hash uploaded KYC document.');
+        }
+        $hash = hash_file('sha256', $realPath);
 
         return KycDocument::create(
             [

@@ -63,7 +63,7 @@ class KycSubmitControllerTest extends ControllerTestCase
 
         $response->assertOk()
             ->assertJsonPath('data.current_step', KycService::STEP_ADDRESS)
-            ->assertJsonPath('data.kyc_status', 'not_started');
+            ->assertJsonPath('data.kyc_status', 'pending');
 
         $user->refresh();
         $this->assertSame('partial_identity', $user->kyc_status);

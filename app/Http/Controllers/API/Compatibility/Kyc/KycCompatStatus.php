@@ -13,7 +13,8 @@ final class KycCompatStatus
     public static function normalizeForMobile(string $status): string
     {
         return match ($status) {
-            'partial_identity', 'not_submitted' => 'not_started',
+            'partial_identity' => 'pending',
+            'not_submitted' => 'not_started',
             default => $status,
         };
     }
