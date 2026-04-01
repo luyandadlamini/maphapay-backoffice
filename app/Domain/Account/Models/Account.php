@@ -38,6 +38,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Account extends Model
 {
+    private const ACCOUNT_NUMBER_LENGTH = 10;
+
     use UsesTenantConnection;
     use HasFactory;
     use HasUuids;
@@ -68,7 +70,9 @@ class Account extends Model
      */
     public function uniqueIds(): array
     {
-        return ['uuid', 'account_number'];
+        // `account_number` is generated in the creating hook.
+        // Keeping it here makes HasUuids overwrite it with a UUID string.
+        return ['uuid'];
     }
 
     /**
@@ -76,13 +80,34 @@ class Account extends Model
      */
     public static function generateAccountNumber(): string
     {
+        $prefix = (string) config('banking.account_prefix', '8');
+        $bodyLength = max(1, self::ACCOUNT_NUMBER_LENGTH - strlen($prefix));
+
         do {
-            // Generate a 10-digit account number starting with bank code
-            $accountNumber = config('banking.account_prefix', '8')
-                . str_pad(random_int(0, 999999999), 9, '0', STR_PAD_LEFT);
+            // Generate a fixed-length numeric account number with configured prefix.
+            $maxBody = (10 ** $bodyLength) - 1;
+            $accountNumber = $prefix . str_pad((string) random_int(0, $maxBody), $bodyLength, '0', STR_PAD_LEFT);
         } while (self::where('account_number', $accountNumber)->exists());
 
         return $accountNumber;
+    }
+
+    public static function isValidAccountNumberFormat(?string $accountNumber): bool
+    {
+        if (! is_string($accountNumber) || $accountNumber === '') {
+            return false;
+        }
+
+        if (strlen($accountNumber) !== self::ACCOUNT_NUMBER_LENGTH) {
+            return false;
+        }
+
+        if (! preg_match('/^\d+$/', $accountNumber)) {
+            return false;
+        }
+
+        $prefix = (string) config('banking.account_prefix', '8');
+        return str_starts_with($accountNumber, $prefix);
     }
 
     /**

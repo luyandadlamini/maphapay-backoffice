@@ -32,11 +32,16 @@ class DefaultUserResourceProvisioningService
 
     private function ensureWalletAccount(User $user): void
     {
-        $hasAccount = Account::query()
+        $account = Account::query()
             ->where('user_uuid', $user->uuid)
-            ->exists();
+            ->orderBy('id')
+            ->first();
 
-        if ($hasAccount) {
+        if ($account !== null) {
+            if (! Account::isValidAccountNumberFormat($account->account_number)) {
+                $account->account_number = Account::generateAccountNumber();
+                $account->save();
+            }
             return;
         }
 
