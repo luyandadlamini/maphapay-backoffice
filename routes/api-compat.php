@@ -18,6 +18,9 @@ use App\Http\Controllers\API\Compatibility\Pockets\PocketsWithdrawFundsControlle
 use App\Http\Controllers\API\Compatibility\Pockets\PocketsUpdateRulesController;
 use App\Http\Controllers\API\Compatibility\Rewards\RewardsController;
 use App\Http\Controllers\API\Compatibility\Rewards\RewardsPointsController;
+use App\Http\Controllers\API\Compatibility\SocialMoney\SocialFriendsController;
+use App\Http\Controllers\API\Compatibility\SocialMoney\SocialFriendRequestsController;
+use App\Http\Controllers\API\Compatibility\SocialMoney\SocialFriendshipStatusController;
 use App\Http\Controllers\API\Compatibility\SocialMoney\SocialSummaryController;
 use App\Http\Controllers\API\Compatibility\SocialMoney\SocialFriendRequestStoreController;
 use App\Http\Controllers\API\Compatibility\SocialMoney\SocialUserLookupController;
@@ -141,12 +144,31 @@ Route::middleware('auth:sanctum')
     ->name('maphapay.compat.social-money.summary');
 
 Route::middleware('auth:sanctum')
+    ->get('social-money/friends', SocialFriendsController::class)
+    ->name('maphapay.compat.social-money.friends');
+
+Route::middleware('auth:sanctum')
     ->get('social-money/user-lookup/{query}', SocialUserLookupController::class)
     ->name('maphapay.compat.social-money.user-lookup');
 
 Route::middleware('auth:sanctum')
+    ->get('social-money/friendship-status/{userId}', SocialFriendshipStatusController::class)
+    ->name('maphapay.compat.social-money.friendship-status');
+
+Route::middleware('auth:sanctum')
     ->post('social-money/friend-requests', SocialFriendRequestStoreController::class)
     ->name('maphapay.compat.social-money.friend-requests.store');
+
+Route::middleware('auth:sanctum')
+    ->controller(SocialFriendRequestsController::class)
+    ->prefix('social-money/friend-requests')
+    ->group(function (): void {
+        Route::get('incoming', 'incoming')->name('maphapay.compat.social-money.friend-requests.incoming');
+        Route::get('outgoing', 'outgoing')->name('maphapay.compat.social-money.friend-requests.outgoing');
+        Route::post('{id}/accept', 'accept')->name('maphapay.compat.social-money.friend-requests.accept');
+        Route::post('{id}/reject', 'reject')->name('maphapay.compat.social-money.friend-requests.reject');
+        Route::post('{id}/cancel', 'cancel')->name('maphapay.compat.social-money.friend-requests.cancel');
+    });
 
 Route::middleware('auth:sanctum')
     ->get('kyc-form', KycFormController::class)
