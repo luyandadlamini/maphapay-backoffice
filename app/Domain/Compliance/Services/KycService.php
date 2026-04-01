@@ -8,11 +8,12 @@ use App\Domain\Compliance\Models\AuditLog;
 use App\Domain\Compliance\Models\KycDocument;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 
 class KycService
 {
+    private const KYC_STORAGE_DISK = 'private';
+
     public const STEP_IDENTITY_TYPE = 'identity_type';
 
     public const STEP_IDENTITY_DOCUMENT = 'identity_document';
@@ -373,7 +374,8 @@ class KycService
      */
     protected function storeDocument(User $user, array $documentData): KycDocument
     {
-        $path = $documentData['file']->store("kyc/{$user->uuid}", 'private');
+        $storageDisk = $this->resolveKycStorageDisk();
+        $path = $documentData['file']->store("kyc/{$user->uuid}", $storageDisk);
 
         // Use the uploaded temp file for hashing so this works across local/S3 disks.
         $realPath = $documentData['file']->getRealPath();
@@ -396,6 +398,22 @@ class KycService
                 ],
             ]
         );
+    }
+
+    private function resolveKycStorageDisk(): string
+    {
+        /** @var array<string, mixed> $disks */
+        $disks = config('filesystems.disks', []);
+        if (isset($disks[self::KYC_STORAGE_DISK])) {
+            return self::KYC_STORAGE_DISK;
+        }
+
+        $defaultDisk = (string) config('filesystems.default', 'local');
+        if ($defaultDisk !== '' && isset($disks[$defaultDisk])) {
+            return $defaultDisk;
+        }
+
+        return 'local';
     }
 
     /**
