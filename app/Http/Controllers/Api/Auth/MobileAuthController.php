@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Auth;
 
+use App\Domain\Onboarding\Services\DefaultUserResourceProvisioningService;
 use App\Domain\Shared\Services\OtpService;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -23,6 +24,7 @@ class MobileAuthController extends Controller
 {
     public function __construct(
         private readonly OtpService $otpService,
+        private readonly DefaultUserResourceProvisioningService $defaultUserResourceProvisioningService,
     ) {
     }
 
@@ -658,6 +660,8 @@ class MobileAuthController extends Controller
             'has_completed_onboarding' => true,
             'onboarding_completed_at'  => now(),
         ]);
+
+        $this->defaultUserResourceProvisioningService->ensureForUser($user);
 
         return response()->json([
             'success' => true,
