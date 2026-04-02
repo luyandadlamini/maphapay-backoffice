@@ -3,16 +3,17 @@
 namespace App\Domain\Wallet\Workflows;
 
 use App\Domain\Account\DataObjects\AccountUuid;
+use App\Domain\Wallet\Activities\TransferAssetActivity;
 use Generator;
-use Throwable;
-use Workflow\ChildWorkflowStub;
+use Workflow\ActivityStub;
 use Workflow\Workflow;
 
 class WalletTransferWorkflow extends Workflow
 {
     /**
-     * Execute wallet transfer between accounts for a specific asset
-     * Uses compensation pattern for rollback safety.
+     * Execute atomic wallet transfer between accounts.
+     * Uses TransferAssetActivity to ensure consistent event emission
+     * for transaction projections and balance updates.
      */
     public function execute(
         AccountUuid $fromAccountUuid,
@@ -21,46 +22,25 @@ class WalletTransferWorkflow extends Workflow
         string $amount,
         ?string $reference = null
     ): Generator {
-        try {
-            // Step 1: Withdraw from source account
-            yield ChildWorkflowStub::make(
-                WalletWithdrawWorkflow::class,
-                $fromAccountUuid,
-                $assetCode,
-                $amount
-            );
+        // Use the activity reference for idempotency.
+        // If not provided, we should ideally have one or generate one consistently.
+        $reference = $reference ?? bin2hex(random_bytes(16));
 
-            // Add compensation: if deposit fails, re-deposit to source account
-            $this->addCompensation(
-                fn () => ChildWorkflowStub::make(
-                    WalletDepositWorkflow::class,
-                    $fromAccountUuid,
-                    $assetCode,
-                    $amount
-                )
-            );
+        // Note: The TransferAssetActivity uses AssetTransferAggregate internally,
+        // which handles both the initiation and completion of the transfer,
+        // emitting the required events for TransactionProjector and AssetTransferProjector.
+        yield ActivityStub::make(
+            TransferAssetActivity::class,
+            $fromAccountUuid,
+            $toAccountUuid,
+            $assetCode,
+            $amount,
+            $reference
+        );
 
-            // Step 2: Deposit to destination account
-            yield ChildWorkflowStub::make(
-                WalletDepositWorkflow::class,
-                $toAccountUuid,
-                $assetCode,
-                $amount
-            );
-
-            // Add compensation: if needed later, withdraw from destination
-            $this->addCompensation(
-                fn () => ChildWorkflowStub::make(
-                    WalletWithdrawWorkflow::class,
-                    $toAccountUuid,
-                    $assetCode,
-                    $amount
-                )
-            );
-        } catch (Throwable $th) {
-            // Execute compensation workflows in reverse order
-            yield from $this->compensate();
-            throw $th;
-        }
+        return [
+            'status'    => 'completed',
+            'reference' => $reference,
+        ];
     }
 }

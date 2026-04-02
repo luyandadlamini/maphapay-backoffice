@@ -81,20 +81,12 @@ class AssetTransferProjector extends Projector
      */
     public function onAssetTransferCompleted(AssetTransferCompleted $event): void
     {
-        /** @var \App\Domain\Payment\Models\Transfer|null $transfer */
-        $transfer = null;
-        /** @var \App\Domain\Payment\Models\Transfer|null $transfer */
-        $transfer = null;
-        /** @var Account|null $toAccount */
-        $toAccount = null;
-        /** @var Account|null $fromAccount */
-        $fromAccount = null;
         try {
             // Find accounts
-            /** @var \Illuminate\Database\Eloquent\Model|null $$fromAccount */
-            $$fromAccount = Account::where('uuid', $event->fromAccountUuid->toString())->first();
-            /** @var \Illuminate\Database\Eloquent\Model|null $$toAccount */
-            $$toAccount = Account::where('uuid', $event->toAccountUuid->toString())->first();
+            /** @var Account|null $fromAccount */
+            $fromAccount = Account::where('uuid', $event->fromAccountUuid->toString())->first();
+            /** @var Account|null $toAccount */
+            $toAccount = Account::where('uuid', $event->toAccountUuid->toString())->first();
 
             if (! $fromAccount || ! $toAccount) {
                 Log::error(
@@ -145,8 +137,8 @@ class AssetTransferProjector extends Projector
             $toBalance->credit($event->toAmount->getAmount());
 
             // Update transfer record status
-            /** @var \Illuminate\Database\Eloquent\Model|null $$transfer */
-            $$transfer = Transfer::where('hash', $event->hash->getHash())->first();
+            /** @var Transfer|null $transfer */
+            $transfer = Transfer::where('hash', $event->hash->getHash())->first();
             if ($transfer) {
                 $transfer->update(
                     [
@@ -199,8 +191,8 @@ class AssetTransferProjector extends Projector
         $transfer = null;
         try {
             // Update transfer record status
-            /** @var \Illuminate\Database\Eloquent\Model|null $$transfer */
-            $$transfer = Transfer::where('hash', $event->hash->getHash())->first();
+            /** @var Transfer|null $transfer */
+            $transfer = Transfer::where('hash', $event->hash->getHash())->first();
             if ($transfer) {
                 $transfer->update(
                     [
