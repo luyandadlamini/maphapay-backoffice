@@ -79,6 +79,9 @@ class ScheduledSendStoreController extends Controller
 
         try {
             $normalizedAmount = MoneyConverter::normalise($validated['amount'], $asset->precision);
+            if ((float) $normalizedAmount <= 0) {
+                return $this->errorResponse('Amount must be greater than zero.', 422);
+            }
         } catch (InvalidArgumentException) {
             return $this->errorResponse('Invalid amount.', 422);
         }

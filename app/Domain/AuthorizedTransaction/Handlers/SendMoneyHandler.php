@@ -32,7 +32,14 @@ class SendMoneyHandler implements AuthorizedTransactionHandlerInterface
 
     public function handle(AuthorizedTransaction $transaction): array
     {
+        // Robust payload extraction to handle potential serialization drift.
         $payload = $transaction->payload;
+        if (is_string($payload)) {
+            $payload = json_decode($payload, true) ?? [];
+        }
+        if (is_object($payload)) {
+            $payload = (array) $payload;
+        }
 
         $fromAccountUuid = $payload['from_account_uuid'] ?? null;
         $toAccountUuid = $payload['to_account_uuid'] ?? null;
@@ -43,6 +50,11 @@ class SendMoneyHandler implements AuthorizedTransactionHandlerInterface
 
         if (! $fromAccountUuid || ! $toAccountUuid || ! $amountStr) {
             throw new InvalidArgumentException('SendMoneyHandler: missing required payload keys.');
+        }
+
+        // Guard: Prevent zero or negative amount transactions from being finalized.
+        if ((float) $amountStr <= 0) {
+            throw new InvalidArgumentException("SendMoneyHandler: Invalid transaction amount detected: {$amountStr}");
         }
 
         $asset = Asset::query()->where('code', $assetCode)->firstOrFail();

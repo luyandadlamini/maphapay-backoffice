@@ -32,7 +32,14 @@ class RequestMoneyReceivedHandler implements AuthorizedTransactionHandlerInterfa
 
     public function handle(AuthorizedTransaction $transaction): array
     {
+        // Robust payload extraction to handle potential serialization drift.
         $payload = $transaction->payload;
+        if (is_string($payload)) {
+            $payload = json_decode($payload, true) ?? [];
+        }
+        if (is_object($payload)) {
+            $payload = (array) $payload;
+        }
 
         $fromAccountUuid = $payload['from_account_uuid'] ?? null;
         $toAccountUuid = $payload['to_account_uuid'] ?? null;
@@ -43,6 +50,11 @@ class RequestMoneyReceivedHandler implements AuthorizedTransactionHandlerInterfa
 
         if (! $fromAccountUuid || ! $toAccountUuid || ! $amountStr) {
             throw new InvalidArgumentException('RequestMoneyReceivedHandler: missing required payload keys.');
+        }
+
+        // Guard: Prevent zero or negative amount transactions from being finalized.
+        if ((float) $amountStr <= 0) {
+            throw new InvalidArgumentException("RequestMoneyReceivedHandler: Invalid transaction amount detected: {$amountStr}");
         }
 
         if (! is_string($moneyRequestId) || $moneyRequestId === '') {

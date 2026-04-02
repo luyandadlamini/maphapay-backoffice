@@ -32,7 +32,14 @@ class ScheduledSendHandler implements AuthorizedTransactionHandlerInterface
 
     public function handle(AuthorizedTransaction $transaction): array
     {
+        // Robust payload extraction to handle potential serialization drift.
         $payload = $transaction->payload;
+        if (is_string($payload)) {
+            $payload = json_decode($payload, true) ?? [];
+        }
+        if (is_object($payload)) {
+            $payload = (array) $payload;
+        }
 
         $fromAccountUuid = $payload['from_account_uuid'] ?? null;
         $toAccountUuid = $payload['to_account_uuid'] ?? null;
@@ -44,6 +51,11 @@ class ScheduledSendHandler implements AuthorizedTransactionHandlerInterface
 
         if (! $fromAccountUuid || ! $toAccountUuid || ! $amountStr) {
             throw new InvalidArgumentException('ScheduledSendHandler: missing required payload keys.');
+        }
+
+        // Guard: Prevent zero or negative amount transactions from being finalized.
+        if ((float) $amountStr <= 0) {
+            throw new InvalidArgumentException("ScheduledSendHandler: Invalid transaction amount detected: {$amountStr}");
         }
 
         // Pre-transfer guard: abort if the row was cancelled (or executed by a concurrent call)

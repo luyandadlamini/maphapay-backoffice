@@ -69,6 +69,10 @@ class RequestMoneyReceivedStoreController extends Controller
             return $this->errorResponse('Requester wallet account not found.', 422);
         }
 
+        if ((float) $moneyRequest->amount <= 0) {
+            return $this->errorResponse('This money request has an invalid amount (0).', 422);
+        }
+
         $verificationType = match ($validated['verification_type'] ?? null) {
             'pin'   => AuthorizedTransaction::VERIFICATION_PIN,
             'none'  => AuthorizedTransaction::VERIFICATION_NONE,
