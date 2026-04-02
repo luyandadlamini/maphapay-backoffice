@@ -47,7 +47,6 @@ class ImportTenantDataCommandTest extends TestCase
 
         // Get the signature value
         $command = $reflection->newInstanceWithoutConstructor();
-        $property->setAccessible(true);
         $signature = $property->getValue($command);
 
         $this->assertStringContainsString('tenants:import-data', $signature);
@@ -68,7 +67,6 @@ class ImportTenantDataCommandTest extends TestCase
         $this->assertTrue($property->isProtected());
 
         $command = $reflection->newInstanceWithoutConstructor();
-        $property->setAccessible(true);
         $description = $property->getValue($command);
 
         $this->assertNotEmpty($description);
@@ -84,13 +82,12 @@ class ImportTenantDataCommandTest extends TestCase
         $this->assertTrue($property->isProtected());
 
         $command = $reflection->newInstanceWithoutConstructor();
-        $property->setAccessible(true);
         $tables = $property->getValue($command);
 
         $this->assertIsArray($tables);
         $this->assertContains('accounts', $tables);
         $this->assertContains('transactions', $tables);
-        $this->assertContains('transfers', $tables);
+        $this->assertContains('asset_transfers', $tables);
     }
 
     #[Test]

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Domain\Asset\Projectors;
 
 use App\Domain\Account\Models\Account;
-use App\Domain\Account\Models\Transfer;
 use App\Domain\Asset\Events\AssetTransferCompleted;
 use App\Domain\Asset\Events\AssetTransferFailed;
 use App\Domain\Asset\Events\AssetTransferInitiated;
+use App\Domain\Asset\Models\AssetTransfer;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Spatie\EventSourcing\EventHandlers\Projectors\Projector;
@@ -21,15 +21,20 @@ class AssetTransferProjector extends Projector
     public function onAssetTransferInitiated(AssetTransferInitiated $event): void
     {
         try {
-            // Create transfer record
-            Transfer::create(
-                [
-                    'uuid'              => (string) \Illuminate\Support\Str::uuid(),
+            $this->upsertTransfer(
+                transferUuid: $event->aggregateRootUuid(),
+                payload: [
+                    'reference'         => $event->aggregateRootUuid(),
+                    'hash'              => $event->hash->getHash(),
                     'from_account_uuid' => $event->fromAccountUuid->toString(),
                     'to_account_uuid'   => $event->toAccountUuid->toString(),
-                    'amount'            => $event->getFromAmount(),
+                    'from_asset_code'   => $event->fromAssetCode,
+                    'to_asset_code'     => $event->toAssetCode,
+                    'from_amount'       => $event->getFromAmount(),
+                    'to_amount'         => $event->getToAmount(),
+                    'exchange_rate'     => $event->exchangeRate,
+                    'status'            => 'initiated',
                     'description'       => $event->description ?? "Asset transfer: {$event->fromAssetCode} to {$event->toAssetCode}",
-                    'hash'              => $event->hash->getHash(),
                     'metadata'          => array_merge(
                         $event->metadata ?? [],
                         [
@@ -39,12 +44,10 @@ class AssetTransferProjector extends Projector
                             'to_amount'       => $event->getToAmount(),
                             'exchange_rate'   => $event->exchangeRate,
                             'is_cross_asset'  => $event->isCrossAssetTransfer(),
-                            'status'          => 'initiated',
-                        ]
+                        ],
                     ),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]
+                    'initiated_at' => now(),
+                ],
             );
 
             Log::info(
@@ -99,23 +102,30 @@ class AssetTransferProjector extends Projector
                 return;
             }
 
-            // Update transfer record status
-            /** @var Transfer|null $transfer */
-            $transfer = Transfer::where('hash', $event->hash->getHash())->first();
-            if ($transfer) {
-                $transfer->update(
-                    [
-                        'metadata' => array_merge(
-                            $transfer->metadata ?? [],
-                            [
-                                'transfer_id'   => $event->transferId,
-                                'status'       => 'completed',
-                                'completed_at' => now()->toISOString(),
-                            ]
-                        ),
-                    ]
-                );
-            }
+            $this->upsertTransfer(
+                transferUuid: $event->aggregateRootUuid(),
+                payload: [
+                    'reference'         => $event->aggregateRootUuid(),
+                    'transfer_id'       => $event->transferId ?? $event->aggregateRootUuid(),
+                    'hash'              => $event->hash->getHash(),
+                    'from_account_uuid' => $event->fromAccountUuid->toString(),
+                    'to_account_uuid'   => $event->toAccountUuid->toString(),
+                    'from_asset_code'   => $event->fromAssetCode,
+                    'to_asset_code'     => $event->toAssetCode,
+                    'from_amount'       => $event->fromAmount->getAmount(),
+                    'to_amount'         => $event->toAmount->getAmount(),
+                    'status'            => 'completed',
+                    'description'       => $event->description,
+                    'metadata'          => array_merge(
+                        $event->metadata ?? [],
+                        [
+                            'transfer_id'    => $event->transferId,
+                            'is_cross_asset' => $event->isCrossAssetTransfer(),
+                        ],
+                    ),
+                    'completed_at' => now(),
+                ],
+            );
 
             Log::info(
                 'Asset transfer completed successfully',
@@ -150,26 +160,29 @@ class AssetTransferProjector extends Projector
      */
     public function onAssetTransferFailed(AssetTransferFailed $event): void
     {
-        /** @var \App\Domain\Payment\Models\Transfer|null $transfer */
-        $transfer = null;
         try {
-            // Update transfer record status
-            /** @var Transfer|null $transfer */
-            $transfer = Transfer::where('hash', $event->hash->getHash())->first();
-            if ($transfer) {
-                $transfer->update(
-                    [
-                        'metadata' => array_merge(
-                            $transfer->metadata ?? [],
-                            [
-                                'status'         => 'failed',
-                                'failure_reason' => $event->reason,
-                                'failed_at'      => now()->toISOString(),
-                            ]
-                        ),
-                    ]
-                );
-            }
+            $this->upsertTransfer(
+                transferUuid: $event->aggregateRootUuid(),
+                payload: [
+                    'reference'         => $event->aggregateRootUuid(),
+                    'transfer_id'       => $event->transferId ?? $event->aggregateRootUuid(),
+                    'hash'              => $event->hash->getHash(),
+                    'from_account_uuid' => $event->fromAccountUuid->toString(),
+                    'to_account_uuid'   => $event->toAccountUuid->toString(),
+                    'from_asset_code'   => $event->fromAssetCode,
+                    'to_asset_code'     => $event->toAssetCode,
+                    'from_amount'       => $event->fromAmount->getAmount(),
+                    'status'            => 'failed',
+                    'failure_reason'    => $event->reason,
+                    'metadata'          => array_merge(
+                        $event->metadata ?? [],
+                        [
+                            'failure_reason' => $event->reason,
+                        ],
+                    ),
+                    'failed_at' => now(),
+                ],
+            );
 
             Log::warning(
                 'Asset transfer failed',
@@ -194,5 +207,27 @@ class AssetTransferProjector extends Projector
 
             throw $e;
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function upsertTransfer(string $transferUuid, array $payload): AssetTransfer
+    {
+        $existing = AssetTransfer::query()->where('uuid', $transferUuid)->first();
+        $currentMetadata = is_array($existing?->metadata) ? $existing->metadata : [];
+        $incomingMetadata = is_array($payload['metadata'] ?? null) ? $payload['metadata'] : [];
+
+        $payload['metadata'] = array_merge($currentMetadata, $incomingMetadata);
+        $payload['reference'] ??= $transferUuid;
+        $payload['transfer_id'] ??= $existing?->transfer_id ?? $transferUuid;
+
+        return AssetTransfer::query()->updateOrCreate(
+            ['uuid' => $transferUuid],
+            array_filter(
+                $payload,
+                static fn (mixed $value): bool => $value !== null,
+            ),
+        );
     }
 }

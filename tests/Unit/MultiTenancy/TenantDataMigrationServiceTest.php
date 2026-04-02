@@ -250,7 +250,7 @@ class TenantDataMigrationServiceTest extends TestCase
         $this->assertIsArray($tables);
         $this->assertArrayHasKey('accounts', $tables);
         $this->assertArrayHasKey('transactions', $tables);
-        $this->assertArrayHasKey('transfers', $tables);
+        $this->assertArrayHasKey('asset_transfers', $tables);
 
         // Check structure of a table config
         $accountConfig = $tables['accounts'];

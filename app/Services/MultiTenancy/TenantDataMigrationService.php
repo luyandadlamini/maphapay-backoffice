@@ -44,9 +44,9 @@ class TenantDataMigrationService
             'key'         => 'uuid',
             'team_column' => null, // Will use account relationship
         ],
-        'transfers' => [
-            'source'      => 'transfers',
-            'target'      => 'transfers',
+        'asset_transfers' => [
+            'source'      => 'asset_transfers',
+            'target'      => 'asset_transfers',
             'key'         => 'uuid',
             'team_column' => null, // Will use account relationship
         ],
@@ -202,11 +202,11 @@ class TenantDataMigrationService
                 ->where('accounts.team_id', $teamId)
                 ->select('transactions.*'),
 
-            'transfers' => DB::connection('mysql')
-                ->table('transfers')
-                ->join('accounts', 'transfers.source_account_uuid', '=', 'accounts.uuid')
+            'asset_transfers' => DB::connection('mysql')
+                ->table($this->resolveAssetTransferSourceTable())
+                ->join('accounts', $this->resolveAssetTransferSourceTable() . '.from_account_uuid', '=', 'accounts.uuid')
                 ->where('accounts.team_id', $teamId)
-                ->select('transfers.*'),
+                ->select($this->resolveAssetTransferSourceTable() . '.*'),
 
             default => throw new RuntimeException("No indirect query defined for table: {$tableName}"),
         };
@@ -328,5 +328,14 @@ class TenantDataMigrationService
         }
 
         return $counts;
+    }
+
+    private function resolveAssetTransferSourceTable(): string
+    {
+        if (DB::connection('mysql')->getSchemaBuilder()->hasTable('asset_transfers')) {
+            return 'asset_transfers';
+        }
+
+        return 'transfers';
     }
 }

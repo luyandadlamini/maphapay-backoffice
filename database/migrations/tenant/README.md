@@ -53,7 +53,7 @@ For initial setup migrations, we use a special prefix:
 - `transactions` - Transaction records
 - `transaction_projections` - Read model for transactions
 - `transaction_snapshots` - Event sourcing snapshots
-- `transfers` - Fund transfer records
+- `asset_transfers` - Aggregate-backed asset transfer projections
 - `transfer_snapshots` - Event sourcing snapshots
 - `ledger_entries` - Detailed ledger records
 - `ledger_snapshots` - Event sourcing snapshots

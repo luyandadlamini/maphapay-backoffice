@@ -45,7 +45,7 @@ class ExportTenantDataCommand extends Command
         'accounts',
         'account_balances',
         'transactions',
-        'transfers',
+        'asset_transfers',
         'ledger_entries',
     ];
 

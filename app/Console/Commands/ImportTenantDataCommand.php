@@ -43,7 +43,7 @@ class ImportTenantDataCommand extends Command
         'accounts',
         'account_balances',
         'transactions',
-        'transfers',
+        'asset_transfers',
         'ledger_entries',
     ];
 
@@ -247,14 +247,16 @@ class ImportTenantDataCommand extends Command
         $this->newLine();
 
         foreach ($data['data'] as $table => $records) {
-            if (! in_array($table, $this->importableTables)) {
+            $normalizedTable = $this->normalizeTableName($table);
+
+            if (! in_array($normalizedTable, $this->importableTables, true)) {
                 $result['errors'][] = "Table {$table} is not importable, skipping.";
                 $this->warn("  Skipping table {$table} (not importable)");
 
                 continue;
             }
 
-            $this->line("  Importing {$table}...");
+            $this->line("  Importing {$normalizedTable}...");
 
             if ($dryRun) {
                 $count = count($records);
@@ -265,7 +267,7 @@ class ImportTenantDataCommand extends Command
             }
 
             if ($truncate) {
-                DB::connection('tenant')->table($table)->truncate();
+                DB::connection('tenant')->table($normalizedTable)->truncate();
                 $this->line('    Truncated existing data');
             }
 
@@ -274,7 +276,7 @@ class ImportTenantDataCommand extends Command
 
             foreach ($records as $record) {
                 try {
-                    $this->importRecord($table, (array) $record);
+                    $this->importRecord($normalizedTable, (array) $record);
                     $imported++;
                 } catch (Exception $e) {
                     $skipped++;
@@ -316,9 +318,9 @@ class ImportTenantDataCommand extends Command
         $csvFiles = File::glob("{$dirPath}/*.csv");
 
         foreach ($csvFiles as $csvFile) {
-            $table = pathinfo($csvFile, PATHINFO_FILENAME);
+            $table = $this->normalizeTableName(pathinfo($csvFile, PATHINFO_FILENAME));
 
-            if (! in_array($table, $this->importableTables)) {
+            if (! in_array($table, $this->importableTables, true)) {
                 $result['errors'][] = "Table {$table} is not importable, skipping.";
                 $this->warn("  Skipping table {$table} (not importable)");
 
@@ -476,7 +478,7 @@ class ImportTenantDataCommand extends Command
 
         // Determine the key column for upsert
         $keyColumn = match ($table) {
-            'accounts', 'transactions', 'transfers' => 'uuid',
+            'accounts', 'transactions', 'asset_transfers' => 'uuid',
             default => 'id',
         };
 
@@ -522,5 +524,13 @@ class ImportTenantDataCommand extends Command
             'created_at'     => Carbon::now(),
             'updated_at'     => Carbon::now(),
         ]);
+    }
+
+    protected function normalizeTableName(string $table): string
+    {
+        return match ($table) {
+            'transfers' => 'asset_transfers',
+            default => $table,
+        };
     }
 }
