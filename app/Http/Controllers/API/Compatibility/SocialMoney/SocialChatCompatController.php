@@ -96,6 +96,7 @@ class SocialChatCompatController extends Controller
         $validated = $request->validate([
             'friendId' => ['required', 'integer'],
             'trx' => ['required', 'string'],
+            'amount' => ['required', 'numeric', 'min:0'],
             'note' => ['nullable', 'string', 'max:2000'],
             'requestMessageId' => ['nullable', 'integer'],
         ]);
@@ -107,7 +108,7 @@ class SocialChatCompatController extends Controller
                 'type' => 'payment',
                 'text' => '',
                 'payment' => [
-                    'amount' => 0,
+                    'amount' => (float) $validated['amount'],
                     'note' => (string) ($validated['note'] ?? ''),
                 ],
             ],
