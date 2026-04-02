@@ -11,11 +11,10 @@ class WithdrawAssetActivity extends Activity
     public function execute(
         AccountUuid $accountUuid,
         string $assetCode,
-        int $amount,
-        AssetTransactionAggregate $assetTransaction
+        string $amount
     ): bool {
-        $assetTransaction->retrieve((string) $accountUuid)
-            ->debit($assetCode, $amount)
+        AssetTransactionAggregate::retrieve((string) $accountUuid)
+            ->debit($assetCode, (int) $amount)
             ->persist();
 
         return true;

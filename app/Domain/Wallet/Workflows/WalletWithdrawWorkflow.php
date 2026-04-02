@@ -13,7 +13,7 @@ class WalletWithdrawWorkflow extends Workflow
     /**
      * Execute wallet withdrawal for a specific asset.
      */
-    public function execute(AccountUuid $accountUuid, string $assetCode, int $amount): Generator
+    public function execute(AccountUuid $accountUuid, string $assetCode, string $amount): Generator
     {
         return yield ActivityStub::make(
             WithdrawAssetActivity::class,

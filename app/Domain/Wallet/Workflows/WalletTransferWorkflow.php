@@ -18,7 +18,7 @@ class WalletTransferWorkflow extends Workflow
         AccountUuid $fromAccountUuid,
         AccountUuid $toAccountUuid,
         string $assetCode,
-        int $amount,
+        string $amount,
         ?string $reference = null
     ): Generator {
         try {

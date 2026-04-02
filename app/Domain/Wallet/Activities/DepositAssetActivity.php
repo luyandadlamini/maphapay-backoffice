@@ -11,11 +11,10 @@ class DepositAssetActivity extends Activity
     public function execute(
         AccountUuid $accountUuid,
         string $assetCode,
-        int $amount,
-        AssetTransactionAggregate $assetTransaction
+        string $amount
     ): bool {
-        $assetTransaction->retrieve((string) $accountUuid)
-            ->credit($assetCode, $amount)
+        $assetTransaction = AssetTransactionAggregate::retrieve((string) $accountUuid);
+        $assetTransaction->credit($assetCode, (int) $amount)
             ->persist();
 
         return true;
