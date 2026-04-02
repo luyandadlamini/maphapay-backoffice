@@ -68,8 +68,8 @@ class TransactionProjector extends Projector
                     'uuid'         => Str::uuid(),
                     'account_uuid' => (string) $event->fromAccountUuid,
                     'type'         => 'transfer_out',
-                    'asset_code'   => $event->assetCode,
-                    'amount'       => $event->amount,
+                    'asset_code'   => $event->fromAssetCode,
+                    'amount'       => $event->fromAmount->getAmount(),
                     'description'  => $event->description ?? 'Transfer to ' . substr((string) $event->toAccountUuid, 0, 8),
                     'reference'    => $event->transferId ?? null,
                     'status'       => 'completed',
@@ -87,8 +87,8 @@ class TransactionProjector extends Projector
                     'uuid'         => Str::uuid(),
                     'account_uuid' => (string) $event->toAccountUuid,
                     'type'         => 'transfer_in',
-                    'asset_code'   => $event->assetCode,
-                    'amount'       => $event->amount,
+                    'asset_code'   => $event->toAssetCode,
+                    'amount'       => $event->toAmount->getAmount(),
                     'description'  => $event->description ?? 'Transfer from ' . substr((string) $event->fromAccountUuid, 0, 8),
                     'reference'    => $event->transferId ?? null,
                     'status'       => 'completed',
@@ -105,8 +105,8 @@ class TransactionProjector extends Projector
                 [
                     'from_account' => (string) $event->fromAccountUuid,
                     'to_account'   => (string) $event->toAccountUuid,
-                    'asset_code'   => $event->assetCode,
-                    'amount'       => $event->amount,
+                    'asset_code'   => $event->fromAssetCode,
+                    'amount'       => $event->fromAmount->getAmount(),
                 ]
             );
         } catch (Exception $e) {

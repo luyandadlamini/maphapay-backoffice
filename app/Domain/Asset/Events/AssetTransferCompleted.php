@@ -39,4 +39,20 @@ class AssetTransferCompleted extends ShouldBeStored
     {
         return $this->fromAssetCode !== $this->toAssetCode;
     }
+
+    /**
+     * Get the source amount in smallest unit.
+     */
+    public function getAmount(): int
+    {
+        return $this->fromAmount->getAmount();
+    }
+
+    /**
+     * Get the source asset code.
+     */
+    public function getAssetCode(): string
+    {
+        return $this->fromAssetCode;
+    }
 }

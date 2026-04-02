@@ -100,42 +100,6 @@ class AssetTransferProjector extends Projector
                 return;
             }
 
-            // Debit from source account balance
-            $fromBalance = AccountBalance::firstOrCreate(
-                [
-                    'account_uuid' => $event->fromAccountUuid->toString(),
-                    'asset_code'   => $event->fromAssetCode,
-                ],
-                ['balance' => 0]
-            );
-
-            if (! $fromBalance->hasSufficientBalance($event->fromAmount->getAmount())) {
-                Log::error(
-                    'Insufficient balance for asset transfer',
-                    [
-                        'from_account'     => $event->fromAccountUuid->toString(),
-                        'asset_code'       => $event->fromAssetCode,
-                        'requested_amount' => $event->fromAmount->getAmount(),
-                        'current_balance'  => $fromBalance->balance,
-                    ]
-                );
-
-                return;
-            }
-
-            $fromBalance->debit($event->fromAmount->getAmount());
-
-            // Credit to destination account balance
-            $toBalance = AccountBalance::firstOrCreate(
-                [
-                    'account_uuid' => $event->toAccountUuid->toString(),
-                    'asset_code'   => $event->toAssetCode,
-                ],
-                ['balance' => 0]
-            );
-
-            $toBalance->credit($event->toAmount->getAmount());
-
             // Update transfer record status
             /** @var Transfer|null $transfer */
             $transfer = Transfer::where('hash', $event->hash->getHash())->first();
