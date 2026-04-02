@@ -8,8 +8,7 @@ use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Contracts\AuthorizedTransactionHandlerInterface;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Shared\Money\MoneyConverter;
-use App\Domain\Wallet\Services\WalletOperationsService;
-use App\Models\User;
+use App\Domain\Wallet\Activities\TransferAssetActivity;
 use InvalidArgumentException;
 
 /**
@@ -26,7 +25,7 @@ use InvalidArgumentException;
 class SendMoneyHandler implements AuthorizedTransactionHandlerInterface
 {
     public function __construct(
-        private readonly WalletOperationsService $walletOps,
+        private readonly TransferAssetActivity $transferAssetActivity,
     ) {
     }
 
@@ -62,18 +61,12 @@ class SendMoneyHandler implements AuthorizedTransactionHandlerInterface
         // Convert to minor units using precision-safe bcmath converter.
         $amountMinor = MoneyConverter::forAsset((string) $amountStr, $asset);
 
-        $this->walletOps->transfer(
-            fromWalletId: $fromAccountUuid,
-            toWalletId:   $toAccountUuid,
-            assetCode:    $assetCode,
-            amount:       (string) $amountMinor,
-            reference:    $reference,
-            metadata:     [
-                'trx'            => $transaction->trx,
-                'remark'         => AuthorizedTransaction::REMARK_SEND_MONEY,
-                'note'           => $note,
-                'authorized_txn' => $transaction->id,
-            ],
+        $this->transferAssetActivity->execute(
+            fromAccountUuid: __account_uuid($fromAccountUuid),
+            toAccountUuid: __account_uuid($toAccountUuid),
+            assetCode: $assetCode,
+            amount: (string) $amountMinor,
+            reference: $reference,
         );
 
         return [

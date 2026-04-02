@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Domain\Asset\Projectors;
 
 use App\Domain\Account\Models\Account;
-use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Account\Models\Transfer;
 use App\Domain\Asset\Events\AssetTransferCompleted;
 use App\Domain\Asset\Events\AssetTransferFailed;
@@ -109,6 +108,7 @@ class AssetTransferProjector extends Projector
                         'metadata' => array_merge(
                             $transfer->metadata ?? [],
                             [
+                                'transfer_id'   => $event->transferId,
                                 'status'       => 'completed',
                                 'completed_at' => now()->toISOString(),
                             ]
@@ -126,8 +126,7 @@ class AssetTransferProjector extends Projector
                     'to_asset'         => $event->toAssetCode,
                     'from_amount'      => $event->fromAmount->getAmount(),
                     'to_amount'        => $event->toAmount->getAmount(),
-                    'from_new_balance' => $fromBalance->balance,
-                    'to_new_balance'   => $toBalance->balance,
+                    'transfer_id'      => $event->transferId,
                 ]
             );
         } catch (Exception $e) {

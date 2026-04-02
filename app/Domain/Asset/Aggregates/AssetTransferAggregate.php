@@ -34,6 +34,8 @@ class AssetTransferAggregate extends AggregateRoot
 
     private ?Hash $hash = null;
 
+    private ?string $description = null;
+
     private ?string $status = null;
 
     private ?string $failureReason = null;
@@ -52,6 +54,22 @@ class AssetTransferAggregate extends AggregateRoot
         ?string $description = null,
         ?array $metadata = null
     ): self {
+        if ($this->status === 'completed') {
+            return $this;
+        }
+
+        if ($this->status !== null) {
+            throw new InvalidArgumentException('Transfer has already been initiated');
+        }
+
+        if ($fromAmount->getAmount() <= 0 || $toAmount->getAmount() <= 0) {
+            throw new InvalidArgumentException('Transfer amount must be greater than zero');
+        }
+
+        if ($fromAccountUuid->toString() === $toAccountUuid->toString()) {
+            throw new InvalidArgumentException('Transfer source and destination must be different');
+        }
+
         $hash = $this->generateHash($fromAmount);
 
         $this->recordThat(
@@ -79,6 +97,10 @@ class AssetTransferAggregate extends AggregateRoot
         ?string $transferId = null,
         ?array $metadata = null
     ): self {
+        if ($this->status === 'completed') {
+            return $this;
+        }
+
         if ($this->status !== 'initiated') {
             throw new InvalidArgumentException('Transfer must be initiated before it can be completed');
         }
@@ -92,6 +114,7 @@ class AssetTransferAggregate extends AggregateRoot
                 fromAmount: $this->fromAmount,
                 toAmount: $this->toAmount,
                 hash: $this->hash,
+                description: $this->description,
                 transferId: $transferId,
                 metadata: $metadata
             )
@@ -142,6 +165,7 @@ class AssetTransferAggregate extends AggregateRoot
         $this->toAmount = $event->toAmount;
         $this->exchangeRate = $event->exchangeRate;
         $this->hash = $event->hash;
+        $this->description = $event->description;
         $this->status = 'initiated';
     }
 
@@ -224,6 +248,11 @@ class AssetTransferAggregate extends AggregateRoot
     public function getStatus(): ?string
     {
         return $this->status;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
     }
 
     /**
