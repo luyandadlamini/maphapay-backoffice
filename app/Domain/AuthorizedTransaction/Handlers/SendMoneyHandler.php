@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domain\AuthorizedTransaction\Handlers;
 
-use App\Domain\Asset\Models\Asset;
-use App\Domain\Asset\Aggregates\AssetTransferAggregate;
 use App\Domain\AuthorizedTransaction\Contracts\AuthorizedTransactionHandlerInterface;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
-use App\Domain\Account\DataObjects\Money;
-use App\Domain\Shared\Money\MoneyConverter;
+use App\Domain\AuthorizedTransaction\Services\InternalP2pTransferService;
 use InvalidArgumentException;
-use RuntimeException;
 
 /**
  * Finalizes a send_money operation by executing a wallet transfer.
@@ -26,6 +22,11 @@ use RuntimeException;
  */
 class SendMoneyHandler implements AuthorizedTransactionHandlerInterface
 {
+    public function __construct(
+        private readonly InternalP2pTransferService $transferService,
+    ) {
+    }
+
     public function handle(AuthorizedTransaction $transaction): array
     {
         // Robust payload extraction to handle potential serialization drift.
@@ -42,7 +43,6 @@ class SendMoneyHandler implements AuthorizedTransactionHandlerInterface
         $amountStr = $payload['amount'] ?? null;
         $assetCode = $payload['asset_code'] ?? 'SZL';
         $reference = $payload['reference'] ?? $transaction->trx;
-        $note = $payload['note'] ?? '';
 
         if (! $fromAccountUuid || ! $toAccountUuid || ! $amountStr) {
             throw new InvalidArgumentException('SendMoneyHandler: missing required payload keys.');
@@ -53,42 +53,19 @@ class SendMoneyHandler implements AuthorizedTransactionHandlerInterface
             throw new InvalidArgumentException("SendMoneyHandler: Invalid transaction amount detected: {$amountStr}");
         }
 
-        $asset = Asset::query()->where('code', $assetCode)->firstOrFail();
-
-        // Convert to minor units using precision-safe bcmath converter.
-        $amountMinor = MoneyConverter::forAsset((string) $amountStr, $asset);
-
-        try {
-            $aggregate = AssetTransferAggregate::retrieve($reference);
-            $money = new Money((int) $amountMinor);
-
-            if ($aggregate->getStatus() === null) {
-                $aggregate->initiate(
-                    fromAccountUuid: __account_uuid($fromAccountUuid),
-                    toAccountUuid: __account_uuid($toAccountUuid),
-                    fromAssetCode: $assetCode,
-                    toAssetCode: $assetCode,
-                    fromAmount: $money,
-                    toAmount: $money,
-                    description: "Transfer: {$reference}",
-                );
-            }
-
-            $aggregate
-                ->complete($reference)
-                ->persist();
-        } catch (\Throwable $e) {
-            throw new RuntimeException(
-                sprintf('SendMoneyHandler failed to persist transfer [%s]: %s', $reference, $e->getMessage()),
-                previous: $e,
-            );
-        }
+        $transfer = $this->transferService->execute(
+            fromAccountUuid: (string) $fromAccountUuid,
+            toAccountUuid: (string) $toAccountUuid,
+            amount: (string) $amountStr,
+            assetCode: (string) $assetCode,
+            reference: (string) $reference,
+        );
 
         return [
             'trx'        => $transaction->trx,
-            'amount'     => MoneyConverter::toMajorUnitString($amountMinor, $asset->precision),
-            'asset_code' => $assetCode,
-            'reference'  => $reference,
+            'amount'     => $transfer['amount'],
+            'asset_code' => $transfer['asset_code'],
+            'reference'  => $transfer['reference'],
         ];
     }
 }

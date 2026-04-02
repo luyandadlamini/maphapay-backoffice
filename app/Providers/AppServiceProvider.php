@@ -105,6 +105,17 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by((string) ($user !== null ? $user->id : $request->ip()));
         });
 
+        RateLimiter::for('maphapay-verification', function (Request $request): array {
+            $user = $request->user();
+            $userKey = (string) ($user !== null ? $user->id : $request->ip());
+            $trx = (string) ($request->input('trx') ?? 'missing-trx');
+
+            return [
+                Limit::perMinute(10)->by("maphapay-verification:user:{$userKey}"),
+                Limit::perMinute(5)->by("maphapay-verification:trx:{$userKey}:{$trx}"),
+            ];
+        });
+
         // Treat 'demo' environment as production
         if ($this->app->environment('demo')) {
             // Force production-like settings

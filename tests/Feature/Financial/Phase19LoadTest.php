@@ -8,6 +8,7 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
+use App\Domain\AuthorizedTransaction\Services\InternalP2pTransferService;
 use App\Domain\Wallet\Services\WalletOperationsService;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
@@ -74,8 +75,8 @@ class Phase19LoadTest extends ControllerTestCase
             'maphapay_migration.enable_verification' => false,
         ]);
 
-        $walletStub = $this->makeWalletStub();
-        $this->app->instance(WalletOperationsService::class, $walletStub);
+        $transferStub = $this->makeTransferStub();
+        $this->app->instance(InternalP2pTransferService::class, $transferStub);
 
         Sanctum::actingAs($sender, ['read', 'write', 'delete']);
 
@@ -260,6 +261,32 @@ class Phase19LoadTest extends ControllerTestCase
                     ->increment('balance', $delta);
 
                 return 'stub-transfer-' . $reference;
+            },
+        );
+
+        return $stub;
+    }
+
+    private function makeTransferStub(): InternalP2pTransferService&\PHPUnit\Framework\MockObject\MockObject
+    {
+        $stub = $this->createMock(InternalP2pTransferService::class);
+        $stub->method('execute')->willReturnCallback(
+            function (string $fromAccountUuid, string $toAccountUuid, string $amount, string $assetCode, string $reference): array {
+                $delta = (int) round(((float) $amount) * 100);
+                AccountBalance::query()
+                    ->where('account_uuid', $fromAccountUuid)
+                    ->where('asset_code', $assetCode)
+                    ->decrement('balance', $delta);
+                AccountBalance::query()
+                    ->where('account_uuid', $toAccountUuid)
+                    ->where('asset_code', $assetCode)
+                    ->increment('balance', $delta);
+
+                return [
+                    'amount' => $amount,
+                    'asset_code' => $assetCode,
+                    'reference' => 'stub-transfer-' . $reference,
+                ];
             },
         );
 

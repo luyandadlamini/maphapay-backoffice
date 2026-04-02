@@ -62,13 +62,23 @@ use Illuminate\Support\Facades\Route;
 | Loaded from bootstrap/app.php with prefix /api on the primary host, or without
 | prefix on api.* subdomain — same pattern as routes/api.php.
 |
+| Phase 0 money-movement contract freeze:
+| - compat initiation routes accept string major-unit `amount`, explicit `note`,
+|   optional `asset_code`, and a required Idempotency-Key header.
+| - compat verification routes must fail closed: only `status = success` is a
+|   successful response; every other status is treated as failure by mobile.
+| - new money-moving clients should prefer `pin` or OTP (`sms`/`email`) and
+|   should stop sending `verification_type = none`.
+|
 */
 
 Route::middleware('migration_flag:enable_verification')->group(function () {
     Route::post('verification-process/verify/otp', VerifyOtpController::class)
+        ->middleware('throttle:maphapay-verification')
         ->name('maphapay.compat.verification.otp');
 
     Route::post('verification-process/verify/pin', VerifyPinController::class)
+        ->middleware('throttle:maphapay-verification')
         ->name('maphapay.compat.verification.pin');
 });
 

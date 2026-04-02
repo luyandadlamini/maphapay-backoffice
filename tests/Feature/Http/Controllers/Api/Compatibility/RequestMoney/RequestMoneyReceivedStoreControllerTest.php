@@ -224,6 +224,33 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
     }
 
     #[Test]
+    public function test_received_store_rejects_verification_type_none(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        $moneyRequestId = (string) Str::uuid();
+        MoneyRequest::query()->create([
+            'id'                => $moneyRequestId,
+            'requester_user_id' => $this->requester->id,
+            'recipient_user_id' => $this->recipient->id,
+            'amount'            => '12.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => 'TRX-IDEM-RECV',
+        ]);
+
+        Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
+
+        $this->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+            'verification_type' => 'none',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['verification_type']);
+    }
+
+    #[Test]
     public function test_route_not_registered_when_flag_disabled(): void
     {
         config([

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\API\Compatibility\VerificationProcess;
 
+use App\Domain\AuthorizedTransaction\Exceptions\TransactionNotFoundException;
 use App\Domain\AuthorizedTransaction\Services\AuthorizedTransactionManager;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -14,7 +15,8 @@ use RuntimeException;
  * POST /api/verification-process/verify/otp.
  *
  * Mobile sends: { trx: string, otp: string, remark: string }
- * Returns the legacy MaphaPay ActionResponse envelope.
+ * Phase 0 contract freeze: only `status: success` is a successful response.
+ * Every other status must be treated as verification failure by the client.
  */
 class VerifyOtpController extends Controller
 {
@@ -43,12 +45,28 @@ class VerifyOtpController extends Controller
                 'remark' => $validated['remark'] ?? 'otp_verified',
                 'data'   => $result,
             ]);
+        } catch (TransactionNotFoundException $e) {
+            return $this->errorResponse(
+                $validated['remark'] ?? 'otp_verified',
+                $e->getMessage(),
+                404,
+            );
         } catch (RuntimeException $e) {
-            return response()->json([
-                'status'  => 'error',
-                'remark'  => $validated['remark'] ?? 'otp_verified',
-                'message' => [$e->getMessage()],
-            ], 422);
+            return $this->errorResponse(
+                $validated['remark'] ?? 'otp_verified',
+                $e->getMessage(),
+                422,
+            );
         }
+    }
+
+    private function errorResponse(string $remark, string $message, int $status): JsonResponse
+    {
+        return response()->json([
+            'status'  => 'error',
+            'remark'  => $remark,
+            'message' => [$message],
+            'data'    => null,
+        ], $status);
     }
 }

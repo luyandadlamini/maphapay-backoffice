@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null                 $otp_hash
  * @property \Carbon\Carbon|null         $otp_sent_at
  * @property \Carbon\Carbon|null         $otp_expires_at
+ * @property int                         $verification_failures
  * @property \Carbon\Carbon|null         $verification_confirmed_at
  * @property string|null                 $failure_reason
  * @property \Carbon\Carbon|null         $expires_at
@@ -73,6 +74,7 @@ class AuthorizedTransaction extends Model
         'otp_hash',
         'otp_sent_at',
         'otp_expires_at',
+        'verification_failures',
         'verification_confirmed_at',
         'failure_reason',
         'expires_at',
@@ -81,6 +83,7 @@ class AuthorizedTransaction extends Model
     protected $casts = [
         'payload'                   => 'array',
         'result'                    => 'array',
+        'verification_failures'     => 'integer',
         'otp_sent_at'               => 'datetime',
         'otp_expires_at'            => 'datetime',
         'verification_confirmed_at' => 'datetime',

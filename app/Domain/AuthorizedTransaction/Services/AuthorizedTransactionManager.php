@@ -42,6 +42,9 @@ class AuthorizedTransactionManager
     /** Authorized transaction expiry in minutes. */
     private const TXN_TTL_MINUTES = 60;
 
+    /** Maximum invalid OTP/PIN attempts before the authorization is failed closed. */
+    private const MAX_VERIFICATION_FAILURES = 5;
+
     /**
      * Remark → handler class mapping.
      * Add new operation types here without touching the controllers.
@@ -147,10 +150,17 @@ class AuthorizedTransactionManager
         }
 
         if ($txn->isOtpExpired()) {
+            $this->expirePendingTransaction($txn, 'OTP has expired. Please request a new one.');
             throw new RuntimeException('OTP has expired. Please request a new one.');
         }
 
         if (! $txn->otp_hash || ! Hash::check($otp, $txn->otp_hash)) {
+            $this->recordVerificationFailure($txn, 'Invalid OTP.');
+
+            if (! $txn->fresh()?->isPending()) {
+                throw new RuntimeException('Verification attempt limit exceeded. This transaction has been cancelled.');
+            }
+
             throw new RuntimeException('Invalid OTP.');
         }
 
@@ -193,6 +203,12 @@ class AuthorizedTransactionManager
         }
 
         if (! Hash::check($pin, $user->transaction_pin)) {
+            $this->recordVerificationFailure($txn, 'Invalid transaction PIN.');
+
+            if (! $txn->fresh()?->isPending()) {
+                throw new RuntimeException('Verification attempt limit exceeded. This transaction has been cancelled.');
+            }
+
             throw new InvalidTransactionPinException('Invalid transaction PIN.');
         }
 
@@ -394,6 +410,7 @@ class AuthorizedTransactionManager
     private function assertPendingAndNotExpired(AuthorizedTransaction $txn): void
     {
         if ($txn->isExpired()) {
+            $this->expirePendingTransaction($txn, 'This authorized transaction has expired.');
             throw new RuntimeException('This authorized transaction has expired.');
         }
 
@@ -402,6 +419,52 @@ class AuthorizedTransactionManager
                 "Transaction is not pending (current status: {$txn->status})."
             );
         }
+    }
+
+    private function recordVerificationFailure(AuthorizedTransaction $txn, string $failureMessage): void
+    {
+        DB::transaction(function () use ($txn, $failureMessage): void {
+            /** @var AuthorizedTransaction|null $lockedTxn */
+            $lockedTxn = AuthorizedTransaction::query()
+                ->whereKey($txn->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($lockedTxn === null || ! $lockedTxn->isPending()) {
+                return;
+            }
+
+            $nextFailures = (int) $lockedTxn->verification_failures + 1;
+            $updates = [
+                'verification_failures' => $nextFailures,
+                'failure_reason'        => $failureMessage,
+                'updated_at'            => now(),
+            ];
+
+            if ($nextFailures >= self::MAX_VERIFICATION_FAILURES) {
+                $updates['status'] = AuthorizedTransaction::STATUS_FAILED;
+                $updates['expires_at'] = now();
+                $updates['failure_reason'] = 'Verification attempt limit exceeded.';
+                $updates['otp_hash'] = null;
+                $updates['otp_sent_at'] = null;
+                $updates['otp_expires_at'] = null;
+            }
+
+            $lockedTxn->update($updates);
+        });
+    }
+
+    private function expirePendingTransaction(AuthorizedTransaction $txn, string $reason): void
+    {
+        AuthorizedTransaction::query()
+            ->whereKey($txn->id)
+            ->where('status', AuthorizedTransaction::STATUS_PENDING)
+            ->update([
+                'status'         => AuthorizedTransaction::STATUS_EXPIRED,
+                'failure_reason' => $reason,
+                'expires_at'     => now(),
+                'updated_at'     => now(),
+            ]);
     }
 
     private function resolveHandler(string $remark): AuthorizedTransactionHandlerInterface

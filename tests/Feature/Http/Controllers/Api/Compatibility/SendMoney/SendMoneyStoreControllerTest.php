@@ -7,8 +7,8 @@ namespace Tests\Feature\Http\Controllers\Api\Compatibility\SendMoney;
 use App\Domain\Account\Models\Account;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
+use App\Domain\AuthorizedTransaction\Services\InternalP2pTransferService;
 use App\Domain\Shared\OperationRecord\OperationRecord;
-use App\Domain\Wallet\Services\WalletOperationsService;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
@@ -194,8 +194,8 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
         ]);
 
         // Step 3: wallet service must NOT be called — the guard short-circuits.
-        $this->mock(WalletOperationsService::class, function ($mock): void {
-            $mock->shouldNotReceive('transfer');
+        $this->mock(InternalP2pTransferService::class, function ($mock): void {
+            $mock->shouldNotReceive('execute');
         });
 
         // Step 4: verify PIN — domain guard intercepts and returns cached payload.

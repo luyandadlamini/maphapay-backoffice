@@ -6,7 +6,7 @@ namespace Tests\Feature\Http\Controllers\Api\Compatibility\VerificationProcess;
 
 use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
-use App\Domain\Wallet\Services\WalletOperationsService;
+use App\Domain\AuthorizedTransaction\Services\InternalP2pTransferService;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
@@ -73,8 +73,12 @@ class VerifyPinControllerTest extends ControllerTestCase
 
         $txn = $this->makePendingTransaction($user);
 
-        $this->mock(WalletOperationsService::class, function ($mock): void {
-            $mock->shouldReceive('transfer')->once()->andReturn('mock-transfer-id');
+        $this->mock(InternalP2pTransferService::class, function ($mock): void {
+            $mock->shouldReceive('execute')->once()->andReturn([
+                'amount' => '10.00',
+                'asset_code' => 'SZL',
+                'reference' => 'mock-transfer-id',
+            ]);
         });
 
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
@@ -97,7 +101,7 @@ class VerifyPinControllerTest extends ControllerTestCase
     }
 
     #[Test]
-    public function test_wrong_pin_returns_422_with_status_false_envelope(): void
+    public function test_wrong_pin_returns_422_with_error_envelope(): void
     {
         $user = $this->makeUserWithPin();
         $txn = $this->makePendingTransaction($user);
@@ -111,8 +115,9 @@ class VerifyPinControllerTest extends ControllerTestCase
 
         $response->assertStatus(422)
             ->assertExactJson([
-                'status'  => false,
-                'message' => 'Invalid transaction PIN.',
+                'status'  => 'error',
+                'remark'  => 'pin_verified',
+                'message' => ['Invalid transaction PIN.'],
                 'data'    => null,
             ]);
     }
@@ -133,8 +138,9 @@ class VerifyPinControllerTest extends ControllerTestCase
 
         $response->assertStatus(422)
             ->assertExactJson([
-                'status'  => false,
-                'message' => 'Transaction PIN has not been set for this account.',
+                'status'  => 'error',
+                'remark'  => 'pin_verified',
+                'message' => ['Transaction PIN has not been set for this account.'],
                 'data'    => null,
             ]);
     }
@@ -152,8 +158,40 @@ class VerifyPinControllerTest extends ControllerTestCase
         ]);
 
         $response->assertNotFound()
-            ->assertJsonPath('status', false)
+            ->assertJsonPath('status', 'error')
             ->assertJsonPath('data', null);
+    }
+
+    #[Test]
+    public function test_too_many_invalid_pin_attempts_fail_the_authorized_transaction(): void
+    {
+        $user = $this->makeUserWithPin();
+        $txn = $this->makePendingTransaction($user);
+
+        Sanctum::actingAs($user, ['read', 'write', 'delete']);
+
+        for ($i = 0; $i < 4; $i++) {
+            $this->postJson(self::ROUTE, [
+                'trx' => $txn->trx,
+                'pin' => '0000',
+            ])->assertStatus(422);
+        }
+
+        $fifth = $this->postJson(self::ROUTE, [
+            'trx' => $txn->trx,
+            'pin' => '0000',
+        ]);
+
+        $fifth->assertStatus(422)
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('message.0', 'Verification attempt limit exceeded. This transaction has been cancelled.');
+
+        $this->assertDatabaseHas('authorized_transactions', [
+            'id'                     => $txn->id,
+            'status'                 => AuthorizedTransaction::STATUS_FAILED,
+            'verification_failures'  => 5,
+            'failure_reason'         => 'Verification attempt limit exceeded.',
+        ]);
     }
 
     #[Test]

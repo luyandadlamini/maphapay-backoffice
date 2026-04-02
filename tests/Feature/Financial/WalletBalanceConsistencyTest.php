@@ -8,7 +8,7 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
-use App\Domain\Wallet\Services\WalletOperationsService;
+use App\Domain\AuthorizedTransaction\Services\InternalP2pTransferService;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
@@ -23,7 +23,7 @@ use Tests\ControllerTestCase;
  * OTP values are injected by updating the pending {@see AuthorizedTransaction} row in the test
  * (production stores only a hash).
  *
- * The success-path {@see WalletOperationsService::transfer} call is stubbed to mutate
+ * The success-path internal P2P transfer executor is stubbed to mutate
  * {@see AccountBalance} rows because the live workflow stack currently type-errors when it
  * receives a numeric string amount (documented on {@see WalletBalanceConsistencyTest::test_send_money_finalize_moves_balances}).
  */
@@ -85,34 +85,35 @@ class WalletBalanceConsistencyTest extends ControllerTestCase
             'maphapay_migration.enable_verification' => true,
         ]);
 
-        // Gap: production WalletOperationsService passes a string minor amount into
-        // WalletTransferWorkflow::execute(int $amount), which TypeErrors before the
-        // transfer completes. Stub transfer here and apply the same balance deltas the
-        // workflow would perform so this test stays confined to the test suite.
-        $wallet = $this->createMock(WalletOperationsService::class);
-        $wallet->method('transfer')->willReturnCallback(
+        // Stub the canonical transfer executor and apply the same balance deltas that
+        // the asset-transfer aggregate would produce so this test remains deterministic.
+        $transferService = $this->createMock(InternalP2pTransferService::class);
+        $transferService->method('execute')->willReturnCallback(
             function (
-                string $fromWalletId,
-                string $toWalletId,
-                string $assetCode,
+                string $fromAccountUuid,
+                string $toAccountUuid,
                 string $amount,
+                string $assetCode,
                 string $reference,
-                array $metadata,
-            ): string {
-                $delta = (int) $amount;
+            ): array {
+                $delta = (int) round(((float) $amount) * 100);
                 AccountBalance::query()
-                    ->where('account_uuid', $fromWalletId)
+                    ->where('account_uuid', $fromAccountUuid)
                     ->where('asset_code', $assetCode)
                     ->decrement('balance', $delta);
                 AccountBalance::query()
-                    ->where('account_uuid', $toWalletId)
+                    ->where('account_uuid', $toAccountUuid)
                     ->where('asset_code', $assetCode)
                     ->increment('balance', $delta);
 
-                return 'stub-transfer-' . $reference;
+                return [
+                    'amount' => $amount,
+                    'asset_code' => $assetCode,
+                    'reference' => 'stub-transfer-' . $reference,
+                ];
             },
         );
-        $this->app->instance(WalletOperationsService::class, $wallet);
+        $this->app->instance(InternalP2pTransferService::class, $transferService);
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
@@ -153,9 +154,9 @@ class WalletBalanceConsistencyTest extends ControllerTestCase
             'maphapay_migration.enable_verification' => true,
         ]);
 
-        $walletStub = $this->createMock(WalletOperationsService::class);
-        $walletStub->method('transfer')->willThrowException(new RuntimeException('Simulated transfer failure'));
-        $this->app->instance(WalletOperationsService::class, $walletStub);
+        $transferService = $this->createMock(InternalP2pTransferService::class);
+        $transferService->method('execute')->willThrowException(new RuntimeException('Simulated transfer failure'));
+        $this->app->instance(InternalP2pTransferService::class, $transferService);
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 

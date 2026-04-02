@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\AuthorizedTransaction\Handlers;
 
-use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Contracts\AuthorizedTransactionHandlerInterface;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
-use App\Domain\Shared\Money\MoneyConverter;
-use App\Domain\Wallet\Services\WalletOperationsService;
+use App\Domain\AuthorizedTransaction\Services\InternalP2pTransferService;
 use App\Models\MoneyRequest;
 use InvalidArgumentException;
 
@@ -26,7 +24,7 @@ use InvalidArgumentException;
 class RequestMoneyReceivedHandler implements AuthorizedTransactionHandlerInterface
 {
     public function __construct(
-        private readonly WalletOperationsService $walletOps,
+        private readonly InternalP2pTransferService $transferService,
     ) {
     }
 
@@ -61,21 +59,12 @@ class RequestMoneyReceivedHandler implements AuthorizedTransactionHandlerInterfa
             throw new InvalidArgumentException('RequestMoneyReceivedHandler: money_request_id must be a non-empty string UUID.');
         }
 
-        $asset = Asset::query()->where('code', $assetCode)->firstOrFail();
-        $amountMinor = MoneyConverter::forAsset((string) $amountStr, $asset);
-
-        $this->walletOps->transfer(
-            fromWalletId: $fromAccountUuid,
-            toWalletId:   $toAccountUuid,
-            assetCode:    $assetCode,
-            amount:       (string) $amountMinor,
-            reference:    $reference,
-            metadata:     [
-                'trx'              => $transaction->trx,
-                'remark'           => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
-                'money_request_id' => $moneyRequestId,
-                'authorized_txn'   => $transaction->id,
-            ],
+        $transfer = $this->transferService->execute(
+            fromAccountUuid: (string) $fromAccountUuid,
+            toAccountUuid: (string) $toAccountUuid,
+            amount: (string) $amountStr,
+            assetCode: (string) $assetCode,
+            reference: (string) $reference,
         );
 
         MoneyRequest::query()
@@ -84,9 +73,10 @@ class RequestMoneyReceivedHandler implements AuthorizedTransactionHandlerInterfa
 
         return [
             'trx'              => $transaction->trx,
-            'amount'           => MoneyConverter::toMajorUnitString($amountMinor, $asset->precision),
-            'asset_code'       => $assetCode,
+            'amount'           => $transfer['amount'],
+            'asset_code'       => $transfer['asset_code'],
             'money_request_id' => $moneyRequestId,
+            'reference'        => $transfer['reference'],
         ];
     }
 }

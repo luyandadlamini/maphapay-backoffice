@@ -17,7 +17,8 @@ use RuntimeException;
  * POST /api/verification-process/verify/pin.
  *
  * Mobile sends: { trx: string, pin: string, remark: string }
- * Returns the legacy MaphaPay ActionResponse envelope.
+ * Phase 0 contract freeze: only `status: success` is a successful response.
+ * Every other status must be treated as verification failure by the client.
  */
 class VerifyPinController extends Controller
 {
@@ -47,23 +48,33 @@ class VerifyPinController extends Controller
                 'data'   => $result,
             ]);
         } catch (TransactionNotFoundException $e) {
-            return response()->json([
-                'status'  => false,
-                'message' => $e->getMessage(),
-                'data'    => null,
-            ], 404);
+            return $this->errorResponse(
+                $validated['remark'] ?? 'pin_verified',
+                $e->getMessage(),
+                404,
+            );
         } catch (TransactionPinNotSetException | InvalidTransactionPinException $e) {
-            return response()->json([
-                'status'  => false,
-                'message' => $e->getMessage(),
-                'data'    => null,
-            ], 422);
+            return $this->errorResponse(
+                $validated['remark'] ?? 'pin_verified',
+                $e->getMessage(),
+                422,
+            );
         } catch (RuntimeException $e) {
-            return response()->json([
-                'status'  => 'error',
-                'remark'  => $validated['remark'] ?? 'pin_verified',
-                'message' => [$e->getMessage()],
-            ], 422);
+            return $this->errorResponse(
+                $validated['remark'] ?? 'pin_verified',
+                $e->getMessage(),
+                422,
+            );
         }
+    }
+
+    private function errorResponse(string $remark, string $message, int $status): JsonResponse
+    {
+        return response()->json([
+            'status'  => 'error',
+            'remark'  => $remark,
+            'message' => [$message],
+            'data'    => null,
+        ], $status);
     }
 }

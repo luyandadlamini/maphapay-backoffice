@@ -23,6 +23,13 @@ use InvalidArgumentException;
  * POST /api/request-money/store — MaphaPay compatibility (Phase 5).
  *
  * Persists a money request and starts OTP/PIN verification. No wallet movement.
+ *
+ * Phase 0 contract freeze for money initiation:
+ * - `amount` is a major-unit decimal string.
+ * - `note` and `asset_code` are explicit request fields.
+ * - callers must send an Idempotency-Key header for every initiation attempt.
+ * - compat success returns `status: success` with `data.next_step = otp | pin`.
+ * - clients should prefer OTP/PIN and stop initiating with `verification_type = none`.
  */
 class RequestMoneyStoreController extends Controller
 {
@@ -37,7 +44,7 @@ class RequestMoneyStoreController extends Controller
             'user'              => ['required', 'string'],
             'amount'            => ['required', 'string', new MajorUnitAmountString()],
             'note'              => ['sometimes', 'nullable', 'string', 'max:2000'],
-            'verification_type' => ['sometimes', 'nullable', 'string', Rule::in(['sms', 'email', 'pin', 'none'])],
+            'verification_type' => ['sometimes', 'nullable', 'string', Rule::in(['sms', 'email', 'pin'])],
             'asset_code'        => ['sometimes', 'string', 'exists:assets,code'],
         ]);
 
@@ -70,7 +77,6 @@ class RequestMoneyStoreController extends Controller
 
         $verificationType = match ($validated['verification_type'] ?? null) {
             'pin'   => AuthorizedTransaction::VERIFICATION_PIN,
-            'none'  => AuthorizedTransaction::VERIFICATION_NONE,
             default => AuthorizedTransaction::VERIFICATION_OTP,
         };
 
@@ -112,11 +118,6 @@ class RequestMoneyStoreController extends Controller
             );
 
             $moneyRequest->update(['trx' => $txn->trx]);
-
-            if ($verificationType === AuthorizedTransaction::VERIFICATION_NONE) {
-                $result = $this->authorizedTransactionManager->finalize($txn);
-                return ['_none_result' => $result];
-            }
 
             $codeSentMessage = null;
             if ($verificationType === AuthorizedTransaction::VERIFICATION_OTP) {

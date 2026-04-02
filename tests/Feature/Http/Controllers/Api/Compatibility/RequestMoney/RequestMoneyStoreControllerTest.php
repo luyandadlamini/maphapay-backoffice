@@ -108,6 +108,23 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
     }
 
     #[Test]
+    public function test_store_rejects_verification_type_none(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
+
+        $this->postJson('/api/request-money/store', [
+            'user'              => $this->recipient->email,
+            'amount'            => '15.00',
+            'verification_type' => 'none',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['verification_type']);
+    }
+
+    #[Test]
     public function test_route_not_registered_when_flag_disabled(): void
     {
         config([

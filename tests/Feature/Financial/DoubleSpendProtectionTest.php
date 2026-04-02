@@ -6,7 +6,7 @@ namespace Tests\Feature\Financial;
 
 use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
-use App\Domain\Wallet\Services\WalletOperationsService;
+use App\Domain\AuthorizedTransaction\Services\InternalP2pTransferService;
 use App\Models\MoneyRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -22,9 +22,8 @@ use Tests\ControllerTestCase;
  * Note: True concurrent HTTP is not exercised here (PHP single-threaded + sqlite :memory:
  * in-process kernel tests). Overlapping initiation is approximated with back-to-back calls.
  *
- * Gap (documented): {@see RequestMoneyReceivedStoreController} only checks MoneyRequest::STATUS_PENDING
- * before creating a new {@see AuthorizedTransaction}. Two overlapping received-store calls can therefore
- * mint two pending authorizations for the same money request; only per-trx finalize is atomic.
+ * Phase 1 closes the initiation gap by locking the MoneyRequest row and refusing to
+ * mint a second pending acceptance authorization for the same request.
  */
 #[Large]
 class DoubleSpendProtectionTest extends ControllerTestCase
@@ -135,11 +134,15 @@ class DoubleSpendProtectionTest extends ControllerTestCase
             'trx'               => null,
         ]);
 
-        $wallet = $this->createMock(WalletOperationsService::class);
-        $wallet->expects($this->once())
-            ->method('transfer')
-            ->willReturn('stub-transfer-id');
-        $this->app->instance(WalletOperationsService::class, $wallet);
+        $transferService = $this->createMock(InternalP2pTransferService::class);
+        $transferService->expects($this->once())
+            ->method('execute')
+            ->willReturn([
+                'amount' => '5.00',
+                'asset_code' => 'SZL',
+                'reference' => 'stub-transfer-id',
+            ]);
+        $this->app->instance(InternalP2pTransferService::class, $transferService);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
 
@@ -177,7 +180,7 @@ class DoubleSpendProtectionTest extends ControllerTestCase
     }
 
     #[Test]
-    public function test_back_to_back_received_store_without_idempotency_allows_two_pending_authorizations(): void
+    public function test_back_to_back_received_store_without_idempotency_rejects_second_pending_authorization(): void
     {
         config([
             'maphapay_migration.enable_request_money' => true,
@@ -197,21 +200,25 @@ class DoubleSpendProtectionTest extends ControllerTestCase
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
 
-        $this->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+        $first = $this->postJson("/api/request-money/received-store/{$moneyRequestId}", [
             'verification_type' => 'sms',
-        ])->assertOk();
+        ]);
+        $first->assertOk();
 
-        $this->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+        $second = $this->postJson("/api/request-money/received-store/{$moneyRequestId}", [
             'verification_type' => 'sms',
-        ])->assertOk();
+        ]);
+        $second->assertStatus(422)
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('message.0', 'A payment authorization for this money request is already in progress.');
 
         $count = AuthorizedTransaction::query()
             ->where('remark', AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED)
             ->where('user_id', $this->recipient->id)
-            ->whereRaw("json_extract(payload, '$.money_request_id') = ?", [$moneyRequestId])
+            ->where('payload->money_request_id', $moneyRequestId)
             ->count();
 
-        $this->assertSame(2, $count);
+        $this->assertSame(1, $count);
     }
 
     #[Test]
@@ -257,7 +264,7 @@ class DoubleSpendProtectionTest extends ControllerTestCase
         $this->assertSame(1, AuthorizedTransaction::query()
             ->where('remark', AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED)
             ->where('user_id', $this->recipient->id)
-            ->whereRaw("json_extract(payload, '$.money_request_id') = ?", [$moneyRequestId])
+            ->where('payload->money_request_id', $moneyRequestId)
             ->count());
     }
 
