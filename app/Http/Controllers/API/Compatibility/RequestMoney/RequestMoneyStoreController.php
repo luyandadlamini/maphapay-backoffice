@@ -160,9 +160,18 @@ class RequestMoneyStoreController extends Controller
         }
 
         if (ctype_digit($user)) {
-            return User::query()->find((int) $user);
+            $userById = User::query()->find((int) $user);
+            if ($userById) {
+                return $userById;
+            }
         }
 
-        return User::query()->where('email', $user)->first();
+        $username = str_starts_with($user, '@') ? substr($user, 1) : $user;
+
+        return User::query()
+            ->where('email', $user)
+            ->orWhere('mobile', $user)
+            ->orWhere('username', $username)
+            ->first();
     }
 }
