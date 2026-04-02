@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Financial;
 
+use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\AuthorizedTransaction\Services\InternalP2pTransferService;
@@ -14,6 +16,7 @@ use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
+use RuntimeException;
 use Tests\ControllerTestCase;
 
 /**
@@ -31,6 +34,10 @@ class DoubleSpendProtectionTest extends ControllerTestCase
     private User $requester;
 
     private User $recipient;
+
+    private Account $requesterAccount;
+
+    private Account $recipientAccount;
 
     protected function setUp(): void
     {
@@ -54,8 +61,8 @@ class DoubleSpendProtectionTest extends ControllerTestCase
             'kyc_status'     => 'approved',
             'kyc_expires_at' => null,
         ]);
-        $this->createAccount($this->requester);
-        $this->createAccount($this->recipient);
+        $this->requesterAccount = $this->createAccount($this->requester);
+        $this->recipientAccount = $this->createAccount($this->recipient);
     }
 
     #[Test]
@@ -266,6 +273,92 @@ class DoubleSpendProtectionTest extends ControllerTestCase
             ->where('user_id', $this->recipient->id)
             ->where('payload->money_request_id', $moneyRequestId)
             ->count());
+    }
+
+    #[Test]
+    public function test_request_money_accept_with_insufficient_balance_fails_closed_and_leaves_request_pending(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+            'maphapay_migration.enable_verification'  => true,
+        ]);
+
+        $transferService = $this->createMock(InternalP2pTransferService::class);
+        $transferService->method('execute')->willThrowException(new RuntimeException('Insufficient balance.'));
+        $this->app->instance(InternalP2pTransferService::class, $transferService);
+
+        AccountBalance::factory()
+            ->forAccount($this->recipientAccount)
+            ->forAsset('SZL')
+            ->withBalance(100)
+            ->create();
+        AccountBalance::factory()
+            ->forAccount($this->requesterAccount)
+            ->forAsset('SZL')
+            ->withBalance(0)
+            ->create();
+
+        $moneyRequestId = (string) Str::uuid();
+        MoneyRequest::query()->create([
+            'id'                => $moneyRequestId,
+            'requester_user_id' => $this->requester->id,
+            'recipient_user_id' => $this->recipient->id,
+            'amount'            => '5.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => null,
+        ]);
+
+        Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
+
+        $init = $this->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+            'verification_type' => 'sms',
+        ]);
+        $init->assertOk();
+        $trx = (string) $init->json('data.trx');
+        $this->forceOtpForTrx($trx);
+
+        $beforePayer = AccountBalance::query()
+            ->where('account_uuid', $this->recipientAccount->uuid)
+            ->where('asset_code', 'SZL')
+            ->value('balance');
+        $beforeRequester = AccountBalance::query()
+            ->where('account_uuid', $this->requesterAccount->uuid)
+            ->where('asset_code', 'SZL')
+            ->value('balance');
+
+        $verify = $this->postJson('/api/verification-process/verify/otp', [
+            'trx'    => $trx,
+            'otp'    => '123456',
+            'remark' => 'request_money_received',
+        ]);
+
+        $verify->assertStatus(422)
+            ->assertJsonPath('status', 'error');
+        $this->assertStringContainsString(
+            'Insufficient balance',
+            (string) $verify->json('message.0'),
+        );
+
+        $this->assertSame($beforePayer, AccountBalance::query()
+            ->where('account_uuid', $this->recipientAccount->uuid)
+            ->where('asset_code', 'SZL')
+            ->value('balance'));
+        $this->assertSame($beforeRequester, AccountBalance::query()
+            ->where('account_uuid', $this->requesterAccount->uuid)
+            ->where('asset_code', 'SZL')
+            ->value('balance'));
+
+        $this->assertDatabaseHas('money_requests', [
+            'id'     => $moneyRequestId,
+            'status' => MoneyRequest::STATUS_PENDING,
+        ]);
+
+        $this->assertDatabaseHas('authorized_transactions', [
+            'trx'    => $trx,
+            'status' => AuthorizedTransaction::STATUS_PENDING,
+        ]);
     }
 
     private function forceOtpForTrx(string $trx): void

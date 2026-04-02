@@ -109,6 +109,38 @@ class VerifyOtpControllerTest extends ControllerTestCase
     }
 
     #[Test]
+    public function test_expired_otp_returns_422_and_expires_the_authorized_transaction(): void
+    {
+        $user = $this->makeUser();
+        $txn = $this->makePendingTransaction($user);
+        $txn->update([
+            'trx'            => 'TRX-OTPEXPIRED1',
+            'otp_expires_at' => now()->subMinute(),
+        ]);
+
+        Sanctum::actingAs($user, ['read', 'write', 'delete']);
+
+        $response = $this->postJson(self::ROUTE, [
+            'trx' => 'TRX-OTPEXPIRED1',
+            'otp' => self::OTP,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertExactJson([
+                'status'  => 'error',
+                'remark'  => 'otp_verified',
+                'message' => ['OTP has expired. Please request a new one.'],
+                'data'    => null,
+            ]);
+
+        $this->assertDatabaseHas('authorized_transactions', [
+            'id'            => $txn->id,
+            'status'        => AuthorizedTransaction::STATUS_EXPIRED,
+            'failure_reason'=> 'OTP has expired. Please request a new one.',
+        ]);
+    }
+
+    #[Test]
     public function test_unknown_trx_returns_404_error_envelope(): void
     {
         $user = $this->makeUser();

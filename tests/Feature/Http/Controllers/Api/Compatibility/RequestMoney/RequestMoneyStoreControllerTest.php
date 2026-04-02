@@ -8,6 +8,7 @@ use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Models\MoneyRequest;
 use App\Models\User;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\ControllerTestCase;
@@ -105,6 +106,49 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         $txn = AuthorizedTransaction::where('trx', $trx)->firstOrFail();
 
         $this->assertSame('00000000-0000-0000-0000-000000000010', $txn->payload['_idempotency_key'] ?? null);
+    }
+
+    #[Test]
+    public function test_duplicate_store_with_same_idempotency_key_replays_without_creating_extra_rows(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
+
+        $idem = (string) Str::uuid();
+        $body = [
+            'user'              => $this->recipient->email,
+            'amount'            => '15.00',
+            'note'              => 'Replay-safe request',
+            'verification_type' => 'sms',
+        ];
+
+        $first = $this->withHeaders([
+            'X-Idempotency-Key' => $idem,
+        ])->postJson('/api/request-money/store', $body);
+        $first->assertOk();
+        $trx = (string) $first->json('data.trx');
+
+        $second = $this->withHeaders([
+            'X-Idempotency-Key' => $idem,
+        ])->postJson('/api/request-money/store', $body);
+        $second->assertOk()
+            ->assertJsonPath('data.trx', $trx);
+
+        $this->assertSame(1, AuthorizedTransaction::query()
+            ->where('remark', AuthorizedTransaction::REMARK_REQUEST_MONEY)
+            ->where('user_id', $this->requester->id)
+            ->where('trx', $trx)
+            ->count());
+
+        $this->assertSame(1, MoneyRequest::query()
+            ->where('requester_user_id', $this->requester->id)
+            ->where('recipient_user_id', $this->recipient->id)
+            ->where('amount', '15.00')
+            ->where('trx', $trx)
+            ->count());
     }
 
     #[Test]

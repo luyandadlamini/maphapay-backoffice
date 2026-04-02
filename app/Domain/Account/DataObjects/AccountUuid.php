@@ -41,6 +41,14 @@ final readonly class AccountUuid extends DataObject implements DataObjectContrac
         return $this->uuid;
     }
 
+    /**
+     * Get the explicit string representation used throughout domain services.
+     */
+    public function toString(): string
+    {
+        return $this->uuid;
+    }
+
     public function toArray(): array
     {
         return [

@@ -200,6 +200,62 @@ class WalletBalanceConsistencyTest extends ControllerTestCase
         ]);
     }
 
+    #[Test]
+    public function test_send_money_with_insufficient_balance_fails_closed_and_keeps_balances_unchanged(): void
+    {
+        config([
+            'maphapay_migration.enable_send_money'   => true,
+            'maphapay_migration.enable_verification' => true,
+        ]);
+
+        $transferService = $this->createMock(InternalP2pTransferService::class);
+        $transferService->method('execute')->willThrowException(new RuntimeException('Insufficient balance.'));
+        $this->app->instance(InternalP2pTransferService::class, $transferService);
+
+        AccountBalance::query()
+            ->where('account_uuid', $this->senderAccount->uuid)
+            ->where('asset_code', 'SZL')
+            ->update(['balance' => 100]);
+
+        Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
+
+        $beforeSender = $this->senderAccount->fresh()?->getBalance('SZL');
+        $beforeRecipient = $this->recipientAccount->fresh()?->getBalance('SZL');
+        $this->assertSame(100, $beforeSender);
+        $this->assertSame(0, $beforeRecipient);
+
+        $store = $this->postJson('/api/send-money/store', [
+            'user'              => $this->recipient->email,
+            'amount'            => '2.50',
+            'verification_type' => 'sms',
+        ]);
+        $store->assertOk();
+        $trx = (string) $store->json('data.trx');
+
+        $this->forceOtpForTrx($trx);
+
+        $verify = $this->postJson('/api/verification-process/verify/otp', [
+            'trx'    => $trx,
+            'otp'    => '123456',
+            'remark' => 'send_money',
+        ]);
+
+        $verify->assertStatus(422)
+            ->assertJsonPath('status', 'error');
+        $this->assertStringContainsString(
+            'Insufficient balance',
+            (string) $verify->json('message.0'),
+        );
+
+        $this->assertSame($beforeSender, $this->senderAccount->fresh()?->getBalance('SZL'));
+        $this->assertSame($beforeRecipient, $this->recipientAccount->fresh()?->getBalance('SZL'));
+
+        $this->assertDatabaseHas('authorized_transactions', [
+            'trx'    => $trx,
+            'status' => AuthorizedTransaction::STATUS_PENDING,
+        ]);
+    }
+
     private function forceOtpForTrx(string $trx): void
     {
         $txn = AuthorizedTransaction::query()->where('trx', $trx)->firstOrFail();
