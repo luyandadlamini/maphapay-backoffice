@@ -28,7 +28,7 @@ class RequestMoneyReceivedStoreController extends Controller
     public function __invoke(Request $request, MoneyRequest $moneyRequest): JsonResponse
     {
         $validated = $request->validate([
-            'verification_type' => ['sometimes', 'nullable', 'string', Rule::in(['sms', 'email', 'pin'])],
+            'verification_type' => ['sometimes', 'nullable', 'string', Rule::in(['sms', 'email', 'pin', 'none'])],
         ]);
 
         /** @var User $authUser */
@@ -71,6 +71,7 @@ class RequestMoneyReceivedStoreController extends Controller
 
         $verificationType = match ($validated['verification_type'] ?? null) {
             'pin'   => AuthorizedTransaction::VERIFICATION_PIN,
+            'none'  => AuthorizedTransaction::VERIFICATION_NONE,
             default => AuthorizedTransaction::VERIFICATION_OTP,
         };
 
@@ -88,7 +89,7 @@ class RequestMoneyReceivedStoreController extends Controller
 
         $codeSentMessage = null;
 
-        $txn = DB::transaction(function () use ($authUser, $payload, $verificationType, $validated, $idempotencyKey, &$codeSentMessage): AuthorizedTransaction {
+        $txn = DB::transaction(function () use ($authUser, $payload, $verificationType, $validated, $idempotencyKey, &$codeSentMessage): AuthorizedTransaction|array {
             $txn = $this->authorizedTransactionManager->initiate(
                 (int) $authUser->getAuthIdentifier(),
                 AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
@@ -96,6 +97,11 @@ class RequestMoneyReceivedStoreController extends Controller
                 $verificationType,
                 $idempotencyKey,
             );
+
+            if ($verificationType === AuthorizedTransaction::VERIFICATION_NONE) {
+                $result = $this->authorizedTransactionManager->finalize($txn);
+                return ['_none_result' => $result];
+            }
 
             if ($verificationType === AuthorizedTransaction::VERIFICATION_OTP) {
                 $this->authorizedTransactionManager->dispatchOtp($txn);
@@ -107,6 +113,14 @@ class RequestMoneyReceivedStoreController extends Controller
 
             return $txn;
         });
+
+        if (is_array($txn) && isset($txn['_none_result'])) {
+            return response()->json([
+                'status' => 'success',
+                'remark' => 'request_money_received',
+                'data'   => array_merge(['next_step' => 'none'], $txn['_none_result']),
+            ]);
+        }
 
         return response()->json([
             'status' => 'success',

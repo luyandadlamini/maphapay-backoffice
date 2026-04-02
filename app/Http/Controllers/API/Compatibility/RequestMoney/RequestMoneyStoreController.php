@@ -37,7 +37,7 @@ class RequestMoneyStoreController extends Controller
             'user'              => ['required', 'string'],
             'amount'            => ['required', 'string', new MajorUnitAmountString()],
             'note'              => ['sometimes', 'nullable', 'string', 'max:2000'],
-            'verification_type' => ['sometimes', 'nullable', 'string', Rule::in(['sms', 'email', 'pin'])],
+            'verification_type' => ['sometimes', 'nullable', 'string', Rule::in(['sms', 'email', 'pin', 'none'])],
             'asset_code'        => ['sometimes', 'string', 'exists:assets,code'],
         ]);
 
@@ -67,6 +67,7 @@ class RequestMoneyStoreController extends Controller
 
         $verificationType = match ($validated['verification_type'] ?? null) {
             'pin'   => AuthorizedTransaction::VERIFICATION_PIN,
+            'none'  => AuthorizedTransaction::VERIFICATION_NONE,
             default => AuthorizedTransaction::VERIFICATION_OTP,
         };
 
@@ -109,6 +110,11 @@ class RequestMoneyStoreController extends Controller
 
             $moneyRequest->update(['trx' => $txn->trx]);
 
+            if ($verificationType === AuthorizedTransaction::VERIFICATION_NONE) {
+                $result = $this->authorizedTransactionManager->finalize($txn);
+                return ['_none_result' => $result];
+            }
+
             $codeSentMessage = null;
             if ($verificationType === AuthorizedTransaction::VERIFICATION_OTP) {
                 $this->authorizedTransactionManager->dispatchOtp($txn);
@@ -125,7 +131,7 @@ class RequestMoneyStoreController extends Controller
             'status' => 'success',
             'remark' => 'request_money',
             'data'   => [
-                'next_step'         => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
+                'next_step' => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
                 'trx'               => $txn->trx,
                 'code_sent_message' => $codeSentMessage,
             ],

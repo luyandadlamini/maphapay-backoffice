@@ -142,6 +142,7 @@ class User extends Authenticatable implements FilamentUser
      */
     protected $appends = [
         'profile_photo_url',
+        'transaction_pin_set',
     ];
 
     /**
@@ -179,6 +180,14 @@ class User extends Authenticatable implements FilamentUser
     public function getRouteKeyName(): string
     {
         return 'uuid';
+    }
+
+    /**
+     * Get whether the transaction PIN is set.
+     */
+    public function getTransactionPinSetAttribute(): bool
+    {
+        return ! empty($this->attributes['transaction_pin']);
     }
 
     /**

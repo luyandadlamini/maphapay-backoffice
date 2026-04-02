@@ -39,7 +39,7 @@ class ScheduledSendStoreController extends Controller
             'asset_code'        => ['sometimes', 'string', 'exists:assets,code'],
             'scheduled_for'     => ['required', 'date', 'after:now', 'before:+1 year'],
             'note'              => ['sometimes', 'nullable', 'string', 'max:2000'],
-            'verification_type' => ['sometimes', 'nullable', 'string', Rule::in(['sms', 'email', 'pin'])],
+            'verification_type' => ['sometimes', 'nullable', 'string', Rule::in(['sms', 'email', 'pin', 'none'])],
         ]);
 
         /** @var User $authUser */
@@ -85,6 +85,7 @@ class ScheduledSendStoreController extends Controller
 
         $verificationType = match ($validated['verification_type'] ?? null) {
             'pin'   => AuthorizedTransaction::VERIFICATION_PIN,
+            'none'  => AuthorizedTransaction::VERIFICATION_NONE,
             default => AuthorizedTransaction::VERIFICATION_OTP,
         };
 
@@ -131,6 +132,11 @@ class ScheduledSendStoreController extends Controller
 
             $scheduledSend->update(['trx' => $txn->trx]);
 
+            if ($verificationType === AuthorizedTransaction::VERIFICATION_NONE) {
+                $result = $this->authorizedTransactionManager->finalize($txn);
+                return ['_none_result' => $result];
+            }
+
             $codeSentMessage = null;
             if ($verificationType === AuthorizedTransaction::VERIFICATION_OTP) {
                 $this->authorizedTransactionManager->dispatchOtp($txn);
@@ -147,7 +153,7 @@ class ScheduledSendStoreController extends Controller
             'status' => 'success',
             'remark' => 'scheduled_send',
             'data'   => [
-                'next_step'         => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
+                'next_step' => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
                 'trx'               => $txn->trx,
                 'code_sent_message' => $codeSentMessage,
             ],

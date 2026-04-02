@@ -162,6 +162,7 @@ Route::prefix('auth')->middleware('api.rate_limit:auth')->group(function () {
 Route::prefix('v1/users')->middleware(['auth:sanctum'])->group(function () {
     Route::post('/avatar', [App\Http\Controllers\Api\UserProfileController::class, 'uploadAvatar'])->middleware('throttle:10,1')->name('api.users.avatar.upload');
     Route::delete('/avatar', [App\Http\Controllers\Api\UserProfileController::class, 'deleteAvatar'])->middleware('api.rate_limit:query')->name('api.users.avatar.delete');
+    Route::post('/transaction-pin/toggle', [App\Http\Controllers\Api\UserProfileController::class, 'toggleTransactionPin'])->name('api.users.transaction-pin.toggle');
 });
 
 // Device token management (authenticated)

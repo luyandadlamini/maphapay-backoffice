@@ -34,7 +34,7 @@ class SendMoneyStoreController extends Controller
             'user'              => ['required', 'string'],
             'amount'            => ['required', 'string', new MajorUnitAmountString()],
             'note'              => ['sometimes', 'nullable', 'string', 'max:2000'],
-            'verification_type' => ['sometimes', 'nullable', 'string', Rule::in(['sms', 'email', 'pin'])],
+            'verification_type' => ['sometimes', 'nullable', 'string', Rule::in(['sms', 'email', 'pin', 'none'])],
             'asset_code'        => ['sometimes', 'string', 'exists:assets,code'],
         ]);
 
@@ -82,6 +82,7 @@ class SendMoneyStoreController extends Controller
 
         $verificationType = match ($validated['verification_type'] ?? null) {
             'pin'   => AuthorizedTransaction::VERIFICATION_PIN,
+            'none'  => AuthorizedTransaction::VERIFICATION_NONE,
             default => AuthorizedTransaction::VERIFICATION_OTP,
         };
 
@@ -103,6 +104,15 @@ class SendMoneyStoreController extends Controller
             $verificationType,
             $idempotencyKey,
         );
+
+        if ($verificationType === AuthorizedTransaction::VERIFICATION_NONE) {
+            $result = $this->authorizedTransactionManager->finalize($txn);
+            return response()->json([
+                'status' => 'success',
+                'remark' => 'send_money',
+                'data'   => array_merge(['next_step' => 'none'], $result),
+            ]);
+        }
 
         $codeSentMessage = null;
         if ($verificationType === AuthorizedTransaction::VERIFICATION_OTP) {
