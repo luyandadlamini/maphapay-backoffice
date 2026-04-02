@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -10,6 +11,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class IdempotencyMiddleware
 {
+    public function __construct(
+        private readonly MaphaPayMoneyMovementTelemetry $telemetry,
+    ) {}
+
     /**
      * The cache duration for idempotency keys (in seconds).
      */
@@ -36,7 +41,7 @@ class IdempotencyMiddleware
         // Validate idempotency key format (UUID or similar)
         if (! $this->isValidIdempotencyKey($idempotencyKey)) {
             return response()->json([
-                'error'   => 'Invalid idempotency key format',
+                'error' => 'Invalid idempotency key format',
                 'message' => 'Idempotency-Key must be a valid UUID or string between 16-64 characters',
             ], 400);
         }
@@ -50,6 +55,10 @@ class IdempotencyMiddleware
         if ($cachedData) {
             // Check if the request matches the cached request
             if ($this->requestMatches($request, $cachedData['request'])) {
+                $this->telemetry->logIdempotencyReplay($request, $idempotencyKey, [
+                    'status_code' => $cachedData['response']['status'] ?? null,
+                ]);
+
                 // Return the cached response
                 $response = response()->json(
                     $cachedData['response']['content'],
@@ -69,21 +78,33 @@ class IdempotencyMiddleware
 
                 return $response;
             } else {
+                $this->telemetry->logIdempotencyConflict(
+                    $request,
+                    $idempotencyKey,
+                    'same_key_different_payload',
+                );
+
                 // Different request with same idempotency key
                 return response()->json([
-                    'error'   => 'Idempotency key already used',
+                    'error' => 'Idempotency key already used',
                     'message' => 'The provided idempotency key has already been used with different request parameters',
                 ], 409);
             }
         }
 
         // Lock the idempotency key to prevent race conditions
-        $lockKey = $cacheKey . ':lock';
+        $lockKey = $cacheKey.':lock';
         $lock = Cache::lock($lockKey, 30);
 
         if (! $lock->get()) {
+            $this->telemetry->logIdempotencyConflict(
+                $request,
+                $idempotencyKey,
+                'request_in_progress',
+            );
+
             return response()->json([
-                'error'   => 'Request in progress',
+                'error' => 'Request in progress',
                 'message' => 'Another request with the same idempotency key is currently being processed',
             ], 409);
         }
@@ -163,13 +184,13 @@ class IdempotencyMiddleware
     {
         $data = [
             'request' => [
-                'method'    => $request->method(),
-                'body'      => $request->all(),
+                'method' => $request->method(),
+                'body' => $request->all(),
                 'timestamp' => now()->toIso8601String(),
             ],
             'response' => [
                 'content' => json_decode($response->getContent(), true),
-                'status'  => $response->getStatusCode(),
+                'status' => $response->getStatusCode(),
                 'headers' => $response->headers->all(),
             ],
         ];
@@ -178,9 +199,17 @@ class IdempotencyMiddleware
 
         // Log idempotency key usage
         Log::info('Idempotency key stored', [
-            'key'        => $cacheKey,
-            'user_id'    => $request->user()?->id,
-            'endpoint'   => $request->path(),
+            'key' => $cacheKey,
+            'user_id' => $request->user()?->id,
+            'endpoint' => $request->path(),
+            'expires_at' => now()->addSeconds(self::CACHE_DURATION)->toIso8601String(),
+        ]);
+
+        $this->telemetry->logEvent('idempotency_stored', [
+            'path' => $request->path(),
+            'method' => $request->method(),
+            'user_id' => $request->user()?->id,
+            'cache_key' => $cacheKey,
             'expires_at' => now()->addSeconds(self::CACHE_DURATION)->toIso8601String(),
         ]);
     }

@@ -7,6 +7,7 @@ namespace App\Domain\AuthorizedTransaction\Handlers;
 use App\Domain\AuthorizedTransaction\Contracts\AuthorizedTransactionHandlerInterface;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\AuthorizedTransaction\Services\InternalP2pTransferService;
+use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Models\MoneyRequest;
 use InvalidArgumentException;
 
@@ -25,8 +26,8 @@ class RequestMoneyReceivedHandler implements AuthorizedTransactionHandlerInterfa
 {
     public function __construct(
         private readonly InternalP2pTransferService $transferService,
-    ) {
-    }
+        private readonly MaphaPayMoneyMovementTelemetry $telemetry,
+    ) {}
 
     public function handle(AuthorizedTransaction $transaction): array
     {
@@ -67,16 +68,25 @@ class RequestMoneyReceivedHandler implements AuthorizedTransactionHandlerInterfa
             reference: (string) $reference,
         );
 
-        MoneyRequest::query()
-            ->where('id', $moneyRequestId)
-            ->update(['status' => MoneyRequest::STATUS_FULFILLED]);
+        $moneyRequest = MoneyRequest::query()->where('id', $moneyRequestId)->first();
+        if ($moneyRequest !== null) {
+            $fromStatus = $moneyRequest->status;
+            $moneyRequest->update(['status' => MoneyRequest::STATUS_FULFILLED]);
+            $moneyRequest->refresh();
+
+            $this->telemetry->logMoneyRequestTransition($moneyRequest, $fromStatus, MoneyRequest::STATUS_FULFILLED, [
+                'remark' => $transaction->remark,
+                'authorized_transaction_trx' => $transaction->trx,
+                'reference' => $transfer['reference'],
+            ]);
+        }
 
         return [
-            'trx'              => $transaction->trx,
-            'amount'           => $transfer['amount'],
-            'asset_code'       => $transfer['asset_code'],
+            'trx' => $transaction->trx,
+            'amount' => $transfer['amount'],
+            'asset_code' => $transfer['asset_code'],
             'money_request_id' => $moneyRequestId,
-            'reference'        => $transfer['reference'],
+            'reference' => $transfer['reference'],
         ];
     }
 }

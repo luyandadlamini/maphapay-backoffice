@@ -7,7 +7,9 @@ namespace Tests\Feature\Http\Controllers\Api\Compatibility\VerificationProcess;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\AuthorizedTransaction\Services\InternalP2pTransferService;
+use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\ControllerTestCase;
@@ -45,17 +47,17 @@ class VerifyPinControllerTest extends ControllerTestCase
     {
         return AuthorizedTransaction::create([
             'user_id' => $user->id,
-            'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx'     => 'TRX-PINTEST1',
+            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx' => 'TRX-PINTEST1',
             'payload' => [
                 'from_account_uuid' => '00000000-0000-0000-0000-000000000001',
-                'to_account_uuid'   => '00000000-0000-0000-0000-000000000002',
-                'amount'            => '10.00',
-                'asset_code'        => 'SZL',
+                'to_account_uuid' => '00000000-0000-0000-0000-000000000002',
+                'amount' => '10.00',
+                'asset_code' => 'SZL',
             ],
-            'status'            => AuthorizedTransaction::STATUS_PENDING,
+            'status' => AuthorizedTransaction::STATUS_PENDING,
             'verification_type' => AuthorizedTransaction::VERIFICATION_PIN,
-            'expires_at'        => now()->addHour(),
+            'expires_at' => now()->addHour(),
         ]);
     }
 
@@ -84,8 +86,8 @@ class VerifyPinControllerTest extends ControllerTestCase
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
 
         $response = $this->postJson(self::ROUTE, [
-            'trx'    => $txn->trx,
-            'pin'    => self::PIN,
+            'trx' => $txn->trx,
+            'pin' => self::PIN,
             'remark' => 'send_money',
         ]);
 
@@ -95,7 +97,7 @@ class VerifyPinControllerTest extends ControllerTestCase
             ->assertJsonStructure(['data' => ['trx', 'amount', 'asset_code', 'reference']]);
 
         $this->assertDatabaseHas('authorized_transactions', [
-            'id'     => $txn->id,
+            'id' => $txn->id,
             'status' => AuthorizedTransaction::STATUS_COMPLETED,
         ]);
     }
@@ -115,11 +117,16 @@ class VerifyPinControllerTest extends ControllerTestCase
 
         $response->assertStatus(422)
             ->assertExactJson([
-                'status'  => 'error',
-                'remark'  => 'pin_verified',
+                'status' => 'error',
+                'remark' => 'pin_verified',
                 'message' => ['Invalid transaction PIN.'],
-                'data'    => null,
+                'data' => null,
             ]);
+
+        $this->assertSame(
+            1,
+            (int) Cache::get(MaphaPayMoneyMovementTelemetry::METRIC_VERIFICATION_FAILURES_TOTAL, 0),
+        );
     }
 
     #[Test]
@@ -138,10 +145,10 @@ class VerifyPinControllerTest extends ControllerTestCase
 
         $response->assertStatus(422)
             ->assertExactJson([
-                'status'  => 'error',
-                'remark'  => 'pin_verified',
+                'status' => 'error',
+                'remark' => 'pin_verified',
                 'message' => ['Transaction PIN has not been set for this account.'],
-                'data'    => null,
+                'data' => null,
             ]);
     }
 
@@ -187,10 +194,10 @@ class VerifyPinControllerTest extends ControllerTestCase
             ->assertJsonPath('message.0', 'Verification attempt limit exceeded. This transaction has been cancelled.');
 
         $this->assertDatabaseHas('authorized_transactions', [
-            'id'                     => $txn->id,
-            'status'                 => AuthorizedTransaction::STATUS_FAILED,
-            'verification_failures'  => 5,
-            'failure_reason'         => 'Verification attempt limit exceeded.',
+            'id' => $txn->id,
+            'status' => AuthorizedTransaction::STATUS_FAILED,
+            'verification_failures' => 5,
+            'failure_reason' => 'Verification attempt limit exceeded.',
         ]);
     }
 
@@ -200,13 +207,13 @@ class VerifyPinControllerTest extends ControllerTestCase
         $user = $this->makeUserWithPin();
 
         $txn = AuthorizedTransaction::create([
-            'user_id'           => $user->id,
-            'remark'            => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx'               => 'TRX-COMPLETED1',
-            'payload'           => ['amount' => '5.00'],
-            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
+            'user_id' => $user->id,
+            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx' => 'TRX-COMPLETED1',
+            'payload' => ['amount' => '5.00'],
+            'status' => AuthorizedTransaction::STATUS_COMPLETED,
             'verification_type' => AuthorizedTransaction::VERIFICATION_PIN,
-            'expires_at'        => now()->addHour(),
+            'expires_at' => now()->addHour(),
         ]);
 
         Sanctum::actingAs($user, ['read', 'write', 'delete']);

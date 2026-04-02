@@ -17,6 +17,10 @@ return [
 
     'enable_request_money' => (bool) env('MAPHAPAY_MIGRATION_ENABLE_REQUEST_MONEY', false),
 
+    'enable_request_money_create' => env('MAPHAPAY_MIGRATION_ENABLE_REQUEST_MONEY_CREATE'),
+
+    'enable_request_money_accept' => env('MAPHAPAY_MIGRATION_ENABLE_REQUEST_MONEY_ACCEPT'),
+
     'enable_scheduled_send' => (bool) env('MAPHAPAY_MIGRATION_ENABLE_SCHEDULED_SEND', false),
 
     'enable_mtn_momo' => (bool) env('MAPHAPAY_MIGRATION_ENABLE_MTN_MOMO', false),
@@ -24,4 +28,9 @@ return [
     'enable_transaction_history' => (bool) env('MAPHAPAY_MIGRATION_ENABLE_TRANSACTION_HISTORY', false),
 
     'enable_dashboard' => (bool) env('MAPHAPAY_MIGRATION_ENABLE_DASHBOARD', false),
+
+    'observability' => [
+        'log_channel' => env('MAPHAPAY_MIGRATION_LOG_CHANNEL', 'structured'),
+        'audit_channel' => env('MAPHAPAY_MIGRATION_AUDIT_CHANNEL', 'audit'),
+    ],
 ];

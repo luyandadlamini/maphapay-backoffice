@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\API\Compatibility\RequestMoney;
 
+use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Http\Controllers\Controller;
 use App\Models\MoneyRequest;
 use App\Models\User;
@@ -15,6 +16,10 @@ use Illuminate\Http\Request;
  */
 class RequestMoneyRejectController extends Controller
 {
+    public function __construct(
+        private readonly MaphaPayMoneyMovementTelemetry $telemetry,
+    ) {}
+
     public function __invoke(Request $request, MoneyRequest $moneyRequest): JsonResponse
     {
         /** @var User $authUser */
@@ -28,14 +33,21 @@ class RequestMoneyRejectController extends Controller
             return $this->errorResponse('You are not the recipient of this money request.', 422);
         }
 
+        $fromStatus = $moneyRequest->status;
         $moneyRequest->update([
             'status' => MoneyRequest::STATUS_REJECTED,
+        ]);
+        $moneyRequest->refresh();
+
+        $this->telemetry->logMoneyRequestTransition($moneyRequest, $fromStatus, MoneyRequest::STATUS_REJECTED, [
+            'remark' => 'request_money_reject',
+            'acted_by_user_id' => $authUser->getAuthIdentifier(),
         ]);
 
         return response()->json([
             'status' => 'success',
             'remark' => 'request_money_reject',
-            'data'   => [],
+            'data' => [],
         ]);
     }
 
@@ -45,8 +57,8 @@ class RequestMoneyRejectController extends Controller
     private function errorPayload(string $message): array
     {
         return [
-            'status'  => 'error',
-            'remark'  => 'request_money_reject',
+            'status' => 'error',
+            'remark' => 'request_money_reject',
             'message' => [$message],
         ];
     }

@@ -7,6 +7,7 @@ namespace App\Http\Controllers\API\Compatibility\RequestMoney;
 use App\Domain\Account\Models\Account;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\AuthorizedTransaction\Services\AuthorizedTransactionManager;
+use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Http\Controllers\Controller;
 use App\Models\MoneyRequest;
 use App\Models\User;
@@ -15,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use RuntimeException;
+use Throwable;
 
 /**
  * POST /api/request-money/received-store/{id} — recipient accepts a pending money request (Phase 5).
@@ -23,8 +25,8 @@ class RequestMoneyReceivedStoreController extends Controller
 {
     public function __construct(
         private readonly AuthorizedTransactionManager $authorizedTransactionManager,
-    ) {
-    }
+        private readonly MaphaPayMoneyMovementTelemetry $telemetry,
+    ) {}
 
     public function __invoke(Request $request, MoneyRequest $moneyRequest): JsonResponse
     {
@@ -34,13 +36,15 @@ class RequestMoneyReceivedStoreController extends Controller
 
         /** @var User $authUser */
         $authUser = $request->user();
+        $idempotencyKey = (string) $request->header('Idempotency-Key', '')
+            ?: (string) $request->header('X-Idempotency-Key', '');
 
         if ((int) $moneyRequest->recipient_user_id !== (int) $authUser->getAuthIdentifier()) {
-            return $this->errorResponse('You are not the recipient of this money request.', 422);
+            return $this->errorResponse($request, 'You are not the recipient of this money request.', 422, $moneyRequest);
         }
 
         if ((int) $moneyRequest->requester_user_id === (int) $authUser->getAuthIdentifier()) {
-            return $this->errorResponse('You cannot accept your own money request.', 422);
+            return $this->errorResponse($request, 'You cannot accept your own money request.', 422, $moneyRequest);
         }
 
         $fromAccount = Account::query()
@@ -50,7 +54,7 @@ class RequestMoneyReceivedStoreController extends Controller
 
         $requester = User::query()->find($moneyRequest->requester_user_id);
         if (! $requester) {
-            return $this->errorResponse('Requester account not found.', 422);
+            return $this->errorResponse($request, 'Requester account not found.', 422, $moneyRequest);
         }
 
         $toAccount = Account::query()
@@ -59,24 +63,31 @@ class RequestMoneyReceivedStoreController extends Controller
             ->first();
 
         if (! $fromAccount || $fromAccount->frozen) {
-            return $this->errorResponse('Your wallet account was not found or is frozen.', 422);
+            return $this->errorResponse($request, 'Your wallet account was not found or is frozen.', 422, $moneyRequest);
         }
 
         if (! $toAccount) {
-            return $this->errorResponse('Requester wallet account not found.', 422);
+            return $this->errorResponse($request, 'Requester wallet account not found.', 422, $moneyRequest);
         }
 
         if ((float) $moneyRequest->amount <= 0) {
-            return $this->errorResponse('This money request has an invalid amount (0).', 422);
+            return $this->errorResponse($request, 'This money request has an invalid amount (0).', 422, $moneyRequest);
         }
 
         $verificationType = match ($validated['verification_type'] ?? null) {
-            'pin'   => AuthorizedTransaction::VERIFICATION_PIN,
+            'pin' => AuthorizedTransaction::VERIFICATION_PIN,
             default => AuthorizedTransaction::VERIFICATION_OTP,
         };
 
-        $idempotencyKey = (string) $request->header('Idempotency-Key', '')
-            ?: (string) $request->header('X-Idempotency-Key', '');
+        $this->telemetry->logEvent('request_money_accept_initiation_started', $this->telemetry->requestContext($request, [
+            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+            'money_request_id' => $moneyRequest->id,
+            'money_request_status' => $moneyRequest->status,
+            'amount' => $moneyRequest->amount,
+            'asset_code' => $moneyRequest->asset_code,
+            'verification_type' => $verificationType,
+            'idempotency_key_suffix' => $this->telemetry->maskIdempotencyKey($idempotencyKey),
+        ]));
 
         try {
             [$txn, $codeSentMessage] = DB::transaction(function () use (
@@ -87,6 +98,7 @@ class RequestMoneyReceivedStoreController extends Controller
                 $verificationType,
                 $validated,
                 $idempotencyKey,
+                $request,
             ): array {
                 /** @var MoneyRequest $lockedMoneyRequest */
                 $lockedMoneyRequest = MoneyRequest::query()
@@ -106,16 +118,23 @@ class RequestMoneyReceivedStoreController extends Controller
                     ->first();
 
                 if ($existingPendingTxn !== null) {
+                    $this->telemetry->logDuplicateAcceptancePrevented(
+                        $request,
+                        $lockedMoneyRequest,
+                        'active_authorization_exists',
+                        $idempotencyKey,
+                    );
+
                     throw new RuntimeException('A payment authorization for this money request is already in progress.');
                 }
 
                 $payload = [
-                    'money_request_id'  => $lockedMoneyRequest->id,
+                    'money_request_id' => $lockedMoneyRequest->id,
                     'requester_user_id' => (int) $lockedMoneyRequest->requester_user_id,
-                    'amount'            => $lockedMoneyRequest->amount,
-                    'asset_code'        => $lockedMoneyRequest->asset_code,
+                    'amount' => $lockedMoneyRequest->amount,
+                    'asset_code' => $lockedMoneyRequest->asset_code,
                     'from_account_uuid' => $fromAccount->uuid,
-                    'to_account_uuid'   => $toAccount->uuid,
+                    'to_account_uuid' => $toAccount->uuid,
                 ];
 
                 $txn = $this->authorizedTransactionManager->initiate(
@@ -138,15 +157,34 @@ class RequestMoneyReceivedStoreController extends Controller
                 return [$txn, $codeSentMessage];
             });
         } catch (RuntimeException $e) {
-            return $this->errorResponse($e->getMessage(), 422);
+            return $this->errorResponse($request, $e->getMessage(), 422, $moneyRequest, [
+                'idempotency_key_suffix' => $this->telemetry->maskIdempotencyKey($idempotencyKey),
+            ]);
+        } catch (Throwable $throwable) {
+            $this->telemetry->logEvent('request_money_accept_initiation_failed', $this->telemetry->requestContext($request, [
+                'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+                'money_request_id' => $moneyRequest->id,
+                'idempotency_key_suffix' => $this->telemetry->maskIdempotencyKey($idempotencyKey),
+                'message' => $this->telemetry->exceptionMessage($throwable),
+            ]), 'error');
+
+            throw $throwable;
         }
+
+        $this->telemetry->logEvent('request_money_accept_initiation_succeeded', $this->telemetry->requestContext($request, [
+            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+            'money_request_id' => $moneyRequest->id,
+            'trx' => $txn->trx,
+            'next_step' => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
+            'idempotency_key_suffix' => $this->telemetry->maskIdempotencyKey($idempotencyKey),
+        ]));
 
         return response()->json([
             'status' => 'success',
             'remark' => 'request_money_received',
-            'data'   => [
-                'next_step'         => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
-                'trx'               => $txn->trx,
+            'data' => [
+                'next_step' => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
+                'trx' => $txn->trx,
                 'code_sent_message' => $codeSentMessage,
             ],
         ]);
@@ -158,14 +196,30 @@ class RequestMoneyReceivedStoreController extends Controller
     private function errorPayload(string $message): array
     {
         return [
-            'status'  => 'error',
-            'remark'  => 'request_money_received',
+            'status' => 'error',
+            'remark' => 'request_money_received',
             'message' => [$message],
         ];
     }
 
-    private function errorResponse(string $message, int $status): JsonResponse
-    {
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    private function errorResponse(
+        Request $request,
+        string $message,
+        int $status,
+        MoneyRequest $moneyRequest,
+        array $context = [],
+    ): JsonResponse {
+        $this->telemetry->logEvent('request_money_accept_initiation_failed', $this->telemetry->requestContext($request, array_merge($context, [
+            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+            'money_request_id' => $moneyRequest->id,
+            'money_request_status' => $moneyRequest->status,
+            'message' => $message,
+            'status_code' => $status,
+        ])), 'warning');
+
         return response()->json($this->errorPayload($message), $status);
     }
 }

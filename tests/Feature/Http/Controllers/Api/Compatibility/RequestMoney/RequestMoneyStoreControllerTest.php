@@ -6,8 +6,10 @@ namespace Tests\Feature\Http\Controllers\Api\Compatibility\RequestMoney;
 
 use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
+use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Models\MoneyRequest;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
@@ -29,8 +31,8 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         Asset::firstOrCreate(
             ['code' => 'SZL'],
             [
-                'name'      => 'Swazi Lilangeni',
-                'type'      => 'fiat',
+                'name' => 'Swazi Lilangeni',
+                'type' => 'fiat',
                 'precision' => 2,
                 'is_active' => true,
             ],
@@ -47,9 +49,9 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
 
         $response = $this->postJson('/api/request-money/store', [
-            'user'              => $this->recipient->email,
-            'amount'            => '25.00',
-            'note'              => 'Lunch',
+            'user' => $this->recipient->email,
+            'amount' => '25.00',
+            'note' => 'Lunch',
             'verification_type' => 'sms',
         ]);
 
@@ -69,17 +71,17 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         $this->assertIsString($trx);
 
         $this->assertDatabaseHas('authorized_transactions', [
-            'trx'     => $trx,
-            'remark'  => AuthorizedTransaction::REMARK_REQUEST_MONEY,
+            'trx' => $trx,
+            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY,
             'user_id' => $this->requester->id,
         ]);
 
         $this->assertDatabaseHas('money_requests', [
-            'trx'               => $trx,
+            'trx' => $trx,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'status'            => MoneyRequest::STATUS_AWAITING_OTP,
-            'amount'            => '25.00',
+            'status' => MoneyRequest::STATUS_AWAITING_OTP,
+            'amount' => '25.00',
         ]);
     }
 
@@ -95,7 +97,7 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         $response = $this->withHeaders([
             'X-Idempotency-Key' => '00000000-0000-0000-0000-000000000010',
         ])->postJson('/api/request-money/store', [
-            'user'   => $this->recipient->email,
+            'user' => $this->recipient->email,
             'amount' => '15.00',
         ]);
 
@@ -119,9 +121,9 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
 
         $idem = (string) Str::uuid();
         $body = [
-            'user'              => $this->recipient->email,
-            'amount'            => '15.00',
-            'note'              => 'Replay-safe request',
+            'user' => $this->recipient->email,
+            'amount' => '15.00',
+            'note' => 'Replay-safe request',
             'verification_type' => 'sms',
         ];
 
@@ -149,6 +151,8 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
             ->where('amount', '15.00')
             ->where('trx', $trx)
             ->count());
+
+        $this->assertSame(1, (int) Cache::get(MaphaPayMoneyMovementTelemetry::METRIC_RETRIES_TOTAL, 0));
     }
 
     #[Test]
@@ -161,8 +165,8 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
 
         $this->postJson('/api/request-money/store', [
-            'user'              => $this->recipient->email,
-            'amount'            => '15.00',
+            'user' => $this->recipient->email,
+            'amount' => '15.00',
             'verification_type' => 'none',
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['verification_type']);
@@ -178,8 +182,26 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
 
         $this->postJson('/api/request-money/store', [
-            'user'   => $this->recipient->email,
+            'user' => $this->recipient->email,
             'amount' => '10.00',
         ])->assertNotFound();
+    }
+
+    #[Test]
+    public function test_store_route_not_registered_when_create_flag_disabled_even_if_parent_flag_enabled(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+            'maphapay_migration.enable_request_money_create' => false,
+        ]);
+
+        Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
+
+        $this->postJson('/api/request-money/store', [
+            'user' => $this->recipient->email,
+            'amount' => '10.00',
+        ])->assertNotFound();
+
+        $this->assertSame(1, (int) Cache::get(MaphaPayMoneyMovementTelemetry::METRIC_ROLLOUT_BLOCKED_TOTAL, 0));
     }
 }

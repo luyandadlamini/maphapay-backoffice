@@ -6,6 +6,7 @@ namespace App\Domain\AuthorizedTransaction\Handlers;
 
 use App\Domain\AuthorizedTransaction\Contracts\AuthorizedTransactionHandlerInterface;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
+use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Models\MoneyRequest;
 use InvalidArgumentException;
 
@@ -15,6 +16,10 @@ use InvalidArgumentException;
  */
 class RequestMoneyHandler implements AuthorizedTransactionHandlerInterface
 {
+    public function __construct(
+        private readonly MaphaPayMoneyMovementTelemetry $telemetry,
+    ) {}
+
     public function handle(AuthorizedTransaction $transaction): array
     {
         $payload = $transaction->payload;
@@ -35,13 +40,20 @@ class RequestMoneyHandler implements AuthorizedTransactionHandlerInterface
             throw new InvalidArgumentException('RequestMoneyHandler: invalid money request state.');
         }
 
+        $fromStatus = $moneyRequest->status;
         $moneyRequest->update([
             'status' => MoneyRequest::STATUS_PENDING,
         ]);
+        $moneyRequest->refresh();
+
+        $this->telemetry->logMoneyRequestTransition($moneyRequest, $fromStatus, MoneyRequest::STATUS_PENDING, [
+            'remark' => $transaction->remark,
+            'authorized_transaction_trx' => $transaction->trx,
+        ]);
 
         return [
-            'trx'        => $transaction->trx,
-            'amount'     => $moneyRequest->amount,
+            'trx' => $transaction->trx,
+            'amount' => $moneyRequest->amount,
             'asset_code' => $moneyRequest->asset_code,
         ];
     }

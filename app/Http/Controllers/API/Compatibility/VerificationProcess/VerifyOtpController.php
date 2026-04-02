@@ -6,6 +6,7 @@ namespace App\Http\Controllers\API\Compatibility\VerificationProcess;
 
 use App\Domain\AuthorizedTransaction\Exceptions\TransactionNotFoundException;
 use App\Domain\AuthorizedTransaction\Services\AuthorizedTransactionManager;
+use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,36 +23,60 @@ class VerifyOtpController extends Controller
 {
     public function __construct(
         private readonly AuthorizedTransactionManager $manager,
-    ) {
-    }
+        private readonly MaphaPayMoneyMovementTelemetry $telemetry,
+    ) {}
 
     public function __invoke(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'trx'    => ['required', 'string'],
-            'otp'    => ['required', 'string', 'digits:6'],
+            'trx' => ['required', 'string'],
+            'otp' => ['required', 'string', 'digits:6'],
             'remark' => ['sometimes', 'string'],
         ]);
 
         try {
             $result = $this->manager->verifyOtp(
-                trx:    $validated['trx'],
+                trx: $validated['trx'],
                 userId: (int) $request->user()?->getAuthIdentifier(),
-                otp:    $validated['otp'],
+                otp: $validated['otp'],
             );
+
+            $this->telemetry->logEvent('verification_succeeded', $this->telemetry->requestContext($request, [
+                'verification_method' => 'otp',
+                'remark' => $validated['remark'] ?? 'otp_verified',
+                'trx' => $validated['trx'],
+            ]));
 
             return response()->json([
                 'status' => 'success',
                 'remark' => $validated['remark'] ?? 'otp_verified',
-                'data'   => $result,
+                'data' => $result,
             ]);
         } catch (TransactionNotFoundException $e) {
+            $this->telemetry->logVerificationFailure(
+                $request,
+                'otp',
+                $validated['remark'] ?? 'otp_verified',
+                $validated['trx'],
+                $e->getMessage(),
+                404,
+            );
+
             return $this->errorResponse(
                 $validated['remark'] ?? 'otp_verified',
                 $e->getMessage(),
                 404,
             );
         } catch (RuntimeException $e) {
+            $this->telemetry->logVerificationFailure(
+                $request,
+                'otp',
+                $validated['remark'] ?? 'otp_verified',
+                $validated['trx'],
+                $e->getMessage(),
+                422,
+            );
+
             return $this->errorResponse(
                 $validated['remark'] ?? 'otp_verified',
                 $e->getMessage(),
@@ -63,10 +88,10 @@ class VerifyOtpController extends Controller
     private function errorResponse(string $remark, string $message, int $status): JsonResponse
     {
         return response()->json([
-            'status'  => 'error',
-            'remark'  => $remark,
+            'status' => 'error',
+            'remark' => $remark,
             'message' => [$message],
-            'data'    => null,
+            'data' => null,
         ], $status);
     }
 }

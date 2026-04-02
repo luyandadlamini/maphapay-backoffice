@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Shared\OperationRecord;
 
+use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Domain\Shared\OperationRecord\Exceptions\OperationPayloadMismatchException;
 use Closure;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -22,6 +23,10 @@ use Throwable;
  */
 class OperationRecordService
 {
+    public function __construct(
+        private readonly MaphaPayMoneyMovementTelemetry $telemetry,
+    ) {}
+
     /**
      * Execute $fn exactly once for the given (userId, type, key) triple.
      *
@@ -31,12 +36,13 @@ class OperationRecordService
      *                                and returns cached result if already completed.
      * - Normal path                → creates pending record, calls $fn, marks completed.
      *
-     * @param  int                     $userId      users.id of the acting user.
-     * @param  string                  $type        Operation type (e.g. 'send_money').
-     * @param  string                  $key         Idempotency key from the original request.
-     * @param  string                  $payloadHash SHA-256 hex of normalized request payload.
-     * @param  Closure(): array<string, mixed> $fn Handler closure; must return array.
-     * @return array<string, mixed>    Result from $fn or cached result_payload.
+     * @param  int  $userId  users.id of the acting user.
+     * @param  string  $type  Operation type (e.g. 'send_money').
+     * @param  string  $key  Idempotency key from the original request.
+     * @param  string  $payloadHash  SHA-256 hex of normalized request payload.
+     * @param  Closure(): array<string, mixed>  $fn  Handler closure; must return array.
+     * @return array<string, mixed> Result from $fn or cached result_payload.
+     *
      * @throws OperationPayloadMismatchException When key is reused with a different payload.
      */
     public function guardAndRun(
@@ -55,6 +61,8 @@ class OperationRecordService
         if ($existing !== null) {
             if ($existing->status === OperationRecord::STATUS_COMPLETED
                 && $existing->result_payload !== null) {
+                $this->telemetry->logOperationReplay($userId, $type, $key);
+
                 return $existing->result_payload;
             }
 
@@ -69,12 +77,12 @@ class OperationRecordService
 
         try {
             $record = OperationRecord::create([
-                'id'              => (string) Str::ulid(),
-                'user_id'         => $userId,
-                'operation_type'  => $type,
+                'id' => (string) Str::ulid(),
+                'user_id' => $userId,
+                'operation_type' => $type,
                 'idempotency_key' => $key,
-                'payload_hash'    => $payloadHash,
-                'status'          => OperationRecord::STATUS_PENDING,
+                'payload_hash' => $payloadHash,
+                'status' => OperationRecord::STATUS_PENDING,
             ]);
         } catch (UniqueConstraintViolationException) {
             // Concurrent request created the record first.
@@ -86,6 +94,8 @@ class OperationRecordService
 
             if ($record->status === OperationRecord::STATUS_COMPLETED
                 && $record->result_payload !== null) {
+                $this->telemetry->logOperationReplay($userId, $type, $key);
+
                 return $record->result_payload;
             }
 
@@ -101,7 +111,7 @@ class OperationRecordService
         }
 
         $record->update([
-            'status'         => OperationRecord::STATUS_COMPLETED,
+            'status' => OperationRecord::STATUS_COMPLETED,
             'result_payload' => $result,
         ]);
 
