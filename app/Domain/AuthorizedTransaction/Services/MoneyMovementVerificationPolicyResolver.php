@@ -83,6 +83,44 @@ class MoneyMovementVerificationPolicyResolver
     }
 
     /**
+     * Request creation does not move funds, so it should not require a challenge.
+     *
+     * @param  array<string, mixed>  $context
+     * @return array{
+     *   verification_type: string,
+     *   next_step: 'none',
+     *   reason: string,
+     *   risk_reason: string|null,
+     *   client_hint: string|null,
+     *   user_preference: string,
+     *   amount_minor: int,
+     *   step_up_threshold_minor: int
+     * }
+     */
+    public function resolveRequestMoneyCreatePolicy(
+        User $user,
+        string $amount,
+        Asset $asset,
+        ?string $clientHint = null,
+        array $context = [],
+    ): array {
+        $amountMinor = (int) MoneyConverter::forAsset($amount, $asset);
+        $stepUpThresholdAmount = (string) config('maphapay_migration.money_movement.request_money.step_up_threshold', '100.00');
+        $stepUpThresholdMinor = (int) MoneyConverter::toSmallestUnit($stepUpThresholdAmount, $asset->precision);
+
+        return [
+            'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
+            'next_step' => 'none',
+            'reason' => 'request_creation_no_funds_moved',
+            'risk_reason' => null,
+            'client_hint' => $clientHint,
+            'user_preference' => AuthorizedTransaction::VERIFICATION_NONE,
+            'amount_minor' => $amountMinor,
+            'step_up_threshold_minor' => $stepUpThresholdMinor,
+        ];
+    }
+
+    /**
      * @param  array<string, mixed>  $context
      * @return array{
      *   verification_type: string,

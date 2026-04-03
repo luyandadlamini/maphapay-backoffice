@@ -60,7 +60,7 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
                 'status' => 'success',
                 'remark' => 'request_money',
             ])
-            ->assertJsonPath('data.next_step', 'otp')
+            ->assertJsonPath('data.next_step', 'none')
             ->assertJsonPath('data.money_request_id', fn ($id) => is_string($id) && $id !== '')
             ->assertJsonStructure([
                 'data' => [
@@ -75,13 +75,15 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
             'trx' => $trx,
             'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY,
             'user_id' => $this->requester->id,
+            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
         ]);
 
         $this->assertDatabaseHas('money_requests', [
             'trx' => $trx,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'status' => MoneyRequest::STATUS_AWAITING_OTP,
+            'status' => MoneyRequest::STATUS_PENDING,
             'amount' => '25.00',
         ]);
     }
@@ -186,7 +188,7 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         ])->postJson('/api/request-money/store', $body);
         $second->assertOk()
             ->assertJsonPath('data.trx', $trx)
-            ->assertJsonPath('data.next_step', 'otp');
+            ->assertJsonPath('data.next_step', 'none');
 
         $this->assertSame(1, AuthorizedTransaction::query()
             ->where('remark', AuthorizedTransaction::REMARK_REQUEST_MONEY)
@@ -203,7 +205,7 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
     }
 
     #[Test]
-    public function test_duplicate_store_reuses_existing_rows_after_cache_loss_even_when_client_hint_changes_but_policy_stays_otp(): void
+    public function test_duplicate_store_reuses_existing_rows_after_cache_loss_even_when_client_hint_changes_but_policy_stays_none(): void
     {
         config([
             'maphapay_migration.enable_request_money' => true,
@@ -224,7 +226,7 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         ]);
 
         $first->assertOk()
-            ->assertJsonPath('data.next_step', 'otp');
+            ->assertJsonPath('data.next_step', 'none');
 
         Cache::flush();
 
@@ -239,7 +241,7 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
 
         $second->assertOk()
             ->assertJsonPath('data.trx', $first->json('data.trx'))
-            ->assertJsonPath('data.next_step', 'otp');
+            ->assertJsonPath('data.next_step', 'none');
 
         $trx = (string) $first->json('data.trx');
 
@@ -258,7 +260,7 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
     }
 
     #[Test]
-    public function test_store_rejects_verification_type_none(): void
+    public function test_store_accepts_verification_type_none(): void
     {
         config([
             'maphapay_migration.enable_request_money' => true,
@@ -270,12 +272,12 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
             'user' => $this->recipient->email,
             'amount' => '15.00',
             'verification_type' => 'none',
-        ])->assertStatus(422)
-            ->assertJsonValidationErrors(['verification_type']);
+        ])->assertOk()
+            ->assertJsonPath('data.next_step', 'none');
     }
 
     #[Test]
-    public function test_store_uses_pin_policy_when_requester_has_a_transaction_pin_even_if_client_requests_sms(): void
+    public function test_store_uses_none_policy_when_requester_has_a_transaction_pin_even_if_client_requests_sms(): void
     {
         config([
             'maphapay_migration.enable_request_money' => true,
@@ -291,23 +293,23 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         ]);
 
         $response->assertOk()
-            ->assertJsonPath('data.next_step', 'pin');
+            ->assertJsonPath('data.next_step', 'none');
 
         $trx = (string) $response->json('data.trx');
         /** @var AuthorizedTransaction $txn */
         $txn = AuthorizedTransaction::query()->where('trx', $trx)->firstOrFail();
 
-        $this->assertSame(AuthorizedTransaction::VERIFICATION_PIN, $txn->verification_type);
+        $this->assertSame(AuthorizedTransaction::VERIFICATION_NONE, $txn->verification_type);
         $this->assertSame(
-            AuthorizedTransaction::VERIFICATION_PIN,
+            AuthorizedTransaction::VERIFICATION_NONE,
             $txn->payload['_verification_policy']['verification_type'] ?? null,
         );
-        $this->assertSame('user_preference', $txn->payload['_verification_policy']['reason'] ?? null);
+        $this->assertSame('request_creation_no_funds_moved', $txn->payload['_verification_policy']['reason'] ?? null);
         $this->assertSame('sms', $txn->payload['_verification_policy']['client_hint'] ?? null);
     }
 
     #[Test]
-    public function test_store_uses_otp_policy_when_requester_has_no_pin_even_if_client_requests_pin(): void
+    public function test_store_uses_none_policy_when_requester_has_no_pin_even_if_client_requests_pin(): void
     {
         config([
             'maphapay_migration.enable_request_money' => true,
@@ -323,15 +325,15 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         ]);
 
         $response->assertOk()
-            ->assertJsonPath('data.next_step', 'otp');
+            ->assertJsonPath('data.next_step', 'none');
 
         $trx = (string) $response->json('data.trx');
         /** @var AuthorizedTransaction $txn */
         $txn = AuthorizedTransaction::query()->where('trx', $trx)->firstOrFail();
 
-        $this->assertSame(AuthorizedTransaction::VERIFICATION_OTP, $txn->verification_type);
+        $this->assertSame(AuthorizedTransaction::VERIFICATION_NONE, $txn->verification_type);
         $this->assertSame(
-            AuthorizedTransaction::VERIFICATION_OTP,
+            AuthorizedTransaction::VERIFICATION_NONE,
             $txn->payload['_verification_policy']['verification_type'] ?? null,
         );
         $this->assertSame('pin', $txn->payload['_verification_policy']['client_hint'] ?? null);
@@ -383,7 +385,7 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
     }
 
     #[Test]
-    public function test_chat_launched_request_verify_pin_returns_chat_link_confirmation_and_writes_the_request_card(): void
+    public function test_chat_launched_request_returns_chat_link_confirmation_and_writes_the_request_card_without_verification(): void
     {
         config([
             'maphapay_migration.enable_request_money' => true,
@@ -402,21 +404,11 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         ]);
 
         $initiation->assertOk()
-            ->assertJsonPath('data.next_step', 'pin');
-
-        $trx = (string) $initiation->json('data.trx');
-        $moneyRequestId = (string) $initiation->json('data.money_request_id');
-
-        $verified = $this->postJson('/api/verification-process/verify/pin', [
-            'trx' => $trx,
-            'pin' => '1234',
-            'remark' => 'request_money',
-        ]);
-
-        $verified->assertOk()
-            ->assertJsonPath('data.money_request_id', $moneyRequestId)
+            ->assertJsonPath('data.next_step', 'none')
             ->assertJsonPath('data.chat_linked', true)
             ->assertJsonPath('data.chat_message_id', fn ($id) => is_int($id));
+
+        $moneyRequestId = (string) $initiation->json('data.money_request_id');
 
         $messages = $this->getJson("/api/social-money/messages/{$this->recipient->id}");
         $messages->assertOk()

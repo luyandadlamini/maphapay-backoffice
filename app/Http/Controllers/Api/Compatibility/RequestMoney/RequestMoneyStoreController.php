@@ -25,14 +25,13 @@ use Throwable;
 /**
  * POST /api/request-money/store — MaphaPay compatibility (Phase 5).
  *
- * Persists a money request and starts OTP/PIN verification. No wallet movement.
+ * Persists a money request immediately. No wallet movement.
  *
  * Phase 0 contract freeze for money initiation:
  * - `amount` is a major-unit decimal string.
  * - `note` and `asset_code` are explicit request fields.
  * - callers should send an Idempotency-Key header for replay-safe initiation retries.
- * - compat success returns `status: success` with `data.next_step = otp | pin`.
- * - clients should prefer OTP/PIN and stop initiating with `verification_type = none`.
+ * - compat success returns `status: success` with `data.next_step = none`.
  */
 class RequestMoneyStoreController extends Controller
 {
@@ -48,7 +47,7 @@ class RequestMoneyStoreController extends Controller
             'user' => ['required', 'string'],
             'amount' => ['required', 'string', new MajorUnitAmountString],
             'note' => ['sometimes', 'nullable', 'string', 'max:2000'],
-            'verification_type' => ['sometimes', 'nullable', 'string', Rule::in(['sms', 'email', 'pin'])],
+            'verification_type' => ['sometimes', 'nullable', 'string', Rule::in(['sms', 'email', 'pin', 'none'])],
             'asset_code' => ['sometimes', 'string', 'exists:assets,code'],
             'chat_friend_id' => ['sometimes', 'nullable', 'integer'],
         ]);
@@ -98,17 +97,16 @@ class RequestMoneyStoreController extends Controller
             ]);
         }
 
-        $policy = $this->verificationPolicyResolver->resolveRequestMoneyPolicy(
+        $policy = $this->verificationPolicyResolver->resolveRequestMoneyCreatePolicy(
             user: $authUser,
             amount: $normalizedAmount,
             asset: $asset,
-            operationType: AuthorizedTransaction::REMARK_REQUEST_MONEY,
             clientHint: isset($validated['verification_type']) ? (string) $validated['verification_type'] : null,
             context: [
                 'recipient_user_id' => $recipient->id,
             ],
         );
-        $verificationType = $policy['verification_type'];
+        $verificationType = AuthorizedTransaction::VERIFICATION_NONE;
 
         $replayedTxn = $this->findExistingInitiationReplay(
             userId: (int) $authUser->getAuthIdentifier(),
@@ -143,7 +141,7 @@ class RequestMoneyStoreController extends Controller
         ]));
 
         try {
-            [$txn, $codeSentMessage] = DB::transaction(function () use (
+            [$txn, $result] = DB::transaction(function () use (
                 $authUser,
                 $recipient,
                 $normalizedAmount,
@@ -184,16 +182,9 @@ class RequestMoneyStoreController extends Controller
 
                 $moneyRequest->update(['trx' => $txn->trx]);
 
-                $codeSentMessage = null;
-                if ($verificationType === AuthorizedTransaction::VERIFICATION_OTP) {
-                    $this->authorizedTransactionManager->dispatchOtp($txn);
-                    $channel = ($validated['verification_type'] ?? 'sms') === 'email' ? 'email' : 'phone';
-                    $codeSentMessage = $channel === 'email'
-                        ? 'A verification code has been sent to your email.'
-                        : 'A verification code has been sent to your phone.';
-                }
+                $result = $this->authorizedTransactionManager->finalize($txn);
 
-                return [$txn, $codeSentMessage];
+                return [$txn->fresh(), $result];
             });
         } catch (Throwable $throwable) {
             $this->telemetry->logEvent('request_money_initiation_failed', $this->telemetry->requestContext($request, [
@@ -218,8 +209,8 @@ class RequestMoneyStoreController extends Controller
             'sender_user_id' => $authUser->id,
             'recipient_user_id' => $recipient->id,
             'trx' => $txn->trx,
-            'next_step' => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
-            'status' => AuthorizedTransaction::STATUS_PENDING,
+            'next_step' => 'none',
+            'status' => AuthorizedTransaction::STATUS_COMPLETED,
             'verification_policy' => $policy['verification_type'],
             'risk_reason' => $policy['risk_reason'],
         ]));
@@ -228,10 +219,12 @@ class RequestMoneyStoreController extends Controller
             'status' => 'success',
             'remark' => 'request_money',
             'data' => [
-                'next_step' => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
+                'next_step' => 'none',
                 'trx' => $txn->trx,
-                'code_sent_message' => $codeSentMessage,
-                'money_request_id' => $txn->payload['money_request_id'] ?? null,
+                'code_sent_message' => null,
+                'money_request_id' => $result['money_request_id'] ?? $txn->payload['money_request_id'] ?? null,
+                'chat_message_id' => $result['chat_message_id'] ?? null,
+                'chat_linked' => $result['chat_linked'] ?? null,
             ],
         ]);
     }
@@ -332,7 +325,9 @@ class RequestMoneyStoreController extends Controller
      */
     private function requestMoneyReplayPayload(AuthorizedTransaction $txn, array $validated): array
     {
-        $nextStep = $txn->verification_type === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp';
+        $nextStep = $txn->verification_type === AuthorizedTransaction::VERIFICATION_NONE
+            ? 'none'
+            : ($txn->verification_type === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp');
         $codeSentMessage = null;
         if ($txn->verification_type === AuthorizedTransaction::VERIFICATION_OTP) {
             $channel = ($validated['verification_type'] ?? 'sms') === 'email' ? 'email' : 'phone';
@@ -341,6 +336,8 @@ class RequestMoneyStoreController extends Controller
                 : 'A verification code has been sent to your phone.';
         }
 
+        $result = is_array($txn->result) ? $txn->result : [];
+
         return [
             'status' => 'success',
             'remark' => 'request_money',
@@ -348,7 +345,9 @@ class RequestMoneyStoreController extends Controller
                 'next_step' => $nextStep,
                 'trx' => $txn->trx,
                 'code_sent_message' => $codeSentMessage,
-                'money_request_id' => $txn->payload['money_request_id'] ?? null,
+                'money_request_id' => $result['money_request_id'] ?? $txn->payload['money_request_id'] ?? null,
+                'chat_message_id' => $result['chat_message_id'] ?? null,
+                'chat_linked' => $result['chat_linked'] ?? null,
             ],
         ];
     }
