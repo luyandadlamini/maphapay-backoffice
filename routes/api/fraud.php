@@ -1,8 +1,8 @@
 <?php
 
-use App\Http\Controllers\API\Fraud\FraudCaseController;
-use App\Http\Controllers\API\Fraud\FraudDetectionController as FraudDetectionAPIController;
-use App\Http\Controllers\API\Fraud\FraudRuleController;
+use App\Http\Controllers\Api\Fraud\FraudCaseController;
+use App\Http\Controllers\Api\Fraud\FraudDetectionController as FraudDetectionAPIController;
+use App\Http\Controllers\Api\Fraud\FraudRuleController;
 use App\Http\Controllers\Api\FraudDetectionController;
 use Illuminate\Support\Facades\Route;
 

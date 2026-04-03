@@ -1,0 +1,122 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Api\Compatibility\Transactions;
+
+use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\TransactionProjection;
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+/**
+ * MaphaPay compatibility endpoint: paginated transaction history for the authenticated user.
+ *
+ * Response envelope: { status, remark, data: { transactions: {paginated}, subtypes: [...] } }
+ *
+ * Each row exposes TransactionProjection's canonical field names so the mobile client
+ * reads the domain model directly rather than legacy alias fields:
+ *
+ *   id          — uuid
+ *   reference   — transaction reference (e.g. "REF-ABC123")
+ *   description — human-readable description
+ *   amount      — major-unit string (e.g. "10.50") via formatted_amount accessor
+ *   type        — domain type: "deposit" | "withdrawal" | "transfer"
+ *   subtype     — domain subtype: "send_money" | "request_money" | etc.
+ *   asset_code  — "SZL"
+ *   created_at  — ISO 8601 timestamp
+ *
+ * Optional query filters:
+ *   - type    : matches the `type` column exactly (e.g. "deposit", "withdrawal")
+ *   - subtype : matches the `subtype` column (replaces legacy "remark" filter)
+ *   - search  : substring match on description or reference
+ *   - page    : page number (default 1), 15 per page
+ */
+class TransactionHistoryController extends Controller
+{
+    private const PER_PAGE = 15;
+
+    public function __invoke(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $account = Account::where('user_uuid', $user->uuid)->first();
+
+        if ($account === null) {
+            return response()->json([
+                'status' => 'success',
+                'remark' => 'transactions',
+                'data'   => [
+                    'transactions' => [
+                        'data'          => [],
+                        'current_page'  => 1,
+                        'last_page'     => 1,
+                        'next_page_url' => null,
+                        'total'         => 0,
+                    ],
+                    'subtypes' => [],
+                ],
+            ]);
+        }
+
+        $query = TransactionProjection::where('account_uuid', $account->uuid)
+            ->where('status', 'completed')
+            ->orderByDesc('created_at');
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->string('type')->toString());
+        }
+
+        if ($request->filled('subtype')) {
+            $query->where('subtype', $request->string('subtype')->toString());
+        }
+
+        if ($request->filled('search')) {
+            $term = $request->string('search')->toString();
+            $query->where(function ($q) use ($term): void {
+                $q->where('description', 'like', "%{$term}%")
+                    ->orWhere('reference', 'like', "%{$term}%");
+            });
+        }
+
+        $paginator = $query->paginate(self::PER_PAGE);
+
+        $rows = collect($paginator->items())->map(fn (TransactionProjection $tx): array => [
+            'id'          => $tx->uuid,
+            'reference'   => $tx->reference,
+            'description' => $tx->description,
+            'amount'      => $tx->formatted_amount,
+            'type'        => $tx->type,
+            'subtype'     => $tx->subtype,
+            'asset_code'  => $tx->asset_code,
+            'created_at'  => $tx->created_at?->toIso8601String(),
+        ])->values()->all();
+
+        $subtypes = TransactionProjection::where('account_uuid', $account->uuid)
+            ->where('status', 'completed')
+            ->whereNotNull('subtype')
+            ->distinct()
+            ->pluck('subtype')
+            ->filter()
+            ->values()
+            ->all();
+
+        return response()->json([
+            'status' => 'success',
+            'remark' => 'transactions',
+            'data'   => [
+                'transactions' => [
+                    'data'          => $rows,
+                    'current_page'  => $paginator->currentPage(),
+                    'last_page'     => $paginator->lastPage(),
+                    'next_page_url' => $paginator->nextPageUrl(),
+                    'total'         => $paginator->total(),
+                ],
+                'subtypes' => $subtypes,
+            ],
+        ]);
+    }
+}
