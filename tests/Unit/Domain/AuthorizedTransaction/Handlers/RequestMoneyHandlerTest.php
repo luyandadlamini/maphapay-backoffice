@@ -20,7 +20,7 @@ class RequestMoneyHandlerTest extends DomainTestCase
     {
         parent::setUp();
 
-        $this->handler = new RequestMoneyHandler();
+        $this->handler = app(RequestMoneyHandler::class);
     }
 
     #[Test]
@@ -51,6 +51,7 @@ class RequestMoneyHandlerTest extends DomainTestCase
         $this->assertSame('TRX-TEST-001', $result['trx']);
         $this->assertSame('25.10', $result['amount']);
         $this->assertSame('SZL', $result['asset_code']);
+        $this->assertSame($moneyRequest->id, $result['money_request_id']);
 
         $this->assertDatabaseHas('money_requests', [
             'id'     => $moneyRequest->id,
@@ -135,5 +136,40 @@ class RequestMoneyHandlerTest extends DomainTestCase
         $this->expectExceptionMessageMatches('/invalid money request state/');
 
         $this->handler->handle($txn);
+    }
+
+    #[Test]
+    public function it_links_a_chat_request_message_when_chat_context_is_present(): void
+    {
+        $user = User::factory()->create();
+        $recipient = User::factory()->create();
+
+        $moneyRequest = MoneyRequest::query()->create([
+            'id'                => (string) \Illuminate\Support\Str::uuid(),
+            'requester_user_id' => $user->id,
+            'recipient_user_id' => $recipient->id,
+            'amount'            => '10.00',
+            'asset_code'        => 'SZL',
+            'note'              => 'Dinner',
+            'status'            => MoneyRequest::STATUS_AWAITING_OTP,
+        ]);
+
+        $txn = AuthorizedTransaction::query()->create([
+            'user_id'           => $user->id,
+            'remark'            => AuthorizedTransaction::REMARK_REQUEST_MONEY,
+            'trx'               => 'TRX-TEST-005',
+            'payload'           => [
+                'money_request_id' => $moneyRequest->id,
+                'chat_friend_id' => $recipient->id,
+            ],
+            'status'            => AuthorizedTransaction::STATUS_PENDING,
+            'verification_type' => AuthorizedTransaction::VERIFICATION_OTP,
+        ]);
+
+        $result = $this->handler->handle($txn);
+
+        $this->assertSame($moneyRequest->id, $result['money_request_id']);
+        $this->assertTrue($result['chat_linked'] ?? false);
+        $this->assertIsInt($result['chat_message_id'] ?? null);
     }
 }

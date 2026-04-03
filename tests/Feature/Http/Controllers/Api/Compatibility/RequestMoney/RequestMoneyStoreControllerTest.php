@@ -61,6 +61,7 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
                 'remark' => 'request_money',
             ])
             ->assertJsonPath('data.next_step', 'otp')
+            ->assertJsonPath('data.money_request_id', fn ($id) => is_string($id) && $id !== '')
             ->assertJsonStructure([
                 'data' => [
                     'trx',
@@ -334,6 +335,93 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
             $txn->payload['_verification_policy']['verification_type'] ?? null,
         );
         $this->assertSame('pin', $txn->payload['_verification_policy']['client_hint'] ?? null);
+    }
+
+    #[Test]
+    public function test_store_accepts_chat_context_when_it_matches_the_recipient(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
+
+        $response = $this->postJson('/api/request-money/store', [
+            'user' => $this->recipient->email,
+            'amount' => '12.00',
+            'verification_type' => 'sms',
+            'chat_friend_id' => $this->recipient->id,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.money_request_id', fn ($id) => is_string($id) && $id !== '');
+
+        $trx = (string) $response->json('data.trx');
+        /** @var AuthorizedTransaction $txn */
+        $txn = AuthorizedTransaction::query()->where('trx', $trx)->firstOrFail();
+
+        $this->assertSame($this->recipient->id, $txn->payload['chat_friend_id'] ?? null);
+    }
+
+    #[Test]
+    public function test_store_rejects_chat_context_that_does_not_match_the_selected_recipient(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        $other = User::factory()->create(['kyc_status' => 'approved']);
+        Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
+
+        $this->postJson('/api/request-money/store', [
+            'user' => $this->recipient->email,
+            'amount' => '12.00',
+            'verification_type' => 'sms',
+            'chat_friend_id' => $other->id,
+        ])->assertStatus(422)
+            ->assertJsonPath('message.0', 'Chat context does not match the selected recipient.');
+    }
+
+    #[Test]
+    public function test_chat_launched_request_verify_pin_returns_chat_link_confirmation_and_writes_the_request_card(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+            'maphapay_migration.enable_verification' => true,
+        ]);
+
+        $this->requester->update(['transaction_pin' => '1234', 'transaction_pin_enabled' => true]);
+        Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
+
+        $initiation = $this->postJson('/api/request-money/store', [
+            'user' => $this->recipient->email,
+            'amount' => '18.00',
+            'note' => 'Dinner',
+            'verification_type' => 'sms',
+            'chat_friend_id' => $this->recipient->id,
+        ]);
+
+        $initiation->assertOk()
+            ->assertJsonPath('data.next_step', 'pin');
+
+        $trx = (string) $initiation->json('data.trx');
+        $moneyRequestId = (string) $initiation->json('data.money_request_id');
+
+        $verified = $this->postJson('/api/verification-process/verify/pin', [
+            'trx' => $trx,
+            'pin' => '1234',
+            'remark' => 'request_money',
+        ]);
+
+        $verified->assertOk()
+            ->assertJsonPath('data.money_request_id', $moneyRequestId)
+            ->assertJsonPath('data.chat_linked', true)
+            ->assertJsonPath('data.chat_message_id', fn ($id) => is_int($id));
+
+        $messages = $this->getJson("/api/social-money/messages/{$this->recipient->id}");
+        $messages->assertOk()
+            ->assertJsonPath('data.messages.0.type', 'request')
+            ->assertJsonPath('data.messages.0.request.moneyRequestId', $moneyRequestId);
     }
 
     #[Test]

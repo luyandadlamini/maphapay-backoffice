@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Compatibility\SocialMoney;
 
+use App\Domain\SocialMoney\Services\SocialRequestMessageService;
 use App\Http\Controllers\Controller;
+use App\Models\MoneyRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -15,6 +17,10 @@ use Illuminate\Support\Facades\Cache;
  */
 class SocialChatCompatController extends Controller
 {
+    public function __construct(
+        private readonly SocialRequestMessageService $requestMessageService,
+    ) {}
+
     public function messages(Request $request, int $friendId): JsonResponse
     {
         $userId = (int) $request->user()->getAuthIdentifier();
@@ -123,23 +129,55 @@ class SocialChatCompatController extends Controller
             'friendId' => ['required', 'integer'],
             'amount' => ['required', 'numeric', 'min:0'],
             'note' => ['nullable', 'string', 'max:2000'],
+            'moneyRequestId' => ['sometimes', 'nullable', 'string'],
         ]);
 
-        $messageId = $this->appendMessage(
-            (int) $request->user()->getAuthIdentifier(),
-            (int) $validated['friendId'],
-            [
-                'type' => 'request',
-                'text' => '',
-                'request' => [
-                    'amount' => (float) $validated['amount'],
-                    'note' => (string) ($validated['note'] ?? ''),
-                    'status' => 'pending',
+        $senderUserId = (int) $request->user()->getAuthIdentifier();
+        $friendId = (int) $validated['friendId'];
+        $moneyRequestId = isset($validated['moneyRequestId']) ? (string) $validated['moneyRequestId'] : null;
+
+        if ($moneyRequestId !== null && $moneyRequestId !== '') {
+            $messageId = $this->requestMessageService->linkExistingMoneyRequest($moneyRequestId, $senderUserId, $friendId);
+        } else {
+            $messageId = $this->requestMessageService->appendRequestMessage(
+                $senderUserId,
+                $friendId,
+                [
+                    'type' => 'request',
+                    'text' => '',
+                    'request' => [
+                        'amount' => (float) $validated['amount'],
+                        'note' => (string) ($validated['note'] ?? ''),
+                        'status' => 'pending',
+                    ],
                 ],
-            ],
-        );
+            );
+        }
 
         return $this->ok(['messageId' => $messageId], 'social_send_request_message');
+    }
+
+    public function linkRequestMessage(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'friendId' => ['required', 'integer'],
+            'moneyRequestId' => ['required', 'string'],
+        ]);
+
+        /** @var MoneyRequest $moneyRequest */
+        $moneyRequest = MoneyRequest::query()->whereKey((string) $validated['moneyRequestId'])->firstOrFail();
+
+        $messageId = $this->requestMessageService->ensureForMoneyRequest(
+            $moneyRequest,
+            (int) $request->user()->getAuthIdentifier(),
+            (int) $validated['friendId'],
+        );
+
+        return $this->ok([
+            'messageId' => $messageId,
+            'moneyRequestId' => (string) $moneyRequest->id,
+            'chatLinked' => true,
+        ], 'social_link_request_message');
     }
 
     public function amendRequestMessage(Request $request): JsonResponse
@@ -200,4 +238,3 @@ class SocialChatCompatController extends Controller
         ]);
     }
 }
-

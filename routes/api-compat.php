@@ -180,6 +180,7 @@ Route::middleware('auth:sanctum')
         Route::post('mark-paid', 'markPaid')->name('maphapay.compat.social-money.mark-paid');
         Route::post('send-payment-message', 'sendPaymentMessage')->name('maphapay.compat.social-money.send-payment-message');
         Route::post('send-request-message', 'sendRequestMessage')->name('maphapay.compat.social-money.send-request-message');
+        Route::post('link-request-message', 'linkRequestMessage')->name('maphapay.compat.social-money.link-request-message');
         Route::post('amend-request-message', 'amendRequestMessage')->name('maphapay.compat.social-money.amend-request-message');
         Route::post('decline-request-message', 'declineRequestMessage')->name('maphapay.compat.social-money.decline-request-message');
         Route::post('cancel-request-message', 'cancelRequestMessage')->name('maphapay.compat.social-money.cancel-request-message');

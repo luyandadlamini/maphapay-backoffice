@@ -50,6 +50,7 @@ class RequestMoneyStoreController extends Controller
             'note' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'verification_type' => ['sometimes', 'nullable', 'string', Rule::in(['sms', 'email', 'pin'])],
             'asset_code' => ['sometimes', 'string', 'exists:assets,code'],
+            'chat_friend_id' => ['sometimes', 'nullable', 'integer'],
         ]);
 
         /** @var User $authUser */
@@ -65,6 +66,14 @@ class RequestMoneyStoreController extends Controller
         if ((int) $recipient->id === (int) $authUser->id) {
             return $this->errorResponse($request, 'You cannot request money from yourself.', 422, [
                 'recipient_user_id' => $recipient->id,
+            ]);
+        }
+
+        $chatFriendId = isset($validated['chat_friend_id']) ? (int) $validated['chat_friend_id'] : null;
+        if ($chatFriendId !== null && $chatFriendId !== (int) $recipient->id) {
+            return $this->errorResponse($request, 'Chat context does not match the selected recipient.', 422, [
+                'recipient_user_id' => $recipient->id,
+                'chat_friend_id' => $chatFriendId,
             ]);
         }
 
@@ -140,6 +149,7 @@ class RequestMoneyStoreController extends Controller
                 $normalizedAmount,
                 $asset,
                 $validated,
+                $chatFriendId,
                 $policy,
                 $verificationType,
                 $idempotencyKey,
@@ -161,6 +171,7 @@ class RequestMoneyStoreController extends Controller
                     'asset_code' => $asset->code,
                     'note' => $validated['note'] ?? null,
                     '_verification_policy' => $policy,
+                    'chat_friend_id' => $chatFriendId,
                 ];
 
                 $txn = $this->authorizedTransactionManager->initiate(
@@ -220,6 +231,7 @@ class RequestMoneyStoreController extends Controller
                 'next_step' => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
                 'trx' => $txn->trx,
                 'code_sent_message' => $codeSentMessage,
+                'money_request_id' => $txn->payload['money_request_id'] ?? null,
             ],
         ]);
     }
@@ -336,6 +348,7 @@ class RequestMoneyStoreController extends Controller
                 'next_step' => $nextStep,
                 'trx' => $txn->trx,
                 'code_sent_message' => $codeSentMessage,
+                'money_request_id' => $txn->payload['money_request_id'] ?? null,
             ],
         ];
     }
