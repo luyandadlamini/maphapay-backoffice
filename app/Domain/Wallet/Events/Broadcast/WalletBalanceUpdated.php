@@ -6,7 +6,7 @@ namespace App\Domain\Wallet\Events\Broadcast;
 
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
@@ -19,7 +19,7 @@ use Illuminate\Queue\SerializesModels;
  * Channel: private-wallet.{userId}
  * Event name: wallet.balance_updated
  */
-class WalletBalanceUpdated implements ShouldBroadcast
+class WalletBalanceUpdated implements ShouldBroadcastNow
 {
     use Dispatchable;
     use InteractsWithSockets;
@@ -60,15 +60,5 @@ class WalletBalanceUpdated implements ShouldBroadcast
     public function broadcastWhen(): bool
     {
         return config('websocket.enabled', true);
-    }
-
-    public function broadcastConnection(): string
-    {
-        return config('websocket.queue.connection', 'redis');
-    }
-
-    public function broadcastQueue(): string
-    {
-        return config('websocket.queue.name', 'broadcasts');
     }
 }
