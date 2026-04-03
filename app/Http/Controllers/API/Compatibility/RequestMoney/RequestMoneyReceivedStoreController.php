@@ -118,6 +118,29 @@ class RequestMoneyReceivedStoreController extends Controller
                     ->first();
 
                 if ($existingPendingTxn !== null) {
+                    $existingIdempotencyKey = (string) ($existingPendingTxn->payload['_idempotency_key'] ?? '');
+
+                    if (
+                        $idempotencyKey !== ''
+                        && hash_equals($existingIdempotencyKey, $idempotencyKey)
+                        && $existingPendingTxn->verification_type === $verificationType
+                    ) {
+                        $this->telemetry->logIdempotencyReplay($request, $idempotencyKey, [
+                            'status_code' => 200,
+                            'source' => 'authorized_transaction',
+                        ]);
+
+                        $codeSentMessage = null;
+                        if ($existingPendingTxn->verification_type === AuthorizedTransaction::VERIFICATION_OTP) {
+                            $channel = ($validated['verification_type'] ?? 'sms') === 'email' ? 'email' : 'phone';
+                            $codeSentMessage = $channel === 'email'
+                                ? 'A verification code has been sent to your email.'
+                                : 'A verification code has been sent to your phone.';
+                        }
+
+                        return [$existingPendingTxn, $codeSentMessage];
+                    }
+
                     $this->telemetry->logDuplicateAcceptancePrevented(
                         $request,
                         $lockedMoneyRequest,

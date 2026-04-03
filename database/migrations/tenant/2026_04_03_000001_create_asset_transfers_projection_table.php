@@ -2,12 +2,45 @@
 
 declare(strict_types=1);
 
+use App\Domain\Shared\Money\MoneyConverter;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class () extends Migration {
+    private function resolvePrecision(?string $assetCode): int
+    {
+        $precision = DB::table('assets')
+            ->where('code', $assetCode ?: 'USD')
+            ->value('precision');
+
+        return is_numeric($precision) ? (int) $precision : 2;
+    }
+
+    private function toMinorUnits(mixed $amount, int $precision): int
+    {
+        return MoneyConverter::toSmallestUnit(
+            MoneyConverter::normalise((string) $amount, $precision),
+            $precision,
+        );
+    }
+
+    private function resolveMinorUnits(
+        array $metadata,
+        string $metadataKey,
+        mixed $fallbackAmount,
+        int $precision,
+    ): int {
+        $minorUnits = $metadata[$metadataKey] ?? null;
+
+        if (is_numeric($minorUnits)) {
+            return (int) $minorUnits;
+        }
+
+        return $this->toMinorUnits($fallbackAmount, $precision);
+    }
+
     /**
      * Run the migrations.
      */
@@ -56,6 +89,11 @@ return new class () extends Migration {
                     $metadata = [];
                 }
 
+                $fromAssetCode = $metadata['from_asset_code'] ?? ($row->currency ?? 'USD');
+                $toAssetCode = $metadata['to_asset_code'] ?? ($row->currency ?? 'USD');
+                $fromPrecision = $this->resolvePrecision($fromAssetCode);
+                $toPrecision = $this->resolvePrecision($toAssetCode);
+
                 DB::table('asset_transfers')->updateOrInsert(
                     ['uuid' => $row->uuid],
                     [
@@ -64,10 +102,10 @@ return new class () extends Migration {
                         'hash'              => $metadata['hash'] ?? null,
                         'from_account_uuid' => $row->from_account_uuid,
                         'to_account_uuid'   => $row->to_account_uuid,
-                        'from_asset_code'   => $metadata['from_asset_code'] ?? ($row->currency ?? 'USD'),
-                        'to_asset_code'     => $metadata['to_asset_code'] ?? ($row->currency ?? 'USD'),
-                        'from_amount'       => (int) round((float) $row->amount),
-                        'to_amount'         => (int) round((float) $row->amount),
+                        'from_asset_code'   => $fromAssetCode,
+                        'to_asset_code'     => $toAssetCode,
+                        'from_amount'       => $this->resolveMinorUnits($metadata, 'from_amount', $row->amount, $fromPrecision),
+                        'to_amount'         => $this->resolveMinorUnits($metadata, 'to_amount', $row->amount, $toPrecision),
                         'exchange_rate'     => $row->exchange_rate,
                         'status'            => $row->status ?? 'initiated',
                         'description'       => $row->description,

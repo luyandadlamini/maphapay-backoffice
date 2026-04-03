@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace Tests\Unit\MultiTenancy;
 
 use App\Services\MultiTenancy\TenantDataMigrationService;
+use Illuminate\Database\Schema\Builder as SchemaBuilder;
+use Illuminate\Support\Facades\DB;
+use Mockery;
+use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionNamedType;
+use Tests\TestCase;
 
 /**
  * Tests for TenantDataMigrationService.
@@ -16,8 +20,14 @@ use ReflectionNamedType;
  * These are structural tests that verify the service methods exist
  * and have the correct signatures without requiring database access.
  */
+#[Large]
 class TenantDataMigrationServiceTest extends TestCase
 {
+    protected function shouldCreateDefaultAccountsInSetup(): bool
+    {
+        return false;
+    }
+
     #[Test]
     public function service_class_exists(): void
     {
@@ -297,5 +307,27 @@ class TenantDataMigrationServiceTest extends TestCase
         $tables = $service->getMigratableTables();
         $this->assertArrayHasKey('custom_table', $tables);
         $this->assertEquals('custom_source', $tables['custom_table']['source']);
+    }
+
+    #[Test]
+    public function resolve_asset_transfer_source_table_prefers_legacy_projection_when_available(): void
+    {
+        $service = new TenantDataMigrationService();
+        $reflection = new ReflectionClass($service);
+        $method = $reflection->getMethod('resolveAssetTransferSourceTable');
+        $method->setAccessible(true);
+
+        $schemaBuilder = Mockery::mock(SchemaBuilder::class);
+        $connection = Mockery::mock();
+
+        DB::shouldReceive('connection')->once()->with('mysql')->andReturn($connection);
+        $connection->shouldReceive('getSchemaBuilder')->once()->andReturn($schemaBuilder);
+
+        $schemaBuilder->shouldReceive('hasTable')->once()->with('transfers')->andReturn(true);
+        $schemaBuilder->shouldReceive('hasColumn')->once()->with('transfers', 'uuid')->andReturn(true);
+        $schemaBuilder->shouldReceive('hasColumn')->once()->with('transfers', 'from_account_uuid')->andReturn(true);
+        $schemaBuilder->shouldReceive('hasColumn')->once()->with('transfers', 'to_account_uuid')->andReturn(true);
+
+        $this->assertSame('transfers', $method->invoke($service));
     }
 }

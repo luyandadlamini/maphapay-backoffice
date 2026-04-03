@@ -11,9 +11,11 @@ use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Sanctum\Sanctum;
+use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\ControllerTestCase;
 
+#[Large]
 class VerifyPinControllerTest extends ControllerTestCase
 {
     private const PIN = '1234';
@@ -117,9 +119,9 @@ class VerifyPinControllerTest extends ControllerTestCase
 
         $response->assertStatus(422)
             ->assertExactJson([
-                'status' => 'error',
+                'status' => false,
                 'remark' => 'pin_verified',
-                'message' => ['Invalid transaction PIN.'],
+                'message' => 'Invalid transaction PIN.',
                 'data' => null,
             ]);
 
@@ -127,6 +129,29 @@ class VerifyPinControllerTest extends ControllerTestCase
             1,
             (int) Cache::get(MaphaPayMoneyMovementTelemetry::METRIC_VERIFICATION_FAILURES_TOTAL, 0),
         );
+    }
+
+    #[Test]
+    public function test_invalid_pin_format_returns_compatibility_error_envelope(): void
+    {
+        $user = $this->makeUserWithPin();
+        $txn = $this->makePendingTransaction($user);
+
+        Sanctum::actingAs($user, ['read', 'write', 'delete']);
+
+        $response = $this->postJson(self::ROUTE, [
+            'trx' => $txn->trx,
+            'pin' => '12',
+            'remark' => 'send_money',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertExactJson([
+                'status' => 'error',
+                'remark' => 'send_money',
+                'message' => ['The pin field must be 4 digits.'],
+                'data' => null,
+            ]);
     }
 
     #[Test]
@@ -145,9 +170,9 @@ class VerifyPinControllerTest extends ControllerTestCase
 
         $response->assertStatus(422)
             ->assertExactJson([
-                'status' => 'error',
+                'status' => false,
                 'remark' => 'pin_verified',
-                'message' => ['Transaction PIN has not been set for this account.'],
+                'message' => 'Transaction PIN has not been set for this account.',
                 'data' => null,
             ]);
     }
@@ -165,7 +190,7 @@ class VerifyPinControllerTest extends ControllerTestCase
         ]);
 
         $response->assertNotFound()
-            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('status', false)
             ->assertJsonPath('data', null);
     }
 
@@ -190,8 +215,8 @@ class VerifyPinControllerTest extends ControllerTestCase
         ]);
 
         $fifth->assertStatus(422)
-            ->assertJsonPath('status', 'error')
-            ->assertJsonPath('message.0', 'Verification attempt limit exceeded. This transaction has been cancelled.');
+            ->assertJsonPath('status', false)
+            ->assertJsonPath('message', 'Verification attempt limit exceeded. This transaction has been cancelled.');
 
         $this->assertDatabaseHas('authorized_transactions', [
             'id' => $txn->id,

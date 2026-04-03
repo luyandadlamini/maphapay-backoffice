@@ -29,7 +29,7 @@ use Throwable;
  * Phase 0 contract freeze for money initiation:
  * - `amount` is a major-unit decimal string.
  * - `note` and `asset_code` are explicit request fields.
- * - callers must send an Idempotency-Key header for every initiation attempt.
+ * - callers should send an Idempotency-Key header for replay-safe initiation retries.
  * - compat success returns `status: success` with `data.next_step = otp | pin`.
  * - clients should prefer OTP/PIN and stop initiating with `verification_type = none`.
  */

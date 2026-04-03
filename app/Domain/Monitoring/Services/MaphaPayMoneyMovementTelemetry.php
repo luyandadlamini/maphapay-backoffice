@@ -188,14 +188,14 @@ class MaphaPayMoneyMovementTelemetry
 
     private function incrementCounter(string $key): void
     {
-        $current = (int) Cache::get($key, 0);
-        Cache::put($key, $current + 1);
+        Cache::add($key, 0, now()->addDay());
+        Cache::increment($key);
     }
 
     private function isMoneyMovementPath(string $path): bool
     {
         return preg_match(
-            '#^api/(send-money/store|request-money/store|request-money/received-store/|verification-process/verify/)#',
+            '#^(api/)?(send-money/store|request-money/store|request-money/received-store/|verification-process/verify/)#',
             $path,
         ) === 1;
     }

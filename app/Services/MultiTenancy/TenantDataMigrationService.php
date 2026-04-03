@@ -332,7 +332,18 @@ class TenantDataMigrationService
 
     private function resolveAssetTransferSourceTable(): string
     {
-        if (DB::connection('mysql')->getSchemaBuilder()->hasTable('asset_transfers')) {
+        $schemaBuilder = DB::connection('mysql')->getSchemaBuilder();
+
+        if (
+            $schemaBuilder->hasTable('transfers')
+            && $schemaBuilder->hasColumn('transfers', 'uuid')
+            && $schemaBuilder->hasColumn('transfers', 'from_account_uuid')
+            && $schemaBuilder->hasColumn('transfers', 'to_account_uuid')
+        ) {
+            return 'transfers';
+        }
+
+        if ($schemaBuilder->hasTable('asset_transfers')) {
             return 'asset_transfers';
         }
 

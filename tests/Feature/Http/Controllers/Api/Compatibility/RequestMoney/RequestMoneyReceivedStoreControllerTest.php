@@ -8,11 +8,14 @@ use App\Domain\Account\Models\Account;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Models\MoneyRequest;
 use App\Models\User;
+use Illuminate\Testing\TestResponse;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\Large;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\ControllerTestCase;
 
+#[Large]
 class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 {
     private User $requester;
@@ -27,6 +30,19 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
         $this->recipient = User::factory()->create(['kyc_status' => 'approved']);
         $this->createAccount($this->requester);
         $this->createAccount($this->recipient);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function postReceivedStore(string $moneyRequestId, array $payload = [], ?string $idempotencyKey = null): TestResponse
+    {
+        $headers = [
+            'Idempotency-Key' => $idempotencyKey ?? (string) Str::uuid(),
+        ];
+
+        return $this->withHeaders($headers)
+            ->postJson("/api/request-money/received-store/{$moneyRequestId}", $payload);
     }
 
     #[Test]
@@ -50,7 +66,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
 
-        $response = $this->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+        $response = $this->postReceivedStore($moneyRequestId, [
             'verification_type' => 'sms',
         ]);
 
@@ -97,7 +113,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
 
-        $this->postJson("/api/request-money/received-store/{$moneyRequestId}")
+        $this->postReceivedStore($moneyRequestId)
             ->assertStatus(422)
             ->assertJsonPath('status', 'error');
     }
@@ -126,7 +142,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         Sanctum::actingAs($other, ['read', 'write', 'delete']);
 
-        $this->postJson("/api/request-money/received-store/{$moneyRequestId}")
+        $this->postReceivedStore($moneyRequestId)
             ->assertStatus(422)
             ->assertJsonPath('status', 'error');
     }
@@ -152,7 +168,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
 
-        $this->postJson("/api/request-money/received-store/{$moneyRequestId}")
+        $this->postReceivedStore($moneyRequestId)
             ->assertStatus(422)
             ->assertJsonPath('status', 'error');
     }
@@ -182,7 +198,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         Sanctum::actingAs($frozenRecipient, ['read', 'write', 'delete']);
 
-        $this->postJson("/api/request-money/received-store/{$moneyRequestId}")
+        $this->postReceivedStore($moneyRequestId)
             ->assertStatus(422)
             ->assertJsonPath('status', 'error');
     }
@@ -224,7 +240,54 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
     }
 
     #[Test]
-    public function test_received_store_rejects_verification_type_none(): void
+    public function test_received_store_replays_existing_pending_authorization_for_same_idempotency_key(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        $moneyRequestId = (string) Str::uuid();
+        MoneyRequest::query()->create([
+            'id' => $moneyRequestId,
+            'requester_user_id' => $this->requester->id,
+            'recipient_user_id' => $this->recipient->id,
+            'amount' => '12.00',
+            'asset_code' => 'SZL',
+            'note' => null,
+            'status' => MoneyRequest::STATUS_PENDING,
+            'trx' => 'TRX-IDEM-RECV-REPLAY',
+        ]);
+
+        Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
+
+        $headers = ['Idempotency-Key' => '00000000-0000-0000-0000-000000000021'];
+
+        $first = $this->withHeaders($headers)->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+            'verification_type' => 'pin',
+        ]);
+
+        $first->assertOk();
+
+        $second = $this->withHeaders($headers)->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+            'verification_type' => 'pin',
+        ]);
+
+        $second->assertOk()
+            ->assertJsonPath('data.trx', $first->json('data.trx'))
+            ->assertJsonPath('data.next_step', 'pin');
+
+        $this->assertSame(
+            1,
+            AuthorizedTransaction::query()
+                ->where('remark', AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED)
+                ->where('user_id', $this->recipient->id)
+                ->where('payload->money_request_id', $moneyRequestId)
+                ->count(),
+        );
+    }
+
+    #[Test]
+    public function test_received_store_allows_missing_idempotency_key_for_backward_compatibility(): void
     {
         config([
             'maphapay_migration.enable_request_money' => true,
@@ -245,6 +308,92 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
 
         $this->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+            'verification_type' => 'pin',
+        ])->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.next_step', 'pin');
+    }
+
+    #[Test]
+    public function test_received_store_reuses_existing_pending_authorization_after_http_idempotency_cache_loss(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        $moneyRequestId = (string) Str::uuid();
+        MoneyRequest::query()->create([
+            'id' => $moneyRequestId,
+            'requester_user_id' => $this->requester->id,
+            'recipient_user_id' => $this->recipient->id,
+            'amount' => '12.00',
+            'asset_code' => 'SZL',
+            'note' => null,
+            'status' => MoneyRequest::STATUS_PENDING,
+            'trx' => 'TRX-IDEM-RECV',
+        ]);
+
+        Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
+
+        $existingTxn = AuthorizedTransaction::query()->create([
+            'user_id' => $this->recipient->id,
+            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+            'trx' => 'TRX-EXISTING-RECV',
+            'payload' => [
+                'money_request_id' => $moneyRequestId,
+                'requester_user_id' => $this->requester->id,
+                'amount' => '12.00',
+                'asset_code' => 'SZL',
+                'from_account_uuid' => Account::query()->where('user_uuid', $this->recipient->uuid)->value('uuid'),
+                'to_account_uuid' => Account::query()->where('user_uuid', $this->requester->uuid)->value('uuid'),
+                '_idempotency_key' => '00000000-0000-0000-0000-000000000021',
+            ],
+            'status' => AuthorizedTransaction::STATUS_PENDING,
+            'verification_type' => AuthorizedTransaction::VERIFICATION_OTP,
+            'expires_at' => now()->addHour(),
+        ]);
+
+        $response = $this->withHeaders([
+            'Idempotency-Key' => '00000000-0000-0000-0000-000000000021',
+        ])->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+            'verification_type' => 'sms',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.trx', $existingTxn->trx);
+
+        $this->assertSame(
+            1,
+            AuthorizedTransaction::query()
+                ->where('remark', AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED)
+                ->where('user_id', $this->recipient->id)
+                ->where('payload->money_request_id', $moneyRequestId)
+                ->count(),
+        );
+    }
+
+    #[Test]
+    public function test_received_store_rejects_verification_type_none(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        $moneyRequestId = (string) Str::uuid();
+        MoneyRequest::query()->create([
+            'id' => $moneyRequestId,
+            'requester_user_id' => $this->requester->id,
+            'recipient_user_id' => $this->recipient->id,
+            'amount' => '12.00',
+            'asset_code' => 'SZL',
+            'note' => null,
+            'status' => MoneyRequest::STATUS_PENDING,
+            'trx' => 'TRX-IDEM-RECV',
+        ]);
+
+        Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
+
+        $this->postReceivedStore($moneyRequestId, [
             'verification_type' => 'none',
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['verification_type']);
@@ -261,7 +410,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
 
-        $this->postJson("/api/request-money/received-store/{$moneyRequestId}")
+        $this->postReceivedStore($moneyRequestId)
             ->assertNotFound();
     }
 
@@ -287,7 +436,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
 
-        $this->postJson("/api/request-money/received-store/{$moneyRequestId}")
+        $this->postReceivedStore($moneyRequestId)
             ->assertNotFound();
     }
 }

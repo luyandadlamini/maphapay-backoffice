@@ -64,11 +64,12 @@ use Illuminate\Support\Facades\Route;
 |
 | Phase 0 money-movement contract freeze:
 | - compat initiation routes accept string major-unit `amount`, explicit `note`,
-|   optional `asset_code`, and a required Idempotency-Key header.
+|   optional `asset_code`, and should send an Idempotency-Key header for replay-safe retries.
 | - compat verification routes must fail closed: only `status = success` is a
 |   successful response; every other status is treated as failure by mobile.
-| - new money-moving clients should prefer `pin` or OTP (`sms`/`email`) and
-|   should stop sending `verification_type = none`.
+| - new money-moving clients should prefer `pin` or OTP (`sms`/`email`).
+|   Request-money compat routes reject `verification_type = none`; send-money still
+|   accepts it for backward compatibility.
 |
 */
 

@@ -14,6 +14,7 @@ use App\Models\MoneyRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Testing\TestResponse;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Large;
@@ -67,6 +68,19 @@ class DoubleSpendProtectionTest extends ControllerTestCase
         $this->recipientAccount = $this->createAccount($this->recipient);
     }
 
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function postReceivedStore(string $moneyRequestId, array $payload = [], ?string $idempotencyKey = null): TestResponse
+    {
+        $headers = [
+            'Idempotency-Key' => $idempotencyKey ?? (string) Str::uuid(),
+        ];
+
+        return $this->withHeaders($headers)
+            ->postJson("/api/request-money/received-store/{$moneyRequestId}", $payload);
+    }
+
     #[Test]
     public function test_fulfilled_money_request_second_accept_returns_422(): void
     {
@@ -88,7 +102,7 @@ class DoubleSpendProtectionTest extends ControllerTestCase
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
 
-        $this->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+        $this->postReceivedStore($moneyRequestId, [
             'verification_type' => 'sms',
         ])
             ->assertStatus(422)
@@ -116,7 +130,7 @@ class DoubleSpendProtectionTest extends ControllerTestCase
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
 
-        $this->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+        $this->postReceivedStore($moneyRequestId, [
             'verification_type' => 'sms',
         ])
             ->assertStatus(422)
@@ -155,7 +169,7 @@ class DoubleSpendProtectionTest extends ControllerTestCase
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
 
-        $init = $this->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+        $init = $this->postReceivedStore($moneyRequestId, [
             'verification_type' => 'sms',
         ]);
         $init->assertOk();
@@ -189,7 +203,7 @@ class DoubleSpendProtectionTest extends ControllerTestCase
     }
 
     #[Test]
-    public function test_back_to_back_received_store_without_idempotency_rejects_second_pending_authorization(): void
+    public function test_back_to_back_received_store_with_different_idempotency_keys_rejects_second_pending_authorization(): void
     {
         config([
             'maphapay_migration.enable_request_money' => true,
@@ -209,14 +223,18 @@ class DoubleSpendProtectionTest extends ControllerTestCase
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
 
-        $first = $this->postJson("/api/request-money/received-store/{$moneyRequestId}", [
-            'verification_type' => 'sms',
-        ]);
+        $first = $this->postReceivedStore(
+            $moneyRequestId,
+            ['verification_type' => 'sms'],
+            '00000000-0000-0000-0000-000000000031',
+        );
         $first->assertOk();
 
-        $second = $this->postJson("/api/request-money/received-store/{$moneyRequestId}", [
-            'verification_type' => 'sms',
-        ]);
+        $second = $this->postReceivedStore(
+            $moneyRequestId,
+            ['verification_type' => 'sms'],
+            '00000000-0000-0000-0000-000000000032',
+        );
         $second->assertStatus(422)
             ->assertJsonPath('status', 'error')
             ->assertJsonPath('message.0', 'A payment authorization for this money request is already in progress.');
@@ -319,7 +337,7 @@ class DoubleSpendProtectionTest extends ControllerTestCase
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
 
-        $init = $this->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+        $init = $this->postReceivedStore($moneyRequestId, [
             'verification_type' => 'sms',
         ]);
         $init->assertOk();

@@ -12,6 +12,7 @@ use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use RuntimeException;
 
 /**
@@ -30,11 +31,35 @@ class VerifyPinController extends Controller
 
     public function __invoke(Request $request): JsonResponse
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'trx' => ['required', 'string'],
             'pin' => ['required', 'string', 'digits:4'],
             'remark' => ['sometimes', 'string'],
         ]);
+
+        if ($validator->fails()) {
+            $remark = (string) $request->input('remark', 'pin_verified');
+            $message = (string) ($validator->errors()->first() ?: 'Invalid verification request.');
+
+            $this->telemetry->logVerificationFailure(
+                $request,
+                'pin',
+                $remark,
+                is_string($request->input('trx')) ? $request->input('trx') : null,
+                $message,
+                422,
+            );
+
+            return response()->json([
+                'status' => 'error',
+                'remark' => $remark,
+                'message' => [$message],
+                'data' => null,
+            ], 422);
+        }
+
+        /** @var array{trx: string, pin: string, remark?: string} $validated */
+        $validated = $validator->validated();
 
         try {
             $result = $this->manager->verifyPin(
@@ -105,9 +130,9 @@ class VerifyPinController extends Controller
     private function errorResponse(string $remark, string $message, int $status): JsonResponse
     {
         return response()->json([
-            'status' => 'error',
+            'status' => false,
             'remark' => $remark,
-            'message' => [$message],
+            'message' => $message,
             'data' => null,
         ], $status);
     }
