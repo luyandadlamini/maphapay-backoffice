@@ -20,6 +20,37 @@ php artisan user:demote user@email   # Remove admin role
 php artisan user:admins              # List all admin users
 ```
 
+## Current MaphaPay Focus
+
+- Companion mobile repo: `/Users/Lihle/Development/Coding/maphapayrn`
+- Current money-movement hardening docs: `/Users/Lihle/Development/Coding/maphapayrn/docs/send money PLAN.md`
+- Verification policy is backend-owned for send-money and request-money. Client `verification_type` is a hint only.
+- Compat verification failures are being normalized toward a shared envelope:
+  - `status = error`
+  - `message = [<reason>]`
+  - `data = null`
+- `RequestMoneyReceivedStoreController` replay coverage now includes:
+  - same-key replay after HTTP idempotency cache loss when the policy still resolves to OTP
+  - rejection when a different idempotency key hits an already-pending accept authorization
+- `MoneyMovementTransactionInspector` coverage now includes request-money accept lifecycle lookup and missing-projection warnings.
+
+## Local Money-Movement Test Harness
+
+Use the disposable local MySQL instance when the machine-wide daemon on `3306` is not usable:
+
+```bash
+DB_CONNECTION=mysql \
+DB_HOST=127.0.0.1 \
+DB_PORT=3307 \
+DB_DATABASE=maphapay_backoffice_test \
+DB_USERNAME=root \
+DB_PASSWORD='' \
+php -d max_execution_time=300 ./vendor/bin/pest <tests...>
+```
+
+- `phpunit.xml` now uses `defaultTimeLimit="300"` because first-run migration bootstrap is heavy.
+- On the disposable MySQL instance, `max_execution_time` must be `0` or large DDL can abort during bootstrap.
+
 ## Architecture
 
 - **49 domains** in `app/Domain/` (DDD bounded contexts)

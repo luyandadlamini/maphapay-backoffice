@@ -12,6 +12,8 @@
 
 FinAegis provides the foundation for building digital banking applications. The **Global Currency Unit (GCU)** serves as a complete reference implementation demonstrating how to build basket currencies, governance systems, and democratic financial instruments on this platform.
 
+This fork is currently being hardened as the backend for the MaphaPay mobile app at `/Users/Lihle/Development/Coding/maphapayrn`, with active focus on send-money, request-money, verification, and transaction-inspection integrity.
+
 [Live Demo](https://finaegis.org) | [Documentation](docs/README.md) | [Quick Start](#quick-start) | [Contributing](CONTRIBUTING.md)
 
 ---
@@ -152,6 +154,27 @@ See [ADR-004: GCU Basket Design](docs/ADR/ADR-004-gcu-basket-design.md) for arch
 ---
 
 ## Quick Start
+
+### MaphaPay Local Verification Notes
+
+Recent money-movement verification runs in this workspace used a disposable MySQL instance on `127.0.0.1:3307` because the machine-wide daemon on `3306` was not reliably usable with the expected blank-password `root` test account.
+
+```bash
+DB_CONNECTION=mysql \
+DB_HOST=127.0.0.1 \
+DB_PORT=3307 \
+DB_DATABASE=maphapay_backoffice_test \
+DB_USERNAME=root \
+DB_PASSWORD='' \
+php -d max_execution_time=300 ./vendor/bin/pest \
+  tests/Feature/Http/Controllers/Api/Compatibility/SendMoney/SendMoneyPolicyEnforcementTest.php \
+  tests/Feature/Http/Controllers/Api/Compatibility/RequestMoney/RequestMoneyStoreControllerTest.php \
+  tests/Feature/Http/Controllers/Api/Compatibility/RequestMoney/RequestMoneyReceivedStoreControllerTest.php \
+  tests/Unit/Domain/Monitoring/Services/MoneyMovementTransactionInspectorTest.php
+```
+
+- `phpunit.xml` now uses a 300-second default test time limit.
+- On a fresh disposable MySQL instance, `max_execution_time` should be `0` before first-run migrations.
 
 ### Demo Mode (Recommended)
 

@@ -9,6 +9,7 @@ use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Models\MoneyRequest;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Testing\TestResponse;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Large;
@@ -297,6 +298,58 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
     }
 
     #[Test]
+    public function test_received_store_replays_existing_pending_authorization_when_client_hint_changes_but_policy_stays_otp(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        $this->recipient->update(['transaction_pin' => null]);
+
+        $moneyRequestId = (string) Str::uuid();
+        MoneyRequest::query()->create([
+            'id' => $moneyRequestId,
+            'requester_user_id' => $this->requester->id,
+            'recipient_user_id' => $this->recipient->id,
+            'amount' => '12.00',
+            'asset_code' => 'SZL',
+            'note' => null,
+            'status' => MoneyRequest::STATUS_PENDING,
+            'trx' => 'TRX-IDEM-RECV-POLICY-REPLAY',
+        ]);
+
+        Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
+
+        $headers = ['Idempotency-Key' => '00000000-0000-0000-0000-000000000031'];
+
+        $first = $this->withHeaders($headers)->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+            'verification_type' => 'sms',
+        ]);
+
+        $first->assertOk()
+            ->assertJsonPath('data.next_step', 'otp');
+
+        Cache::flush();
+
+        $second = $this->withHeaders($headers)->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+            'verification_type' => 'pin',
+        ]);
+
+        $second->assertOk()
+            ->assertJsonPath('data.trx', $first->json('data.trx'))
+            ->assertJsonPath('data.next_step', 'otp');
+
+        $this->assertSame(
+            1,
+            AuthorizedTransaction::query()
+                ->where('remark', AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED)
+                ->where('user_id', $this->recipient->id)
+                ->where('payload->money_request_id', $moneyRequestId)
+                ->count(),
+        );
+    }
+
+    #[Test]
     public function test_received_store_allows_missing_idempotency_key_for_backward_compatibility(): void
     {
         config([
@@ -455,6 +508,56 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $response->assertOk()
             ->assertJsonPath('data.trx', $existingTxn->trx);
+
+        $this->assertSame(
+            1,
+            AuthorizedTransaction::query()
+                ->where('remark', AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED)
+                ->where('user_id', $this->recipient->id)
+                ->where('payload->money_request_id', $moneyRequestId)
+                ->count(),
+        );
+    }
+
+    #[Test]
+    public function test_received_store_rejects_different_idempotency_key_when_pending_authorization_already_exists(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        $moneyRequestId = (string) Str::uuid();
+        MoneyRequest::query()->create([
+            'id' => $moneyRequestId,
+            'requester_user_id' => $this->requester->id,
+            'recipient_user_id' => $this->recipient->id,
+            'amount' => '12.00',
+            'asset_code' => 'SZL',
+            'note' => null,
+            'status' => MoneyRequest::STATUS_PENDING,
+            'trx' => 'TRX-IDEM-RECV-CONFLICT',
+        ]);
+
+        Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
+
+        $first = $this->withHeaders([
+            'Idempotency-Key' => '00000000-0000-0000-0000-000000000041',
+        ])->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+            'verification_type' => 'sms',
+        ]);
+
+        $first->assertOk()
+            ->assertJsonPath('data.next_step', 'otp');
+
+        $second = $this->withHeaders([
+            'Idempotency-Key' => '00000000-0000-0000-0000-000000000042',
+        ])->postJson("/api/request-money/received-store/{$moneyRequestId}", [
+            'verification_type' => 'sms',
+        ]);
+
+        $second->assertStatus(422)
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('message.0', 'A payment authorization for this money request is already in progress.');
 
         $this->assertSame(
             1,

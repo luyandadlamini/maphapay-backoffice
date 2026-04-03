@@ -208,4 +208,147 @@ class MoneyMovementTransactionInspectorTest extends DomainTestCase
             $result['warnings'],
         );
     }
+
+    #[Test]
+    public function it_inspects_request_money_accept_lifecycle_by_trx(): void
+    {
+        Asset::firstOrCreate(
+            ['code' => 'SZL'],
+            ['name' => 'Swazi Lilangeni', 'type' => 'fiat', 'precision' => 2, 'is_active' => true],
+        );
+
+        $requester = User::factory()->create();
+        $recipient = User::factory()->create();
+        $reference = 'REF-' . Str::upper(Str::random(10));
+        $trx = 'TRX-' . Str::upper(Str::random(10));
+
+        $moneyRequest = MoneyRequest::query()->create([
+            'id' => (string) Str::uuid(),
+            'requester_user_id' => $requester->id,
+            'recipient_user_id' => $recipient->id,
+            'amount' => '25.00',
+            'asset_code' => 'SZL',
+            'status' => MoneyRequest::STATUS_FULFILLED,
+            'trx' => $trx,
+        ]);
+
+        AuthorizedTransaction::query()->create([
+            'user_id' => $recipient->id,
+            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+            'trx' => $trx,
+            'payload' => [
+                'money_request_id' => $moneyRequest->id,
+                '_verification_policy' => [
+                    'verification_type' => AuthorizedTransaction::VERIFICATION_OTP,
+                    'reason' => 'default_step_up',
+                    'risk_reason' => null,
+                ],
+            ],
+            'result' => [
+                'trx' => $trx,
+                'reference' => $reference,
+                'amount' => '25.00',
+                'asset_code' => 'SZL',
+            ],
+            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'verification_type' => AuthorizedTransaction::VERIFICATION_OTP,
+        ]);
+
+        AssetTransfer::query()->create([
+            'uuid' => $reference,
+            'reference' => $reference,
+            'transfer_id' => $reference,
+            'from_account_uuid' => (string) Str::uuid(),
+            'to_account_uuid' => (string) Str::uuid(),
+            'from_asset_code' => 'SZL',
+            'to_asset_code' => 'SZL',
+            'from_amount' => 2500,
+            'to_amount' => 2500,
+            'status' => 'completed',
+        ]);
+
+        TransactionProjection::query()->create([
+            'uuid' => (string) Str::uuid(),
+            'account_uuid' => (string) Str::uuid(),
+            'asset_code' => 'SZL',
+            'amount' => 2500,
+            'type' => 'transfer_out',
+            'subtype' => 'request_money_accept',
+            'description' => 'Money request accepted',
+            'reference' => $reference,
+            'hash' => hash('sha256', 'request-accept-one'),
+            'status' => 'completed',
+        ]);
+        TransactionProjection::query()->create([
+            'uuid' => (string) Str::uuid(),
+            'account_uuid' => (string) Str::uuid(),
+            'asset_code' => 'SZL',
+            'amount' => 2500,
+            'type' => 'transfer_in',
+            'subtype' => 'request_money_accept',
+            'description' => 'Money request fulfilled',
+            'reference' => $reference,
+            'hash' => hash('sha256', 'request-accept-two'),
+            'status' => 'completed',
+        ]);
+
+        $result = app(MoneyMovementTransactionInspector::class)->inspect(trx: $trx);
+
+        $this->assertSame($trx, $result['lookup']['trx']);
+        $this->assertSame($reference, $result['lookup']['reference']);
+        $this->assertSame(AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED, $result['authorized_transaction']['remark']);
+        $this->assertSame($moneyRequest->id, $result['money_request']['id']);
+        $this->assertSame('transfer_completed', $result['timeline'][3]['event']);
+        $this->assertSame('money_request_state', $result['timeline'][4]['event']);
+        $this->assertSame([], $result['warnings']);
+    }
+
+    #[Test]
+    public function it_warns_when_transfer_exists_without_any_matching_transaction_projections(): void
+    {
+        Asset::firstOrCreate(
+            ['code' => 'SZL'],
+            ['name' => 'Swazi Lilangeni', 'type' => 'fiat', 'precision' => 2, 'is_active' => true],
+        );
+
+        $user = User::factory()->create();
+        $reference = 'REF-' . Str::upper(Str::random(10));
+        $trx = 'TRX-' . Str::upper(Str::random(10));
+
+        AuthorizedTransaction::query()->create([
+            'user_id' => $user->id,
+            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx' => $trx,
+            'payload' => [],
+            'result' => [
+                'trx' => $trx,
+                'reference' => $reference,
+                'amount' => '10.00',
+                'asset_code' => 'SZL',
+            ],
+            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
+        ]);
+
+        AssetTransfer::query()->create([
+            'uuid' => $reference,
+            'reference' => $reference,
+            'transfer_id' => $reference,
+            'from_account_uuid' => (string) Str::uuid(),
+            'to_account_uuid' => (string) Str::uuid(),
+            'from_asset_code' => 'SZL',
+            'to_asset_code' => 'SZL',
+            'from_amount' => 1000,
+            'to_amount' => 1000,
+            'status' => 'completed',
+        ]);
+
+        $result = app(MoneyMovementTransactionInspector::class)->inspect(reference: $reference);
+
+        $this->assertSame([], $result['transaction_projections']);
+        $this->assertContains(
+            'Transfer exists in asset_transfers but no matching transaction_projections were found.',
+            $result['warnings'],
+        );
+    }
 }

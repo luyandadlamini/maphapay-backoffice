@@ -62,6 +62,44 @@ Purpose: quick working context for future sessions without re-scanning the whole
 - `bf94f3de` - initial Alpine restore in layout
 - `2c6a848b` - Alpine bundled through Vite for reliable nav/logout behavior
 
+## Money Movement Hardening Snapshot (2026-04-03)
+
+- Verification policy for send-money, request-money create, and request-money accept is backend-owned through `MoneyMovementVerificationPolicyResolver`.
+- `InternalP2pTransferService` is the unified execution path for internal P2P movement.
+- `AuthorizedTransactionManager::finalizeAtomically()` is the atomic completion guard for authorization finalization.
+- `MoneyMovementTransactionInspector` joins `authorized_transactions`, `asset_transfers`, `transaction_projections`, and `money_requests`.
+- Current accept-flow coverage now includes:
+  - same-key replay after HTTP idempotency cache loss
+  - same-key replay when client hint changes but the resolved policy still stays OTP
+  - rejection of a second accept initiation when a different idempotency key targets the same pending request
+- Current inspector coverage now includes:
+  - failed verification timeline entries
+  - projection-count mismatch warnings
+  - transfer-without-projections warnings
+  - request-money accept lifecycle lookup by `trx`
+- Compat PIN failure normalization is in progress, but its dedicated feature suite is still blocked by heavy MySQL bootstrap statements that abort after 60 seconds.
+
+## Local MySQL Verification Recipe
+
+- The machine-wide MySQL daemon on `127.0.0.1:3306` is not currently assumed usable for blank-password `root`.
+- Verified local suite runs used a disposable MySQL instance on `127.0.0.1:3307` with:
+  - `DB_CONNECTION=mysql`
+  - `DB_HOST=127.0.0.1`
+  - `DB_PORT=3307`
+  - `DB_DATABASE=maphapay_backoffice_test`
+  - `DB_USERNAME=root`
+  - `DB_PASSWORD=`
+- `phpunit.xml` now uses `defaultTimeLimit="300"`.
+- On the disposable MySQL instance, `max_execution_time` had to be set to `0` before first-run migrations.
+
+## Remaining Money Movement Work
+
+- Extend the risk provider beyond velocity and recent verification failures to the remaining anomaly/fraud signals.
+- Finish the remaining verification response/log contract cleanup outside the now-normalized compat PIN flow.
+- Decide whether to formalize the disposable MySQL harness or restore a usable shared `3306` test account.
+- Expose the inspector in a real operator-facing Filament/admin surface if still required.
+- Confirm production dashboards, alerts, and rollout posture with infra owners.
+
 ## Known Practical Workflow
 
 1. Set env for demo-safe boot.
@@ -107,4 +145,3 @@ Purpose: quick working context for future sessions without re-scanning the whole
 - **Notifications** — push device registration, in-app notification list
 - **Bill split** — group expense splitting flow
 - **Wallet linking** — external wallet / bank account attachment (MTN wallet already covered via MoMo)
-
