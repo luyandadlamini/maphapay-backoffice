@@ -36,19 +36,87 @@ class MoneyMovementVerificationPolicyResolver
         ?string $clientHint = null,
         array $context = [],
     ): array {
+        return $this->resolvePolicy(
+            user: $user,
+            amount: $amount,
+            asset: $asset,
+            operationType: AuthorizedTransaction::REMARK_SEND_MONEY,
+            clientHint: $clientHint,
+            allowNone: true,
+            stepUpThresholdConfig: 'maphapay_migration.money_movement.send_money.step_up_threshold',
+            context: $context,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     * @return array{
+     *   verification_type: string,
+     *   next_step: 'otp'|'pin'|'none',
+     *   reason: string,
+     *   risk_reason: string|null,
+     *   client_hint: string|null,
+     *   user_preference: string,
+     *   amount_minor: int,
+     *   step_up_threshold_minor: int
+     * }
+     */
+    public function resolveRequestMoneyPolicy(
+        User $user,
+        string $amount,
+        Asset $asset,
+        string $operationType,
+        ?string $clientHint = null,
+        array $context = [],
+    ): array {
+        return $this->resolvePolicy(
+            user: $user,
+            amount: $amount,
+            asset: $asset,
+            operationType: $operationType,
+            clientHint: $clientHint,
+            allowNone: false,
+            stepUpThresholdConfig: 'maphapay_migration.money_movement.request_money.step_up_threshold',
+            context: $context,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     * @return array{
+     *   verification_type: string,
+     *   next_step: 'otp'|'pin'|'none',
+     *   reason: string,
+     *   risk_reason: string|null,
+     *   client_hint: string|null,
+     *   user_preference: string,
+     *   amount_minor: int,
+     *   step_up_threshold_minor: int
+     * }
+     */
+    private function resolvePolicy(
+        User $user,
+        string $amount,
+        Asset $asset,
+        string $operationType,
+        ?string $clientHint,
+        bool $allowNone,
+        string $stepUpThresholdConfig,
+        array $context = [],
+    ): array {
         $amountMinor = (int) MoneyConverter::forAsset($amount, $asset);
         $stepUpThresholdMinor = (int) MoneyConverter::toSmallestUnit(
-            (string) config('maphapay_migration.money_movement.send_money.step_up_threshold', '100.00'),
+            (string) config($stepUpThresholdConfig, '100.00'),
             $asset->precision,
         );
 
         $userPreference = $this->userHasTransactionPin($user)
             ? AuthorizedTransaction::VERIFICATION_PIN
-            : AuthorizedTransaction::VERIFICATION_NONE;
+            : ($allowNone ? AuthorizedTransaction::VERIFICATION_NONE : AuthorizedTransaction::VERIFICATION_OTP);
 
         $riskDecision = $this->riskSignals->evaluateInitiation(
             user: $user,
-            operationType: AuthorizedTransaction::REMARK_SEND_MONEY,
+            operationType: $operationType,
             amount: $amount,
             assetCode: $asset->code,
             context: array_merge($context, [

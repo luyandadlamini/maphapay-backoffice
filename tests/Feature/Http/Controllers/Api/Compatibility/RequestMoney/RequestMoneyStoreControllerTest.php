@@ -173,6 +173,69 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
     }
 
     #[Test]
+    public function test_store_uses_pin_policy_when_requester_has_a_transaction_pin_even_if_client_requests_sms(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        $this->requester->update(['transaction_pin' => '1234']);
+        Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
+
+        $response = $this->postJson('/api/request-money/store', [
+            'user' => $this->recipient->email,
+            'amount' => '15.00',
+            'verification_type' => 'sms',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.next_step', 'pin');
+
+        $trx = (string) $response->json('data.trx');
+        /** @var AuthorizedTransaction $txn */
+        $txn = AuthorizedTransaction::query()->where('trx', $trx)->firstOrFail();
+
+        $this->assertSame(AuthorizedTransaction::VERIFICATION_PIN, $txn->verification_type);
+        $this->assertSame(
+            AuthorizedTransaction::VERIFICATION_PIN,
+            $txn->payload['_verification_policy']['verification_type'] ?? null,
+        );
+        $this->assertSame('user_preference', $txn->payload['_verification_policy']['reason'] ?? null);
+        $this->assertSame('sms', $txn->payload['_verification_policy']['client_hint'] ?? null);
+    }
+
+    #[Test]
+    public function test_store_uses_otp_policy_when_requester_has_no_pin_even_if_client_requests_pin(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        $this->requester->update(['transaction_pin' => null]);
+        Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
+
+        $response = $this->postJson('/api/request-money/store', [
+            'user' => $this->recipient->email,
+            'amount' => '15.00',
+            'verification_type' => 'pin',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.next_step', 'otp');
+
+        $trx = (string) $response->json('data.trx');
+        /** @var AuthorizedTransaction $txn */
+        $txn = AuthorizedTransaction::query()->where('trx', $trx)->firstOrFail();
+
+        $this->assertSame(AuthorizedTransaction::VERIFICATION_OTP, $txn->verification_type);
+        $this->assertSame(
+            AuthorizedTransaction::VERIFICATION_OTP,
+            $txn->payload['_verification_policy']['verification_type'] ?? null,
+        );
+        $this->assertSame('pin', $txn->payload['_verification_policy']['client_hint'] ?? null);
+    }
+
+    #[Test]
     public function test_route_not_registered_when_flag_disabled(): void
     {
         config([

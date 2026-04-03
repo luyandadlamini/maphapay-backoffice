@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\API\Compatibility\RequestMoney;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\AuthorizedTransaction\Services\AuthorizedTransactionManager;
+use App\Domain\AuthorizedTransaction\Services\MoneyMovementVerificationPolicyResolver;
 use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Http\Controllers\Controller;
 use App\Models\MoneyRequest;
@@ -25,6 +27,7 @@ class RequestMoneyReceivedStoreController extends Controller
 {
     public function __construct(
         private readonly AuthorizedTransactionManager $authorizedTransactionManager,
+        private readonly MoneyMovementVerificationPolicyResolver $verificationPolicyResolver,
         private readonly MaphaPayMoneyMovementTelemetry $telemetry,
     ) {}
 
@@ -74,18 +77,39 @@ class RequestMoneyReceivedStoreController extends Controller
             return $this->errorResponse($request, 'This money request has an invalid amount (0).', 422, $moneyRequest);
         }
 
-        $verificationType = match ($validated['verification_type'] ?? null) {
-            'pin' => AuthorizedTransaction::VERIFICATION_PIN,
-            default => AuthorizedTransaction::VERIFICATION_OTP,
-        };
+        $asset = Asset::query()->where('code', $moneyRequest->asset_code)->first();
+        if (! $asset) {
+            return $this->errorResponse($request, "Unknown asset: {$moneyRequest->asset_code}", 422, $moneyRequest);
+        }
+
+        $policy = $this->verificationPolicyResolver->resolveRequestMoneyPolicy(
+            user: $authUser,
+            amount: (string) $moneyRequest->amount,
+            asset: $asset,
+            operationType: AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+            clientHint: isset($validated['verification_type']) ? (string) $validated['verification_type'] : null,
+            context: [
+                'money_request_id' => $moneyRequest->id,
+                'sender_account_uuid' => $fromAccount->uuid,
+                'recipient_account_uuid' => $toAccount->uuid,
+                'requester_user_id' => $requester->id,
+            ],
+        );
+        $verificationType = $policy['verification_type'];
 
         $this->telemetry->logEvent('request_money_accept_initiation_started', $this->telemetry->requestContext($request, [
             'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
             'money_request_id' => $moneyRequest->id,
             'money_request_status' => $moneyRequest->status,
+            'sender_account_uuid' => $fromAccount->uuid,
+            'recipient_account_uuid' => $toAccount->uuid,
+            'sender_user_id' => $authUser->id,
+            'recipient_user_id' => $requester->id,
             'amount' => $moneyRequest->amount,
             'asset_code' => $moneyRequest->asset_code,
-            'verification_type' => $verificationType,
+            'status' => AuthorizedTransaction::STATUS_PENDING,
+            'verification_policy' => $policy['verification_type'],
+            'risk_reason' => $policy['risk_reason'],
             'idempotency_key_suffix' => $this->telemetry->maskIdempotencyKey($idempotencyKey),
         ]));
 
@@ -95,6 +119,7 @@ class RequestMoneyReceivedStoreController extends Controller
                 $moneyRequest,
                 $fromAccount,
                 $toAccount,
+                $policy,
                 $verificationType,
                 $validated,
                 $idempotencyKey,
@@ -158,6 +183,7 @@ class RequestMoneyReceivedStoreController extends Controller
                     'asset_code' => $lockedMoneyRequest->asset_code,
                     'from_account_uuid' => $fromAccount->uuid,
                     'to_account_uuid' => $toAccount->uuid,
+                    '_verification_policy' => $policy,
                 ];
 
                 $txn = $this->authorizedTransactionManager->initiate(
@@ -187,6 +213,15 @@ class RequestMoneyReceivedStoreController extends Controller
             $this->telemetry->logEvent('request_money_accept_initiation_failed', $this->telemetry->requestContext($request, [
                 'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
                 'money_request_id' => $moneyRequest->id,
+                'sender_account_uuid' => $fromAccount->uuid,
+                'recipient_account_uuid' => $toAccount->uuid,
+                'sender_user_id' => $authUser->id,
+                'recipient_user_id' => $requester->id,
+                'amount' => $moneyRequest->amount,
+                'asset_code' => $moneyRequest->asset_code,
+                'status' => AuthorizedTransaction::STATUS_PENDING,
+                'verification_policy' => $policy['verification_type'],
+                'risk_reason' => $policy['risk_reason'],
                 'idempotency_key_suffix' => $this->telemetry->maskIdempotencyKey($idempotencyKey),
                 'message' => $this->telemetry->exceptionMessage($throwable),
             ]), 'error');
@@ -198,7 +233,16 @@ class RequestMoneyReceivedStoreController extends Controller
             'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
             'money_request_id' => $moneyRequest->id,
             'trx' => $txn->trx,
+            'sender_account_uuid' => $fromAccount->uuid,
+            'recipient_account_uuid' => $toAccount->uuid,
+            'sender_user_id' => $authUser->id,
+            'recipient_user_id' => $requester->id,
+            'amount' => $moneyRequest->amount,
+            'asset_code' => $moneyRequest->asset_code,
             'next_step' => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
+            'status' => AuthorizedTransaction::STATUS_PENDING,
+            'verification_policy' => $policy['verification_type'],
+            'risk_reason' => $policy['risk_reason'],
             'idempotency_key_suffix' => $this->telemetry->maskIdempotencyKey($idempotencyKey),
         ]));
 

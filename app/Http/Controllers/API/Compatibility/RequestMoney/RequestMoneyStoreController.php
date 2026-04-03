@@ -7,6 +7,7 @@ namespace App\Http\Controllers\API\Compatibility\RequestMoney;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\AuthorizedTransaction\Services\AuthorizedTransactionManager;
+use App\Domain\AuthorizedTransaction\Services\MoneyMovementVerificationPolicyResolver;
 use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Domain\Shared\Money\MoneyConverter;
 use App\Http\Controllers\Controller;
@@ -37,6 +38,7 @@ class RequestMoneyStoreController extends Controller
 {
     public function __construct(
         private readonly AuthorizedTransactionManager $authorizedTransactionManager,
+        private readonly MoneyMovementVerificationPolicyResolver $verificationPolicyResolver,
         private readonly MaphaPayMoneyMovementTelemetry $telemetry,
     ) {}
 
@@ -87,17 +89,27 @@ class RequestMoneyStoreController extends Controller
             ]);
         }
 
-        $verificationType = match ($validated['verification_type'] ?? null) {
-            'pin' => AuthorizedTransaction::VERIFICATION_PIN,
-            default => AuthorizedTransaction::VERIFICATION_OTP,
-        };
+        $policy = $this->verificationPolicyResolver->resolveRequestMoneyPolicy(
+            user: $authUser,
+            amount: $normalizedAmount,
+            asset: $asset,
+            operationType: AuthorizedTransaction::REMARK_REQUEST_MONEY,
+            clientHint: isset($validated['verification_type']) ? (string) $validated['verification_type'] : null,
+            context: [
+                'recipient_user_id' => $recipient->id,
+            ],
+        );
+        $verificationType = $policy['verification_type'];
 
         $this->telemetry->logEvent('request_money_initiation_started', $this->telemetry->requestContext($request, [
             'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY,
+            'sender_user_id' => $authUser->id,
             'recipient_user_id' => $recipient->id,
             'amount' => $normalizedAmount,
             'asset_code' => $asset->code,
-            'verification_type' => $verificationType,
+            'status' => AuthorizedTransaction::STATUS_PENDING,
+            'verification_policy' => $policy['verification_type'],
+            'risk_reason' => $policy['risk_reason'],
             'idempotency_key_suffix' => $this->telemetry->maskIdempotencyKey($idempotencyKey),
         ]));
 
@@ -108,6 +120,7 @@ class RequestMoneyStoreController extends Controller
                 $normalizedAmount,
                 $asset,
                 $validated,
+                $policy,
                 $verificationType,
                 $idempotencyKey,
             ): array {
@@ -126,6 +139,7 @@ class RequestMoneyStoreController extends Controller
                     'recipient_user_id' => (int) $recipient->getAuthIdentifier(),
                     'amount' => $normalizedAmount,
                     'asset_code' => $asset->code,
+                    '_verification_policy' => $policy,
                 ];
 
                 $txn = $this->authorizedTransactionManager->initiate(
@@ -152,10 +166,13 @@ class RequestMoneyStoreController extends Controller
         } catch (Throwable $throwable) {
             $this->telemetry->logEvent('request_money_initiation_failed', $this->telemetry->requestContext($request, [
                 'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY,
+                'sender_user_id' => $authUser->id,
                 'recipient_user_id' => $recipient->id,
                 'amount' => $normalizedAmount,
                 'asset_code' => $asset->code,
-                'verification_type' => $verificationType,
+                'status' => AuthorizedTransaction::STATUS_PENDING,
+                'verification_policy' => $policy['verification_type'],
+                'risk_reason' => $policy['risk_reason'],
                 'idempotency_key_suffix' => $this->telemetry->maskIdempotencyKey($idempotencyKey),
                 'message' => $this->telemetry->exceptionMessage($throwable),
             ]), 'error');
@@ -166,9 +183,13 @@ class RequestMoneyStoreController extends Controller
         $this->telemetry->logEvent('request_money_initiation_succeeded', $this->telemetry->requestContext($request, [
             'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY,
             'money_request_id' => $txn->payload['money_request_id'] ?? null,
+            'sender_user_id' => $authUser->id,
             'recipient_user_id' => $recipient->id,
             'trx' => $txn->trx,
             'next_step' => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
+            'status' => AuthorizedTransaction::STATUS_PENDING,
+            'verification_policy' => $policy['verification_type'],
+            'risk_reason' => $policy['risk_reason'],
         ]));
 
         return response()->json([

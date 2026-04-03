@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Http\Controllers\Api\Compatibility\RequestMoney;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Models\MoneyRequest;
 use App\Models\User;
@@ -30,6 +31,15 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
         $this->recipient = User::factory()->create(['kyc_status' => 'approved']);
         $this->createAccount($this->requester);
         $this->createAccount($this->recipient);
+        Asset::firstOrCreate(
+            ['code' => 'SZL'],
+            [
+                'name' => 'Swazi Lilangeni',
+                'type' => 'fiat',
+                'precision' => 2,
+                'is_active' => true,
+            ],
+        );
     }
 
     /**
@@ -274,7 +284,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $second->assertOk()
             ->assertJsonPath('data.trx', $first->json('data.trx'))
-            ->assertJsonPath('data.next_step', 'pin');
+            ->assertJsonPath('data.next_step', 'otp');
 
         $this->assertSame(
             1,
@@ -311,7 +321,91 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
             'verification_type' => 'pin',
         ])->assertOk()
             ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.next_step', 'otp');
+    }
+
+    #[Test]
+    public function test_received_store_uses_pin_policy_when_recipient_has_a_transaction_pin_even_if_client_requests_sms(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        $this->recipient->update(['transaction_pin' => '1234']);
+
+        $moneyRequestId = (string) Str::uuid();
+        MoneyRequest::query()->create([
+            'id' => $moneyRequestId,
+            'requester_user_id' => $this->requester->id,
+            'recipient_user_id' => $this->recipient->id,
+            'amount' => '12.00',
+            'asset_code' => 'SZL',
+            'note' => null,
+            'status' => MoneyRequest::STATUS_PENDING,
+            'trx' => 'TRX-IDEM-RECV-PIN',
+        ]);
+
+        Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
+
+        $response = $this->postReceivedStore($moneyRequestId, [
+            'verification_type' => 'sms',
+        ]);
+
+        $response->assertOk()
             ->assertJsonPath('data.next_step', 'pin');
+
+        $trx = (string) $response->json('data.trx');
+        /** @var AuthorizedTransaction $txn */
+        $txn = AuthorizedTransaction::query()->where('trx', $trx)->firstOrFail();
+
+        $this->assertSame(AuthorizedTransaction::VERIFICATION_PIN, $txn->verification_type);
+        $this->assertSame(
+            AuthorizedTransaction::VERIFICATION_PIN,
+            $txn->payload['_verification_policy']['verification_type'] ?? null,
+        );
+        $this->assertSame('sms', $txn->payload['_verification_policy']['client_hint'] ?? null);
+    }
+
+    #[Test]
+    public function test_received_store_uses_otp_policy_when_recipient_has_no_pin_even_if_client_requests_pin(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        $this->recipient->update(['transaction_pin' => null]);
+
+        $moneyRequestId = (string) Str::uuid();
+        MoneyRequest::query()->create([
+            'id' => $moneyRequestId,
+            'requester_user_id' => $this->requester->id,
+            'recipient_user_id' => $this->recipient->id,
+            'amount' => '12.00',
+            'asset_code' => 'SZL',
+            'note' => null,
+            'status' => MoneyRequest::STATUS_PENDING,
+            'trx' => 'TRX-IDEM-RECV-OTP',
+        ]);
+
+        Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
+
+        $response = $this->postReceivedStore($moneyRequestId, [
+            'verification_type' => 'pin',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.next_step', 'otp');
+
+        $trx = (string) $response->json('data.trx');
+        /** @var AuthorizedTransaction $txn */
+        $txn = AuthorizedTransaction::query()->where('trx', $trx)->firstOrFail();
+
+        $this->assertSame(AuthorizedTransaction::VERIFICATION_OTP, $txn->verification_type);
+        $this->assertSame(
+            AuthorizedTransaction::VERIFICATION_OTP,
+            $txn->payload['_verification_policy']['verification_type'] ?? null,
+        );
+        $this->assertSame('pin', $txn->payload['_verification_policy']['client_hint'] ?? null);
     }
 
     #[Test]

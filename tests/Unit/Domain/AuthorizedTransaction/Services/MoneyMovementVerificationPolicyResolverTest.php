@@ -89,4 +89,46 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
         $this->assertSame('amount_threshold', $policy['reason']);
         $this->assertSame('amount_threshold_exceeded', $policy['risk_reason']);
     }
+
+    #[Test]
+    public function it_defaults_request_money_to_pin_when_the_user_has_a_transaction_pin(): void
+    {
+        $user = User::factory()->create(['transaction_pin' => '1234']);
+        $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
+
+        $policy = app(MoneyMovementVerificationPolicyResolver::class)->resolveRequestMoneyPolicy(
+            user: $user,
+            amount: '10.00',
+            asset: $asset,
+            operationType: AuthorizedTransaction::REMARK_REQUEST_MONEY,
+            clientHint: 'sms',
+        );
+
+        $this->assertSame(AuthorizedTransaction::VERIFICATION_PIN, $policy['verification_type']);
+        $this->assertSame('pin', $policy['next_step']);
+        $this->assertSame('user_preference', $policy['reason']);
+        $this->assertNull($policy['risk_reason']);
+        $this->assertSame('sms', $policy['client_hint']);
+    }
+
+    #[Test]
+    public function it_defaults_request_money_to_otp_when_the_user_has_no_transaction_pin(): void
+    {
+        $user = User::factory()->create(['transaction_pin' => null]);
+        $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
+
+        $policy = app(MoneyMovementVerificationPolicyResolver::class)->resolveRequestMoneyPolicy(
+            user: $user,
+            amount: '10.00',
+            asset: $asset,
+            operationType: AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+            clientHint: 'pin',
+        );
+
+        $this->assertSame(AuthorizedTransaction::VERIFICATION_OTP, $policy['verification_type']);
+        $this->assertSame('otp', $policy['next_step']);
+        $this->assertSame('user_preference', $policy['reason']);
+        $this->assertNull($policy['risk_reason']);
+        $this->assertSame('pin', $policy['client_hint']);
+    }
 }
