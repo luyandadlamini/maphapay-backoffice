@@ -89,6 +89,22 @@ class MoneyMovementTransactionInspector
                     'trx' => $transaction->trx,
                     'at' => $transaction->updated_at?->toIso8601String(),
                 ];
+            } elseif ($transaction->status === AuthorizedTransaction::STATUS_FAILED) {
+                $timeline[] = [
+                    'event' => 'verification_failed',
+                    'trx' => $transaction->trx,
+                    'failure_reason' => $transaction->failure_reason,
+                    'verification_failures' => $transaction->verification_failures,
+                    'at' => $transaction->updated_at?->toIso8601String(),
+                ];
+            } elseif ($transaction->status === AuthorizedTransaction::STATUS_EXPIRED) {
+                $timeline[] = [
+                    'event' => 'verification_expired',
+                    'trx' => $transaction->trx,
+                    'failure_reason' => $transaction->failure_reason,
+                    'verification_failures' => $transaction->verification_failures,
+                    'at' => $transaction->updated_at?->toIso8601String(),
+                ];
             }
         }
 
@@ -116,6 +132,8 @@ class MoneyMovementTransactionInspector
         $warnings = [];
         if ($assetTransfer !== null && count($projections) === 0) {
             $warnings[] = 'Transfer exists in asset_transfers but no matching transaction_projections were found.';
+        } elseif ($assetTransfer !== null && count($projections) !== 2) {
+            $warnings[] = 'Transfer projection count mismatch: expected 2 account-facing transaction_projections rows for an internal P2P transfer.';
         }
 
         return [

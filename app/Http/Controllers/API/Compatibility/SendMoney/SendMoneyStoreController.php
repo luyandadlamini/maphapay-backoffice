@@ -138,6 +138,26 @@ class SendMoneyStoreController extends Controller
             '_verification_policy' => $policy,
         ];
 
+        $replayedTxn = $this->findExistingInitiationReplay(
+            userId: (int) $authUser->getAuthIdentifier(),
+            idempotencyKey: $idempotencyKey,
+        );
+        if ($replayedTxn !== null) {
+            if (! $this->sendMoneyReplayMatches($replayedTxn, $payload)) {
+                return response()->json([
+                    'error' => 'Idempotency key already used',
+                    'message' => 'The provided idempotency key has already been used with different request parameters',
+                ], 409);
+            }
+
+            $this->telemetry->logIdempotencyReplay($request, $idempotencyKey, [
+                'status_code' => 200,
+                'source' => 'authorized_transaction',
+            ]);
+
+            return response()->json($this->sendMoneyReplayPayload($replayedTxn, $validated));
+        }
+
         $this->telemetry->logEvent('send_money_initiation_started', $this->telemetry->requestContext($request, [
             'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
             'sender_account_uuid' => $fromAccount->uuid,
@@ -286,5 +306,69 @@ class SendMoneyStoreController extends Controller
             ->orWhere('mobile', $user)
             ->orWhere('username', $username)
             ->first();
+    }
+
+    private function findExistingInitiationReplay(int $userId, string $idempotencyKey): ?AuthorizedTransaction
+    {
+        if ($idempotencyKey === '') {
+            return null;
+        }
+
+        return AuthorizedTransaction::query()
+            ->where('user_id', $userId)
+            ->where('remark', AuthorizedTransaction::REMARK_SEND_MONEY)
+            ->where('payload->_idempotency_key', $idempotencyKey)
+            ->latest('created_at')
+            ->first();
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function sendMoneyReplayMatches(AuthorizedTransaction $txn, array $payload): bool
+    {
+        $existingPayload = is_array($txn->payload) ? $txn->payload : [];
+
+        return ($existingPayload['from_account_uuid'] ?? null) === $payload['from_account_uuid']
+            && ($existingPayload['to_account_uuid'] ?? null) === $payload['to_account_uuid']
+            && ($existingPayload['amount'] ?? null) === $payload['amount']
+            && ($existingPayload['asset_code'] ?? null) === $payload['asset_code']
+            && (($existingPayload['note'] ?? '') === ($payload['note'] ?? ''));
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function sendMoneyReplayPayload(AuthorizedTransaction $txn, array $validated): array
+    {
+        if ($txn->isCompleted() && is_array($txn->result)) {
+            return [
+                'status' => 'success',
+                'remark' => 'send_money',
+                'data' => array_merge([
+                    'next_step' => 'none',
+                ], $txn->result),
+            ];
+        }
+
+        $nextStep = $txn->verification_type === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp';
+        $codeSentMessage = null;
+        if ($txn->verification_type === AuthorizedTransaction::VERIFICATION_OTP) {
+            $channel = ($validated['verification_type'] ?? 'sms') === 'email' ? 'email' : 'phone';
+            $codeSentMessage = $channel === 'email'
+                ? 'A verification code has been sent to your email.'
+                : 'A verification code has been sent to your phone.';
+        }
+
+        return [
+            'status' => 'success',
+            'remark' => 'send_money',
+            'data' => [
+                'next_step' => $nextStep,
+                'trx' => $txn->trx,
+                'code_sent_message' => $codeSentMessage,
+            ],
+        ];
     }
 }

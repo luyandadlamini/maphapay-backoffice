@@ -156,6 +156,52 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
     }
 
     #[Test]
+    public function test_duplicate_store_with_same_idempotency_key_reuses_existing_rows_after_idempotency_cache_loss(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
+
+        $idem = (string) Str::uuid();
+        $body = [
+            'user' => $this->recipient->email,
+            'amount' => '15.00',
+            'note' => 'Cache-loss replay-safe request',
+            'verification_type' => 'sms',
+        ];
+
+        $first = $this->withHeaders([
+            'X-Idempotency-Key' => $idem,
+        ])->postJson('/api/request-money/store', $body);
+        $first->assertOk();
+        $trx = (string) $first->json('data.trx');
+
+        Cache::flush();
+
+        $second = $this->withHeaders([
+            'X-Idempotency-Key' => $idem,
+        ])->postJson('/api/request-money/store', $body);
+        $second->assertOk()
+            ->assertJsonPath('data.trx', $trx)
+            ->assertJsonPath('data.next_step', 'otp');
+
+        $this->assertSame(1, AuthorizedTransaction::query()
+            ->where('remark', AuthorizedTransaction::REMARK_REQUEST_MONEY)
+            ->where('user_id', $this->requester->id)
+            ->where('trx', $trx)
+            ->count());
+
+        $this->assertSame(1, MoneyRequest::query()
+            ->where('requester_user_id', $this->requester->id)
+            ->where('recipient_user_id', $this->recipient->id)
+            ->where('amount', '15.00')
+            ->where('trx', $trx)
+            ->count());
+    }
+
+    #[Test]
     public function test_store_rejects_verification_type_none(): void
     {
         config([

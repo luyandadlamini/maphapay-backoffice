@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderInterface;
-use App\Domain\AuthorizedTransaction\Services\NullMoneyMovementRiskSignalProvider;
+use App\Domain\AuthorizedTransaction\Services\DatabaseMoneyMovementRiskSignalProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Http\Request;
@@ -49,7 +49,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(
             MoneyMovementRiskSignalProviderInterface::class,
-            NullMoneyMovementRiskSignalProvider::class,
+            DatabaseMoneyMovementRiskSignalProvider::class,
         );
     }
 

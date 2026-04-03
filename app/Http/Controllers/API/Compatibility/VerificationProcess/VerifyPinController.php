@@ -7,6 +7,7 @@ namespace App\Http\Controllers\API\Compatibility\VerificationProcess;
 use App\Domain\AuthorizedTransaction\Exceptions\InvalidTransactionPinException;
 use App\Domain\AuthorizedTransaction\Exceptions\TransactionNotFoundException;
 use App\Domain\AuthorizedTransaction\Exceptions\TransactionPinNotSetException;
+use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\AuthorizedTransaction\Services\AuthorizedTransactionManager;
 use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Http\Controllers\Controller;
@@ -48,6 +49,7 @@ class VerifyPinController extends Controller
                 is_string($request->input('trx')) ? $request->input('trx') : null,
                 $message,
                 422,
+                $this->findTransaction($request, is_string($request->input('trx')) ? $request->input('trx') : null),
             );
 
             return response()->json([
@@ -67,12 +69,13 @@ class VerifyPinController extends Controller
                 userId: (int) $request->user()?->getAuthIdentifier(),
                 pin: $validated['pin'],
             );
+            $transaction = $this->findTransaction($request, $validated['trx']);
 
             $this->telemetry->logEvent('verification_succeeded', $this->telemetry->requestContext($request, [
                 'verification_method' => 'pin',
                 'remark' => $validated['remark'] ?? 'pin_verified',
                 'trx' => $validated['trx'],
-            ]));
+            ] + $this->telemetry->transactionContext($transaction)));
 
             return response()->json([
                 'status' => 'success',
@@ -87,6 +90,7 @@ class VerifyPinController extends Controller
                 $validated['trx'],
                 $e->getMessage(),
                 404,
+                $this->findTransaction($request, $validated['trx']),
             );
 
             return $this->errorResponse(
@@ -102,6 +106,7 @@ class VerifyPinController extends Controller
                 $validated['trx'],
                 $e->getMessage(),
                 422,
+                $this->findTransaction($request, $validated['trx']),
             );
 
             return $this->errorResponse(
@@ -117,6 +122,7 @@ class VerifyPinController extends Controller
                 $validated['trx'],
                 $e->getMessage(),
                 422,
+                $this->findTransaction($request, $validated['trx']),
             );
 
             return $this->errorResponse(
@@ -135,5 +141,22 @@ class VerifyPinController extends Controller
             'message' => $message,
             'data' => null,
         ], $status);
+    }
+
+    private function findTransaction(Request $request, ?string $trx): ?AuthorizedTransaction
+    {
+        if ($trx === null || $trx === '') {
+            return null;
+        }
+
+        $userId = (int) $request->user()?->getAuthIdentifier();
+        if ($userId <= 0) {
+            return null;
+        }
+
+        return AuthorizedTransaction::query()
+            ->where('trx', $trx)
+            ->where('user_id', $userId)
+            ->first();
     }
 }

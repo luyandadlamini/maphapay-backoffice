@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\API\Compatibility\VerificationProcess;
 
 use App\Domain\AuthorizedTransaction\Exceptions\TransactionNotFoundException;
+use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\AuthorizedTransaction\Services\AuthorizedTransactionManager;
 use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Http\Controllers\Controller;
@@ -40,12 +41,13 @@ class VerifyOtpController extends Controller
                 userId: (int) $request->user()?->getAuthIdentifier(),
                 otp: $validated['otp'],
             );
+            $transaction = $this->findTransaction($request, $validated['trx']);
 
             $this->telemetry->logEvent('verification_succeeded', $this->telemetry->requestContext($request, [
                 'verification_method' => 'otp',
                 'remark' => $validated['remark'] ?? 'otp_verified',
                 'trx' => $validated['trx'],
-            ]));
+            ] + $this->telemetry->transactionContext($transaction)));
 
             return response()->json([
                 'status' => 'success',
@@ -60,6 +62,7 @@ class VerifyOtpController extends Controller
                 $validated['trx'],
                 $e->getMessage(),
                 404,
+                $this->findTransaction($request, $validated['trx']),
             );
 
             return $this->errorResponse(
@@ -75,6 +78,7 @@ class VerifyOtpController extends Controller
                 $validated['trx'],
                 $e->getMessage(),
                 422,
+                $this->findTransaction($request, $validated['trx']),
             );
 
             return $this->errorResponse(
@@ -93,5 +97,22 @@ class VerifyOtpController extends Controller
             'message' => [$message],
             'data' => null,
         ], $status);
+    }
+
+    private function findTransaction(Request $request, ?string $trx): ?AuthorizedTransaction
+    {
+        if ($trx === null || $trx === '') {
+            return null;
+        }
+
+        $userId = (int) $request->user()?->getAuthIdentifier();
+        if ($userId <= 0) {
+            return null;
+        }
+
+        return AuthorizedTransaction::query()
+            ->where('trx', $trx)
+            ->where('user_id', $userId)
+            ->first();
     }
 }

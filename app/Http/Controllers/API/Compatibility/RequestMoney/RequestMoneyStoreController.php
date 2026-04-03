@@ -101,6 +101,26 @@ class RequestMoneyStoreController extends Controller
         );
         $verificationType = $policy['verification_type'];
 
+        $replayedTxn = $this->findExistingInitiationReplay(
+            userId: (int) $authUser->getAuthIdentifier(),
+            idempotencyKey: $idempotencyKey,
+        );
+        if ($replayedTxn !== null) {
+            if (! $this->requestMoneyReplayMatches($replayedTxn, $recipient, $normalizedAmount, $asset->code, $validated['note'] ?? null)) {
+                return response()->json([
+                    'error' => 'Idempotency key already used',
+                    'message' => 'The provided idempotency key has already been used with different request parameters',
+                ], 409);
+            }
+
+            $this->telemetry->logIdempotencyReplay($request, $idempotencyKey, [
+                'status_code' => 200,
+                'source' => 'authorized_transaction',
+            ]);
+
+            return response()->json($this->requestMoneyReplayPayload($replayedTxn, $validated));
+        }
+
         $this->telemetry->logEvent('request_money_initiation_started', $this->telemetry->requestContext($request, [
             'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY,
             'sender_user_id' => $authUser->id,
@@ -139,6 +159,7 @@ class RequestMoneyStoreController extends Controller
                     'recipient_user_id' => (int) $recipient->getAuthIdentifier(),
                     'amount' => $normalizedAmount,
                     'asset_code' => $asset->code,
+                    'note' => $validated['note'] ?? null,
                     '_verification_policy' => $policy,
                 ];
 
@@ -253,5 +274,69 @@ class RequestMoneyStoreController extends Controller
             ->orWhere('mobile', $user)
             ->orWhere('username', $username)
             ->first();
+    }
+
+    private function findExistingInitiationReplay(int $userId, string $idempotencyKey): ?AuthorizedTransaction
+    {
+        if ($idempotencyKey === '') {
+            return null;
+        }
+
+        return AuthorizedTransaction::query()
+            ->where('user_id', $userId)
+            ->where('remark', AuthorizedTransaction::REMARK_REQUEST_MONEY)
+            ->where('payload->_idempotency_key', $idempotencyKey)
+            ->latest('created_at')
+            ->first();
+    }
+
+    private function requestMoneyReplayMatches(
+        AuthorizedTransaction $txn,
+        User $recipient,
+        string $amount,
+        string $assetCode,
+        ?string $note,
+    ): bool {
+        $payload = is_array($txn->payload) ? $txn->payload : [];
+        $moneyRequestId = $payload['money_request_id'] ?? null;
+        if (! is_string($moneyRequestId) || $moneyRequestId === '') {
+            return false;
+        }
+
+        $moneyRequest = MoneyRequest::query()->find($moneyRequestId);
+        if ($moneyRequest === null) {
+            return false;
+        }
+
+        return (int) $moneyRequest->recipient_user_id === (int) $recipient->id
+            && (string) $moneyRequest->amount === $amount
+            && (string) $moneyRequest->asset_code === $assetCode
+            && (($moneyRequest->note ?? null) === $note);
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function requestMoneyReplayPayload(AuthorizedTransaction $txn, array $validated): array
+    {
+        $nextStep = $txn->verification_type === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp';
+        $codeSentMessage = null;
+        if ($txn->verification_type === AuthorizedTransaction::VERIFICATION_OTP) {
+            $channel = ($validated['verification_type'] ?? 'sms') === 'email' ? 'email' : 'phone';
+            $codeSentMessage = $channel === 'email'
+                ? 'A verification code has been sent to your email.'
+                : 'A verification code has been sent to your phone.';
+        }
+
+        return [
+            'status' => 'success',
+            'remark' => 'request_money',
+            'data' => [
+                'next_step' => $nextStep,
+                'trx' => $txn->trx,
+                'code_sent_message' => $codeSentMessage,
+            ],
+        ];
     }
 }

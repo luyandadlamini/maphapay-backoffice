@@ -7,8 +7,10 @@ namespace Tests\Feature\Http\Controllers\Api\Compatibility\SendMoney;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Asset\Models\Asset;
+use App\Domain\Asset\Models\AssetTransfer;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\ControllerTestCase;
@@ -151,5 +153,63 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
         $response->assertOk()
             ->assertJsonPath('data.next_step', 'pin')
             ->assertJsonPath('data.code_sent_message', null);
+    }
+
+    #[Test]
+    public function it_reuses_the_existing_send_money_result_after_idempotency_cache_loss(): void
+    {
+        Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
+
+        $idempotencyKey = '00000000-0000-0000-0000-000000009903';
+        $payload = [
+            'user' => $this->recipient->email,
+            'amount' => '10.00',
+            'verification_type' => 'sms',
+            'note' => 'Cache-loss replay',
+        ];
+
+        $first = $this->withHeaders([
+            'Idempotency-Key' => $idempotencyKey,
+        ])->postJson('/api/send-money/store', $payload);
+
+        $first->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.next_step', 'none');
+
+        Cache::flush();
+
+        $second = $this->withHeaders([
+            'Idempotency-Key' => $idempotencyKey,
+        ])->postJson('/api/send-money/store', $payload);
+
+        $second->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.next_step', 'none')
+            ->assertJsonPath('data.trx', $first->json('data.trx'))
+            ->assertJsonPath('data.reference', $first->json('data.reference'));
+
+        $trx = (string) $first->json('data.trx');
+        $reference = (string) $first->json('data.reference');
+
+        $this->assertSame(1, AuthorizedTransaction::query()
+            ->where('remark', AuthorizedTransaction::REMARK_SEND_MONEY)
+            ->where('user_id', $this->sender->id)
+            ->where('trx', $trx)
+            ->count());
+
+        $this->assertSame(1, AssetTransfer::query()
+            ->where('reference', $reference)
+            ->count());
+
+        $this->assertDatabaseHas('account_balances', [
+            'account_uuid' => $this->senderAccount->uuid,
+            'asset_code' => 'SZL',
+            'balance' => 499_000,
+        ]);
+        $this->assertDatabaseHas('account_balances', [
+            'account_uuid' => $this->recipientAccount->uuid,
+            'asset_code' => 'SZL',
+            'balance' => 1_000,
+        ]);
     }
 }

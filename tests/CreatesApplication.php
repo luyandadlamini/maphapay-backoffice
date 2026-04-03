@@ -11,8 +11,8 @@ trait CreatesApplication
      *
      * The repo currently keeps cached config/routes/events under bootstrap/cache.
      * If tests boot against those files, Laravel resolves as production, ignores
-     * phpunit env overrides, and uses the file-backed sqlite database instead of
-     * the intended in-memory connection.
+     * phpunit env overrides, and uses the wrong database connection instead of
+     * the intended isolated test database.
      */
     private function isolateBootstrapCachesForTesting(): void
     {
@@ -42,15 +42,45 @@ trait CreatesApplication
         $_SERVER['APP_ENV'] = 'testing';
 
         if (! getenv('DB_CONNECTION')) {
-            putenv('DB_CONNECTION=sqlite');
-            $_ENV['DB_CONNECTION'] = 'sqlite';
-            $_SERVER['DB_CONNECTION'] = 'sqlite';
+            $connection = getenv('TEST_DB_CONNECTION') ?: 'mysql';
+            putenv("DB_CONNECTION={$connection}");
+            $_ENV['DB_CONNECTION'] = $connection;
+            $_SERVER['DB_CONNECTION'] = $connection;
         }
 
         if (! getenv('DB_DATABASE')) {
-            putenv('DB_DATABASE=:memory:');
-            $_ENV['DB_DATABASE'] = ':memory:';
-            $_SERVER['DB_DATABASE'] = ':memory:';
+            $database = getenv('TEST_DB_DATABASE') ?: 'maphapay_backoffice_test';
+            putenv("DB_DATABASE={$database}");
+            $_ENV['DB_DATABASE'] = $database;
+            $_SERVER['DB_DATABASE'] = $database;
+        }
+
+        if (! getenv('DB_HOST')) {
+            $host = getenv('TEST_DB_HOST') ?: '127.0.0.1';
+            putenv("DB_HOST={$host}");
+            $_ENV['DB_HOST'] = $host;
+            $_SERVER['DB_HOST'] = $host;
+        }
+
+        if (! getenv('DB_PORT')) {
+            $port = getenv('TEST_DB_PORT') ?: '3306';
+            putenv("DB_PORT={$port}");
+            $_ENV['DB_PORT'] = $port;
+            $_SERVER['DB_PORT'] = $port;
+        }
+
+        if (! getenv('DB_USERNAME')) {
+            $username = getenv('TEST_DB_USERNAME') ?: 'root';
+            putenv("DB_USERNAME={$username}");
+            $_ENV['DB_USERNAME'] = $username;
+            $_SERVER['DB_USERNAME'] = $username;
+        }
+
+        if (! getenv('DB_PASSWORD')) {
+            $password = getenv('TEST_DB_PASSWORD') ?: '';
+            putenv("DB_PASSWORD={$password}");
+            $_ENV['DB_PASSWORD'] = $password;
+            $_SERVER['DB_PASSWORD'] = $password;
         }
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Monitoring\Services;
 
+use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Models\MoneyRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -82,6 +83,7 @@ class MaphaPayMoneyMovementTelemetry
         ?string $trx,
         string $message,
         int $status,
+        ?AuthorizedTransaction $transaction = null,
     ): void {
         $this->incrementCounter(self::METRIC_VERIFICATION_FAILURES_TOTAL);
 
@@ -91,7 +93,7 @@ class MaphaPayMoneyMovementTelemetry
             'trx' => $trx,
             'status_code' => $status,
             'message' => $message,
-        ]), 'warning');
+        ] + $this->transactionContext($transaction)), 'warning');
     }
 
     public function logDuplicateAcceptancePrevented(
@@ -190,6 +192,36 @@ class MaphaPayMoneyMovementTelemetry
     {
         Cache::add($key, 0, now()->addDay());
         Cache::increment($key);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function transactionContext(?AuthorizedTransaction $transaction): array
+    {
+        if ($transaction === null) {
+            return [];
+        }
+
+        $payload = is_array($transaction->payload) ? $transaction->payload : [];
+        $result = is_array($transaction->result) ? $transaction->result : [];
+        $policy = is_array($payload['_verification_policy'] ?? null) ? $payload['_verification_policy'] : [];
+
+        return array_filter([
+            'transaction_id' => $transaction->id,
+            'trx' => $transaction->trx,
+            'reference' => $result['reference'] ?? null,
+            'sender_account_uuid' => $payload['from_account_uuid'] ?? null,
+            'recipient_account_uuid' => $payload['to_account_uuid'] ?? null,
+            'sender_user_id' => $transaction->user_id,
+            'recipient_user_id' => $payload['recipient_user_id'] ?? $payload['requester_user_id'] ?? null,
+            'amount' => $payload['amount'] ?? $result['amount'] ?? null,
+            'asset_code' => $payload['asset_code'] ?? $result['asset_code'] ?? null,
+            'status' => $transaction->status,
+            'failure_reason' => $transaction->failure_reason,
+            'verification_policy' => $policy['verification_type'] ?? $transaction->verification_type,
+            'risk_reason' => $policy['risk_reason'] ?? null,
+        ], static fn (mixed $value): bool => $value !== null);
     }
 
     private function isMoneyMovementPath(string $path): bool

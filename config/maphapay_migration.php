@@ -38,5 +38,18 @@ return [
         'send_money' => [
             'step_up_threshold' => env('MAPHAPAY_SEND_MONEY_STEP_UP_THRESHOLD', '100.00'),
         ],
+        'request_money' => [
+            'step_up_threshold' => env('MAPHAPAY_REQUEST_MONEY_STEP_UP_THRESHOLD', '100.00'),
+        ],
+        'risk_signals' => [
+            'velocity' => [
+                'lookback_minutes' => (int) env('MAPHAPAY_MONEY_MOVEMENT_VELOCITY_LOOKBACK_MINUTES', 15),
+                'max_initiations' => (int) env('MAPHAPAY_MONEY_MOVEMENT_VELOCITY_MAX_INITIATIONS', 3),
+            ],
+            'verification_failures' => [
+                'lookback_minutes' => (int) env('MAPHAPAY_MONEY_MOVEMENT_VERIFICATION_FAILURES_LOOKBACK_MINUTES', 30),
+                'max_failures' => (int) env('MAPHAPAY_MONEY_MOVEMENT_VERIFICATION_FAILURES_MAX_FAILURES', 2),
+            ],
+        ],
     ],
 ];
