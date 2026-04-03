@@ -136,9 +136,9 @@ class VerifyPinController extends Controller
     private function errorResponse(string $remark, string $message, int $status): JsonResponse
     {
         return response()->json([
-            'status' => false,
+            'status' => 'error',
             'remark' => $remark,
-            'message' => $message,
+            'message' => [$message],
             'data' => null,
         ], $status);
     }

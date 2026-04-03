@@ -10,19 +10,20 @@ use App\Domain\User\Values\UserRoles;
 use App\Models\Role;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Mockery;
 use ReflectionClass;
+use Tests\Concerns\LazilyRefreshExistingMySqlSchema;
 use Throwable;
 
 abstract class TestCase extends BaseTestCase
 {
     use CreatesApplication;
-    use LazilyRefreshDatabase;
+    use LazilyRefreshExistingMySqlSchema;
 
     private static int $testCounter = 0;
 
@@ -142,6 +143,8 @@ abstract class TestCase extends BaseTestCase
 
     protected function createRoles(): void
     {
+        $this->ensureMoneyMovementTestSchemaBaseline();
+
         // Check if roles already exist in the database
         $existingRoles = Role::whereIn('name', array_column(UserRoles::cases(), 'value'))->count();
 
@@ -156,6 +159,137 @@ abstract class TestCase extends BaseTestCase
                 ['guard_name' => 'web']
             );
         });
+    }
+
+    protected function ensureMoneyMovementTestSchemaBaseline(): void
+    {
+        if (! Schema::hasTable('roles')) {
+            Schema::create('roles', function ($table): void {
+                $table->bigIncrements('id');
+                $table->string('name');
+                $table->string('guard_name');
+                $table->timestamps();
+                $table->unique(['name', 'guard_name']);
+            });
+        }
+
+        if (! Schema::hasTable('users')) {
+            return;
+        }
+
+        Schema::table('users', function ($table): void {
+            if (! Schema::hasColumn('users', 'kyc_status')) {
+                $table->string('kyc_status')->default('not_started')->after('current_team_id');
+            }
+
+            if (! Schema::hasColumn('users', 'kyc_level')) {
+                $table->string('kyc_level')->default('basic')->after('kyc_status');
+            }
+
+            if (! Schema::hasColumn('users', 'pep_status')) {
+                $table->boolean('pep_status')->default(false)->after('kyc_level');
+            }
+
+            if (! Schema::hasColumn('users', 'data_retention_consent')) {
+                $table->boolean('data_retention_consent')->default(false)->after('pep_status');
+            }
+
+            if (! Schema::hasColumn('users', 'transaction_pin')) {
+                $table->string('transaction_pin')->nullable()->after('data_retention_consent');
+            }
+        });
+
+        if (Schema::hasTable('accounts') && ! Schema::hasColumn('accounts', 'account_number')) {
+            Schema::table('accounts', function ($table): void {
+                $table->string('account_number')->nullable()->after('name');
+            });
+        }
+
+        if (! Schema::hasTable('authorized_transactions')) {
+            Schema::create('authorized_transactions', function ($table): void {
+                $table->uuid('id')->primary();
+                $table->unsignedBigInteger('user_id');
+                $table->string('remark');
+                $table->string('trx')->unique();
+                $table->json('payload');
+                $table->string('status');
+                $table->json('result')->nullable();
+                $table->string('verification_type')->nullable();
+                $table->text('otp_hash')->nullable();
+                $table->timestamp('otp_sent_at')->nullable();
+                $table->timestamp('otp_expires_at')->nullable();
+                $table->unsignedInteger('verification_failures')->default(0);
+                $table->timestamp('verification_confirmed_at')->nullable();
+                $table->string('failure_reason')->nullable();
+                $table->timestamp('expires_at')->nullable();
+                $table->timestamps();
+                $table->index(['user_id', 'trx']);
+            });
+        }
+
+        if (! Schema::hasTable('assets')) {
+            Schema::create('assets', function ($table): void {
+                $table->string('code')->primary();
+                $table->string('name');
+                $table->string('type');
+                $table->unsignedInteger('precision')->default(2);
+                $table->boolean('is_active')->default(true);
+                $table->boolean('is_basket')->default(false);
+                $table->boolean('is_tradeable')->default(false);
+                $table->json('metadata')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        if (! Schema::hasTable('account_balances')) {
+            Schema::create('account_balances', function ($table): void {
+                $table->bigIncrements('id');
+                $table->uuid('account_uuid');
+                $table->string('asset_code');
+                $table->bigInteger('balance')->default(0);
+                $table->timestamps();
+                $table->unique(['account_uuid', 'asset_code']);
+            });
+        }
+
+        if (! Schema::hasTable('money_requests')) {
+            Schema::create('money_requests', function ($table): void {
+                $table->uuid('id')->primary();
+                $table->unsignedBigInteger('requester_user_id');
+                $table->unsignedBigInteger('recipient_user_id');
+                $table->decimal('amount', 20, 2);
+                $table->string('asset_code');
+                $table->text('note')->nullable();
+                $table->string('status');
+                $table->string('trx')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        if (! Schema::hasTable('asset_transfers')) {
+            Schema::create('asset_transfers', function ($table): void {
+                $table->bigIncrements('id');
+                $table->uuid('uuid')->nullable();
+                $table->string('reference')->nullable();
+                $table->string('transfer_id')->nullable();
+                $table->string('hash')->nullable();
+                $table->uuid('from_account_uuid')->nullable();
+                $table->uuid('to_account_uuid')->nullable();
+                $table->string('from_asset_code')->nullable();
+                $table->string('to_asset_code')->nullable();
+                $table->bigInteger('from_amount')->default(0);
+                $table->bigInteger('to_amount')->default(0);
+                $table->decimal('exchange_rate', 20, 10)->nullable();
+                $table->string('status');
+                $table->text('description')->nullable();
+                $table->string('failure_reason')->nullable();
+                $table->json('metadata')->nullable();
+                $table->timestamp('initiated_at')->nullable();
+                $table->timestamp('completed_at')->nullable();
+                $table->timestamp('failed_at')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     /**

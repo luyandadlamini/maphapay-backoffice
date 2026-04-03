@@ -202,6 +202,61 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
     }
 
     #[Test]
+    public function test_duplicate_store_reuses_existing_rows_after_cache_loss_even_when_client_hint_changes_but_policy_stays_otp(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        $this->requester->update(['transaction_pin' => null]);
+        Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
+
+        $idem = (string) Str::uuid();
+
+        $first = $this->withHeaders([
+            'X-Idempotency-Key' => $idem,
+        ])->postJson('/api/request-money/store', [
+            'user' => $this->recipient->email,
+            'amount' => '15.00',
+            'note' => 'Hint drift request replay',
+            'verification_type' => 'sms',
+        ]);
+
+        $first->assertOk()
+            ->assertJsonPath('data.next_step', 'otp');
+
+        Cache::flush();
+
+        $second = $this->withHeaders([
+            'X-Idempotency-Key' => $idem,
+        ])->postJson('/api/request-money/store', [
+            'user' => $this->recipient->email,
+            'amount' => '15.00',
+            'note' => 'Hint drift request replay',
+            'verification_type' => 'pin',
+        ]);
+
+        $second->assertOk()
+            ->assertJsonPath('data.trx', $first->json('data.trx'))
+            ->assertJsonPath('data.next_step', 'otp');
+
+        $trx = (string) $first->json('data.trx');
+
+        $this->assertSame(1, AuthorizedTransaction::query()
+            ->where('remark', AuthorizedTransaction::REMARK_REQUEST_MONEY)
+            ->where('user_id', $this->requester->id)
+            ->where('trx', $trx)
+            ->count());
+
+        $this->assertSame(1, MoneyRequest::query()
+            ->where('requester_user_id', $this->requester->id)
+            ->where('recipient_user_id', $this->recipient->id)
+            ->where('amount', '15.00')
+            ->where('trx', $trx)
+            ->count());
+    }
+
+    #[Test]
     public function test_store_rejects_verification_type_none(): void
     {
         config([

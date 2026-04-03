@@ -212,4 +212,42 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
             'balance' => 1_000,
         ]);
     }
+
+    #[Test]
+    public function it_replays_send_money_after_cache_loss_even_when_the_client_hint_changes_but_policy_stays_none(): void
+    {
+        Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
+
+        $idempotencyKey = '00000000-0000-0000-0000-000000009904';
+
+        $first = $this->withHeaders([
+            'Idempotency-Key' => $idempotencyKey,
+        ])->postJson('/api/send-money/store', [
+            'user' => $this->recipient->email,
+            'amount' => '10.00',
+            'verification_type' => 'sms',
+            'note' => 'Hint drift replay',
+        ]);
+
+        $first->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.next_step', 'none');
+
+        Cache::flush();
+
+        $second = $this->withHeaders([
+            'Idempotency-Key' => $idempotencyKey,
+        ])->postJson('/api/send-money/store', [
+            'user' => $this->recipient->email,
+            'amount' => '10.00',
+            'verification_type' => 'none',
+            'note' => 'Hint drift replay',
+        ]);
+
+        $second->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.next_step', 'none')
+            ->assertJsonPath('data.trx', $first->json('data.trx'))
+            ->assertJsonPath('data.reference', $first->json('data.reference'));
+    }
 }

@@ -50,6 +50,15 @@ return [
                 'lookback_minutes' => (int) env('MAPHAPAY_MONEY_MOVEMENT_VERIFICATION_FAILURES_LOOKBACK_MINUTES', 30),
                 'max_failures' => (int) env('MAPHAPAY_MONEY_MOVEMENT_VERIFICATION_FAILURES_MAX_FAILURES', 2),
             ],
+            'amount_anomaly' => [
+                'lookback_minutes' => (int) env('MAPHAPAY_MONEY_MOVEMENT_AMOUNT_ANOMALY_LOOKBACK_MINUTES', 1440),
+                'min_samples' => (int) env('MAPHAPAY_MONEY_MOVEMENT_AMOUNT_ANOMALY_MIN_SAMPLES', 3),
+                'multiplier' => (float) env('MAPHAPAY_MONEY_MOVEMENT_AMOUNT_ANOMALY_MULTIPLIER', 4),
+            ],
+            'recipient_churn' => [
+                'lookback_minutes' => (int) env('MAPHAPAY_MONEY_MOVEMENT_RECIPIENT_CHURN_LOOKBACK_MINUTES', 1440),
+                'max_distinct_counterparties' => (int) env('MAPHAPAY_MONEY_MOVEMENT_RECIPIENT_CHURN_MAX_DISTINCT_COUNTERPARTIES', 3),
+            ],
         ],
     ],
 ];

@@ -72,12 +72,27 @@ Purpose: quick working context for future sessions without re-scanning the whole
   - same-key replay after HTTP idempotency cache loss
   - same-key replay when client hint changes but the resolved policy still stays OTP
   - rejection of a second accept initiation when a different idempotency key targets the same pending request
+- Verification controller contract coverage now runs cleanly against the disposable MySQL harness:
+  - `VerifyPinControllerTest`
+  - `VerifyOtpControllerTest`
+- OTP validation failures are now normalized to the same compat envelope as PIN:
+  - `status = error`
+  - `message = [<reason>]`
+  - `data = null`
+- The database-backed money-movement risk provider now also steps up low-risk initiations on:
+  - anomalously large amounts versus the user's recent completed money-movement baseline
+  - new-counterparty churn after high recent distinct recipient/counterparty spread
+- Replay coverage now also includes hint-drift replays for:
+  - send-money after HTTP idempotency cache loss when the resolved policy still stays `none`
+  - request-money create after HTTP idempotency cache loss when the resolved policy still stays `otp`
 - Current inspector coverage now includes:
   - failed verification timeline entries
   - projection-count mismatch warnings
   - transfer-without-projections warnings
   - request-money accept lifecycle lookup by `trx`
-- Compat PIN failure normalization is in progress, but its dedicated feature suite is still blocked by heavy MySQL bootstrap statements that abort after 60 seconds.
+- The disposable `3307` harness is still only partially repaired for the broader money-movement integration suite:
+  - compat verification and resolver tests now self-heal the minimum schema they need
+  - broader send/request/inspector integration suites still depend on missing legacy test-schema pieces such as full `accounts`, `money_requests`, `asset_transfers`, and related projection tables/columns unless the database is rebuilt from a clean full migration bootstrap
 
 ## Local MySQL Verification Recipe
 
@@ -95,7 +110,7 @@ Purpose: quick working context for future sessions without re-scanning the whole
 ## Remaining Money Movement Work
 
 - Extend the risk provider beyond velocity and recent verification failures to the remaining anomaly/fraud signals.
-- Finish the remaining verification response/log contract cleanup outside the now-normalized compat PIN flow.
+- Wire the pre-execution risk hook into `AuthorizedTransactionManager::finalizeAtomically()` if hard-block behavior is still required before transfer execution.
 - Decide whether to formalize the disposable MySQL harness or restore a usable shared `3306` test account.
 - Expose the inspector in a real operator-facing Filament/admin surface if still required.
 - Confirm production dashboards, alerts, and rollout posture with infra owners.
