@@ -116,8 +116,14 @@ Purpose: quick working context for future sessions without re-scanning the whole
 
 ## Remaining Money Movement Work
 
-- Decide whether to formalize the disposable MySQL harness or restore a usable shared `3306` test account.
-- Confirm production dashboards, alerts, and rollout posture with infra owners.
+- Fresh verification on 2026-04-03 still passes on the disposable MySQL harness:
+  - target command result: `60` passing tests, `275` assertions
+- No further scoped backend code work is currently implied by the verified money-movement target set.
+- Decide whether to formalize the disposable `3307` harness as the explicit local money-movement test target or restore a usable shared `3306` test account.
+- Additional true parallel/concurrency verification is optional for now:
+  - current suites already cover replay reuse, duplicate-accept rejection, row-lock claim behavior, and policy threshold decisions
+  - stronger assurance should come from out-of-process load/concurrency testing rather than forcing more PHPUnit approximations
+- Confirm production dashboards, alerts, rollout flags, and operator runbook posture with infra owners.
 
 ## Known Practical Workflow
 
