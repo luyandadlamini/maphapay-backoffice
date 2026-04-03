@@ -106,6 +106,11 @@ Broadcast::channel('payments.{userId}', function ($user, int $userId) {
     return $user->id === $userId;
 });
 
+// Social money chat events and typing indicators - user-specific
+Broadcast::channel('chat.{userId}', function ($user, int $userId) {
+    return $user->id === $userId;
+});
+
 /*
 |--------------------------------------------------------------------------
 | Mobile-Expected Channels (v5.8.0)
