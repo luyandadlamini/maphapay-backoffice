@@ -50,6 +50,7 @@ trait LazilyRefreshExistingMySqlSchema
     {
         if (! RefreshDatabaseState::$migrated) {
             if ($this->shouldReuseExistingMySqlSchema()) {
+                $this->ensureReusableMySqlSchemaBaseline();
                 RefreshDatabaseState::$migrated = true;
             } else {
                 $this->migrateDatabases();
@@ -60,6 +61,13 @@ trait LazilyRefreshExistingMySqlSchema
         }
 
         $this->beginDatabaseTransaction();
+    }
+
+    protected function ensureReusableMySqlSchemaBaseline(): void
+    {
+        if (method_exists($this, 'ensureMoneyMovementTestSchemaBaseline')) {
+            $this->ensureMoneyMovementTestSchemaBaseline();
+        }
     }
 
     protected function shouldReuseExistingMySqlSchema(): bool

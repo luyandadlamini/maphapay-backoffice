@@ -90,9 +90,16 @@ Purpose: quick working context for future sessions without re-scanning the whole
   - projection-count mismatch warnings
   - transfer-without-projections warnings
   - request-money accept lifecycle lookup by `trx`
-- The disposable `3307` harness is still only partially repaired for the broader money-movement integration suite:
-  - compat verification and resolver tests now self-heal the minimum schema they need
-  - broader send/request/inspector integration suites still depend on missing legacy test-schema pieces such as full `accounts`, `money_requests`, `asset_transfers`, and related projection tables/columns unless the database is rebuilt from a clean full migration bootstrap
+- The reusable `3307` harness baseline is now repaired for the broader money-movement target suite:
+  - schema self-heal now runs before test transactions begin, avoiding MySQL savepoint corruption from in-transaction DDL
+  - repaired reusable-schema pieces include `accounts.account_number`, `accounts.frozen`, `money_requests`, `asset_transfers`, and `operation_records`
+  - the targeted verification/send/request/inspector/admin-page suite is green on this harness
+- `AuthorizedTransactionManager::finalizeAtomically()` now calls `evaluatePreExecution()` before handler execution and persists `status = failed` with `failure_reason` when a pre-execution risk hook blocks finalization.
+- Send-money synchronous `verification_type = none` finalization now converts pre-execution hard blocks back into the compat error envelope instead of leaking a 500.
+- The joined inspector is now exposed in a real Filament admin page:
+  - `App\Filament\Admin\Pages\MoneyMovementInspector`
+  - view: `resources/views/filament/admin/pages/money-movement-inspector.blade.php`
+  - coverage: `tests/Feature/Filament/Admin/MoneyMovementInspectorPageTest.php`
 
 ## Local MySQL Verification Recipe
 
@@ -109,10 +116,7 @@ Purpose: quick working context for future sessions without re-scanning the whole
 
 ## Remaining Money Movement Work
 
-- Extend the risk provider beyond velocity and recent verification failures to the remaining anomaly/fraud signals.
-- Wire the pre-execution risk hook into `AuthorizedTransactionManager::finalizeAtomically()` if hard-block behavior is still required before transfer execution.
 - Decide whether to formalize the disposable MySQL harness or restore a usable shared `3306` test account.
-- Expose the inspector in a real operator-facing Filament/admin surface if still required.
 - Confirm production dashboards, alerts, and rollout posture with infra owners.
 
 ## Known Practical Workflow

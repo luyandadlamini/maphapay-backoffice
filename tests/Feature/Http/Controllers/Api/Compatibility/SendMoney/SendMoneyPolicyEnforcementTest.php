@@ -8,6 +8,7 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\Asset\Models\AssetTransfer;
+use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderInterface;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
@@ -249,5 +250,48 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
             ->assertJsonPath('data.next_step', 'none')
             ->assertJsonPath('data.trx', $first->json('data.trx'))
             ->assertJsonPath('data.reference', $first->json('data.reference'));
+    }
+
+    #[Test]
+    public function it_fails_closed_when_pre_execution_risk_hooks_block_a_none_send_money_finalization(): void
+    {
+        $provider = \Mockery::mock(MoneyMovementRiskSignalProviderInterface::class);
+        $provider->shouldReceive('evaluateInitiation')
+            ->once()
+            ->andReturn([
+                'step_up' => false,
+                'reason' => null,
+            ]);
+        $provider->shouldReceive('evaluatePreExecution')
+            ->once()
+            ->andReturn([
+                'allow' => false,
+                'reason' => 'pre_execution_blocked',
+            ]);
+        $this->app->instance(MoneyMovementRiskSignalProviderInterface::class, $provider);
+
+        Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
+
+        $response = $this->withHeaders([
+            'Idempotency-Key' => '00000000-0000-0000-0000-000000009905',
+        ])->postJson('/api/send-money/store', [
+            'user' => $this->recipient->email,
+            'amount' => '10.00',
+            'verification_type' => 'none',
+            'note' => 'Pre-execution hard block',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('remark', 'send_money')
+            ->assertJsonPath('message.0', 'pre_execution_blocked');
+
+        $this->assertDatabaseHas('authorized_transactions', [
+            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'user_id' => $this->sender->id,
+            'status' => AuthorizedTransaction::STATUS_FAILED,
+            'failure_reason' => 'pre_execution_blocked',
+        ]);
+        $this->assertDatabaseCount('asset_transfers', 0);
     }
 }

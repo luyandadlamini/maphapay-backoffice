@@ -143,8 +143,6 @@ abstract class TestCase extends BaseTestCase
 
     protected function createRoles(): void
     {
-        $this->ensureMoneyMovementTestSchemaBaseline();
-
         // Check if roles already exist in the database
         $existingRoles = Role::whereIn('name', array_column(UserRoles::cases(), 'value'))->count();
 
@@ -202,6 +200,12 @@ abstract class TestCase extends BaseTestCase
         if (Schema::hasTable('accounts') && ! Schema::hasColumn('accounts', 'account_number')) {
             Schema::table('accounts', function ($table): void {
                 $table->string('account_number')->nullable()->after('name');
+            });
+        }
+
+        if (Schema::hasTable('accounts') && ! Schema::hasColumn('accounts', 'frozen')) {
+            Schema::table('accounts', function ($table): void {
+                $table->boolean('frozen')->default(false)->after('balance');
             });
         }
 
@@ -288,6 +292,23 @@ abstract class TestCase extends BaseTestCase
                 $table->timestamp('completed_at')->nullable();
                 $table->timestamp('failed_at')->nullable();
                 $table->timestamps();
+            });
+        }
+
+        if (! Schema::hasTable('operation_records')) {
+            Schema::create('operation_records', function ($table): void {
+                $table->ulid('id')->primary();
+                $table->unsignedBigInteger('user_id');
+                $table->string('operation_type');
+                $table->string('idempotency_key', 255);
+                $table->string('payload_hash', 64);
+                $table->enum('status', ['pending', 'completed', 'failed'])->default('pending');
+                $table->json('result_payload')->nullable();
+                $table->timestamps();
+                $table->unique(
+                    ['user_id', 'operation_type', 'idempotency_key'],
+                    'op_records_user_type_key_unique',
+                );
             });
         }
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\AuthorizedTransaction\Services;
 
 use App\Domain\AuthorizedTransaction\Contracts\AuthorizedTransactionHandlerInterface;
+use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderInterface;
 use App\Domain\AuthorizedTransaction\Exceptions\InvalidTransactionPinException;
 use App\Domain\AuthorizedTransaction\Exceptions\TransactionNotFoundException;
 use App\Domain\AuthorizedTransaction\Exceptions\TransactionPinNotSetException;
@@ -63,6 +64,7 @@ class AuthorizedTransactionManager
         private readonly ScheduledSendHandler $scheduledSendHandler,
         private readonly RequestMoneyHandler $requestMoneyHandler,
         private readonly RequestMoneyReceivedHandler $requestMoneyReceivedHandler,
+        private readonly MoneyMovementRiskSignalProviderInterface $riskSignals,
         private readonly OperationRecordService $operationRecordService,
     ) {
     }
@@ -244,29 +246,34 @@ class AuthorizedTransactionManager
      */
     private function finalizeAtomically(AuthorizedTransaction $txn): array
     {
-        return DB::transaction(function () use ($txn): array {
-            // Atomic check-and-set: only one concurrent verify call can claim this.
-            $claimed = DB::table('authorized_transactions')
-                ->where('id', $txn->id)
-                ->where('status', AuthorizedTransaction::STATUS_PENDING)
-                ->update(['status' => AuthorizedTransaction::STATUS_COMPLETED, 'updated_at' => now()]);
+        $claimed = false;
 
-            if ($claimed === 0) {
-                // Already completed by another concurrent request — return stored result.
-                $txn->refresh();
+        try {
+            return DB::transaction(function () use ($txn, &$claimed): array {
+                // Atomic check-and-set: only one concurrent verify call can claim this.
+                $claimCount = DB::table('authorized_transactions')
+                    ->where('id', $txn->id)
+                    ->where('status', AuthorizedTransaction::STATUS_PENDING)
+                    ->update(['status' => AuthorizedTransaction::STATUS_COMPLETED, 'updated_at' => now()]);
 
-                if ($txn->isCompleted() && $txn->result !== null) {
-                    return $txn->result;
+                if ($claimCount === 0) {
+                    // Already completed by another concurrent request — return stored result.
+                    $txn->refresh();
+
+                    if ($txn->isCompleted() && $txn->result !== null) {
+                        return $txn->result;
+                    }
+
+                    throw new RuntimeException(
+                        'This transaction has already been processed or is no longer pending.'
+                    );
                 }
 
-                throw new RuntimeException(
-                    'This transaction has already been processed or is no longer pending.'
-                );
-            }
+                $claimed = true;
+                $handler = $this->resolveHandler($txn->remark);
 
-            $handler = $this->resolveHandler($txn->remark);
+                $this->assertPreExecutionRiskAllows($txn);
 
-            try {
                 $result = $this->executeWithIdempotencyGuard(
                     $txn,
                     fn (): array => $handler->handle($txn),
@@ -275,19 +282,31 @@ class AuthorizedTransactionManager
                 $txn->update(['result' => $result]);
 
                 return $result;
-            } catch (Throwable $e) {
-                // Roll back the status claim on handler failure.
+            });
+        } catch (Throwable $e) {
+            if ($claimed) {
                 DB::table('authorized_transactions')
                     ->where('id', $txn->id)
                     ->update([
-                        'status'         => AuthorizedTransaction::STATUS_FAILED,
+                        'status' => AuthorizedTransaction::STATUS_FAILED,
                         'failure_reason' => $e->getMessage(),
-                        'updated_at'     => now(),
+                        'updated_at' => now(),
                     ]);
-
-                throw $e;
             }
-        });
+
+            throw $e;
+        }
+    }
+
+    private function assertPreExecutionRiskAllows(AuthorizedTransaction $txn): void
+    {
+        $decision = $this->riskSignals->evaluatePreExecution($txn, is_array($txn->payload) ? $txn->payload : []);
+
+        if (($decision['allow'] ?? true) === true) {
+            return;
+        }
+
+        throw new RuntimeException((string) ($decision['reason'] ?? 'Transaction blocked by pre-execution risk checks.'));
     }
 
     /**

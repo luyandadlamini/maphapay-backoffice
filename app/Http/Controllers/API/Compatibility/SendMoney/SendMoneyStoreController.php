@@ -19,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use InvalidArgumentException;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -198,7 +199,35 @@ class SendMoneyStoreController extends Controller
         }
 
         if ($verificationType === AuthorizedTransaction::VERIFICATION_NONE) {
-            $result = $this->authorizedTransactionManager->finalize($txn);
+            try {
+                $result = $this->authorizedTransactionManager->finalize($txn);
+            } catch (RuntimeException $throwable) {
+                $this->telemetry->logEvent('send_money_initiation_failed', $this->telemetry->requestContext($request, [
+                    'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
+                    'trx' => $txn->trx,
+                    'sender_account_uuid' => $fromAccount->uuid,
+                    'recipient_account_uuid' => $toAccount->uuid,
+                    'sender_user_id' => $authUser->id,
+                    'recipient_user_id' => $recipient->id,
+                    'amount' => $normalizedAmount,
+                    'asset_code' => $asset->code,
+                    'verification_policy' => $policy['verification_type'],
+                    'risk_reason' => $policy['risk_reason'],
+                    'message' => $throwable->getMessage(),
+                ]), 'warning');
+
+                return $this->errorResponse($request, $throwable->getMessage(), 422, [
+                    'recipient_user_id' => $recipient->id,
+                    'sender_account_uuid' => $fromAccount->uuid,
+                    'recipient_account_uuid' => $toAccount->uuid,
+                    'sender_user_id' => $authUser->id,
+                    'amount' => $normalizedAmount,
+                    'asset_code' => $asset->code,
+                    'verification_policy' => $policy['verification_type'],
+                    'risk_reason' => $policy['risk_reason'],
+                ]);
+            }
+
             $this->telemetry->logEvent('send_money_initiation_succeeded', $this->telemetry->requestContext($request, [
                 'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
                 'trx' => $txn->trx,
