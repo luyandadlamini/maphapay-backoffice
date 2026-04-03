@@ -121,6 +121,10 @@ class SocialChatCompatController extends Controller
 
         $senderUserId = (int) $request->user()->getAuthIdentifier();
         $friendId = (int) $validated['friendId'];
+        $requestMessageId = isset($validated['requestMessageId']) ? (int) $validated['requestMessageId'] : null;
+        if ($requestMessageId !== null) {
+            $this->markRequestMessagePaid($senderUserId, $friendId, $requestMessageId);
+        }
         $messageId = $this->appendMessage(
             $senderUserId,
             $friendId,
@@ -130,6 +134,7 @@ class SocialChatCompatController extends Controller
                 'payment' => [
                     'amount' => (float) $validated['amount'],
                     'note' => (string) ($validated['note'] ?? ''),
+                    'requestMessageId' => $requestMessageId !== null ? (string) $requestMessageId : null,
                 ],
             ],
         );
@@ -274,6 +279,44 @@ class SocialChatCompatController extends Controller
         }
 
         return null;
+    }
+
+    private function markRequestMessagePaid(int $userId, int $friendId, int $messageId): void
+    {
+        $key = $this->chatKey($userId, $friendId);
+        $messages = Cache::get($key, []);
+        if (! is_array($messages)) {
+            return;
+        }
+
+        $didUpdate = false;
+
+        foreach ($messages as $index => $message) {
+            if (! is_array($message)) {
+                continue;
+            }
+
+            if ((string) ($message['id'] ?? '') !== (string) $messageId) {
+                continue;
+            }
+
+            $requestPayload = $message['request'] ?? null;
+            if (! is_array($requestPayload)) {
+                return;
+            }
+
+            $requestPayload['status'] = 'paid';
+            $message['request'] = $requestPayload;
+            $messages[$index] = $message;
+            $didUpdate = true;
+            break;
+        }
+
+        if (! $didUpdate) {
+            return;
+        }
+
+        Cache::put($key, $messages, now()->addDays(14));
     }
 
     private function broadcastChatMessageToPeer(int $senderUserId, int $friendId, int $messageId): void
