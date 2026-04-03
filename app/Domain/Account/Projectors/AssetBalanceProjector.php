@@ -10,10 +10,11 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Account\Services\Cache\CacheManager;
 use App\Domain\Asset\Events\AssetTransferCompleted;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use App\Domain\Wallet\Events\Broadcast\WalletBalanceUpdated;
+use Illuminate\Support\Facades\Cache;
 use Spatie\EventSourcing\EventHandlers\Projectors\Projector;
 
-class AssetBalanceProjector extends Projector implements ShouldQueue
+class AssetBalanceProjector extends Projector
 {
     /**
      * Handle asset balance addition events.
@@ -24,7 +25,7 @@ class AssetBalanceProjector extends Projector implements ShouldQueue
 
         // Invalidate cache after balance update
         if ($account = Account::where('uuid', $event->aggregateRootUuid())->first()) {
-            app(CacheManager::class)->onAccountUpdated($account);
+            $this->refreshAccountReadModels($account);
         }
     }
 
@@ -37,7 +38,7 @@ class AssetBalanceProjector extends Projector implements ShouldQueue
 
         // Invalidate cache after balance update
         if ($account = Account::where('uuid', $event->aggregateRootUuid())->first()) {
-            app(CacheManager::class)->onAccountUpdated($account);
+            $this->refreshAccountReadModels($account);
         }
     }
 
@@ -71,8 +72,18 @@ class AssetBalanceProjector extends Projector implements ShouldQueue
         // 3. Invalidate caches for both accounts
         foreach ([$event->fromAccountUuid, $event->toAccountUuid] as $uuid) {
             if ($account = Account::where('uuid', (string) $uuid)->first()) {
-                app(CacheManager::class)->onAccountUpdated($account);
+                $this->refreshAccountReadModels($account);
             }
+        }
+    }
+
+    private function refreshAccountReadModels(Account $account): void
+    {
+        app(CacheManager::class)->onAccountUpdated($account);
+
+        if ($account->user !== null) {
+            Cache::forget("maphapay.dashboard.balance.{$account->user->id}");
+            WalletBalanceUpdated::dispatch($account->user->id);
         }
     }
 }

@@ -10,8 +10,10 @@ use App\Domain\Asset\Models\Asset;
 use App\Domain\Asset\Models\AssetTransfer;
 use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderInterface;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
+use App\Domain\Wallet\Events\Broadcast\WalletBalanceUpdated;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Event;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\ControllerTestCase;
@@ -32,6 +34,7 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
 
         config([
             'maphapay_migration.enable_send_money' => true,
+            'maphapay_migration.enable_dashboard' => true,
             'maphapay_migration.money_movement.send_money.step_up_threshold' => '100.00',
         ]);
 
@@ -69,6 +72,19 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
     #[Test]
     public function it_finalizes_low_risk_send_money_synchronously_when_policy_allows_none(): void
     {
+        Event::fake([WalletBalanceUpdated::class]);
+
+        Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
+
+        $this->getJson('/api/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.balance', '5000.00');
+
+        Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
+        $this->getJson('/api/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.balance', '0.00');
+
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
         $response = $this->withHeaders([
@@ -109,6 +125,18 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
             'asset_code' => 'SZL',
             'balance' => 1_000,
         ]);
+
+        $this->getJson('/api/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.balance', '4990.00');
+
+        Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
+        $this->getJson('/api/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.balance', '10.00');
+
+        Event::assertDispatched(WalletBalanceUpdated::class, fn (WalletBalanceUpdated $event): bool => $event->userId === $this->sender->id);
+        Event::assertDispatched(WalletBalanceUpdated::class, fn (WalletBalanceUpdated $event): bool => $event->userId === $this->recipient->id);
     }
 
     #[Test]
