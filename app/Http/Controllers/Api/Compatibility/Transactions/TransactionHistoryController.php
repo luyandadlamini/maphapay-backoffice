@@ -23,13 +23,16 @@ use Illuminate\Http\Request;
  *   reference   — transaction reference (e.g. "REF-ABC123")
  *   description — human-readable description
  *   amount      — major-unit string (e.g. "10.50") via formatted_amount accessor
- *   type        — domain type: "deposit" | "withdrawal" | "transfer"
+ *   type        — domain type: "deposit" | "withdrawal" | "transfer_in" | "transfer_out"
  *   subtype     — domain subtype: "send_money" | "request_money" | etc.
  *   asset_code  — "SZL"
  *   created_at  — ISO 8601 timestamp
  *
  * Optional query filters:
- *   - type    : matches the `type` column exactly (e.g. "deposit", "withdrawal")
+ *   - type    : matches the `type` column exactly, or the UI aliases
+ *               "income" => ["deposit", "transfer_in"]
+ *               "expense" => ["withdrawal", "transfer_out"]
+ *               "transfer" => ["transfer_in", "transfer_out"]
  *   - subtype : matches the `subtype` column (replaces legacy "remark" filter)
  *   - search  : substring match on description or reference
  *   - page    : page number (default 1), 15 per page
@@ -67,7 +70,17 @@ class TransactionHistoryController extends Controller
             ->orderByDesc('created_at');
 
         if ($request->filled('type')) {
-            $query->where('type', $request->string('type')->toString());
+            $typeFilter = $request->string('type')->toString();
+
+            if ($typeFilter === 'income') {
+                $query->whereIn('type', ['deposit', 'transfer_in']);
+            } elseif ($typeFilter === 'expense') {
+                $query->whereIn('type', ['withdrawal', 'transfer_out']);
+            } elseif ($typeFilter === 'transfer') {
+                $query->whereIn('type', ['transfer_in', 'transfer_out']);
+            } else {
+                $query->where('type', $typeFilter);
+            }
         }
 
         if ($request->filled('subtype')) {

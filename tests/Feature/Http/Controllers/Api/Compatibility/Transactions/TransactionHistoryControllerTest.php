@@ -34,8 +34,7 @@ class TransactionHistoryControllerTest extends ControllerTestCase
     private function makeUserWithAccount(): array
     {
         $user = User::factory()->create([
-            'kyc_status'     => 'approved',
-            'kyc_expires_at' => null,
+            'kyc_status' => 'approved',
         ]);
         $account = Account::factory()->create([
             'user_uuid' => $user->uuid,
@@ -63,7 +62,7 @@ class TransactionHistoryControllerTest extends ControllerTestCase
     #[Test]
     public function test_returns_empty_list_when_user_has_no_account(): void
     {
-        $user = User::factory()->create(['kyc_status' => 'approved', 'kyc_expires_at' => null]);
+        $user = User::factory()->create(['kyc_status' => 'approved']);
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
 
         $response = $this->getJson(self::ROUTE);
