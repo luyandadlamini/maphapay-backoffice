@@ -11,7 +11,7 @@ return new class () extends Migration {
             $table->uuid('id')->primary();
             $table->uuid('authorized_transaction_id');
             $table->uuid('mobile_device_id');
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id');
             $table->string('challenge', 64)->unique();
             $table->enum('status', ['pending', 'verified', 'expired', 'failed'])->default('pending');
             $table->string('ip_address', 45)->nullable();
@@ -20,13 +20,21 @@ return new class () extends Migration {
             $table->timestamps();
 
             $table->foreign('authorized_transaction_id')
+                ->name('auth_txn_bio_chal_auth_txn_fk')
                 ->references('id')
                 ->on('authorized_transactions')
                 ->cascadeOnDelete();
 
             $table->foreign('mobile_device_id')
+                ->name('auth_txn_bio_chal_device_fk')
                 ->references('id')
                 ->on('mobile_devices')
+                ->cascadeOnDelete();
+
+            $table->foreign('user_id')
+                ->name('auth_txn_bio_chal_user_fk')
+                ->references('id')
+                ->on('users')
                 ->cascadeOnDelete();
 
             $table->index(['authorized_transaction_id', 'status'], 'auth_txn_bio_challenge_txn_status');
