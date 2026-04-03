@@ -11,13 +11,19 @@ use App\Http\Controllers\Api\Compatibility\Budget\BudgetUpdateController;
 use App\Http\Controllers\Api\Compatibility\Kyc\KycFormController;
 use App\Http\Controllers\Api\Compatibility\Kyc\KycSubmitController;
 use App\Http\Controllers\Api\Compatibility\Pockets\PocketsController;
+use App\Http\Controllers\Api\Compatibility\Pockets\PocketsSyncController;
 use App\Http\Controllers\Api\Compatibility\Pockets\PocketsStoreController;
 use App\Http\Controllers\Api\Compatibility\Pockets\PocketsUpdateController;
 use App\Http\Controllers\Api\Compatibility\Pockets\PocketsAddFundsController;
 use App\Http\Controllers\Api\Compatibility\Pockets\PocketsWithdrawFundsController;
 use App\Http\Controllers\Api\Compatibility\Pockets\PocketsUpdateRulesController;
+use App\Http\Controllers\Api\Compatibility\Notifications\NotificationSettingsController;
+use App\Http\Controllers\Api\Compatibility\Notifications\PushNotificationsController;
+use App\Http\Controllers\Api\Compatibility\Notifications\PushNotificationsReadController;
+use App\Http\Controllers\Api\Compatibility\Notifications\PushNotificationsSyncController;
 use App\Http\Controllers\Api\Compatibility\Rewards\RewardsController;
 use App\Http\Controllers\Api\Compatibility\Rewards\RewardsPointsController;
+use App\Http\Controllers\Api\Compatibility\Rewards\RewardsSyncController;
 use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialFriendsController;
 use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialChatCompatController;
 use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialFriendRequestsController;
@@ -43,6 +49,7 @@ use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendStoreContr
 use App\Http\Controllers\Api\Compatibility\SendMoney\SendMoneyStoreController;
 use App\Http\Controllers\Api\Compatibility\Transactions\TransactionCategoryUpdateController;
 use App\Http\Controllers\Api\Compatibility\Transactions\TransactionHistoryController;
+use App\Http\Controllers\Api\Compatibility\Transactions\TransactionSyncController;
 use App\Http\Controllers\Api\Compatibility\VerificationProcess\ChallengeBiometricController;
 use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyBiometricController;
 use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyOtpController;
@@ -151,6 +158,10 @@ Route::middleware('migration_flag:enable_transaction_history')
     ->name('maphapay.compat.transactions.history');
 
 Route::middleware('migration_flag:enable_transaction_history')
+    ->get('transactions/sync', TransactionSyncController::class)
+    ->name('maphapay.compat.transactions.sync');
+
+Route::middleware('migration_flag:enable_transaction_history')
     ->patch('transactions/{transactionUuid}/category', TransactionCategoryUpdateController::class)
     ->name('maphapay.compat.transactions.category.update');
 
@@ -227,11 +238,17 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('maphapay.compat.rewards.index');
     Route::get('rewards/points', RewardsPointsController::class)
         ->name('maphapay.compat.rewards.points');
+    Route::get('rewards/sync', RewardsSyncController::class)
+        ->name('maphapay.compat.rewards.sync');
 });
 
 Route::middleware('auth:sanctum')
     ->get('pockets', PocketsController::class)
     ->name('maphapay.compat.pockets');
+
+Route::middleware('auth:sanctum')
+    ->get('pockets/sync', PocketsSyncController::class)
+    ->name('maphapay.compat.pockets.sync');
 
 Route::middleware('auth:sanctum')
     ->post('pockets/store', PocketsStoreController::class)
@@ -252,6 +269,26 @@ Route::middleware('auth:sanctum')
 Route::middleware('auth:sanctum')
     ->post('pockets/update-rules/{id}', PocketsUpdateRulesController::class)
     ->name('maphapay.compat.pockets.update-rules');
+
+Route::middleware('auth:sanctum')
+    ->get('push-notifications', PushNotificationsController::class)
+    ->name('maphapay.compat.push-notifications.index');
+
+Route::middleware('auth:sanctum')
+    ->post('push-notifications/read/{id}', PushNotificationsReadController::class)
+    ->name('maphapay.compat.push-notifications.read');
+
+Route::middleware('auth:sanctum')
+    ->get('push-notifications/sync', PushNotificationsSyncController::class)
+    ->name('maphapay.compat.push-notifications.sync');
+
+Route::middleware('auth:sanctum')
+    ->controller(NotificationSettingsController::class)
+    ->prefix('notification/settings')
+    ->group(function (): void {
+        Route::get('', 'show')->name('maphapay.compat.notification-settings.show');
+        Route::post('', 'update')->name('maphapay.compat.notification-settings.update');
+    });
 
 Route::middleware('auth:sanctum')
     ->get('wallet-linking', WalletLinkingController::class)
