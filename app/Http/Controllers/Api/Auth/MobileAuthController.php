@@ -81,16 +81,34 @@ class MobileAuthController extends Controller
             ->first();
 
         if ($pin !== '') {
+            $pinMatchesTransactionPin =
+                $user
+                && is_string($user->transaction_pin)
+                && $user->transaction_pin !== ''
+                && Hash::check($pin, $user->transaction_pin);
+
+            $pinMatchesLegacyPassword =
+                $user
+                && (! is_string($user->transaction_pin) || $user->transaction_pin === '')
+                && is_string($user->password)
+                && $user->password !== ''
+                && Hash::check($pin, $user->password);
+
             if (
                 ! $user
-                || ! is_string($user->transaction_pin)
-                || $user->transaction_pin === ''
-                || ! Hash::check($pin, $user->transaction_pin)
+                || (! $pinMatchesTransactionPin && ! $pinMatchesLegacyPassword)
             ) {
                 return response()->json([
                     'success' => false,
                     'message' => 'The provided credentials are incorrect.',
                 ], 401);
+            }
+
+            if ($pinMatchesLegacyPassword) {
+                User::whereKey($user->id)->update([
+                    'transaction_pin' => $user->getRawOriginal('password'),
+                ]);
+                $user->refresh();
             }
 
             if ($user->mobile_verified_at === null) {
