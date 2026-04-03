@@ -280,7 +280,7 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
             'maphapay_migration.enable_request_money' => true,
         ]);
 
-        $this->requester->update(['transaction_pin' => '1234']);
+        $this->requester->update(['transaction_pin' => '1234', 'transaction_pin_enabled' => true]);
         Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
 
         $response = $this->postJson('/api/request-money/store', [

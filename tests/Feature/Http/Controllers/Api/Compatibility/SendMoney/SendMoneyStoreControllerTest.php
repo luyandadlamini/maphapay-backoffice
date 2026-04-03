@@ -160,7 +160,7 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
             'maphapay_migration.enable_verification' => true,
         ]);
 
-        $this->sender->update(['transaction_pin' => bcrypt('1234')]);
+        $this->sender->update(['transaction_pin' => bcrypt('1234'), 'transaction_pin_enabled' => true]);
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 

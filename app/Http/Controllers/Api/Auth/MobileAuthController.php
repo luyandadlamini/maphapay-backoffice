@@ -107,6 +107,7 @@ class MobileAuthController extends Controller
             if ($pinMatchesLegacyPassword) {
                 User::whereKey($user->id)->update([
                     'transaction_pin' => $user->getRawOriginal('password'),
+                    'transaction_pin_enabled' => true,
                 ]);
                 $user->refresh();
             }
@@ -292,7 +293,8 @@ class MobileAuthController extends Controller
             'mobile_verified_at'       => $user->mobile_verified_at?->toISOString(),
             'kyc_status'               => $user->kyc_status,
             'has_completed_onboarding' => $user->has_completed_onboarding,
-            'transaction_pin_set'      => ! empty($user->transaction_pin),
+            'transaction_pin_set'      => $user->transaction_pin_set,
+            'transaction_pin_enabled'  => $user->transaction_pin_enabled,
         ]);
 
         return response()->json([
@@ -596,7 +598,10 @@ class MobileAuthController extends Controller
 
         Cache::forget($grantKey);
 
-        $user->update(['transaction_pin' => Hash::make($validated['pin'])]);
+        $user->update([
+            'transaction_pin' => Hash::make($validated['pin']),
+            'transaction_pin_enabled' => true,
+        ]);
 
         return response()->json([
             'success' => true,
@@ -675,6 +680,7 @@ class MobileAuthController extends Controller
             'email'                    => $validated['email'],
             'username'                 => $validated['username'] ?? null,
             'transaction_pin'          => Hash::make($validated['pin']),
+            'transaction_pin_enabled'  => true,
             'has_completed_onboarding' => true,
             'onboarding_completed_at'  => now(),
         ]);
@@ -733,6 +739,8 @@ class MobileAuthController extends Controller
             'dial_code'                => $user->dial_code,
             'mobile_verified_at'       => $user->mobile_verified_at?->toISOString(),
             'kyc_status'               => $user->kyc_status,
+            'transaction_pin_set'      => $user->transaction_pin_set,
+            'transaction_pin_enabled'  => $user->transaction_pin_enabled,
             'has_completed_onboarding' => $user->has_completed_onboarding,
         ];
     }

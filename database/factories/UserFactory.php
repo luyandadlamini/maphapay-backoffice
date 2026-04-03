@@ -52,6 +52,13 @@ class UserFactory extends Factory
     public function configure(): static
     {
         return $this->afterMaking(function (User $user) {
+            if (
+                ! array_key_exists('transaction_pin_enabled', $user->getAttributes())
+                && ! empty($user->getRawOriginal('transaction_pin'))
+            ) {
+                $user->transaction_pin_enabled = true;
+            }
+
             // Default role assignment using RoleFactory
             $role = Role::factory()->withRole(UserRoles::PRIVATE)->make();
             $user->setRelation('roles', collect([$role]));

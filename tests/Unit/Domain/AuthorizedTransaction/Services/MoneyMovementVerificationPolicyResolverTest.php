@@ -76,7 +76,7 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
     #[Test]
     public function it_defaults_to_pin_for_low_risk_send_money_when_transaction_pin_is_set(): void
     {
-        $user = User::factory()->create(['transaction_pin' => '1234']);
+        $user = User::factory()->create(['transaction_pin' => '1234', 'transaction_pin_enabled' => true]);
         $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
 
         $policy = app(MoneyMovementVerificationPolicyResolver::class)->resolveSendMoneyPolicy(
@@ -90,6 +90,24 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
         $this->assertSame('pin', $policy['next_step']);
         $this->assertSame('user_preference', $policy['reason']);
         $this->assertNull($policy['risk_reason']);
+    }
+
+    #[Test]
+    public function it_defaults_to_none_for_low_risk_send_money_when_transaction_pin_exists_but_is_disabled(): void
+    {
+        $user = User::factory()->create(['transaction_pin' => '1234', 'transaction_pin_enabled' => false]);
+        $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
+
+        $policy = app(MoneyMovementVerificationPolicyResolver::class)->resolveSendMoneyPolicy(
+            user: $user,
+            amount: '10.00',
+            asset: $asset,
+            clientHint: 'pin',
+        );
+
+        $this->assertSame(AuthorizedTransaction::VERIFICATION_NONE, $policy['verification_type']);
+        $this->assertSame('none', $policy['next_step']);
+        $this->assertSame('user_preference', $policy['reason']);
     }
 
     #[Test]
@@ -107,6 +125,25 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
 
         $this->assertSame(AuthorizedTransaction::VERIFICATION_OTP, $policy['verification_type']);
         $this->assertSame('otp', $policy['next_step']);
+        $this->assertSame('amount_threshold', $policy['reason']);
+        $this->assertSame('amount_threshold_exceeded', $policy['risk_reason']);
+    }
+
+    #[Test]
+    public function it_steps_up_to_pin_when_threshold_is_exceeded_and_the_user_has_a_disabled_transaction_pin(): void
+    {
+        $user = User::factory()->create(['transaction_pin' => '1234', 'transaction_pin_enabled' => false]);
+        $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
+
+        $policy = app(MoneyMovementVerificationPolicyResolver::class)->resolveSendMoneyPolicy(
+            user: $user,
+            amount: '100.00',
+            asset: $asset,
+            clientHint: 'none',
+        );
+
+        $this->assertSame(AuthorizedTransaction::VERIFICATION_PIN, $policy['verification_type']);
+        $this->assertSame('pin', $policy['next_step']);
         $this->assertSame('amount_threshold', $policy['reason']);
         $this->assertSame('amount_threshold_exceeded', $policy['risk_reason']);
     }

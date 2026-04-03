@@ -113,6 +113,7 @@ class User extends Authenticatable implements FilamentUser
         'referral_code',
         'referred_by',
         'transaction_pin',
+        'transaction_pin_enabled',
         'mobile',
         'dial_code',
         'mobile_verified_at',
@@ -143,6 +144,7 @@ class User extends Authenticatable implements FilamentUser
     protected $appends = [
         'profile_photo_url',
         'transaction_pin_set',
+        'transaction_pin_enabled',
     ];
 
     /**
@@ -169,6 +171,7 @@ class User extends Authenticatable implements FilamentUser
             'has_completed_onboarding' => 'boolean',
             'onboarding_completed_at' => 'datetime',
             'transaction_pin' => 'hashed',
+            'transaction_pin_enabled' => 'boolean',
             'mobile_preferences' => 'array',
             'free_tx_until' => 'datetime',
             'sponsored_tx_used' => 'integer',
@@ -188,6 +191,15 @@ class User extends Authenticatable implements FilamentUser
     public function getTransactionPinSetAttribute(): bool
     {
         return ! empty($this->attributes['transaction_pin']);
+    }
+
+    public function getTransactionPinEnabledAttribute(): bool
+    {
+        if (array_key_exists('transaction_pin_enabled', $this->attributes)) {
+            return (bool) $this->attributes['transaction_pin_enabled'];
+        }
+
+        return $this->transaction_pin_set;
     }
 
     /**

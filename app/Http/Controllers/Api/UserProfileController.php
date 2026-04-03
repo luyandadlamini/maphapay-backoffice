@@ -97,7 +97,7 @@ class UserProfileController extends Controller
     }
 
     /**
-     * Set or toggle Transaction PIN requirement (dummy toggle since actual pin hash is used to determine)
+     * Enable or disable Transaction PIN requirement without deleting the stored PIN.
      */
     #[OA\Post(
         path: '/api/v1/users/transaction-pin/toggle',
@@ -115,24 +115,19 @@ class UserProfileController extends Controller
 
         /** @var User $user */
         $user = $request->user();
-        
         $enabled = $request->boolean('enabled');
-        
-        // Note: The system currently determines PIN requirement based on if `transaction_pin` is null.
-        // Toggling it off means you wipe the PIN. If you want to retain it but just "disable" it, you'll need the user to reset it later.
-        // A better approach in a real system is a separate boolean column. Since we only have `transaction_pin`, 
-        // if they disable it, we delete it, because AuthorizedTransactionManager throws an error if they try to use it while it's null.
-        // Let's implement an approach where setting to false nullifies it, and setting to true is handled by actual reset flows. 
-        // For now, if disabling, we nullify the PIN.
-        
-        if (!$enabled) {
-            $user->update(['transaction_pin' => null]);
-        }
+
+        $user->update([
+            'transaction_pin_enabled' => $enabled && $user->transaction_pin_set,
+        ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Transaction PIN settings updated.',
-            'data' => [],
+            'data' => [
+                'transaction_pin_set' => $user->fresh()?->transaction_pin_set ?? $user->transaction_pin_set,
+                'transaction_pin_enabled' => $user->fresh()?->transaction_pin_enabled ?? $user->transaction_pin_enabled,
+            ],
         ]);
     }
 }

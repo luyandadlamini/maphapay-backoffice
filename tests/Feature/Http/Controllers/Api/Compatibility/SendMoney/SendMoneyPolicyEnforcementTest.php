@@ -141,7 +141,7 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
     #[Test]
     public function it_uses_pin_for_low_risk_send_money_when_the_sender_has_a_transaction_pin(): void
     {
-        $this->sender->update(['transaction_pin' => '1234']);
+        $this->sender->update(['transaction_pin' => '1234', 'transaction_pin_enabled' => true]);
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
@@ -154,6 +154,45 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
         $response->assertOk()
             ->assertJsonPath('data.next_step', 'pin')
             ->assertJsonPath('data.code_sent_message', null);
+    }
+
+    #[Test]
+    public function it_finalizes_low_risk_send_money_without_verification_when_the_sender_pin_exists_but_is_disabled(): void
+    {
+        $this->sender->update(['transaction_pin' => '1234', 'transaction_pin_enabled' => false]);
+
+        Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
+
+        $response = $this->withHeaders([
+            'Idempotency-Key' => '00000000-0000-0000-0000-000000009905',
+        ])->postJson('/api/send-money/store', [
+            'user' => $this->recipient->email,
+            'amount' => '25.00',
+            'verification_type' => 'pin',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.next_step', 'none');
+    }
+
+    #[Test]
+    public function it_steps_up_to_pin_when_the_sender_pin_exists_but_is_disabled(): void
+    {
+        $this->sender->update(['transaction_pin' => '1234', 'transaction_pin_enabled' => false]);
+
+        Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
+
+        $response = $this->withHeaders([
+            'Idempotency-Key' => '00000000-0000-0000-0000-000000009906',
+        ])->postJson('/api/send-money/store', [
+            'user' => $this->recipient->email,
+            'amount' => '150.00',
+            'verification_type' => 'none',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.next_step', 'pin');
     }
 
     #[Test]

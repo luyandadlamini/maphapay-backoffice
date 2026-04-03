@@ -110,7 +110,7 @@ class MoneyMovementVerificationPolicyResolver
             $asset->precision,
         );
 
-        $userPreference = $this->userHasTransactionPin($user)
+        $userPreference = $this->userHasEnabledTransactionPin($user)
             ? AuthorizedTransaction::VERIFICATION_PIN
             : ($allowNone ? AuthorizedTransaction::VERIFICATION_NONE : AuthorizedTransaction::VERIFICATION_OTP);
 
@@ -161,5 +161,10 @@ class MoneyMovementVerificationPolicyResolver
     {
         return (bool) ($user->transaction_pin_set ?? false)
             || (is_string($user->getRawOriginal('transaction_pin')) && $user->getRawOriginal('transaction_pin') !== '');
+    }
+
+    private function userHasEnabledTransactionPin(User $user): bool
+    {
+        return $this->userHasTransactionPin($user) && (bool) ($user->transaction_pin_enabled ?? false);
     }
 }

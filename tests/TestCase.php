@@ -195,6 +195,10 @@ abstract class TestCase extends BaseTestCase
             if (! Schema::hasColumn('users', 'transaction_pin')) {
                 $table->string('transaction_pin')->nullable()->after('data_retention_consent');
             }
+
+            if (! Schema::hasColumn('users', 'transaction_pin_enabled')) {
+                $table->boolean('transaction_pin_enabled')->default(false)->after('transaction_pin');
+            }
         });
 
         if (Schema::hasTable('accounts') && ! Schema::hasColumn('accounts', 'account_number')) {

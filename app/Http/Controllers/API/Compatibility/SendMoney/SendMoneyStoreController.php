@@ -50,8 +50,10 @@ class SendMoneyStoreController extends Controller
             'asset_code' => ['sometimes', 'string', 'exists:assets,code'],
         ]);
 
+        /** @var User $requestUser */
+        $requestUser = $request->user();
         /** @var User $authUser */
-        $authUser = $request->user();
+        $authUser = $requestUser->fresh() ?? $requestUser;
         $idempotencyKey = (string) $request->header('Idempotency-Key', '')
             ?: (string) $request->header('X-Idempotency-Key', '');
 

@@ -384,7 +384,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
             'maphapay_migration.enable_request_money' => true,
         ]);
 
-        $this->recipient->update(['transaction_pin' => '1234']);
+        $this->recipient->update(['transaction_pin' => '1234', 'transaction_pin_enabled' => true]);
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([

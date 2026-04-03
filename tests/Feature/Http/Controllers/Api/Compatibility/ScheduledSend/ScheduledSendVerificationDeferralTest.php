@@ -167,7 +167,7 @@ final class ScheduledSendVerificationDeferralTest extends ControllerTestCase
     {
         // The User model casts 'transaction_pin' via 'hashed', so Eloquent hashes on assignment;
         // passing the plaintext here is intentional — this is the raw PIN the test will POST.
-        $this->sender->update(['transaction_pin' => '9876']);
+        $this->sender->update(['transaction_pin' => '9876', 'transaction_pin_enabled' => true]);
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
