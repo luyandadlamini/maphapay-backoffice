@@ -42,6 +42,8 @@ use App\Http\Controllers\API\Compatibility\ScheduledSend\ScheduledSendIndexContr
 use App\Http\Controllers\API\Compatibility\ScheduledSend\ScheduledSendStoreController;
 use App\Http\Controllers\API\Compatibility\SendMoney\SendMoneyStoreController;
 use App\Http\Controllers\API\Compatibility\Transactions\TransactionHistoryController;
+use App\Http\Controllers\API\Compatibility\VerificationProcess\ChallengeBiometricController;
+use App\Http\Controllers\API\Compatibility\VerificationProcess\VerifyBiometricController;
 use App\Http\Controllers\API\Compatibility\VerificationProcess\VerifyOtpController;
 use App\Http\Controllers\API\Compatibility\VerificationProcess\VerifyPinController;
 use App\Http\Controllers\API\Compatibility\VirtualCard\VirtualCardListController;
@@ -74,6 +76,10 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('migration_flag:enable_verification')->group(function () {
+    Route::post('verification-process/challenge/biometric', ChallengeBiometricController::class)
+        ->middleware(['auth:sanctum', 'throttle:maphapay-verification'])
+        ->name('maphapay.compat.verification.biometric.challenge');
+
     Route::post('verification-process/verify/otp', VerifyOtpController::class)
         ->middleware('throttle:maphapay-verification')
         ->name('maphapay.compat.verification.otp');
@@ -81,6 +87,10 @@ Route::middleware('migration_flag:enable_verification')->group(function () {
     Route::post('verification-process/verify/pin', VerifyPinController::class)
         ->middleware('throttle:maphapay-verification')
         ->name('maphapay.compat.verification.pin');
+
+    Route::post('verification-process/verify/biometric', VerifyBiometricController::class)
+        ->middleware(['auth:sanctum', 'throttle:maphapay-verification'])
+        ->name('maphapay.compat.verification.biometric.verify');
 });
 
 Route::middleware(['migration_flag:enable_send_money', 'kyc_approved', 'idempotency', 'throttle:maphapay-send-money'])

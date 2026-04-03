@@ -121,6 +121,27 @@ class SettingsService
                     'validation'  => 'required|integer|min:30|max:730',
                     'description' => 'Days before an account is marked as inactive',
                 ],
+                'send_money_threshold_low_enhanced_or_full' => [
+                    'label'       => 'Send Money Threshold: Low Risk + Enhanced/Full KYC',
+                    'type'        => 'float',
+                    'default'     => 5000,
+                    'validation'  => 'required|numeric|min:0|max:10000000',
+                    'description' => 'App-wide step-up threshold for low-risk users with enhanced or full KYC.',
+                ],
+                'send_money_threshold_medium_or_standard' => [
+                    'label'       => 'Send Money Threshold: Medium Risk or Standard KYC',
+                    'type'        => 'float',
+                    'default'     => 2500,
+                    'validation'  => 'required|numeric|min:0|max:10000000',
+                    'description' => 'App-wide step-up threshold for medium-risk users or users on standard KYC.',
+                ],
+                'send_money_threshold_high_or_basic' => [
+                    'label'       => 'Send Money Threshold: High Risk or Basic KYC',
+                    'type'        => 'float',
+                    'default'     => 1000,
+                    'validation'  => 'required|numeric|min:0|max:10000000',
+                    'description' => 'App-wide step-up threshold for high-risk users or users on basic KYC.',
+                ],
             ],
         ],
         'api' => [

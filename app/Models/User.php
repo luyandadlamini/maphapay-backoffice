@@ -51,6 +51,10 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $frozen_at
  * @property string|null $frozen_reason
  * @property string|null $frozen_by
+ * @property string|null $send_money_step_up_threshold_override
+ * @property string|null $send_money_step_up_threshold_override_reason
+ * @property Carbon|null $send_money_step_up_threshold_override_updated_at
+ * @property string|null $send_money_step_up_threshold_override_updated_by
  */
 class User extends Authenticatable implements FilamentUser
 {
@@ -121,6 +125,10 @@ class User extends Authenticatable implements FilamentUser
         'frozen_at',
         'frozen_reason',
         'frozen_by',
+        'send_money_step_up_threshold_override',
+        'send_money_step_up_threshold_override_reason',
+        'send_money_step_up_threshold_override_updated_at',
+        'send_money_step_up_threshold_override_updated_by',
     ];
 
     /**
@@ -177,6 +185,8 @@ class User extends Authenticatable implements FilamentUser
             'sponsored_tx_used' => 'integer',
             'sponsored_tx_limit' => 'integer',
             'frozen_at' => 'datetime',
+            'send_money_step_up_threshold_override' => 'decimal:2',
+            'send_money_step_up_threshold_override_updated_at' => 'datetime',
         ];
     }
 

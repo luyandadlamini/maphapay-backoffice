@@ -8,6 +8,7 @@ use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderInterface;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Shared\Money\MoneyConverter;
+use App\Models\Setting;
 use App\Models\User;
 
 class MoneyMovementVerificationPolicyResolver
@@ -105,10 +106,10 @@ class MoneyMovementVerificationPolicyResolver
         array $context = [],
     ): array {
         $amountMinor = (int) MoneyConverter::forAsset($amount, $asset);
-        $stepUpThresholdMinor = (int) MoneyConverter::toSmallestUnit(
-            (string) config($stepUpThresholdConfig, '100.00'),
-            $asset->precision,
-        );
+        $stepUpThresholdAmount = $operationType === AuthorizedTransaction::REMARK_SEND_MONEY
+            ? $this->resolveSendMoneyStepUpThresholdAmount($user)
+            : (string) config($stepUpThresholdConfig, '100.00');
+        $stepUpThresholdMinor = (int) MoneyConverter::toSmallestUnit($stepUpThresholdAmount, $asset->precision);
 
         $userPreference = $this->userHasEnabledTransactionPin($user)
             ? AuthorizedTransaction::VERIFICATION_PIN
@@ -166,5 +167,51 @@ class MoneyMovementVerificationPolicyResolver
     private function userHasEnabledTransactionPin(User $user): bool
     {
         return $this->userHasTransactionPin($user) && (bool) ($user->transaction_pin_enabled ?? false);
+    }
+
+    private function resolveSendMoneyStepUpThresholdAmount(User $user): string
+    {
+        $override = $user->send_money_step_up_threshold_override;
+        if (is_numeric($override)) {
+            return number_format((float) $override, 2, '.', '');
+        }
+
+        return match ($this->resolveSendMoneyThresholdTier($user)) {
+            'low' => $this->settingAmount('send_money_threshold_low_enhanced_or_full', '5000.00'),
+            'medium' => $this->settingAmount('send_money_threshold_medium_or_standard', '2500.00'),
+            default => $this->settingAmount('send_money_threshold_high_or_basic', '1000.00'),
+        };
+    }
+
+    private function resolveSendMoneyThresholdTier(User $user): string
+    {
+        $riskRank = match (strtolower((string) ($user->risk_rating ?? ''))) {
+            'low' => 1,
+            'medium' => 2,
+            default => 3,
+        };
+
+        $kycRank = match (strtolower((string) ($user->kyc_level ?? ''))) {
+            'full', 'enhanced' => 1,
+            'standard' => 2,
+            default => 3,
+        };
+
+        return match (max($riskRank, $kycRank)) {
+            1 => 'low',
+            2 => 'medium',
+            default => 'high',
+        };
+    }
+
+    private function settingAmount(string $key, string $fallback): string
+    {
+        $value = Setting::get($key, $fallback);
+
+        if (! is_numeric($value)) {
+            return $fallback;
+        }
+
+        return number_format((float) $value, 2, '.', '');
     }
 }

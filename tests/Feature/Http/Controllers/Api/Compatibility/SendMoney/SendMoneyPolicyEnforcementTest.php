@@ -120,7 +120,7 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
             'Idempotency-Key' => '00000000-0000-0000-0000-000000009902',
         ])->postJson('/api/send-money/store', [
             'user' => $this->recipient->email,
-            'amount' => '150.00',
+            'amount' => '1000.00',
             'verification_type' => 'none',
         ]);
 
@@ -187,7 +187,7 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
             'Idempotency-Key' => '00000000-0000-0000-0000-000000009906',
         ])->postJson('/api/send-money/store', [
             'user' => $this->recipient->email,
-            'amount' => '150.00',
+            'amount' => '1000.00',
             'verification_type' => 'none',
         ]);
 

@@ -332,4 +332,18 @@ class SettingsServiceTest extends ServiceTestCase
         $this->assertEquals('cached_value', $result1);
         $this->assertEquals('cached_value', $result2);
     }
+
+    #[Test]
+    public function it_exposes_send_money_threshold_settings_in_the_limits_group()
+    {
+        $config = $this->service->getGroupConfig('limits');
+
+        $this->assertArrayHasKey('send_money_threshold_low_enhanced_or_full', $config['settings']);
+        $this->assertArrayHasKey('send_money_threshold_medium_or_standard', $config['settings']);
+        $this->assertArrayHasKey('send_money_threshold_high_or_basic', $config['settings']);
+
+        $this->assertSame(5000, $config['settings']['send_money_threshold_low_enhanced_or_full']['default']);
+        $this->assertSame(2500, $config['settings']['send_money_threshold_medium_or_standard']['default']);
+        $this->assertSame(1000, $config['settings']['send_money_threshold_high_or_basic']['default']);
+    }
 }

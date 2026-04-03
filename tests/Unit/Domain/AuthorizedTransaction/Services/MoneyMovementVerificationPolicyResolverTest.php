@@ -51,6 +51,25 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
                 ],
             ],
         ]);
+
+        \App\Models\Setting::set('send_money_threshold_low_enhanced_or_full', 5000, [
+            'type' => 'float',
+            'label' => 'Low Risk Threshold',
+            'description' => 'Test threshold',
+            'group' => 'limits',
+        ]);
+        \App\Models\Setting::set('send_money_threshold_medium_or_standard', 2500, [
+            'type' => 'float',
+            'label' => 'Medium Risk Threshold',
+            'description' => 'Test threshold',
+            'group' => 'limits',
+        ]);
+        \App\Models\Setting::set('send_money_threshold_high_or_basic', 1000, [
+            'type' => 'float',
+            'label' => 'High Risk Threshold',
+            'description' => 'Test threshold',
+            'group' => 'limits',
+        ]);
     }
 
     #[Test]
@@ -118,7 +137,7 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
 
         $policy = app(MoneyMovementVerificationPolicyResolver::class)->resolveSendMoneyPolicy(
             user: $user,
-            amount: '100.00',
+            amount: '1000.00',
             asset: $asset,
             clientHint: 'none',
         );
@@ -137,7 +156,7 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
 
         $policy = app(MoneyMovementVerificationPolicyResolver::class)->resolveSendMoneyPolicy(
             user: $user,
-            amount: '100.00',
+            amount: '1000.00',
             asset: $asset,
             clientHint: 'none',
         );
@@ -146,6 +165,96 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
         $this->assertSame('pin', $policy['next_step']);
         $this->assertSame('amount_threshold', $policy['reason']);
         $this->assertSame('amount_threshold_exceeded', $policy['risk_reason']);
+    }
+
+    #[Test]
+    public function it_uses_the_low_risk_enhanced_threshold_for_send_money(): void
+    {
+        $user = User::factory()->create([
+            'transaction_pin' => null,
+            'kyc_level' => 'enhanced',
+            'risk_rating' => 'low',
+        ]);
+        $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
+
+        $policy = app(MoneyMovementVerificationPolicyResolver::class)->resolveSendMoneyPolicy(
+            user: $user,
+            amount: '200.00',
+            asset: $asset,
+            clientHint: 'none',
+        );
+
+        $this->assertSame(500000, $policy['step_up_threshold_minor']);
+        $this->assertSame(AuthorizedTransaction::VERIFICATION_NONE, $policy['verification_type']);
+        $this->assertSame('none', $policy['next_step']);
+    }
+
+    #[Test]
+    public function it_uses_the_stricter_medium_threshold_when_kyc_or_risk_requires_it(): void
+    {
+        $user = User::factory()->create([
+            'transaction_pin' => null,
+            'kyc_level' => 'standard',
+            'risk_rating' => 'low',
+        ]);
+        $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
+
+        $policy = app(MoneyMovementVerificationPolicyResolver::class)->resolveSendMoneyPolicy(
+            user: $user,
+            amount: '2500.00',
+            asset: $asset,
+            clientHint: 'none',
+        );
+
+        $this->assertSame(250000, $policy['step_up_threshold_minor']);
+        $this->assertSame(AuthorizedTransaction::VERIFICATION_OTP, $policy['verification_type']);
+        $this->assertSame('otp', $policy['next_step']);
+        $this->assertSame('amount_threshold', $policy['reason']);
+    }
+
+    #[Test]
+    public function it_uses_the_stricter_high_threshold_when_the_profile_is_basic_or_high_risk(): void
+    {
+        $user = User::factory()->create([
+            'transaction_pin' => null,
+            'kyc_level' => 'full',
+            'risk_rating' => 'high',
+        ]);
+        $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
+
+        $policy = app(MoneyMovementVerificationPolicyResolver::class)->resolveSendMoneyPolicy(
+            user: $user,
+            amount: '1000.00',
+            asset: $asset,
+            clientHint: 'none',
+        );
+
+        $this->assertSame(100000, $policy['step_up_threshold_minor']);
+        $this->assertSame(AuthorizedTransaction::VERIFICATION_OTP, $policy['verification_type']);
+        $this->assertSame('otp', $policy['next_step']);
+    }
+
+    #[Test]
+    public function it_prefers_the_per_user_send_money_threshold_override(): void
+    {
+        $user = User::factory()->create([
+            'transaction_pin' => null,
+            'kyc_level' => 'enhanced',
+            'risk_rating' => 'low',
+            'send_money_step_up_threshold_override' => '750.00',
+        ]);
+        $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
+
+        $policy = app(MoneyMovementVerificationPolicyResolver::class)->resolveSendMoneyPolicy(
+            user: $user,
+            amount: '800.00',
+            asset: $asset,
+            clientHint: 'none',
+        );
+
+        $this->assertSame(75000, $policy['step_up_threshold_minor']);
+        $this->assertSame(AuthorizedTransaction::VERIFICATION_OTP, $policy['verification_type']);
+        $this->assertSame('otp', $policy['next_step']);
     }
 
     #[Test]

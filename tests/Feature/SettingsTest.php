@@ -24,12 +24,20 @@ class SettingsTest extends TestCase
     #[Test]
     public function test_settings_can_be_initialized(): void
     {
-        $this->assertDatabaseCount('settings', 26); // Count all default settings
+        $this->assertDatabaseCount('settings', 29); // Count all default settings
 
         $setting = Setting::where('key', 'platform_name')->first();
         $this->assertNotNull($setting);
         $this->assertEquals('FinAegis', $setting->value);
         $this->assertEquals('platform', $setting->group);
+    }
+
+    #[Test]
+    public function test_send_money_threshold_settings_are_initialized_with_defaults(): void
+    {
+        $this->assertEquals(5000.0, Setting::get('send_money_threshold_low_enhanced_or_full'));
+        $this->assertEquals(2500.0, Setting::get('send_money_threshold_medium_or_standard'));
+        $this->assertEquals(1000.0, Setting::get('send_money_threshold_high_or_basic'));
     }
 
     #[Test]

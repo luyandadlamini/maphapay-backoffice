@@ -82,6 +82,29 @@ class UserResource extends Resource
                         ->maxLength(4)
                         ->default(null),
                     Forms\Components\DateTimePicker::make('trial_ends_at'),
+                    Forms\Components\Section::make('Money Movement Security')
+                        ->description('Manage per-user send-money step-up behavior without changing compliance hard limits.')
+                        ->schema([
+                            Forms\Components\TextInput::make('send_money_step_up_threshold_override')
+                                ->label('Send Money Step-Up Threshold Override')
+                                ->numeric()
+                                ->step(0.01)
+                                ->minValue(0)
+                                ->placeholder('Use global threshold matrix')
+                                ->helperText('Leave blank to use the app-wide threshold derived from this user’s risk rating and KYC level.'),
+                            Forms\Components\Textarea::make('send_money_step_up_threshold_override_reason')
+                                ->label('Override Reason')
+                                ->rows(3)
+                                ->maxLength(1000)
+                                ->helperText('Document why this user needs a different verification threshold.'),
+                            Forms\Components\Placeholder::make('send_money_step_up_threshold_override_updated_at_display')
+                                ->label('Override Last Updated')
+                                ->content(fn (?User $record): string => $record?->send_money_step_up_threshold_override_updated_at?->toDateTimeString() ?? 'Not set'),
+                            Forms\Components\Placeholder::make('send_money_step_up_threshold_override_updated_by_display')
+                                ->label('Override Updated By')
+                                ->content(fn (?User $record): string => $record?->send_money_step_up_threshold_override_updated_by ?? 'Not set'),
+                        ])
+                        ->columns(1),
                 ]
             );
     }
@@ -158,6 +181,10 @@ class UserResource extends Resource
                     Tables\Columns\TextColumn::make('mobile')
                         ->label('Mobile')
                         ->toggleable(),
+                    Tables\Columns\TextColumn::make('send_money_step_up_threshold_override')
+                        ->label('Send Money Override')
+                        ->money('SZL')
+                        ->toggleable(isToggledHiddenByDefault: true),
                     Tables\Columns\TextColumn::make('created_at')
                         ->dateTime()
                         ->sortable(),

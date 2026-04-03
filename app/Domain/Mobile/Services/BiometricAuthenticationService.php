@@ -263,6 +263,86 @@ class BiometricAuthenticationService
         }
     }
 
+    public function verifyTransactionChallengeSignature(
+        MobileDevice $device,
+        string $challenge,
+        string $signature,
+        ?string $challengeIp = null,
+        ?string $verifyIp = null,
+    ): bool {
+        if ($device->is_blocked) {
+            Log::warning('Device is blocked, cannot use biometric', [
+                'device_id' => $device->id,
+                'reason' => $device->blocked_reason,
+            ]);
+            $this->recordFailure($device, BiometricFailure::REASON_DEVICE_BLOCKED, $verifyIp);
+
+            return false;
+        }
+
+        if ($device->isBiometricBlocked()) {
+            Log::warning('Biometric temporarily blocked for device', [
+                'device_id' => $device->id,
+                'blocked_until' => $device->biometric_blocked_until,
+            ]);
+
+            /** @var \Carbon\Carbon $blockedUntil */
+            $blockedUntil = $device->biometric_blocked_until;
+
+            throw new BiometricBlockedException($blockedUntil);
+        }
+
+        $maxFailures = (int) config('mobile.security.max_biometric_failures', 3);
+        $recentFailures = BiometricFailure::countRecentForDevice($device->id, 10);
+
+        if ($recentFailures >= $maxFailures) {
+            $this->blockDeviceBiometric($device);
+            $device->refresh();
+
+            /** @var \Carbon\Carbon $blockedUntil */
+            $blockedUntil = $device->biometric_blocked_until;
+
+            throw new BiometricBlockedException($blockedUntil);
+        }
+
+        if (! $device->canUseBiometric()) {
+            Log::warning('Device cannot use biometric', [
+                'device_id' => $device->id,
+                'biometric_enabled' => $device->biometric_enabled,
+            ]);
+
+            return false;
+        }
+
+        if (! $this->validateIpNetwork($challengeIp, $verifyIp)) {
+            Log::warning('Biometric verification from different network', [
+                'device_id' => $device->id,
+                'challenge_ip' => $challengeIp,
+                'verify_ip' => $verifyIp,
+            ]);
+            $this->recordFailure($device, BiometricFailure::REASON_IP_MISMATCH, $verifyIp);
+
+            return false;
+        }
+
+        /** @var string $publicKey */
+        $publicKey = $device->biometric_public_key;
+        if (! $this->verifySignature($challenge, $signature, $publicKey)) {
+            $this->recordFailure($device, BiometricFailure::REASON_SIGNATURE_INVALID, $verifyIp);
+
+            Log::warning('Biometric signature verification failed', [
+                'device_id' => $device->id,
+                'failure_count' => $device->biometric_failure_count + 1,
+            ]);
+
+            return false;
+        }
+
+        $device->resetBiometricFailures();
+
+        return true;
+    }
+
     /**
      * Verify an ECDSA signature.
      */

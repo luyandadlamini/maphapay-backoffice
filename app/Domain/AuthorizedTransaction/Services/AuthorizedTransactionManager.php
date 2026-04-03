@@ -222,6 +222,33 @@ class AuthorizedTransactionManager
     }
 
     /**
+     * Step 2c: Verify a successful biometric approval and finalize the operation.
+     *
+     * @return array<string, mixed>
+     */
+    public function verifyBiometric(string $trx, int $userId): array
+    {
+        $txn = $this->findForUser($trx, $userId);
+
+        $this->assertPendingAndNotExpired($txn);
+
+        if ($txn->verification_type !== AuthorizedTransaction::VERIFICATION_PIN) {
+            throw new RuntimeException('Biometric verification is only available for PIN-class transactions.');
+        }
+
+        if ($txn->remark === AuthorizedTransaction::REMARK_SCHEDULED_SEND
+            && $txn->verification_confirmed_at !== null) {
+            return $this->scheduledSendVerificationResult($txn);
+        }
+
+        if ($txn->remark === AuthorizedTransaction::REMARK_SCHEDULED_SEND) {
+            return $this->markScheduledSendVerified($txn);
+        }
+
+        return $this->finalizeAtomically($txn);
+    }
+
+    /**
      * Directly finalize without verification (for VERIFICATION_NONE flows or
      * scheduled send execution from a console command).
      *

@@ -188,6 +188,10 @@ abstract class TestCase extends BaseTestCase
                 $table->boolean('pep_status')->default(false)->after('kyc_level');
             }
 
+            if (! Schema::hasColumn('users', 'risk_rating')) {
+                $table->string('risk_rating')->nullable()->after('pep_status');
+            }
+
             if (! Schema::hasColumn('users', 'data_retention_consent')) {
                 $table->boolean('data_retention_consent')->default(false)->after('pep_status');
             }
@@ -199,7 +203,58 @@ abstract class TestCase extends BaseTestCase
             if (! Schema::hasColumn('users', 'transaction_pin_enabled')) {
                 $table->boolean('transaction_pin_enabled')->default(false)->after('transaction_pin');
             }
+
+            if (! Schema::hasColumn('users', 'send_money_step_up_threshold_override')) {
+                $table->decimal('send_money_step_up_threshold_override', 20, 2)->nullable()->after('transaction_pin_enabled');
+            }
+
+            if (! Schema::hasColumn('users', 'send_money_step_up_threshold_override_reason')) {
+                $table->text('send_money_step_up_threshold_override_reason')->nullable()->after('send_money_step_up_threshold_override');
+            }
+
+            if (! Schema::hasColumn('users', 'send_money_step_up_threshold_override_updated_at')) {
+                $table->timestamp('send_money_step_up_threshold_override_updated_at')->nullable()->after('send_money_step_up_threshold_override_reason');
+            }
+
+            if (! Schema::hasColumn('users', 'send_money_step_up_threshold_override_updated_by')) {
+                $table->string('send_money_step_up_threshold_override_updated_by')->nullable()->after('send_money_step_up_threshold_override_updated_at');
+            }
         });
+
+        if (! Schema::hasTable('settings')) {
+            Schema::create('settings', function ($table): void {
+                $table->bigIncrements('id');
+                $table->string('group', 100)->default('general')->index();
+                $table->string('key', 255)->unique();
+                $table->json('value');
+                $table->string('type', 50)->default('string');
+                $table->string('label', 255);
+                $table->text('description')->nullable();
+                $table->boolean('is_public')->default(false)->index();
+                $table->boolean('is_encrypted')->default(false);
+                $table->json('validation_rules')->nullable();
+                $table->json('metadata')->nullable();
+                $table->timestamps();
+                $table->index(['group', 'key']);
+            });
+        }
+
+        if (! Schema::hasTable('setting_audits')) {
+            Schema::create('setting_audits', function ($table): void {
+                $table->bigIncrements('id');
+                $table->unsignedBigInteger('setting_id');
+                $table->string('key', 255);
+                $table->json('old_value')->nullable();
+                $table->json('new_value');
+                $table->string('changed_by')->nullable();
+                $table->string('ip_address', 45)->nullable();
+                $table->string('user_agent')->nullable();
+                $table->json('metadata')->nullable();
+                $table->timestamps();
+                $table->index(['key', 'created_at']);
+                $table->index('changed_by');
+            });
+        }
 
         if (Schema::hasTable('accounts') && ! Schema::hasColumn('accounts', 'account_number')) {
             Schema::table('accounts', function ($table): void {
