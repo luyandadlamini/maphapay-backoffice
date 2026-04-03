@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\AuthorizedTransaction\Services;
 
+use App\Domain\Account\Models\Account;
 use App\Domain\Account\DataObjects\Money;
 use App\Domain\Asset\Aggregates\AssetTransferAggregate;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\Shared\Money\MoneyConverter;
+use App\Models\User;
 use RuntimeException;
 
 /**
@@ -32,10 +34,17 @@ class InternalP2pTransferService
     ): array {
         $asset = Asset::query()->where('code', $assetCode)->firstOrFail();
         $amountMinor = MoneyConverter::forAsset($amount, $asset);
+        $sender = $this->resolveAccountOwner($fromAccountUuid);
+        $recipient = $this->resolveAccountOwner($toAccountUuid);
         $metadata = array_filter([
             'source' => 'p2p',
             'operation_type' => $operationType,
             'note' => $note,
+            'p2p_display' => [
+                'sender_label' => $this->userLabel($sender),
+                'recipient_label' => $this->userLabel($recipient),
+                'note_preview' => $note,
+            ],
         ], static fn (mixed $value): bool => $value !== null && $value !== '');
 
         try {
@@ -70,5 +79,39 @@ class InternalP2pTransferService
             'asset_code' => $assetCode,
             'reference'  => $reference,
         ];
+    }
+
+    private function resolveAccountOwner(string $accountUuid): ?User
+    {
+        $account = Account::query()
+            ->with('user')
+            ->where('uuid', $accountUuid)
+            ->first();
+
+        return $account?->user;
+    }
+
+    private function userLabel(?User $user): string
+    {
+        if ($user === null) {
+            return 'contact';
+        }
+
+        $name = trim((string) ($user->name ?? ''));
+        if ($name !== '') {
+            return $name;
+        }
+
+        $username = trim((string) ($user->username ?? ''));
+        if ($username !== '') {
+            return $username;
+        }
+
+        $mobile = trim((string) ($user->mobile ?? ''));
+        if ($mobile !== '') {
+            return $mobile;
+        }
+
+        return 'contact';
     }
 }

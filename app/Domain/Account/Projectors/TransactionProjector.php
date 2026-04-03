@@ -6,6 +6,7 @@ namespace App\Domain\Account\Projectors;
 
 use App\Domain\Account\Models\TransactionProjection;
 use App\Domain\Account\Support\TransactionClassification;
+use App\Domain\Account\Support\TransactionDisplay;
 use App\Domain\Asset\Events\AssetTransactionCreated;
 use App\Domain\Asset\Events\AssetTransferCompleted;
 use Exception;
@@ -28,11 +29,20 @@ class TransactionProjector extends Projector
         ?string $reference,
         array $metadata,
     ): array {
+        $display = TransactionDisplay::buildForProjection(
+            type: $type,
+            subtype: $subtype,
+            metadata: $metadata,
+        );
         $classification = TransactionClassification::defaults(
             type: $type,
             subtype: $subtype,
             metadata: $metadata,
         );
+
+        if ($display !== null) {
+            $metadata['display'] = $display;
+        }
 
         return [
             'uuid' => (string) Str::uuid(),

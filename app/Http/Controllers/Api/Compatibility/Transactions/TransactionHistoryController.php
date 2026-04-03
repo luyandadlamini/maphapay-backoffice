@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\Compatibility\Transactions;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\TransactionProjection;
 use App\Domain\Account\Support\TransactionClassification;
+use App\Domain\Account\Support\TransactionDisplay;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -93,19 +94,32 @@ class TransactionHistoryController extends Controller
             $query->where(function ($q) use ($term): void {
                 $q->where('description', 'like', "%{$term}%")
                     ->orWhere('reference', 'like', "%{$term}%")
-                    ->orWhere('uuid', 'like', "%{$term}%");
+                    ->orWhere('uuid', 'like', "%{$term}%")
+                    ->orWhere('metadata->display->title', 'like', "%{$term}%")
+                    ->orWhere('metadata->display->counterparty_name', 'like', "%{$term}%")
+                    ->orWhere('metadata->display->note_preview', 'like', "%{$term}%")
+                    ->orWhere('metadata->p2p_display->sender_label', 'like', "%{$term}%")
+                    ->orWhere('metadata->p2p_display->recipient_label', 'like', "%{$term}%")
+                    ->orWhere('metadata->note', 'like', "%{$term}%");
             });
         }
 
         $paginator = $query->paginate(self::PER_PAGE);
 
         $rows = collect($paginator->items())->map(function (TransactionProjection $tx): array {
+            $metadata = is_array($tx->metadata) ? $tx->metadata : [];
             $classification = TransactionClassification::forProjection($tx);
+            $display = TransactionDisplay::buildForProjection(
+                type: $tx->type,
+                subtype: $tx->subtype,
+                metadata: $metadata,
+            );
 
             return [
                 'id'               => $tx->uuid,
                 'reference'        => $tx->reference,
                 'description'      => $tx->description,
+                'display'          => $display,
                 'amount'           => $tx->formatted_amount,
                 'type'             => $tx->type,
                 'subtype'          => $tx->subtype,

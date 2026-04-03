@@ -288,6 +288,104 @@ class TransactionHistoryControllerTest extends ControllerTestCase
     }
 
     #[Test]
+    public function test_returns_display_narrative_for_send_money_projection(): void
+    {
+        [$user, $account] = $this->makeUserWithAccount();
+
+        TransactionProjection::factory()->create([
+            'account_uuid' => $account->uuid,
+            'asset_code'   => 'SZL',
+            'type'         => 'transfer_out',
+            'subtype'      => 'send_money',
+            'description'  => 'Transfer: REF-LIHLE',
+            'reference'    => 'REF-LIHLE',
+            'status'       => 'completed',
+            'metadata'     => [
+                'display' => [
+                    'counterparty_name' => 'Lihle',
+                    'counterparty_role' => 'recipient',
+                    'title' => 'Sent to Lihle',
+                    'subtitle' => 'Peer transfer',
+                    'note_preview' => 'Lunch money',
+                    'reference_visible' => false,
+                ],
+            ],
+        ]);
+
+        Sanctum::actingAs($user, ['read', 'write', 'delete']);
+
+        $row = $this->getJson(self::ROUTE)->assertOk()->json('data.transactions.data.0');
+
+        $this->assertSame([
+            'title' => 'Sent to Lihle',
+            'subtitle' => 'Peer transfer',
+            'counterparty_name' => 'Lihle',
+            'counterparty_role' => 'recipient',
+            'note_preview' => 'Lunch money',
+            'reference_visible' => false,
+        ], $row['display']);
+    }
+
+    #[Test]
+    public function test_search_filter_matches_display_title_counterparty_and_note(): void
+    {
+        [$user, $account] = $this->makeUserWithAccount();
+
+        TransactionProjection::factory()->create([
+            'account_uuid' => $account->uuid,
+            'asset_code'   => 'SZL',
+            'type'         => 'transfer_out',
+            'subtype'      => 'send_money',
+            'description'  => 'Transfer: REF-LIHLE',
+            'reference'    => 'REF-LIHLE',
+            'status'       => 'completed',
+            'metadata'     => [
+                'display' => [
+                    'counterparty_name' => 'Lihle',
+                    'counterparty_role' => 'recipient',
+                    'title' => 'Sent to Lihle',
+                    'subtitle' => 'Peer transfer',
+                    'note_preview' => 'Lunch money',
+                    'reference_visible' => false,
+                ],
+            ],
+        ]);
+        TransactionProjection::factory()->create([
+            'account_uuid' => $account->uuid,
+            'asset_code'   => 'SZL',
+            'description'  => 'Unrelated transaction',
+            'reference'    => 'REF-OTHER',
+            'status'       => 'completed',
+        ]);
+
+        Sanctum::actingAs($user, ['read', 'write', 'delete']);
+
+        $this->assertCount(1, $this->getJson(self::ROUTE . '?search=Sent to')->assertOk()->json('data.transactions.data'));
+        $this->assertCount(1, $this->getJson(self::ROUTE . '?search=Lihle')->assertOk()->json('data.transactions.data'));
+        $this->assertCount(1, $this->getJson(self::ROUTE . '?search=Lunch')->assertOk()->json('data.transactions.data'));
+    }
+
+    #[Test]
+    public function test_older_rows_without_display_metadata_return_null_display(): void
+    {
+        [$user, $account] = $this->makeUserWithAccount();
+
+        TransactionProjection::factory()->create([
+            'account_uuid' => $account->uuid,
+            'asset_code'   => 'SZL',
+            'description'  => 'Legacy transfer row',
+            'reference'    => 'REF-LEGACY',
+            'status'       => 'completed',
+            'metadata'     => null,
+        ]);
+
+        Sanctum::actingAs($user, ['read', 'write', 'delete']);
+
+        $row = $this->getJson(self::ROUTE)->assertOk()->json('data.transactions.data.0');
+        $this->assertNull($row['display']);
+    }
+
+    #[Test]
     public function test_search_filter_matches_transaction_uuid(): void
     {
         [$user, $account] = $this->makeUserWithAccount();
