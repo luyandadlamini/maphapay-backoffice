@@ -33,4 +33,10 @@ return [
         'log_channel' => env('MAPHAPAY_MIGRATION_LOG_CHANNEL', 'structured'),
         'audit_channel' => env('MAPHAPAY_MIGRATION_AUDIT_CHANNEL', 'audit'),
     ],
+
+    'money_movement' => [
+        'send_money' => [
+            'step_up_threshold' => env('MAPHAPAY_SEND_MONEY_STEP_UP_THRESHOLD', '100.00'),
+        ],
+    ],
 ];
