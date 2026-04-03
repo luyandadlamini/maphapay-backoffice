@@ -12,6 +12,8 @@ use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderIn
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Wallet\Events\Broadcast\WalletBalanceUpdated;
 use App\Models\User;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Laravel\Sanctum\Sanctum;
@@ -35,6 +37,7 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
         config([
             'maphapay_migration.enable_send_money' => true,
             'maphapay_migration.enable_dashboard' => true,
+            'maphapay_migration.enable_transaction_history' => true,
             'maphapay_migration.money_movement.send_money.step_up_threshold' => '100.00',
         ]);
 
@@ -47,6 +50,18 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
                 'is_active' => true,
             ],
         );
+
+        if (! Schema::hasColumn('transaction_projections', 'user_category_slug')) {
+            Schema::table('transaction_projections', function (Blueprint $table): void {
+                $table->string('analytics_bucket')->nullable()->after('status');
+                $table->boolean('budget_eligible')->nullable()->after('analytics_bucket');
+                $table->string('source_domain')->nullable()->after('budget_eligible');
+                $table->string('system_category_slug')->nullable()->after('source_domain');
+                $table->string('user_category_slug')->nullable()->after('system_category_slug');
+                $table->string('effective_category_slug')->nullable()->after('user_category_slug');
+                $table->string('categorization_source')->nullable()->after('effective_category_slug');
+            });
+        }
 
         $this->sender = User::factory()->create(['kyc_status' => 'approved', 'transaction_pin' => null]);
         $this->recipient = User::factory()->create(['kyc_status' => 'approved']);
@@ -134,6 +149,29 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
         $this->getJson('/api/dashboard')
             ->assertOk()
             ->assertJsonPath('data.balance', '10.00');
+
+        $recipientTransactions = $this->getJson('/api/transactions')
+            ->assertOk()
+            ->json('data.transactions.data');
+
+        $this->assertCount(1, $recipientTransactions);
+        $this->assertSame('transfer_in', $recipientTransactions[0]['type']);
+        $this->assertSame('send_money', $recipientTransactions[0]['subtype']);
+        $this->assertSame('income', $recipientTransactions[0]['analytics_bucket']);
+        $this->assertSame('peer_transfer', $recipientTransactions[0]['category_slug']);
+        $this->assertFalse($recipientTransactions[0]['editable_category']);
+
+        Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
+        $senderTransactions = $this->getJson('/api/transactions')
+            ->assertOk()
+            ->json('data.transactions.data');
+
+        $this->assertCount(1, $senderTransactions);
+        $this->assertSame('transfer_out', $senderTransactions[0]['type']);
+        $this->assertSame('send_money', $senderTransactions[0]['subtype']);
+        $this->assertSame('expense', $senderTransactions[0]['analytics_bucket']);
+        $this->assertSame('peer_transfer', $senderTransactions[0]['category_slug']);
+        $this->assertTrue($senderTransactions[0]['editable_category']);
 
         Event::assertDispatched(WalletBalanceUpdated::class, fn (WalletBalanceUpdated $event): bool => $event->userId === $this->sender->id);
         Event::assertDispatched(WalletBalanceUpdated::class, fn (WalletBalanceUpdated $event): bool => $event->userId === $this->recipient->id);

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\Compatibility\Transactions;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\TransactionProjection;
+use App\Domain\Account\Support\TransactionClassification;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -40,63 +41,6 @@ use Illuminate\Http\Request;
 class TransactionHistoryController extends Controller
 {
     private const PER_PAGE = 15;
-
-    private function classify(TransactionProjection $transaction): array
-    {
-        $metadata = is_array($transaction->metadata) ? $transaction->metadata : [];
-        $type = (string) $transaction->type;
-        $subtype = (string) ($transaction->subtype ?? '');
-        $source = (string) ($metadata['source'] ?? '');
-
-        $direction = match ($type) {
-            'deposit', 'transfer_in' => 'in',
-            'withdrawal', 'transfer_out' => 'out',
-            default => 'none',
-        };
-
-        if ($source === 'pocket_transfer') {
-            return [
-                'direction' => $direction,
-                'analytics_bucket' => 'savings',
-                'budget_eligible' => false,
-                'source_domain' => 'savings',
-            ];
-        }
-
-        if (in_array($type, ['transfer_in', 'transfer_out'], true) || in_array($subtype, ['send_money', 'request_money_accept'], true)) {
-            return [
-                'direction' => $direction,
-                'analytics_bucket' => 'transfer',
-                'budget_eligible' => false,
-                'source_domain' => 'p2p',
-            ];
-        }
-
-        if (str_contains($subtype, 'cash_out')) {
-            return [
-                'direction' => $direction,
-                'analytics_bucket' => 'expense',
-                'budget_eligible' => false,
-                'source_domain' => 'cash_out',
-            ];
-        }
-
-        if (str_contains($subtype, 'merchant') || str_contains($subtype, 'pay')) {
-            return [
-                'direction' => $direction,
-                'analytics_bucket' => $direction === 'out' ? 'expense' : 'income',
-                'budget_eligible' => $direction === 'out',
-                'source_domain' => 'merchant_payment',
-            ];
-        }
-
-        return [
-            'direction' => $direction,
-            'analytics_bucket' => $direction === 'in' ? 'income' : 'expense',
-            'budget_eligible' => $direction === 'out',
-            'source_domain' => $source !== '' ? $source : 'wallet',
-        ];
-    }
 
     public function __invoke(Request $request): JsonResponse
     {
@@ -156,7 +100,7 @@ class TransactionHistoryController extends Controller
         $paginator = $query->paginate(self::PER_PAGE);
 
         $rows = collect($paginator->items())->map(function (TransactionProjection $tx): array {
-            $classification = $this->classify($tx);
+            $classification = TransactionClassification::forProjection($tx);
 
             return [
                 'id'               => $tx->uuid,
@@ -170,6 +114,10 @@ class TransactionHistoryController extends Controller
                 'analytics_bucket' => $classification['analytics_bucket'],
                 'budget_eligible'  => $classification['budget_eligible'],
                 'source_domain'    => $classification['source_domain'],
+                'category_slug'    => $classification['category_slug'],
+                'category_label'   => $classification['category_label'],
+                'category_source'  => $classification['category_source'],
+                'editable_category' => $classification['editable_category'],
                 'created_at'       => $tx->created_at?->toIso8601String(),
             ];
         })->values()->all();

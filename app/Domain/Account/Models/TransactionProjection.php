@@ -24,6 +24,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $hash
  * @property array|null $metadata
  * @property string $status
+ * @property string|null $analytics_bucket
+ * @property bool|null $budget_eligible
+ * @property string|null $source_domain
+ * @property string|null $system_category_slug
+ * @property string|null $user_category_slug
+ * @property string|null $effective_category_slug
+ * @property string|null $categorization_source
  * @property string|null $related_account_uuid
  * @property string|null $transaction_group_uuid
  * @property string|null $parent_transaction_id
@@ -70,6 +77,13 @@ class TransactionProjection extends Model
         'hash',
         'metadata',
         'status',
+        'analytics_bucket',
+        'budget_eligible',
+        'source_domain',
+        'system_category_slug',
+        'user_category_slug',
+        'effective_category_slug',
+        'categorization_source',
         'related_account_uuid',
         'transaction_group_uuid',
         'parent_transaction_id',
@@ -81,6 +95,7 @@ class TransactionProjection extends Model
 
     protected $casts = [
         'amount'     => 'integer',
+        'budget_eligible' => 'boolean',
         'metadata'   => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

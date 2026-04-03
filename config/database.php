@@ -55,7 +55,7 @@ return [
         */
 
         'central' => [
-            'driver'         => 'mariadb',
+            'driver'         => 'mysql',
             'url'            => env('DB_URL'),
             'host'           => env('DB_HOST', '127.0.0.1'),
             'port'           => env('DB_PORT', '3306'),
@@ -77,7 +77,7 @@ return [
         ],
 
         'tenant_template' => [
-            'driver'         => 'mariadb',
+            'driver'         => 'mysql',
             'url'            => env('DB_URL'),
             'host'           => env('DB_HOST', '127.0.0.1'),
             'port'           => env('DB_PORT', '3306'),
@@ -110,7 +110,7 @@ return [
         |
         */
         'tenant' => [
-            'driver'         => 'mariadb',
+            'driver'         => 'mysql',
             'url'            => env('DB_URL'),
             'host'           => env('DB_HOST', '127.0.0.1'),
             'port'           => env('DB_PORT', '3306'),
@@ -150,7 +150,7 @@ return [
         ],
 
         'mariadb' => [
-            'driver'         => 'mariadb',
+            'driver'         => 'mysql',
             'url'            => env('DB_URL'),
             'host'           => env('DB_HOST', '127.0.0.1'),
             'port'           => env('DB_PORT', '3306'),
@@ -242,7 +242,7 @@ return [
         */
 
         'replica-eu' => [
-            'driver'         => 'mariadb',
+            'driver'         => 'mysql',
             'host'           => env('DB_REPLICA_EU_HOST', '127.0.0.1'),
             'port'           => env('DB_REPLICA_EU_PORT', '3306'),
             'database'       => env('DB_REPLICA_EU_DATABASE', 'finaegis'),
@@ -259,7 +259,7 @@ return [
         ],
 
         'replica-us' => [
-            'driver'         => 'mariadb',
+            'driver'         => 'mysql',
             'host'           => env('DB_REPLICA_US_HOST', '127.0.0.1'),
             'port'           => env('DB_REPLICA_US_PORT', '3306'),
             'database'       => env('DB_REPLICA_US_DATABASE', 'finaegis'),
@@ -276,7 +276,7 @@ return [
         ],
 
         'replica-apac' => [
-            'driver'         => 'mariadb',
+            'driver'         => 'mysql',
             'host'           => env('DB_REPLICA_APAC_HOST', '127.0.0.1'),
             'port'           => env('DB_REPLICA_APAC_PORT', '3306'),
             'database'       => env('DB_REPLICA_APAC_DATABASE', 'finaegis'),
@@ -293,7 +293,7 @@ return [
         ],
 
         'replica-uk' => [
-            'driver'         => 'mariadb',
+            'driver'         => 'mysql',
             'host'           => env('DB_REPLICA_UK_HOST', '127.0.0.1'),
             'port'           => env('DB_REPLICA_UK_PORT', '3306'),
             'database'       => env('DB_REPLICA_UK_DATABASE', 'finaegis'),

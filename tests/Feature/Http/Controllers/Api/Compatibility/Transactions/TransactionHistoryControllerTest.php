@@ -112,6 +112,10 @@ class TransactionHistoryControllerTest extends ControllerTestCase
         $this->assertArrayHasKey('analytics_bucket', $row);
         $this->assertArrayHasKey('budget_eligible', $row);
         $this->assertArrayHasKey('source_domain', $row);
+        $this->assertArrayHasKey('category_slug', $row);
+        $this->assertArrayHasKey('category_label', $row);
+        $this->assertArrayHasKey('category_source', $row);
+        $this->assertArrayHasKey('editable_category', $row);
         $this->assertArrayHasKey('created_at', $row);
 
         // No legacy field names
@@ -128,9 +132,13 @@ class TransactionHistoryControllerTest extends ControllerTestCase
         $this->assertSame('send_money', $row['subtype']);
         $this->assertSame('SZL', $row['asset_code']);
         $this->assertSame('in', $row['direction']);
-        $this->assertSame('transfer', $row['analytics_bucket']);
+        $this->assertSame('income', $row['analytics_bucket']);
         $this->assertFalse($row['budget_eligible']);
         $this->assertSame('p2p', $row['source_domain']);
+        $this->assertSame('peer_transfer', $row['category_slug']);
+        $this->assertSame('Peer transfer', $row['category_label']);
+        $this->assertSame('system', $row['category_source']);
+        $this->assertFalse($row['editable_category']);
     }
 
     #[Test]

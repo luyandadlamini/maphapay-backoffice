@@ -41,6 +41,7 @@ use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendCancelCont
 use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendIndexController;
 use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendStoreController;
 use App\Http\Controllers\Api\Compatibility\SendMoney\SendMoneyStoreController;
+use App\Http\Controllers\Api\Compatibility\Transactions\TransactionCategoryUpdateController;
 use App\Http\Controllers\Api\Compatibility\Transactions\TransactionHistoryController;
 use App\Http\Controllers\Api\Compatibility\VerificationProcess\ChallengeBiometricController;
 use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyBiometricController;
@@ -148,6 +149,10 @@ Route::middleware(['migration_flag:enable_mtn_momo', 'kyc_approved'])->group(fun
 Route::middleware('migration_flag:enable_transaction_history')
     ->get('transactions', TransactionHistoryController::class)
     ->name('maphapay.compat.transactions.history');
+
+Route::middleware('migration_flag:enable_transaction_history')
+    ->patch('transactions/{transactionUuid}/category', TransactionCategoryUpdateController::class)
+    ->name('maphapay.compat.transactions.category.update');
 
 Route::middleware('migration_flag:enable_dashboard')
     ->get('dashboard', DashboardController::class)
