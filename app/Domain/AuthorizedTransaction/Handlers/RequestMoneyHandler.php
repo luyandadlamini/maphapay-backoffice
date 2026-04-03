@@ -12,8 +12,8 @@ use App\Models\MoneyRequest;
 use InvalidArgumentException;
 
 /**
- * After OTP/PIN verification, promotes a money request from awaiting_otp to pending
- * (visible to recipient). No wallet movement.
+ * Finalizes request creation metadata. New requests are already pending; legacy
+ * rows may still need promotion from awaiting_otp.
  */
 class RequestMoneyHandler implements AuthorizedTransactionHandlerInterface
 {
@@ -38,15 +38,17 @@ class RequestMoneyHandler implements AuthorizedTransactionHandlerInterface
             throw new InvalidArgumentException('RequestMoneyHandler: requester mismatch.');
         }
 
-        if ($moneyRequest->status !== MoneyRequest::STATUS_AWAITING_OTP) {
+        if (! in_array($moneyRequest->status, [MoneyRequest::STATUS_PENDING, MoneyRequest::STATUS_AWAITING_OTP], true)) {
             throw new InvalidArgumentException('RequestMoneyHandler: invalid money request state.');
         }
 
         $fromStatus = $moneyRequest->status;
-        $moneyRequest->update([
-            'status' => MoneyRequest::STATUS_PENDING,
-        ]);
-        $moneyRequest->refresh();
+        if ($moneyRequest->status === MoneyRequest::STATUS_AWAITING_OTP) {
+            $moneyRequest->update([
+                'status' => MoneyRequest::STATUS_PENDING,
+            ]);
+            $moneyRequest->refresh();
+        }
 
         $chatMessageId = null;
         $chatFriendId = $payload['chat_friend_id'] ?? null;
@@ -58,10 +60,12 @@ class RequestMoneyHandler implements AuthorizedTransactionHandlerInterface
             );
         }
 
-        $this->telemetry->logMoneyRequestTransition($moneyRequest, $fromStatus, MoneyRequest::STATUS_PENDING, [
-            'remark' => $transaction->remark,
-            'authorized_transaction_trx' => $transaction->trx,
-        ]);
+        if ($fromStatus !== MoneyRequest::STATUS_PENDING) {
+            $this->telemetry->logMoneyRequestTransition($moneyRequest, $fromStatus, MoneyRequest::STATUS_PENDING, [
+                'remark' => $transaction->remark,
+                'authorized_transaction_trx' => $transaction->trx,
+            ]);
+        }
 
         $result = [
             'trx' => $transaction->trx,

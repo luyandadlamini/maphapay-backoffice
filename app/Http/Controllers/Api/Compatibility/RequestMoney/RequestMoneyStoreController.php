@@ -18,7 +18,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 use Throwable;
 
@@ -32,6 +31,7 @@ use Throwable;
  * - `note` and `asset_code` are explicit request fields.
  * - callers should send an Idempotency-Key header for replay-safe initiation retries.
  * - compat success returns `status: success` with `data.next_step = none`.
+ * - request creation does not accept a verification override.
  */
 class RequestMoneyStoreController extends Controller
 {
@@ -47,7 +47,7 @@ class RequestMoneyStoreController extends Controller
             'user' => ['required', 'string'],
             'amount' => ['required', 'string', new MajorUnitAmountString],
             'note' => ['sometimes', 'nullable', 'string', 'max:2000'],
-            'verification_type' => ['sometimes', 'nullable', 'string', Rule::in(['sms', 'email', 'pin', 'none'])],
+            'verification_type' => ['prohibited'],
             'asset_code' => ['sometimes', 'string', 'exists:assets,code'],
             'chat_friend_id' => ['sometimes', 'nullable', 'integer'],
         ]);
@@ -101,7 +101,7 @@ class RequestMoneyStoreController extends Controller
             user: $authUser,
             amount: $normalizedAmount,
             asset: $asset,
-            clientHint: isset($validated['verification_type']) ? (string) $validated['verification_type'] : null,
+            clientHint: null,
             context: [
                 'recipient_user_id' => $recipient->id,
             ],
@@ -125,7 +125,7 @@ class RequestMoneyStoreController extends Controller
                 'source' => 'authorized_transaction',
             ]);
 
-            return response()->json($this->requestMoneyReplayPayload($replayedTxn, $validated));
+            return response()->json($this->requestMoneyReplayPayload($replayedTxn));
         }
 
         $this->telemetry->logEvent('request_money_initiation_started', $this->telemetry->requestContext($request, [
@@ -159,7 +159,7 @@ class RequestMoneyStoreController extends Controller
                     'amount' => $normalizedAmount,
                     'asset_code' => $asset->code,
                     'note' => $validated['note'] ?? null,
-                    'status' => MoneyRequest::STATUS_AWAITING_OTP,
+                    'status' => MoneyRequest::STATUS_PENDING,
                 ]);
 
                 $payload = [
@@ -320,31 +320,19 @@ class RequestMoneyStoreController extends Controller
     }
 
     /**
-     * @param  array<string, mixed>  $validated
      * @return array<string, mixed>
      */
-    private function requestMoneyReplayPayload(AuthorizedTransaction $txn, array $validated): array
+    private function requestMoneyReplayPayload(AuthorizedTransaction $txn): array
     {
-        $nextStep = $txn->verification_type === AuthorizedTransaction::VERIFICATION_NONE
-            ? 'none'
-            : ($txn->verification_type === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp');
-        $codeSentMessage = null;
-        if ($txn->verification_type === AuthorizedTransaction::VERIFICATION_OTP) {
-            $channel = ($validated['verification_type'] ?? 'sms') === 'email' ? 'email' : 'phone';
-            $codeSentMessage = $channel === 'email'
-                ? 'A verification code has been sent to your email.'
-                : 'A verification code has been sent to your phone.';
-        }
-
         $result = is_array($txn->result) ? $txn->result : [];
 
         return [
             'status' => 'success',
             'remark' => 'request_money',
             'data' => [
-                'next_step' => $nextStep,
+                'next_step' => 'none',
                 'trx' => $txn->trx,
-                'code_sent_message' => $codeSentMessage,
+                'code_sent_message' => null,
                 'money_request_id' => $result['money_request_id'] ?? $txn->payload['money_request_id'] ?? null,
                 'chat_message_id' => $result['chat_message_id'] ?? null,
                 'chat_linked' => $result['chat_linked'] ?? null,

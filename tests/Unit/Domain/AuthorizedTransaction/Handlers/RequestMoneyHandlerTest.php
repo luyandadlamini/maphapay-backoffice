@@ -24,7 +24,7 @@ class RequestMoneyHandlerTest extends DomainTestCase
     }
 
     #[Test]
-    public function it_transitions_money_request_from_awaiting_otp_to_pending(): void
+    public function it_returns_request_metadata_when_money_request_is_already_pending(): void
     {
         $user = User::factory()->create();
 
@@ -34,7 +34,7 @@ class RequestMoneyHandlerTest extends DomainTestCase
             'recipient_user_id' => User::factory()->create()->id,
             'amount'            => '25.10',
             'asset_code'        => 'SZL',
-            'status'            => MoneyRequest::STATUS_AWAITING_OTP,
+            'status'            => MoneyRequest::STATUS_PENDING,
         ]);
 
         $txn = AuthorizedTransaction::query()->create([
@@ -53,10 +53,7 @@ class RequestMoneyHandlerTest extends DomainTestCase
         $this->assertSame('SZL', $result['asset_code']);
         $this->assertSame($moneyRequest->id, $result['money_request_id']);
 
-        $this->assertDatabaseHas('money_requests', [
-            'id'     => $moneyRequest->id,
-            'status' => MoneyRequest::STATUS_PENDING,
-        ]);
+        $this->assertDatabaseHas('money_requests', ['id' => $moneyRequest->id, 'status' => MoneyRequest::STATUS_PENDING]);
     }
 
     #[Test]
@@ -110,7 +107,7 @@ class RequestMoneyHandlerTest extends DomainTestCase
     }
 
     #[Test]
-    public function it_throws_when_money_request_is_not_in_awaiting_otp_state(): void
+    public function it_throws_when_money_request_is_not_in_pending_state(): void
     {
         $user = User::factory()->create();
 
@@ -120,7 +117,7 @@ class RequestMoneyHandlerTest extends DomainTestCase
             'recipient_user_id' => User::factory()->create()->id,
             'amount'            => '10.00',
             'asset_code'        => 'SZL',
-            'status'            => MoneyRequest::STATUS_PENDING,
+            'status'            => MoneyRequest::STATUS_REJECTED,
         ]);
 
         $txn = AuthorizedTransaction::query()->create([
@@ -151,7 +148,7 @@ class RequestMoneyHandlerTest extends DomainTestCase
             'amount'            => '10.00',
             'asset_code'        => 'SZL',
             'note'              => 'Dinner',
-            'status'            => MoneyRequest::STATUS_AWAITING_OTP,
+            'status'            => MoneyRequest::STATUS_PENDING,
         ]);
 
         $txn = AuthorizedTransaction::query()->create([

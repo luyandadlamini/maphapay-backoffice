@@ -52,7 +52,6 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
             'user' => $this->recipient->email,
             'amount' => '25.00',
             'note' => 'Lunch',
-            'verification_type' => 'sms',
         ]);
 
         $response->assertOk()
@@ -127,7 +126,6 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
             'user' => $this->recipient->email,
             'amount' => '15.00',
             'note' => 'Replay-safe request',
-            'verification_type' => 'sms',
         ];
 
         $first = $this->withHeaders([
@@ -172,7 +170,6 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
             'user' => $this->recipient->email,
             'amount' => '15.00',
             'note' => 'Cache-loss replay-safe request',
-            'verification_type' => 'sms',
         ];
 
         $first = $this->withHeaders([
@@ -205,25 +202,24 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
     }
 
     #[Test]
-    public function test_duplicate_store_reuses_existing_rows_after_cache_loss_even_when_client_hint_changes_but_policy_stays_none(): void
+    public function test_duplicate_store_reuses_existing_rows_after_cache_loss_with_same_payload(): void
     {
         config([
             'maphapay_migration.enable_request_money' => true,
         ]);
 
-        $this->requester->update(['transaction_pin' => null]);
         Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
 
         $idem = (string) Str::uuid();
+        $body = [
+            'user' => $this->recipient->email,
+            'amount' => '15.00',
+            'note' => 'Idempotent request replay',
+        ];
 
         $first = $this->withHeaders([
             'X-Idempotency-Key' => $idem,
-        ])->postJson('/api/request-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '15.00',
-            'note' => 'Hint drift request replay',
-            'verification_type' => 'sms',
-        ]);
+        ])->postJson('/api/request-money/store', $body);
 
         $first->assertOk()
             ->assertJsonPath('data.next_step', 'none');
@@ -232,12 +228,7 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
 
         $second = $this->withHeaders([
             'X-Idempotency-Key' => $idem,
-        ])->postJson('/api/request-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '15.00',
-            'note' => 'Hint drift request replay',
-            'verification_type' => 'pin',
-        ]);
+        ])->postJson('/api/request-money/store', $body);
 
         $second->assertOk()
             ->assertJsonPath('data.trx', $first->json('data.trx'))
@@ -272,12 +263,12 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
             'user' => $this->recipient->email,
             'amount' => '15.00',
             'verification_type' => 'none',
-        ])->assertOk()
-            ->assertJsonPath('data.next_step', 'none');
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['verification_type']);
     }
 
     #[Test]
-    public function test_store_uses_none_policy_when_requester_has_a_transaction_pin_even_if_client_requests_sms(): void
+    public function test_store_rejects_verification_type_when_client_requests_sms(): void
     {
         config([
             'maphapay_migration.enable_request_money' => true,
@@ -286,30 +277,16 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         $this->requester->update(['transaction_pin' => '1234', 'transaction_pin_enabled' => true]);
         Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
 
-        $response = $this->postJson('/api/request-money/store', [
+        $this->postJson('/api/request-money/store', [
             'user' => $this->recipient->email,
             'amount' => '15.00',
             'verification_type' => 'sms',
-        ]);
-
-        $response->assertOk()
-            ->assertJsonPath('data.next_step', 'none');
-
-        $trx = (string) $response->json('data.trx');
-        /** @var AuthorizedTransaction $txn */
-        $txn = AuthorizedTransaction::query()->where('trx', $trx)->firstOrFail();
-
-        $this->assertSame(AuthorizedTransaction::VERIFICATION_NONE, $txn->verification_type);
-        $this->assertSame(
-            AuthorizedTransaction::VERIFICATION_NONE,
-            $txn->payload['_verification_policy']['verification_type'] ?? null,
-        );
-        $this->assertSame('request_creation_no_funds_moved', $txn->payload['_verification_policy']['reason'] ?? null);
-        $this->assertSame('sms', $txn->payload['_verification_policy']['client_hint'] ?? null);
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['verification_type']);
     }
 
     #[Test]
-    public function test_store_uses_none_policy_when_requester_has_no_pin_even_if_client_requests_pin(): void
+    public function test_store_rejects_verification_type_when_client_requests_pin(): void
     {
         config([
             'maphapay_migration.enable_request_money' => true,
@@ -318,25 +295,12 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         $this->requester->update(['transaction_pin' => null]);
         Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
 
-        $response = $this->postJson('/api/request-money/store', [
+        $this->postJson('/api/request-money/store', [
             'user' => $this->recipient->email,
             'amount' => '15.00',
             'verification_type' => 'pin',
-        ]);
-
-        $response->assertOk()
-            ->assertJsonPath('data.next_step', 'none');
-
-        $trx = (string) $response->json('data.trx');
-        /** @var AuthorizedTransaction $txn */
-        $txn = AuthorizedTransaction::query()->where('trx', $trx)->firstOrFail();
-
-        $this->assertSame(AuthorizedTransaction::VERIFICATION_NONE, $txn->verification_type);
-        $this->assertSame(
-            AuthorizedTransaction::VERIFICATION_NONE,
-            $txn->payload['_verification_policy']['verification_type'] ?? null,
-        );
-        $this->assertSame('pin', $txn->payload['_verification_policy']['client_hint'] ?? null);
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['verification_type']);
     }
 
     #[Test]
@@ -351,7 +315,6 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         $response = $this->postJson('/api/request-money/store', [
             'user' => $this->recipient->email,
             'amount' => '12.00',
-            'verification_type' => 'sms',
             'chat_friend_id' => $this->recipient->id,
         ]);
 
@@ -378,7 +341,6 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         $this->postJson('/api/request-money/store', [
             'user' => $this->recipient->email,
             'amount' => '12.00',
-            'verification_type' => 'sms',
             'chat_friend_id' => $other->id,
         ])->assertStatus(422)
             ->assertJsonPath('message.0', 'Chat context does not match the selected recipient.');
@@ -399,7 +361,6 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
             'user' => $this->recipient->email,
             'amount' => '18.00',
             'note' => 'Dinner',
-            'verification_type' => 'sms',
             'chat_friend_id' => $this->recipient->id,
         ]);
 
