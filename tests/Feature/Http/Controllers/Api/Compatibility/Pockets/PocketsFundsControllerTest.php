@@ -6,6 +6,7 @@ namespace Tests\Feature\Http\Controllers\Api\Compatibility\Pockets;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
+use App\Domain\Account\Models\TransactionProjection;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\Mobile\Models\Pocket;
 use App\Http\Middleware\TracingMiddleware;
@@ -93,6 +94,17 @@ class PocketsFundsControllerTest extends ControllerTestCase
             $asset->toSmallestUnit($initialWalletMajor) - $asset->toSmallestUnit($amountMajor),
             $accountBalance->balance,
         );
+
+        $projection = TransactionProjection::query()
+            ->where('account_uuid', $account->uuid)
+            ->latest('id')
+            ->firstOrFail();
+
+        self::assertSame('withdrawal', $projection->type);
+        self::assertSame('pocket_deposit', $projection->subtype);
+        self::assertSame('pocket_transfer', $projection->metadata['source'] ?? null);
+        self::assertSame('to_pocket', $projection->metadata['direction'] ?? null);
+        self::assertSame($pocketUuid, $projection->metadata['pocket_uuid'] ?? null);
     }
 
     #[Test]
@@ -216,6 +228,16 @@ class PocketsFundsControllerTest extends ControllerTestCase
             $asset->toSmallestUnit($initialWalletMajor) - $asset->toSmallestUnit($pocketFundMajor) + $asset->toSmallestUnit($withdrawMajor),
             $walletAfterWithdraw->balance,
         );
+
+        $projection = TransactionProjection::query()
+            ->where('account_uuid', $account->uuid)
+            ->latest('id')
+            ->firstOrFail();
+
+        self::assertSame('deposit', $projection->type);
+        self::assertSame('pocket_withdrawal', $projection->subtype);
+        self::assertSame('pocket_transfer', $projection->metadata['source'] ?? null);
+        self::assertSame('from_pocket', $projection->metadata['direction'] ?? null);
+        self::assertSame($pocketUuid, $projection->metadata['pocket_uuid'] ?? null);
     }
 }
-

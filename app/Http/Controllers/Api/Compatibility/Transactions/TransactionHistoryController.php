@@ -41,6 +41,63 @@ class TransactionHistoryController extends Controller
 {
     private const PER_PAGE = 15;
 
+    private function classify(TransactionProjection $transaction): array
+    {
+        $metadata = is_array($transaction->metadata) ? $transaction->metadata : [];
+        $type = (string) $transaction->type;
+        $subtype = (string) ($transaction->subtype ?? '');
+        $source = (string) ($metadata['source'] ?? '');
+
+        $direction = match ($type) {
+            'deposit', 'transfer_in' => 'in',
+            'withdrawal', 'transfer_out' => 'out',
+            default => 'none',
+        };
+
+        if ($source === 'pocket_transfer') {
+            return [
+                'direction' => $direction,
+                'analytics_bucket' => 'savings',
+                'budget_eligible' => false,
+                'source_domain' => 'savings',
+            ];
+        }
+
+        if (in_array($type, ['transfer_in', 'transfer_out'], true) || in_array($subtype, ['send_money', 'request_money_accept'], true)) {
+            return [
+                'direction' => $direction,
+                'analytics_bucket' => 'transfer',
+                'budget_eligible' => false,
+                'source_domain' => 'p2p',
+            ];
+        }
+
+        if (str_contains($subtype, 'cash_out')) {
+            return [
+                'direction' => $direction,
+                'analytics_bucket' => 'expense',
+                'budget_eligible' => false,
+                'source_domain' => 'cash_out',
+            ];
+        }
+
+        if (str_contains($subtype, 'merchant') || str_contains($subtype, 'pay')) {
+            return [
+                'direction' => $direction,
+                'analytics_bucket' => $direction === 'out' ? 'expense' : 'income',
+                'budget_eligible' => $direction === 'out',
+                'source_domain' => 'merchant_payment',
+            ];
+        }
+
+        return [
+            'direction' => $direction,
+            'analytics_bucket' => $direction === 'in' ? 'income' : 'expense',
+            'budget_eligible' => $direction === 'out',
+            'source_domain' => $source !== '' ? $source : 'wallet',
+        ];
+    }
+
     public function __invoke(Request $request): JsonResponse
     {
         /** @var User $user */
@@ -91,22 +148,31 @@ class TransactionHistoryController extends Controller
             $term = $request->string('search')->toString();
             $query->where(function ($q) use ($term): void {
                 $q->where('description', 'like', "%{$term}%")
-                    ->orWhere('reference', 'like', "%{$term}%");
+                    ->orWhere('reference', 'like', "%{$term}%")
+                    ->orWhere('uuid', 'like', "%{$term}%");
             });
         }
 
         $paginator = $query->paginate(self::PER_PAGE);
 
-        $rows = collect($paginator->items())->map(fn (TransactionProjection $tx): array => [
-            'id'          => $tx->uuid,
-            'reference'   => $tx->reference,
-            'description' => $tx->description,
-            'amount'      => $tx->formatted_amount,
-            'type'        => $tx->type,
-            'subtype'     => $tx->subtype,
-            'asset_code'  => $tx->asset_code,
-            'created_at'  => $tx->created_at?->toIso8601String(),
-        ])->values()->all();
+        $rows = collect($paginator->items())->map(function (TransactionProjection $tx): array {
+            $classification = $this->classify($tx);
+
+            return [
+                'id'               => $tx->uuid,
+                'reference'        => $tx->reference,
+                'description'      => $tx->description,
+                'amount'           => $tx->formatted_amount,
+                'type'             => $tx->type,
+                'subtype'          => $tx->subtype,
+                'asset_code'       => $tx->asset_code,
+                'direction'        => $classification['direction'],
+                'analytics_bucket' => $classification['analytics_bucket'],
+                'budget_eligible'  => $classification['budget_eligible'],
+                'source_domain'    => $classification['source_domain'],
+                'created_at'       => $tx->created_at?->toIso8601String(),
+            ];
+        })->values()->all();
 
         $subtypes = TransactionProjection::where('account_uuid', $account->uuid)
             ->where('status', 'completed')

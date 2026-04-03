@@ -27,9 +27,16 @@ class InternalP2pTransferService
         string $amount,
         string $assetCode,
         string $reference,
+        string $operationType = 'send_money',
+        ?string $note = null,
     ): array {
         $asset = Asset::query()->where('code', $assetCode)->firstOrFail();
         $amountMinor = MoneyConverter::forAsset($amount, $asset);
+        $metadata = array_filter([
+            'source' => 'p2p',
+            'operation_type' => $operationType,
+            'note' => $note,
+        ], static fn (mixed $value): bool => $value !== null && $value !== '');
 
         try {
             $aggregate = AssetTransferAggregate::retrieve($reference);
@@ -44,11 +51,12 @@ class InternalP2pTransferService
                     fromAmount: $money,
                     toAmount: $money,
                     description: "Transfer: {$reference}",
+                    metadata: $metadata,
                 );
             }
 
             $aggregate
-                ->complete($reference)
+                ->complete($reference, $metadata)
                 ->persist();
         } catch (\Throwable $e) {
             throw new RuntimeException(
@@ -64,4 +72,3 @@ class InternalP2pTransferService
         ];
     }
 }
-

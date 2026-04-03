@@ -108,6 +108,10 @@ class TransactionHistoryControllerTest extends ControllerTestCase
         $this->assertArrayHasKey('type', $row);
         $this->assertArrayHasKey('subtype', $row);
         $this->assertArrayHasKey('asset_code', $row);
+        $this->assertArrayHasKey('direction', $row);
+        $this->assertArrayHasKey('analytics_bucket', $row);
+        $this->assertArrayHasKey('budget_eligible', $row);
+        $this->assertArrayHasKey('source_domain', $row);
         $this->assertArrayHasKey('created_at', $row);
 
         // No legacy field names
@@ -123,6 +127,10 @@ class TransactionHistoryControllerTest extends ControllerTestCase
         $this->assertSame('deposit', $row['type']);
         $this->assertSame('send_money', $row['subtype']);
         $this->assertSame('SZL', $row['asset_code']);
+        $this->assertSame('in', $row['direction']);
+        $this->assertSame('transfer', $row['analytics_bucket']);
+        $this->assertFalse($row['budget_eligible']);
+        $this->assertSame('p2p', $row['source_domain']);
     }
 
     #[Test]
@@ -269,6 +277,56 @@ class TransactionHistoryControllerTest extends ControllerTestCase
         $data = $this->getJson(self::ROUTE . '?search=Alice')->assertOk()->json('data.transactions.data');
         $this->assertCount(1, $data);
         $this->assertSame('Alice sent you money', $data[0]['description']);
+    }
+
+    #[Test]
+    public function test_search_filter_matches_transaction_uuid(): void
+    {
+        [$user, $account] = $this->makeUserWithAccount();
+
+        $transaction = TransactionProjection::factory()->create([
+            'account_uuid' => $account->uuid,
+            'asset_code'   => 'SZL',
+            'description'  => 'Pocket transfer',
+            'reference'    => null,
+            'status'       => 'completed',
+        ]);
+
+        Sanctum::actingAs($user, ['read', 'write', 'delete']);
+
+        $data = $this->getJson(self::ROUTE . '?search=' . $transaction->uuid)->assertOk()->json('data.transactions.data');
+        $this->assertCount(1, $data);
+        $this->assertSame((string) $transaction->uuid, $data[0]['id']);
+    }
+
+    #[Test]
+    public function test_savings_transactions_return_savings_classification_fields(): void
+    {
+        [$user, $account] = $this->makeUserWithAccount();
+
+        TransactionProjection::factory()->create([
+            'account_uuid' => $account->uuid,
+            'asset_code'   => 'SZL',
+            'type'         => 'withdrawal',
+            'subtype'      => 'pocket_deposit',
+            'description'  => 'Savings pocket: Holiday',
+            'status'       => 'completed',
+            'metadata'     => [
+                'source' => 'pocket_transfer',
+                'direction' => 'to_pocket',
+                'pocket_uuid' => 'pocket-123',
+            ],
+        ]);
+
+        Sanctum::actingAs($user, ['read', 'write', 'delete']);
+
+        $row = $this->getJson(self::ROUTE)->assertOk()->json('data.transactions.data.0');
+
+        $this->assertSame('out', $row['direction']);
+        $this->assertSame('savings', $row['analytics_bucket']);
+        $this->assertFalse($row['budget_eligible']);
+        $this->assertSame('savings', $row['source_domain']);
+        $this->assertSame('pocket_deposit', $row['subtype']);
     }
 
     // ── Isolation + pending exclusion ────────────────────────────────────────

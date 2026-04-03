@@ -46,6 +46,7 @@ class RequestMoneyReceivedHandler implements AuthorizedTransactionHandlerInterfa
         $assetCode = $payload['asset_code'] ?? 'SZL';
         $moneyRequestId = $payload['money_request_id'] ?? null;
         $reference = $payload['reference'] ?? $transaction->trx;
+        $note = $payload['note'] ?? null;
 
         if (! $fromAccountUuid || ! $toAccountUuid || ! $amountStr) {
             throw new InvalidArgumentException('RequestMoneyReceivedHandler: missing required payload keys.');
@@ -66,6 +67,8 @@ class RequestMoneyReceivedHandler implements AuthorizedTransactionHandlerInterfa
             amount: (string) $amountStr,
             assetCode: (string) $assetCode,
             reference: (string) $reference,
+            operationType: 'request_money_accept',
+            note: is_string($note) ? $note : null,
         );
 
         $moneyRequest = MoneyRequest::query()->where('id', $moneyRequestId)->first();

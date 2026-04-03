@@ -43,6 +43,7 @@ class SendMoneyHandler implements AuthorizedTransactionHandlerInterface
         $amountStr = $payload['amount'] ?? null;
         $assetCode = $payload['asset_code'] ?? 'SZL';
         $reference = $payload['reference'] ?? $transaction->trx;
+        $note = $payload['note'] ?? null;
 
         if (! $fromAccountUuid || ! $toAccountUuid || ! $amountStr) {
             throw new InvalidArgumentException('SendMoneyHandler: missing required payload keys.');
@@ -59,6 +60,8 @@ class SendMoneyHandler implements AuthorizedTransactionHandlerInterface
             amount: (string) $amountStr,
             assetCode: (string) $assetCode,
             reference: (string) $reference,
+            operationType: 'send_money',
+            note: is_string($note) ? $note : null,
         );
 
         return [
