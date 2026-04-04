@@ -6,6 +6,8 @@ namespace App\Providers;
 
 use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderInterface;
 use App\Domain\AuthorizedTransaction\Services\DatabaseMoneyMovementRiskSignalProvider;
+use App\Models\Thread;
+use App\Observers\ThreadGroupSavingsObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Http\Request;
@@ -139,5 +141,7 @@ class AppServiceProvider extends ServiceProvider
             config(['app.rate_limits.api' => config('demo.rate_limits.api', 60)]);
             config(['app.rate_limits.transactions' => config('demo.rate_limits.transactions', 10)]);
         }
+
+        Thread::observe(ThreadGroupSavingsObserver::class);
     }
 }
