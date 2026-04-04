@@ -61,6 +61,7 @@ use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardStoreAdditiona
 use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardTransactionController;
 use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardViewController;
 use App\Http\Controllers\Api\Compatibility\WalletLinking\WalletLinkingController;
+use App\Http\Controllers\Api\SocialMoney\GroupController;
 use App\Http\Controllers\Api\SocialMoney\ThreadController;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Support\Facades\Route;
@@ -181,6 +182,14 @@ Route::middleware('auth:sanctum')
 Route::prefix('social-money')->middleware('auth:sanctum')->group(function (): void {
     Route::get('threads', [ThreadController::class, 'index']);
     Route::post('threads/direct', [ThreadController::class, 'createDirect']);
+
+    Route::post('groups', [GroupController::class, 'store']);
+    Route::patch('groups/{threadId}', [GroupController::class, 'update']);
+    Route::delete('groups/{threadId}', [GroupController::class, 'destroy']);
+    Route::post('groups/{threadId}/members', [GroupController::class, 'addMembers']);
+    Route::delete('groups/{threadId}/members/{userId}', [GroupController::class, 'removeMember']);
+    Route::post('groups/{threadId}/leave', [GroupController::class, 'leave']);
+    Route::post('groups/{threadId}/members/{userId}/role', [GroupController::class, 'changeRole']);
 });
 
 Route::middleware('auth:sanctum')
