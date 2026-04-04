@@ -63,7 +63,10 @@ use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardViewController
 use App\Http\Controllers\Api\Compatibility\WalletLinking\WalletLinkingController;
 use App\Http\Controllers\Api\SocialMoney\GroupController;
 use App\Http\Controllers\Api\SocialMoney\MessageController;
+use App\Http\Controllers\Api\SocialMoney\ThreadBillSplitController;
 use App\Http\Controllers\Api\SocialMoney\ThreadController;
+use App\Http\Controllers\Api\SocialMoney\ThreadPaymentController;
+use App\Http\Controllers\Api\SocialMoney\ThreadRequestController;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Support\Facades\Route;
 
@@ -187,6 +190,13 @@ Route::prefix('social-money')->middleware('auth:sanctum')->group(function (): vo
     Route::post('threads/{threadId}/send', [MessageController::class, 'send']);
     Route::post('threads/{threadId}/typing', [MessageController::class, 'typing']);
     Route::post('threads/{threadId}/read', [MessageController::class, 'markRead']);
+    Route::post('threads/{threadId}/bill-split', [ThreadBillSplitController::class, 'store']);
+    Route::post('bill-splits/{billSplitId}/mark-paid', [ThreadBillSplitController::class, 'markPaid']);
+    Route::post('threads/{threadId}/request', [ThreadRequestController::class, 'store']);
+    Route::post('requests/{requestId}/decline', [ThreadRequestController::class, 'decline']);
+    Route::post('requests/{requestId}/cancel', [ThreadRequestController::class, 'cancel']);
+    Route::post('requests/{requestId}/amend', [ThreadRequestController::class, 'amend']);
+    Route::post('threads/{threadId}/payment', [ThreadPaymentController::class, 'store']);
 
     Route::post('groups', [GroupController::class, 'store']);
     Route::patch('groups/{threadId}', [GroupController::class, 'update']);
