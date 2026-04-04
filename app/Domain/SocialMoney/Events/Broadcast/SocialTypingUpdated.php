@@ -4,21 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domain\SocialMoney\Events\Broadcast;
 
-use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 
 class SocialTypingUpdated implements ShouldBroadcastNow
 {
-    use Dispatchable;
-    use InteractsWithSockets;
-    use SerializesModels;
-
     public function __construct(
         public readonly int $recipientId,
-        public readonly string $conversationKey,
+        public readonly int $threadId,
         public readonly int $actorUserId,
         public readonly string $actorDisplayName,
         public readonly bool $isTyping,
@@ -45,13 +38,11 @@ class SocialTypingUpdated implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
-            'kind' => 'typing',
-            'conversationType' => 'direct',
-            'conversationKey' => $this->conversationKey,
-            'actorUserId' => (string) $this->actorUserId,
+            'threadId'         => (string) $this->threadId,
+            'actorUserId'      => (string) $this->actorUserId,
             'actorDisplayName' => $this->actorDisplayName,
-            'isTyping' => $this->isTyping,
-            'expiresAt' => $this->expiresAt,
+            'isTyping'         => $this->isTyping,
+            'expiresAt'        => $this->expiresAt,
         ];
     }
 }

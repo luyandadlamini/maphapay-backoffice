@@ -4,25 +4,24 @@ declare(strict_types=1);
 
 namespace App\Domain\SocialMoney\Events\Broadcast;
 
-use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 
 class ChatMessageSent implements ShouldBroadcastNow
 {
-    use Dispatchable;
-    use InteractsWithSockets;
-    use SerializesModels;
-
     /**
-     * @param array<string, mixed> $message
+     * @param array<string, mixed>|null $requestSnapshot
      */
     public function __construct(
         public readonly int $recipientId,
+        public readonly int $threadId,
+        public readonly string $threadType,
         public readonly int $senderId,
-        public readonly array $message,
+        public readonly string $senderName,
+        public readonly int $messageId,
+        public readonly string $messageType,
+        public readonly string $preview,
+        public readonly ?array $requestSnapshot = null,
     ) {
     }
 
@@ -45,8 +44,14 @@ class ChatMessageSent implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
-            'message' => $this->message,
-            'senderId' => (string) $this->senderId,
+            'threadId'        => (string) $this->threadId,
+            'threadType'      => $this->threadType,
+            'senderId'        => (string) $this->senderId,
+            'senderName'      => $this->senderName,
+            'messageId'       => (string) $this->messageId,
+            'messageType'     => $this->messageType,
+            'preview'         => $this->preview,
+            'requestSnapshot' => $this->requestSnapshot,
         ];
     }
 }
