@@ -41,3 +41,4 @@ test_results.txt
 .env~
 database/schema/*.bak
 .DS_Store
+.worktrees/
