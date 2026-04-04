@@ -420,4 +420,40 @@ class GroupPocketControllerTest extends TestCase
         ]);
     }
 
+    #[Test]
+    public function all_contributions_are_refunded_when_group_is_deleted(): void
+    {
+        $admin  = User::factory()->create();
+        $member = User::factory()->create();
+        $thread = $this->makeGroupThread($admin, [$member]);
+
+        $pocket = GroupPocket::create([
+            'thread_id'      => $thread->id,
+            'created_by'     => $admin->id,
+            'name'           => 'Fund',
+            'category'       => 'general',
+            'color'          => '#fff',
+            'target_amount'  => 1000,
+            'current_amount' => 800,
+        ]);
+
+        \App\Models\GroupPocketContribution::create([
+            'group_pocket_id' => $pocket->id, 'user_id' => $admin->id,  'amount' => 500,
+        ]);
+        \App\Models\GroupPocketContribution::create([
+            'group_pocket_id' => $pocket->id, 'user_id' => $member->id, 'amount' => 300,
+        ]);
+
+        Sanctum::actingAs($admin, ['read', 'write', 'delete']);
+
+        $this->deleteJson("/api/social-money/groups/{$thread->id}")
+            ->assertOk();
+
+        $this->assertDatabaseHas('group_pocket_contributions', [
+            'group_pocket_id' => $pocket->id, 'user_id' => $admin->id, 'amount' => '0.00',
+        ]);
+        $this->assertDatabaseHas('group_pocket_contributions', [
+            'group_pocket_id' => $pocket->id, 'user_id' => $member->id, 'amount' => '0.00',
+        ]);
+    }
 }

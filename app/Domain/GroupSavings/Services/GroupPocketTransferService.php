@@ -268,33 +268,27 @@ class GroupPocketTransferService
             if ((float) $refund > 0) {
                 $account = Account::query()->where('user_uuid', $user->uuid)->orderBy('id')->first();
 
-                if (! $account) {
-                    continue;
-                }
-
                 $assetCode = (string) config('banking.default_currency', self::ASSET_CODE);
-                $asset     = Asset::query()->where('code', $assetCode)->first();
+                $asset     = $account !== null ? Asset::query()->where('code', $assetCode)->first() : null;
 
-                if (! $asset) {
-                    continue;
+                if ($account !== null && $asset !== null) {
+                    $amountMinor = $asset->toSmallestUnit((float) $refund);
+
+                    AssetTransactionAggregate::retrieve((string) Str::uuid())
+                        ->credit(
+                            accountUuid: new AccountUuid($account->uuid),
+                            assetCode: $assetCode,
+                            money: new Money($amountMinor),
+                            description: "Group pocket refund: {$pocket->name}",
+                            metadata: [
+                                'source'          => 'group_pocket_refund',
+                                'group_pocket_id' => $pocket->id,
+                            ]
+                        )
+                        ->persist();
+
+                    Cache::forget("maphapay.dashboard.balance.{$user->id}");
                 }
-
-                $amountMinor = $asset->toSmallestUnit((float) $refund);
-
-                AssetTransactionAggregate::retrieve((string) Str::uuid())
-                    ->credit(
-                        accountUuid: new AccountUuid($account->uuid),
-                        assetCode: $assetCode,
-                        money: new Money($amountMinor),
-                        description: "Group pocket refund: {$pocket->name}",
-                        metadata: [
-                            'source'          => 'group_pocket_refund',
-                            'group_pocket_id' => $pocket->id,
-                        ]
-                    )
-                    ->persist();
-
-                Cache::forget("maphapay.dashboard.balance.{$user->id}");
             }
 
             $contribution->update(['amount' => 0]);
