@@ -107,7 +107,7 @@ class GroupPocketControllerTest extends TestCase
             'target_amount'  => 500.00,
             'current_amount' => 500.00,
             'is_completed'   => true,
-            'status'         => 'completed',
+            'status'         => GroupPocket::STATUS_COMPLETED,
         ]);
 
         $pocket->deductFunds('100.00');
