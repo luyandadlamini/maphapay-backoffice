@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -9,7 +12,7 @@ return new class () extends Migration {
         Schema::create('group_pockets', function (Blueprint $table) {
             $table->id();
             $table->foreignId('thread_id')->constrained('threads')->cascadeOnDelete();
-            $table->foreignId('created_by')->constrained('users');
+            $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
             $table->string('name', 150);
             $table->enum('category', [
                 'travel', 'transport', 'tech', 'emergency',
@@ -22,6 +25,8 @@ return new class () extends Migration {
             $table->boolean('is_completed')->default(false);
             $table->boolean('is_locked')->default(false);
             $table->enum('status', ['active', 'completed', 'closed'])->default('active');
+            $table->index(['thread_id', 'status']);
+            $table->index('is_completed');
             $table->timestamps();
         });
     }
