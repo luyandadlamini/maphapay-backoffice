@@ -153,4 +153,101 @@ class GroupPocketControllerTest extends TestCase
 
         $this->assertCount(1, $thread->groupPockets);
     }
+
+    #[Test]
+    public function member_can_create_a_group_pocket(): void
+    {
+        $admin  = User::factory()->create();
+        $member = User::factory()->create();
+        $thread = $this->makeGroupThread($admin, [$member]);
+
+        Sanctum::actingAs($member, ['read', 'write']);
+
+        $response = $this->postJson('/api/savings/group-pockets', [
+            'thread_id'     => $thread->id,
+            'name'          => 'Holiday Fund',
+            'category'      => 'travel',
+            'color'         => '#6366F1',
+            'target_amount' => 5000,
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.pocket.name', 'Holiday Fund')
+            ->assertJsonPath('data.pocket.status', 'active');
+
+        $this->assertDatabaseHas('group_pockets', ['name' => 'Holiday Fund', 'thread_id' => $thread->id]);
+    }
+
+    #[Test]
+    public function non_member_cannot_create_a_group_pocket(): void
+    {
+        $admin    = User::factory()->create();
+        $outsider = User::factory()->create();
+        $thread   = $this->makeGroupThread($admin);
+
+        Sanctum::actingAs($outsider, ['read', 'write']);
+
+        $this->postJson('/api/savings/group-pockets', [
+            'thread_id'     => $thread->id,
+            'name'          => 'Secret Fund',
+            'category'      => 'general',
+            'color'         => '#000000',
+            'target_amount' => 1000,
+        ])->assertStatus(403);
+    }
+
+    #[Test]
+    public function member_can_list_pockets_for_their_thread(): void
+    {
+        $admin  = User::factory()->create();
+        $member = User::factory()->create();
+        $thread = $this->makeGroupThread($admin, [$member]);
+
+        GroupPocket::create([
+            'thread_id' => $thread->id, 'created_by' => $admin->id,
+            'name' => 'Fund A', 'category' => 'general', 'color' => '#fff', 'target_amount' => 1000,
+        ]);
+
+        Sanctum::actingAs($member, ['read']);
+
+        $this->getJson("/api/savings/group-pockets/thread/{$thread->id}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data.pockets');
+    }
+
+    #[Test]
+    public function admin_can_update_pocket_name(): void
+    {
+        $admin  = User::factory()->create();
+        $thread = $this->makeGroupThread($admin);
+
+        $pocket = GroupPocket::create([
+            'thread_id' => $thread->id, 'created_by' => $admin->id,
+            'name' => 'Old Name', 'category' => 'general', 'color' => '#fff', 'target_amount' => 1000,
+        ]);
+
+        Sanctum::actingAs($admin, ['read', 'write']);
+
+        $this->patchJson("/api/savings/group-pockets/{$pocket->id}", ['name' => 'New Name'])
+            ->assertOk()
+            ->assertJsonPath('data.pocket.name', 'New Name');
+    }
+
+    #[Test]
+    public function non_admin_cannot_update_pocket(): void
+    {
+        $admin  = User::factory()->create();
+        $member = User::factory()->create();
+        $thread = $this->makeGroupThread($admin, [$member]);
+
+        $pocket = GroupPocket::create([
+            'thread_id' => $thread->id, 'created_by' => $admin->id,
+            'name' => 'Fund', 'category' => 'general', 'color' => '#fff', 'target_amount' => 1000,
+        ]);
+
+        Sanctum::actingAs($member, ['read', 'write']);
+
+        $this->patchJson("/api/savings/group-pockets/{$pocket->id}", ['name' => 'Hacked'])
+            ->assertStatus(403);
+    }
 }

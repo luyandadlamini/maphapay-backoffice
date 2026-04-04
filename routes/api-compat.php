@@ -349,6 +349,14 @@ Route::middleware('auth:sanctum')
     ->get('virtual-card/transaction', VirtualCardTransactionController::class)
     ->name('maphapay.compat.virtual-card.transaction');
 
+Route::prefix('savings/group-pockets')->middleware('auth:sanctum')->group(function (): void {
+    Route::get('/', [\App\Http\Controllers\Api\GroupSavings\GroupPocketController::class, 'index']);
+    Route::get('thread/{threadId}', [\App\Http\Controllers\Api\GroupSavings\GroupPocketController::class, 'byThread']);
+    Route::post('/', [\App\Http\Controllers\Api\GroupSavings\GroupPocketController::class, 'store']);
+    Route::patch('{id}', [\App\Http\Controllers\Api\GroupSavings\GroupPocketController::class, 'update']);
+    Route::delete('{id}', [\App\Http\Controllers\Api\GroupSavings\GroupPocketController::class, 'destroy']);
+});
+
 // Catch-all: log any compat-prefix requests that don't match a defined route.
 // This helps identify missing endpoints the mobile app is calling.
 Route::any('{path}', function (string $path) {
