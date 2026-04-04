@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Http\Controllers\Api\GroupSavings;
 
+use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountBalance;
+use App\Domain\Asset\Models\Asset;
 use App\Models\GroupPocket;
 use App\Models\Thread;
 use App\Models\ThreadParticipant;
@@ -16,6 +19,39 @@ class GroupPocketControllerTest extends TestCase
     protected function shouldCreateDefaultAccountsInSetup(): bool
     {
         return false;
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['banking.default_currency' => 'SZL']);
+
+        Asset::firstOrCreate(
+            ['code' => 'SZL'],
+            [
+                'name'      => 'Swazi Lilangeni',
+                'type'      => 'fiat',
+                'precision' => 2,
+                'is_active' => true,
+            ],
+        );
+    }
+
+    private function fundUser(User $user, float $amountMajor): void
+    {
+        $account = Account::factory()->create([
+            'user_uuid' => $user->uuid,
+            'frozen'    => false,
+        ]);
+
+        $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
+
+        AccountBalance::factory()
+            ->forAccount($account)
+            ->forAsset('SZL')
+            ->withBalance($asset->toSmallestUnit($amountMajor))
+            ->create();
     }
 
     /** @param array<int, User> $members */
@@ -348,4 +384,40 @@ class GroupPocketControllerTest extends TestCase
             ->assertOk()
             ->assertJsonCount(2, 'data.contributions');
     }
+
+    #[Test]
+    public function member_contributions_are_refunded_on_group_leave(): void
+    {
+        $admin  = User::factory()->create();
+        $member = User::factory()->create();
+        $thread = $this->makeGroupThread($admin, [$member]);
+
+        $pocket = GroupPocket::create([
+            'thread_id'      => $thread->id,
+            'created_by'     => $admin->id,
+            'name'           => 'Fund',
+            'category'       => 'general',
+            'color'          => '#fff',
+            'target_amount'  => 1000,
+            'current_amount' => 500,
+        ]);
+
+        \App\Models\GroupPocketContribution::create([
+            'group_pocket_id' => $pocket->id, 'user_id' => $member->id, 'amount' => 300,
+        ]);
+
+        $this->fundUser($member, 0.00);
+
+        Sanctum::actingAs($member, ['read', 'write']);
+
+        $this->postJson("/api/social-money/groups/{$thread->id}/leave")
+            ->assertOk();
+
+        $this->assertDatabaseHas('group_pocket_contributions', [
+            'group_pocket_id' => $pocket->id,
+            'user_id'         => $member->id,
+            'amount'          => '0.00',
+        ]);
+    }
+
 }

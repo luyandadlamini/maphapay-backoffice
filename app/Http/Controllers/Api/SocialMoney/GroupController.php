@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\SocialMoney;
 
+use App\Domain\GroupSavings\Services\GroupPocketTransferService;
 use App\Domain\SocialMoney\Events\Broadcast\GroupUpdated;
 use App\Domain\SocialMoney\Services\SystemMessageService;
 use App\Http\Controllers\Controller;
+use App\Models\GroupPocket;
 use App\Models\Thread;
 use App\Models\ThreadParticipant;
 use App\Models\User;
@@ -18,6 +20,7 @@ class GroupController extends Controller
 {
     public function __construct(
         private readonly SystemMessageService $systemMessages,
+        private readonly GroupPocketTransferService $groupPocketTransferService,
     ) {
     }
 
@@ -212,6 +215,16 @@ class GroupController extends Controller
             ->whereNull('left_at')
             ->firstOrFail();
 
+        $memberUser = User::findOrFail($memberId);
+        $groupPockets = GroupPocket::query()
+            ->where('thread_id', $thread->id)
+            ->where('status', '!=', GroupPocket::STATUS_CLOSED)
+            ->get();
+
+        foreach ($groupPockets as $groupPocket) {
+            $this->groupPocketTransferService->refundMemberContributions($groupPocket, $memberUser);
+        }
+
         $participant->update(['left_at' => now()]);
 
         $user = $request->user();
@@ -264,6 +277,16 @@ class GroupController extends Controller
                     'message' => 'Promote another member to admin before leaving',
                 ], 422);
             }
+        }
+
+        // Refund member's contributions across all active group pockets in this thread
+        $groupPockets = GroupPocket::query()
+            ->where('thread_id', $thread->id)
+            ->where('status', '!=', GroupPocket::STATUS_CLOSED)
+            ->get();
+
+        foreach ($groupPockets as $groupPocket) {
+            $this->groupPocketTransferService->refundMemberContributions($groupPocket, $user);
         }
 
         $participant->update(['left_at' => now()]);
