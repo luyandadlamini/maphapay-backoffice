@@ -3,50 +3,49 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\Compatibility\Budget\BudgetCategoriesController;
+use App\Http\Controllers\Api\Compatibility\Budget\BudgetCategoriesDeleteController;
 use App\Http\Controllers\Api\Compatibility\Budget\BudgetCategoriesStoreController;
 use App\Http\Controllers\Api\Compatibility\Budget\BudgetCategoriesUpdateController;
-use App\Http\Controllers\Api\Compatibility\Budget\BudgetCategoriesDeleteController;
 use App\Http\Controllers\Api\Compatibility\Budget\BudgetController;
 use App\Http\Controllers\Api\Compatibility\Budget\BudgetUpdateController;
+use App\Http\Controllers\Api\Compatibility\Dashboard\DashboardController;
 use App\Http\Controllers\Api\Compatibility\Kyc\KycFormController;
 use App\Http\Controllers\Api\Compatibility\Kyc\KycSubmitController;
-use App\Http\Controllers\Api\Compatibility\Pockets\PocketsController;
-use App\Http\Controllers\Api\Compatibility\Pockets\PocketsSyncController;
-use App\Http\Controllers\Api\Compatibility\Pockets\PocketsStoreController;
-use App\Http\Controllers\Api\Compatibility\Pockets\PocketsUpdateController;
-use App\Http\Controllers\Api\Compatibility\Pockets\PocketsAddFundsController;
-use App\Http\Controllers\Api\Compatibility\Pockets\PocketsWithdrawFundsController;
-use App\Http\Controllers\Api\Compatibility\Pockets\PocketsUpdateRulesController;
-use App\Http\Controllers\Api\Compatibility\Notifications\NotificationSettingsController;
-use App\Http\Controllers\Api\Compatibility\Notifications\PushNotificationsController;
-use App\Http\Controllers\Api\Compatibility\Notifications\PushNotificationsReadController;
-use App\Http\Controllers\Api\Compatibility\Notifications\PushNotificationsSyncController;
-use App\Http\Controllers\Api\Compatibility\Rewards\RewardsController;
-use App\Http\Controllers\Api\Compatibility\Rewards\RewardsPointsController;
-use App\Http\Controllers\Api\Compatibility\Rewards\RewardsSyncController;
-use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialFriendsController;
-use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialChatCompatController;
-use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialFriendRequestsController;
-use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialFriendshipStatusController;
-use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialSummaryController;
-use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialFriendRequestStoreController;
-use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialUserLookupController;
-use App\Http\Controllers\Api\Compatibility\WalletLinking\WalletLinkingController;
-use App\Http\Controllers\Api\Compatibility\Dashboard\DashboardController;
 use App\Http\Controllers\Api\Compatibility\Mtn\CallbackController;
 use App\Http\Controllers\Api\Compatibility\Mtn\DisbursementController;
 use App\Http\Controllers\Api\Compatibility\Mtn\RequestToPayController;
 use App\Http\Controllers\Api\Compatibility\Mtn\TransactionStatusController;
+use App\Http\Controllers\Api\Compatibility\Notifications\NotificationSettingsController;
+use App\Http\Controllers\Api\Compatibility\Notifications\PushNotificationsController;
+use App\Http\Controllers\Api\Compatibility\Notifications\PushNotificationsReadController;
+use App\Http\Controllers\Api\Compatibility\Notifications\PushNotificationsSyncController;
+use App\Http\Controllers\Api\Compatibility\Pockets\PocketsAddFundsController;
+use App\Http\Controllers\Api\Compatibility\Pockets\PocketsController;
+use App\Http\Controllers\Api\Compatibility\Pockets\PocketsStoreController;
+use App\Http\Controllers\Api\Compatibility\Pockets\PocketsSyncController;
+use App\Http\Controllers\Api\Compatibility\Pockets\PocketsUpdateController;
+use App\Http\Controllers\Api\Compatibility\Pockets\PocketsUpdateRulesController;
+use App\Http\Controllers\Api\Compatibility\Pockets\PocketsWithdrawFundsController;
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyHistoryController;
-use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialThreadsController;
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyReceivedHistoryController;
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyReceivedStoreController;
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyRejectController;
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyStoreController;
+use App\Http\Controllers\Api\Compatibility\Rewards\RewardsController;
+use App\Http\Controllers\Api\Compatibility\Rewards\RewardsPointsController;
+use App\Http\Controllers\Api\Compatibility\Rewards\RewardsSyncController;
 use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendCancelController;
 use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendIndexController;
 use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendStoreController;
 use App\Http\Controllers\Api\Compatibility\SendMoney\SendMoneyStoreController;
+use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialChatCompatController;
+use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialFriendRequestsController;
+use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialFriendRequestStoreController;
+use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialFriendsController;
+use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialFriendshipStatusController;
+use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialSummaryController;
+use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialThreadsController;
+use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialUserLookupController;
 use App\Http\Controllers\Api\Compatibility\Transactions\TransactionCategoryUpdateController;
 use App\Http\Controllers\Api\Compatibility\Transactions\TransactionHistoryController;
 use App\Http\Controllers\Api\Compatibility\Transactions\TransactionSyncController;
@@ -54,13 +53,15 @@ use App\Http\Controllers\Api\Compatibility\VerificationProcess\ChallengeBiometri
 use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyBiometricController;
 use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyOtpController;
 use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyPinController;
-use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardListController;
-use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardViewController;
-use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardEnsureDefaultController;
-use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardStoreAdditionalController;
 use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardAddFundController;
 use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardCancelController;
+use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardEnsureDefaultController;
+use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardListController;
+use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardStoreAdditionalController;
 use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardTransactionController;
+use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardViewController;
+use App\Http\Controllers\Api\Compatibility\WalletLinking\WalletLinkingController;
+use App\Http\Controllers\Api\SocialMoney\ThreadController;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Support\Facades\Route;
 
@@ -176,6 +177,11 @@ Route::middleware('auth:sanctum')
 Route::middleware('auth:sanctum')
     ->get('social-money/threads', SocialThreadsController::class)
     ->name('maphapay.compat.social-money.threads');
+
+Route::prefix('social-money')->middleware('auth:sanctum')->group(function (): void {
+    Route::get('threads', [ThreadController::class, 'index']);
+    Route::post('threads/direct', [ThreadController::class, 'createDirect']);
+});
 
 Route::middleware('auth:sanctum')
     ->get('social-money/summary', SocialSummaryController::class)
@@ -345,7 +351,7 @@ Route::middleware('auth:sanctum')
 // Catch-all: log any compat-prefix requests that don't match a defined route.
 // This helps identify missing endpoints the mobile app is calling.
 Route::any('{path}', function (string $path) {
-    \Illuminate\Support\Facades\Log::warning('[compat:404] unmatched route', [
+    Illuminate\Support\Facades\Log::warning('[compat:404] unmatched route', [
         'method' => request()->method(),
         'path'   => $path,
         'user'   => request()->user()?->id,
