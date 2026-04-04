@@ -135,4 +135,22 @@ class GroupPocketControllerTest extends TestCase
         $this->assertTrue($pocket->wouldExceedRegulatoryMax('2.00'));
         $this->assertFalse($pocket->wouldExceedRegulatoryMax('1.00'));
     }
+
+    #[Test]
+    public function thread_has_group_pockets_relation(): void
+    {
+        $admin = User::factory()->create();
+        $thread = $this->makeGroupThread($admin);
+
+        GroupPocket::create([
+            'thread_id'     => $thread->id,
+            'created_by'    => $admin->id,
+            'name'          => 'Trip Fund',
+            'category'      => 'travel',
+            'color'         => '#6366F1',
+            'target_amount' => 1000.00,
+        ]);
+
+        $this->assertCount(1, $thread->groupPockets);
+    }
 }

@@ -54,6 +54,12 @@ class Thread extends Model
         return $this->hasMany(BillSplit::class);
     }
 
+    /** @return HasMany<GroupPocket, $this> */
+    public function groupPockets(): HasMany
+    {
+        return $this->hasMany(GroupPocket::class);
+    }
+
     /** @return HasMany<MessageRead, $this> */
     public function reads(): HasMany
     {
