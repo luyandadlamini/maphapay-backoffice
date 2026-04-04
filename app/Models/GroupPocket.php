@@ -25,6 +25,10 @@ class GroupPocket extends Model
 
     public const REGULATORY_MAX = 100000.00;
 
+    public const STATUS_ACTIVE    = 'active';
+    public const STATUS_COMPLETED = 'completed';
+    public const STATUS_CLOSED    = 'closed';
+
     /** @return BelongsTo<Thread, $this> */
     public function thread(): BelongsTo
     {
@@ -49,34 +53,34 @@ class GroupPocket extends Model
         return $this->hasMany(GroupPocketWithdrawalRequest::class);
     }
 
-    public function addFunds(float $amount): void
+    public function addFunds(string $amount): void
     {
-        $this->current_amount = bcadd((string) $this->current_amount, (string) $amount, 2);
+        $this->current_amount = bcadd((string) $this->current_amount, $amount, 2);
 
         if (bccomp((string) $this->current_amount, (string) $this->target_amount, 2) >= 0) {
             $this->is_completed = true;
-            $this->status = 'completed';
+            $this->status = self::STATUS_COMPLETED;
         }
 
         $this->save();
     }
 
-    public function deductFunds(float $amount): void
+    public function deductFunds(string $amount): void
     {
-        $this->current_amount = bcsub((string) $this->current_amount, (string) $amount, 2);
+        $this->current_amount = bcsub((string) $this->current_amount, $amount, 2);
         $this->is_completed = false;
 
-        if ($this->status === 'completed') {
-            $this->status = 'active';
+        if ($this->status === self::STATUS_COMPLETED) {
+            $this->status = self::STATUS_ACTIVE;
         }
 
         $this->save();
     }
 
-    public function wouldExceedRegulatoryMax(float $amount): bool
+    public function wouldExceedRegulatoryMax(string $amount): bool
     {
         return bccomp(
-            bcadd((string) $this->current_amount, (string) $amount, 2),
+            bcadd((string) $this->current_amount, $amount, 2),
             (string) self::REGULATORY_MAX,
             2
         ) > 0;

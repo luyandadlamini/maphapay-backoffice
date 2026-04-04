@@ -18,6 +18,7 @@ class GroupPocketControllerTest extends TestCase
         return false;
     }
 
+    /** @param array<int, User> $members */
     private function makeGroupThread(User $admin, array $members = []): Thread
     {
         $thread = Thread::create([
@@ -84,10 +85,10 @@ class GroupPocketControllerTest extends TestCase
             'target_amount' => 500.00,
         ]);
 
-        $pocket->addFunds(500.00);
+        $pocket->addFunds('500.00');
 
         $this->assertTrue($pocket->is_completed);
-        $this->assertSame('completed', $pocket->status);
+        $this->assertSame(GroupPocket::STATUS_COMPLETED, $pocket->status);
         $this->assertSame('500.00', (string) $pocket->current_amount);
     }
 
@@ -109,10 +110,10 @@ class GroupPocketControllerTest extends TestCase
             'status'         => 'completed',
         ]);
 
-        $pocket->deductFunds(100.00);
+        $pocket->deductFunds('100.00');
 
         $this->assertFalse($pocket->is_completed);
-        $this->assertSame('active', $pocket->status);
+        $this->assertSame(GroupPocket::STATUS_ACTIVE, $pocket->status);
     }
 
     #[Test]
@@ -131,7 +132,7 @@ class GroupPocketControllerTest extends TestCase
             'current_amount' => 99999.00,
         ]);
 
-        $this->assertTrue($pocket->wouldExceedRegulatoryMax(2.00));
-        $this->assertFalse($pocket->wouldExceedRegulatoryMax(1.00));
+        $this->assertTrue($pocket->wouldExceedRegulatoryMax('2.00'));
+        $this->assertFalse($pocket->wouldExceedRegulatoryMax('1.00'));
     }
 }
