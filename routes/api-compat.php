@@ -356,6 +356,7 @@ Route::prefix('savings/group-pockets')->middleware('auth:sanctum')->group(functi
     Route::patch('{id}', [\App\Http\Controllers\Api\GroupSavings\GroupPocketController::class, 'update']);
     Route::delete('{id}', [\App\Http\Controllers\Api\GroupSavings\GroupPocketController::class, 'destroy']);
     Route::post('{id}/deposit', [\App\Http\Controllers\Api\GroupSavings\GroupPocketFundsController::class, 'deposit']);
+    Route::get('{id}/contributions', [\App\Http\Controllers\Api\GroupSavings\GroupPocketContributionsController::class, 'index']);
 });
 
 // Catch-all: log any compat-prefix requests that don't match a defined route.

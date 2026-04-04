@@ -317,4 +317,35 @@ class GroupPocketControllerTest extends TestCase
             'status' => GroupPocket::STATUS_ACTIVE,
         ]);
     }
+
+    #[Test]
+    public function member_can_view_contributions_breakdown(): void
+    {
+        $admin  = User::factory()->create(['name' => 'Alice']);
+        $member = User::factory()->create(['name' => 'Bob']);
+        $thread = $this->makeGroupThread($admin, [$member]);
+
+        $pocket = GroupPocket::create([
+            'thread_id'      => $thread->id,
+            'created_by'     => $admin->id,
+            'name'           => 'Fund',
+            'category'       => 'general',
+            'color'          => '#fff',
+            'target_amount'  => 1000,
+            'current_amount' => 700,
+        ]);
+
+        \App\Models\GroupPocketContribution::create([
+            'group_pocket_id' => $pocket->id, 'user_id' => $admin->id, 'amount' => 400,
+        ]);
+        \App\Models\GroupPocketContribution::create([
+            'group_pocket_id' => $pocket->id, 'user_id' => $member->id, 'amount' => 300,
+        ]);
+
+        Sanctum::actingAs($member, ['read']);
+
+        $this->getJson("/api/savings/group-pockets/{$pocket->id}/contributions")
+            ->assertOk()
+            ->assertJsonCount(2, 'data.contributions');
+    }
 }
