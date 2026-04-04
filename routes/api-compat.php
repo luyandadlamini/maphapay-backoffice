@@ -38,13 +38,11 @@ use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendCancelCont
 use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendIndexController;
 use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendStoreController;
 use App\Http\Controllers\Api\Compatibility\SendMoney\SendMoneyStoreController;
-use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialChatCompatController;
 use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialFriendRequestsController;
 use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialFriendRequestStoreController;
 use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialFriendsController;
 use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialFriendshipStatusController;
 use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialSummaryController;
-use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialThreadsController;
 use App\Http\Controllers\Api\Compatibility\SocialMoney\SocialUserLookupController;
 use App\Http\Controllers\Api\Compatibility\Transactions\TransactionCategoryUpdateController;
 use App\Http\Controllers\Api\Compatibility\Transactions\TransactionHistoryController;
@@ -179,10 +177,6 @@ Route::middleware('auth:sanctum')
     ->get('budget/categories', BudgetCategoriesController::class)
     ->name('maphapay.compat.budget.categories');
 
-Route::middleware('auth:sanctum')
-    ->get('social-money/threads', SocialThreadsController::class)
-    ->name('maphapay.compat.social-money.threads');
-
 Route::prefix('social-money')->middleware('auth:sanctum')->group(function (): void {
     Route::get('threads', [ThreadController::class, 'index']);
     Route::post('threads/direct', [ThreadController::class, 'createDirect']);
@@ -210,23 +204,6 @@ Route::prefix('social-money')->middleware('auth:sanctum')->group(function (): vo
 Route::middleware('auth:sanctum')
     ->get('social-money/summary', SocialSummaryController::class)
     ->name('maphapay.compat.social-money.summary');
-
-Route::middleware('auth:sanctum')
-    ->controller(SocialChatCompatController::class)
-    ->prefix('social-money')
-    ->group(function (): void {
-        Route::get('messages/{friendId}', 'messages')->name('maphapay.compat.social-money.messages');
-        Route::post('send', 'send')->name('maphapay.compat.social-money.send');
-        Route::post('send-bill-split', 'sendBillSplit')->name('maphapay.compat.social-money.send-bill-split');
-        Route::post('mark-paid', 'markPaid')->name('maphapay.compat.social-money.mark-paid');
-        Route::post('send-payment-message', 'sendPaymentMessage')->name('maphapay.compat.social-money.send-payment-message');
-        Route::post('send-request-message', 'sendRequestMessage')->name('maphapay.compat.social-money.send-request-message');
-        Route::post('typing', 'typing')->name('maphapay.compat.social-money.typing');
-        Route::post('link-request-message', 'linkRequestMessage')->name('maphapay.compat.social-money.link-request-message');
-        Route::post('amend-request-message', 'amendRequestMessage')->name('maphapay.compat.social-money.amend-request-message');
-        Route::post('decline-request-message', 'declineRequestMessage')->name('maphapay.compat.social-money.decline-request-message');
-        Route::post('cancel-request-message', 'cancelRequestMessage')->name('maphapay.compat.social-money.cancel-request-message');
-    });
 
 Route::middleware('auth:sanctum')
     ->get('social-money/friends', SocialFriendsController::class)

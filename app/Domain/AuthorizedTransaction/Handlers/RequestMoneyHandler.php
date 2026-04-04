@@ -7,7 +7,6 @@ namespace App\Domain\AuthorizedTransaction\Handlers;
 use App\Domain\AuthorizedTransaction\Contracts\AuthorizedTransactionHandlerInterface;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
-use App\Domain\SocialMoney\Services\SocialRequestMessageService;
 use App\Models\MoneyRequest;
 use InvalidArgumentException;
 
@@ -19,8 +18,8 @@ class RequestMoneyHandler implements AuthorizedTransactionHandlerInterface
 {
     public function __construct(
         private readonly MaphaPayMoneyMovementTelemetry $telemetry,
-        private readonly SocialRequestMessageService $requestMessageService,
-    ) {}
+    ) {
+    }
 
     public function handle(AuthorizedTransaction $transaction): array
     {
@@ -50,34 +49,19 @@ class RequestMoneyHandler implements AuthorizedTransactionHandlerInterface
             $moneyRequest->refresh();
         }
 
-        $chatMessageId = null;
-        $chatFriendId = $payload['chat_friend_id'] ?? null;
-        if (is_numeric($chatFriendId)) {
-            $chatMessageId = $this->requestMessageService->ensureForMoneyRequest(
-                $moneyRequest,
-                (int) $transaction->user_id,
-                (int) $chatFriendId,
-            );
-        }
-
         if ($fromStatus !== MoneyRequest::STATUS_PENDING) {
             $this->telemetry->logMoneyRequestTransition($moneyRequest, $fromStatus, MoneyRequest::STATUS_PENDING, [
-                'remark' => $transaction->remark,
+                'remark'                     => $transaction->remark,
                 'authorized_transaction_trx' => $transaction->trx,
             ]);
         }
 
         $result = [
-            'trx' => $transaction->trx,
-            'amount' => $moneyRequest->amount,
-            'asset_code' => $moneyRequest->asset_code,
+            'trx'              => $transaction->trx,
+            'amount'           => $moneyRequest->amount,
+            'asset_code'       => $moneyRequest->asset_code,
             'money_request_id' => (string) $moneyRequest->id,
         ];
-
-        if ($chatMessageId !== null) {
-            $result['chat_message_id'] = $chatMessageId;
-            $result['chat_linked'] = true;
-        }
 
         return $result;
     }
