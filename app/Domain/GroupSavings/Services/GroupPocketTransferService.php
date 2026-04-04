@@ -113,7 +113,7 @@ class GroupPocketTransferService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($lockedRequest->status !== 'pending') {
+            if ($lockedRequest->status !== GroupPocketWithdrawalRequest::STATUS_PENDING) {
                 throw new InvalidArgumentException('Withdrawal request is no longer pending');
             }
 
@@ -149,7 +149,7 @@ class GroupPocketTransferService
             $lockedPocket->deductFunds($rounded);
 
             $lockedRequest->update([
-                'status'      => 'approved',
+                'status'      => GroupPocketWithdrawalRequest::STATUS_APPROVED,
                 'reviewed_by' => $admin->id,
                 'reviewed_at' => now(),
             ]);
@@ -226,8 +226,8 @@ class GroupPocketTransferService
             GroupPocketWithdrawalRequest::query()
                 ->where('group_pocket_id', $pocket->id)
                 ->where('requested_by', $user->id)
-                ->where('status', 'pending')
-                ->update(['status' => 'cancelled']);
+                ->where('status', GroupPocketWithdrawalRequest::STATUS_PENDING)
+                ->update(['status' => GroupPocketWithdrawalRequest::STATUS_CANCELLED]);
         });
     }
 
@@ -297,8 +297,8 @@ class GroupPocketTransferService
         // Cancel all pending withdrawal requests
         GroupPocketWithdrawalRequest::query()
             ->where('group_pocket_id', $pocket->id)
-            ->where('status', 'pending')
-            ->update(['status' => 'cancelled']);
+            ->where('status', GroupPocketWithdrawalRequest::STATUS_PENDING)
+            ->update(['status' => GroupPocketWithdrawalRequest::STATUS_CANCELLED]);
     }
 
     private function requireAccount(User $user): Account

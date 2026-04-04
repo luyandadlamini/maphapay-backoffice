@@ -57,7 +57,7 @@ class GroupPocketWithdrawalController extends Controller
             'requested_by'    => $user->id,
             'amount'          => $validated['amount'],
             'note'            => $validated['note'] ?? null,
-            'status'          => 'pending',
+            'status'          => GroupPocketWithdrawalRequest::STATUS_PENDING,
         ]);
 
         return response()->json([
@@ -102,12 +102,12 @@ class GroupPocketWithdrawalController extends Controller
         $withdrawalRequest = GroupPocketWithdrawalRequest::where('group_pocket_id', $pocketId)
             ->findOrFail($requestId);
 
-        if ($withdrawalRequest->status !== 'pending') {
+        if ($withdrawalRequest->status !== GroupPocketWithdrawalRequest::STATUS_PENDING) {
             return response()->json(['status' => 'error', 'message' => ['Request is not pending']], 422);
         }
 
         $withdrawalRequest->update([
-            'status'      => 'rejected',
+            'status'      => GroupPocketWithdrawalRequest::STATUS_REJECTED,
             'reviewed_by' => $user->id,
             'reviewed_at' => now(),
         ]);
