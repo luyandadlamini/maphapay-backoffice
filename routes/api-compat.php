@@ -357,6 +357,9 @@ Route::prefix('savings/group-pockets')->middleware('auth:sanctum')->group(functi
     Route::delete('{id}', [\App\Http\Controllers\Api\GroupSavings\GroupPocketController::class, 'destroy']);
     Route::post('{id}/deposit', [\App\Http\Controllers\Api\GroupSavings\GroupPocketFundsController::class, 'deposit']);
     Route::get('{id}/contributions', [\App\Http\Controllers\Api\GroupSavings\GroupPocketContributionsController::class, 'index']);
+    Route::post('{id}/withdraw-request', [\App\Http\Controllers\Api\GroupSavings\GroupPocketWithdrawalController::class, 'request']);
+    Route::post('{id}/withdraw-request/{requestId}/approve', [\App\Http\Controllers\Api\GroupSavings\GroupPocketWithdrawalController::class, 'approve']);
+    Route::post('{id}/withdraw-request/{requestId}/reject', [\App\Http\Controllers\Api\GroupSavings\GroupPocketWithdrawalController::class, 'reject']);
 });
 
 // Catch-all: log any compat-prefix requests that don't match a defined route.
