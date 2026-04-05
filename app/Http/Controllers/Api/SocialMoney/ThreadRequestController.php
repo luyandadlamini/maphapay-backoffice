@@ -129,6 +129,8 @@ class ThreadRequestController extends Controller
             $message->update(['payload' => $payload]);
         }
 
+        $this->broadcastRequestStatusChange($message, $userId, $user->name, 'Request declined');
+
         return response()->json(['status' => 'success']);
     }
 
@@ -154,6 +156,8 @@ class ThreadRequestController extends Controller
             $payload['status'] = 'cancelled';
             $message->update(['payload' => $payload]);
         }
+
+        $this->broadcastRequestStatusChange($message, $userId, $user->name, 'Request cancelled');
 
         return response()->json(['status' => 'success']);
     }
@@ -199,6 +203,40 @@ class ThreadRequestController extends Controller
         }
 
         return response()->json(['status' => 'success']);
+    }
+
+    /**
+     * Broadcast the updated request message to all other thread participants
+     * so their caches refetch and the card status updates in real-time.
+     */
+    private function broadcastRequestStatusChange(?Message $message, int $actorId, string $actorName, string $preview): void
+    {
+        if ($message === null) {
+            return;
+        }
+
+        $thread = Thread::find($message->thread_id);
+        if ($thread === null) {
+            return;
+        }
+
+        $participantIds = ThreadParticipant::where('thread_id', $thread->id)
+            ->whereNull('left_at')
+            ->where('user_id', '!=', $actorId)
+            ->pluck('user_id');
+
+        foreach ($participantIds as $participantId) {
+            event(new ChatMessageSent(
+                recipientId: (int) $participantId,
+                threadId: $thread->id,
+                threadType: $thread->type,
+                senderId: $actorId,
+                senderName: $actorName,
+                messageId: $message->id,
+                messageType: 'request',
+                preview: $preview,
+            ));
+        }
     }
 
     private function ensureActiveMember(Thread $thread, int $userId): void
