@@ -32,30 +32,79 @@ class KycDocumentResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->columns(
-                [
-                    //
-                ]
-            )
-            ->filters(
-                [
-                    //
-                ]
-            )
-            ->actions(
-                [
-                    Tables\Actions\EditAction::make(),
-                ]
-            )
-            ->bulkActions(
-                [
-                    Tables\Actions\BulkActionGroup::make(
-                        [
-                            Tables\Actions\DeleteBulkAction::make(),
-                        ]
-                    ),
-                ]
-            );
+            ->columns([
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Customer')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('document_type')
+                    ->badge()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'verified' => 'success',
+                        'pending'  => 'warning',
+                        'rejected' => 'danger',
+                        default    => 'secondary',
+                    })
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('uploaded_at')
+                    ->dateTime()
+                    ->sortable(),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('status')
+                    ->options([
+                        'pending'  => 'Pending',
+                        'verified' => 'Verified',
+                        'rejected' => 'Rejected',
+                    ]),
+            ])
+            ->actions([
+                Tables\Actions\ViewAction::make(),
+                Tables\Actions\EditAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('approveDocuments')
+                        ->label('Approve Documents')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->visible(fn () => auth()->user()->can('approve-kyc') || auth()->user()->hasRole('super-admin'))
+                        ->action(function ($records): void {
+                            foreach ($records as $record) {
+                                $record->markAsVerified(auth()->user()->email ?? 'admin');
+                            }
+                            \Filament\Notifications\Notification::make()
+                                ->title('Documents Approved')
+                                ->success()
+                                ->send();
+                        }),
+                    Tables\Actions\BulkAction::make('rejectDocuments')
+                        ->label('Reject Documents')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->visible(fn () => auth()->user()->can('reject-kyc') || auth()->user()->hasRole('super-admin'))
+                        ->form([
+                            \Filament\Forms\Components\Textarea::make('reason')
+                                ->label('Rejection Reason')
+                                ->required(),
+                        ])
+                        ->action(function ($records, array $data): void {
+                            foreach ($records as $record) {
+                                $record->markAsRejected($data['reason'], auth()->user()->email ?? 'admin');
+                            }
+                            \Filament\Notifications\Notification::make()
+                                ->title('Documents Rejected')
+                                ->success()
+                                ->send();
+                        }),
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
     }
 
     public static function getRelations(): array
