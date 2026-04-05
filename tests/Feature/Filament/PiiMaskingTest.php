@@ -1,37 +1,113 @@
 <?php
 
-declare(strict_types=1);
-
+use App\Filament\Admin\Concerns\MasksPii;
 use App\Models\User;
-use function Pest\Livewire\livewire;
 
-// Note: These Livewire component tests require full Filament panel registration.
-// They are skipped in CI. Run manually against a fully booted panel environment.
-
-it('support-l1 cannot see raw mobile number in infolist', function () {
+beforeEach(function (): void {
     $this->artisan('db:seed', ['--class' => 'RolesAndPermissionsSeeder']);
+});
 
+it('maskPhone masks mobile number when user lacks view-pii', function (): void {
     $support = User::factory()->create();
     $support->assignRole('support-l1');
     $this->actingAs($support);
 
-    $customer = User::factory()->create(['mobile' => '76123456', 'dial_code' => '+268']);
+    $result = (new class {
+        use MasksPii;
 
-    livewire(\App\Filament\Admin\Resources\UserResource\Pages\ViewUser::class, ['record' => $customer->id])
-        ->assertDontSee('76123456')
-        ->assertSee('7612****456');
-})->skip('Livewire component test - requires full Filament panel registration; run manually');
+        public function mask(string $v): string
+        {
+            return static::maskPhone($v);
+        }
+    })->mask('76123456');
 
-it('operations-l2 with view-pii can see raw mobile number in infolist', function () {
-    $this->artisan('db:seed', ['--class' => 'RolesAndPermissionsSeeder']);
+    expect($result)->toBe('7612****456');
+});
 
+it('maskPhone passes through when user has view-pii', function (): void {
     $ops = User::factory()->create();
     $ops->assignRole('operations-l2');
     $ops->givePermissionTo('view-pii');
     $this->actingAs($ops);
 
-    $customer = User::factory()->create(['mobile' => '76123456']);
+    $result = (new class {
+        use MasksPii;
 
-    livewire(\App\Filament\Admin\Resources\UserResource\Pages\ViewUser::class, ['record' => $customer->id])
-        ->assertSee('76123456');
-})->skip('Livewire component test - requires full Filament panel registration; run manually');
+        public function mask(string $v): string
+        {
+            return static::maskPhone($v);
+        }
+    })->mask('76123456');
+
+    expect($result)->toBe('76123456');
+});
+
+it('maskEmail masks email when user lacks view-pii', function (): void {
+    $support = User::factory()->create();
+    $support->assignRole('support-l1');
+    $this->actingAs($support);
+
+    $result = (new class {
+        use MasksPii;
+
+        public function mask(string $v): string
+        {
+            return static::maskEmail($v);
+        }
+    })->mask('user@example.com');
+
+    expect($result)->toBe('us***@example.com');
+});
+
+it('maskEmail passes through when user has view-pii', function (): void {
+    $ops = User::factory()->create();
+    $ops->assignRole('operations-l2');
+    $ops->givePermissionTo('view-pii');
+    $this->actingAs($ops);
+
+    $result = (new class {
+        use MasksPii;
+
+        public function mask(string $v): string
+        {
+            return static::maskEmail($v);
+        }
+    })->mask('user@example.com');
+
+    expect($result)->toBe('user@example.com');
+});
+
+it('maskNationalId masks ID when user lacks view-pii', function (): void {
+    $support = User::factory()->create();
+    $support->assignRole('support-l1');
+    $this->actingAs($support);
+
+    $result = (new class {
+        use MasksPii;
+
+        public function mask(string $v): string
+        {
+            return static::maskNationalId($v);
+        }
+    })->mask('123456789');
+
+    expect($result)->toBe('***-****-789');
+});
+
+it('maskNationalId passes through when user has view-pii', function (): void {
+    $ops = User::factory()->create();
+    $ops->assignRole('operations-l2');
+    $ops->givePermissionTo('view-pii');
+    $this->actingAs($ops);
+
+    $result = (new class {
+        use MasksPii;
+
+        public function mask(string $v): string
+        {
+            return static::maskNationalId($v);
+        }
+    })->mask('123456789');
+
+    expect($result)->toBe('123456789');
+});
