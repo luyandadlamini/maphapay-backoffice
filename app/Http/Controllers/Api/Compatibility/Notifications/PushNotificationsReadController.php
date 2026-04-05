@@ -29,15 +29,15 @@ class PushNotificationsReadController extends Controller
 
         if ($notification === null) {
             return response()->json([
-                'status' => 'error',
-                'remark' => 'push_notification_not_found',
+                'status'  => 'error',
+                'remark'  => 'push_notification_not_found',
                 'message' => ['Notification not found'],
             ], 404);
         }
 
         if ($notification->read_at === null) {
             $notification->forceFill([
-                'status' => MobilePushNotification::STATUS_READ,
+                'status'  => MobilePushNotification::STATUS_READ,
                 'read_at' => now(),
             ])->save();
         }
@@ -45,7 +45,7 @@ class PushNotificationsReadController extends Controller
         return response()->json([
             'status' => 'success',
             'remark' => 'push_notification_read',
-            'data' => [
+            'data'   => [
                 'notification' => $this->payloadBuilder->notification($notification->fresh()),
             ],
         ]);

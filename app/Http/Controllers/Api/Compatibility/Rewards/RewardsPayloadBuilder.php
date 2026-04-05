@@ -45,16 +45,16 @@ class RewardsPayloadBuilder
                 $metadata = is_array($item->metadata) ? $item->metadata : [];
 
                 return [
-                    'id' => $item->id,
-                    'title' => $item->title,
+                    'id'          => $item->id,
+                    'title'       => $item->title,
                     'description' => $item->description,
                     'points_cost' => $item->points_cost,
                     'category_id' => $item->category,
-                    'image' => $metadata['image'] ?? null,
-                    'bg_color' => $metadata['bg_color'] ?? null,
-                    'expires_at' => $metadata['expires_at'] ?? null,
+                    'image'       => $metadata['image'] ?? null,
+                    'bg_color'    => $metadata['bg_color'] ?? null,
+                    'expires_at'  => $metadata['expires_at'] ?? null,
                     'is_redeemed' => in_array($item->id, $redeemedItemIds, true),
-                    'updated_at' => $item->updated_at?->toIso8601String(),
+                    'updated_at'  => $item->updated_at?->toIso8601String(),
                 ];
             })
             ->values()
@@ -75,9 +75,9 @@ class RewardsPayloadBuilder
             ->min('points_cost');
 
         return [
-            'currentBalance' => $currentBalance,
-            'lifetimeEarned' => $currentBalance,
-            'tier' => $this->tierForBalance($currentBalance),
+            'currentBalance'      => $currentBalance,
+            'lifetimeEarned'      => $currentBalance,
+            'tier'                => $this->tierForBalance($currentBalance),
             'nextRewardThreshold' => $nextRewardThreshold ?? max(500, ((int) ceil($currentBalance * 1.5)) + 500),
         ];
     }
@@ -103,8 +103,8 @@ class RewardsPayloadBuilder
         return RewardProfile::firstOrCreate(
             ['user_id' => $user->id],
             [
-                'xp' => 0,
-                'level' => 1,
+                'xp'             => 0,
+                'level'          => 1,
                 'current_streak' => 0,
                 'longest_streak' => 0,
                 'points_balance' => 0,
@@ -118,7 +118,7 @@ class RewardsPayloadBuilder
             $balance >= 5000 => 'platinum',
             $balance >= 2500 => 'gold',
             $balance >= 1000 => 'silver',
-            default => 'bronze',
+            default          => 'bronze',
         };
     }
 }

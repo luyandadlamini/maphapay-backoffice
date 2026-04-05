@@ -5,7 +5,6 @@ use App\Domain\Asset\Models\ExchangeRate;
 use App\Domain\Asset\Services\ExchangeRateService;
 use Illuminate\Support\Facades\Cache;
 
-
 beforeEach(function () {
     // Clear any existing exchange rates to ensure test isolation
     ExchangeRate::query()->delete();

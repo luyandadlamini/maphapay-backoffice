@@ -6,7 +6,6 @@ use App\Domain\AgentProtocol\Models\Agent;
 use App\Models\User;
 use Illuminate\Support\Str;
 
-
 describe('GraphQL AgentProtocol API', function () {
     it('returns unauthorized without authentication', function () {
         $response = $this->postJson('/graphql', [

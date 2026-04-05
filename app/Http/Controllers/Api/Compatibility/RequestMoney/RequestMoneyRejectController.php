@@ -18,7 +18,8 @@ class RequestMoneyRejectController extends Controller
 {
     public function __construct(
         private readonly MaphaPayMoneyMovementTelemetry $telemetry,
-    ) {}
+    ) {
+    }
 
     public function __invoke(Request $request, MoneyRequest $moneyRequest): JsonResponse
     {
@@ -40,14 +41,14 @@ class RequestMoneyRejectController extends Controller
         $moneyRequest->refresh();
 
         $this->telemetry->logMoneyRequestTransition($moneyRequest, $fromStatus, MoneyRequest::STATUS_REJECTED, [
-            'remark' => 'request_money_reject',
+            'remark'           => 'request_money_reject',
             'acted_by_user_id' => $authUser->getAuthIdentifier(),
         ]);
 
         return response()->json([
             'status' => 'success',
             'remark' => 'request_money_reject',
-            'data' => [],
+            'data'   => [],
         ]);
     }
 
@@ -57,8 +58,8 @@ class RequestMoneyRejectController extends Controller
     private function errorPayload(string $message): array
     {
         return [
-            'status' => 'error',
-            'remark' => 'request_money_reject',
+            'status'  => 'error',
+            'remark'  => 'request_money_reject',
             'message' => [$message],
         ];
     }

@@ -1,240 +1,66 @@
 # AGENTS.md
 
-Welcome AI coding agents! This file provides essential information to help you work effectively with the FinAegis Core Banking Platform.
+Welcome AI coding agents! This file provides essential information to help you work effectively with the MaphaPay Backoffice platform.
 
 ## Project Overview
 
-FinAegis is a comprehensive core banking platform prototype built with Laravel 12, demonstrating modern banking architecture with event sourcing, domain-driven design (DDD), and advanced financial features including the Global Currency Unit (GCU) concept.
+MaphaPay is a modern digital payment and core banking back-office, built on the FinAegis framework. It leverages Laravel 12, event sourcing, domain-driven design (DDD), and advanced financial features to manage peer-to-peer payments, request-money lifecycles, and stablecoin reserves.
 
-**Live Demo**: https://finaegis.org
+**Companion Mobile Repo**: `/Users/Lihle/Development/Coding/maphapayrn`
 
 ## Quick Start
 
 ```bash
-# Clone and setup
-git clone https://github.com/FinAegis/core-banking-prototype-laravel.git
-cd core-banking-prototype-laravel
+# Setup
 cp .env.example .env
 composer install
-npm install && npm run build
+npm install && npm run dev
 
-# Database setup
+# Database setup (using local disposable instance if 3306 is taken)
 php artisan migrate:fresh --seed
-php artisan db:seed --class=GCUBasketSeeder
-
-# Development server
-php artisan serve
-npm run dev
 ```
+
+## Architecture & Tech Stack
+
+- **Filament v3**: Admin panel for all back-office operations.
+- **Domain-Driven Design (DDD)**: Logic resides in `app/Domain/` (49 domain contexts).
+- **Event Sourcing**: Spatie Event Sourcing (v7.7+) manages state transitions.
+- **GraphQL**: Lighthouse PHP handles external API requests.
+- **Post-Quantum Crypto**: PQC-hardened encryption (ML-KEM-768, ML-DSA-65).
+- **Laravel 12**: Running on PHP 8.4 with strict types.
+
+## AI Implementation Guidelines (Filament Blueprint style)
+
+When planning new Filament features, ALWAYS follow the structured "Blueprint Plan" format:
+
+1. **Describe the User Flows**: Primary end-to-end interactions.
+2. **Map Primitives**: Link domain concepts to concrete Filament classes:
+   - **Resources**: In `app/Filament/Admin/Resources/`
+   - **Pages**: List, View, Create, Edit, or Custom.
+   - **Relation Managers**: For many-to-many or complex one-to-many.
+   - **Actions**: Modals, bulk actions, and state-triggering logic.
+3. **State Transitions**: Identify how domain state (e.g., `pending` -> `completed`) is triggered by specific UI Actions.
 
 ## Dev Environment Tips
 
 ### Essential Commands
 
 ```bash
-# Run tests (ALWAYS run before committing)
-./vendor/bin/pest --parallel
-
 # Code quality checks (MANDATORY before commits)
-XDEBUG_MODE=off TMPDIR=/tmp/phpstan-$$ vendor/bin/phpstan analyse --memory-limit=2G
-./vendor/bin/php-cs-fixer fix
-
-# Quick validation (one-liner - recommended)
-./vendor/bin/pest --parallel && XDEBUG_MODE=off TMPDIR=/tmp/phpstan-$$ vendor/bin/phpstan analyse --memory-limit=2G && ./vendor/bin/php-cs-fixer fix
+./vendor/bin/pest --parallel && XDEBUG_MODE=off vendor/bin/phpstan analyse --memory-limit=2G && ./vendor/bin/php-cs-fixer fix
 ```
-
-### API Documentation
-```bash
-php artisan l5-swagger:generate
-# Access at: http://localhost:8000/api/documentation
-```
-
-## Architecture Guidelines
-
-### Domain-Driven Design Structure
-- **Domains**: All business logic in `app/Domain/` with separate bounded contexts
-- **Event Sourcing**: All state changes through events using Spatie Event Sourcing
-- **CQRS Pattern**: Separate Command and Query buses with handlers
-- **Sagas**: Multi-step workflows with compensation support
-
-### Key Domains
-- `Account/` - Account management and balances
-- `Exchange/` - Trading engine and order management
-- `Stablecoin/` - Token lifecycle and reserve management
-- `Lending/` - P2P lending platform
-- `Treasury/` - Cash and risk management
-- `AI/` - AI agent framework with MCP integration
-
-## Code Style Guidelines
-
-### PHP Standards
-- PHP 8.3+ with strict types
-- Laravel 12 conventions
-- PSR-12 coding standard
-- PHPStan Level 5 (minimum)
-
-### Import Order
-1. `App\Domain\...`
-2. `App\Http\...`
-3. `App\Models\...`
-4. `App\Services\...`
-5. `Illuminate\...`
-6. Third-party packages
-
-### Testing Requirements
-- Minimum 50% code coverage for new code
-- Test location mirrors source structure in `tests/`
-- Use Pest PHP for all tests
-- Mock types with PHPDoc annotations
-
-## Testing Instructions
-
-### Test Suites
-```bash
-# All tests
-./vendor/bin/pest --parallel
-
-# Specific domain
-./vendor/bin/pest tests/Domain/Exchange/ --parallel
-
-# With coverage
-./vendor/bin/pest --parallel --coverage --min=50
-
-# CI environment
-./vendor/bin/pest --configuration=phpunit.ci.xml --parallel
-```
-
-### Before Committing
-1. Run all tests: `./vendor/bin/pest --parallel`
-2. Check code quality: `TMPDIR=/tmp/phpstan-$$ vendor/bin/phpstan analyse --memory-limit=2G`
-3. Fix code style: `./vendor/bin/php-cs-fixer fix`
-4. Update API docs if needed: `php artisan l5-swagger:generate`
 
 ## Security Considerations
 
-### Critical Security Rules
-- **NEVER** commit secrets or API keys
-- **NEVER** log sensitive data (passwords, tokens, PII)
-- **ALWAYS** validate and sanitize input
-- **ALWAYS** use parameterized queries
-- **ALWAYS** hash passwords with bcrypt
-- **ALWAYS** validate webhook signatures
+- **Verification Policy**: Backend-owned for `send-money` and `request-money`. Client `verification_type` is a hint only.
+- **Idempotency**: Strictly enforced for all money-movement operations.
 
-### Demo Mode
-- Use demo services for external integrations
-- Test card: 4242424242424242 always succeeds
-- Demo data is isolated with scopes
+## Testing Strategy
 
-## PR Instructions
-
-### Commit Messages
-Use conventional commits:
-```
-feat: Add liquidity pool management
-fix: Resolve order matching race condition
-test: Add coverage for wallet workflows
-docs: Update API documentation
-```
-
-When using AI assistance, include:
-```
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
-```
-
-### Pull Request Process
-1. Create feature branch: `git checkout -b feature/your-feature`
-2. Make changes following all guidelines
-3. Run full validation suite
-4. Create PR with comprehensive description
-5. Ensure GitHub Actions pass
-6. Request review
-
-### PR Template
-```markdown
-## Summary
-Brief description of changes
-
-## Key Changes
-- List of major changes
-- Implementation details
-
-## Test Coverage
-- Tests added/modified
-- Coverage percentage
-
-## Checklist
-- [ ] Tests pass
-- [ ] PHPStan passes
-- [ ] Code style fixed
-- [ ] Documentation updated
-```
-
-## Event Sourcing Patterns
-
-### Creating Events
-```php
-class OrderPlaced extends ShouldBeStored
-{
-    public function __construct(
-        public readonly string $orderId,
-        public readonly string $accountId,
-        // ... other properties
-    ) {}
-}
-```
-
-### Using Aggregates
-```php
-Order::retrieve($orderId)
-    ->placeOrder($data)
-    ->persist();
-```
-
-### Implementing Sagas
-```php
-class OrderRoutingSaga extends Reactor
-{
-    public function onOrderPlaced(OrderPlaced $event): void
-    {
-        // Handle multi-step workflow
-    }
-}
-```
-
-## AI Framework Integration
-
-The platform includes a complete AI Agent Framework:
-- MCP (Model Context Protocol) server implementation
-- Multi-LLM support (OpenAI, Claude)
-- Event-sourced AI interactions
-- Banking-specific tools and workflows
-
-See `docs/13-AI-FRAMEWORK/` for complete documentation.
-
-## Common Gotchas
-
-1. **Database Transactions**: Event sourcing handles transactions automatically
-2. **Async Operations**: Use Laravel Workflow for multi-step processes
-3. **Demo Mode**: Check `APP_ENV_MODE=demo` for demo-specific behavior
-4. **Queue Workers**: Required for event processing and workflows
-5. **Cache**: Remember to clear cache after config changes
-
-## Useful Resources
-
-- **Documentation**: `docs/README.md` - Complete documentation index
-- **API Reference**: `docs/04-API/REST_API_REFERENCE.md`
-- **Architecture**: `docs/02-ARCHITECTURE/ARCHITECTURE.md`
-- **Demo Guide**: `docs/11-USER-GUIDES/DEMO-USER-GUIDE.md`
-- **AI Framework**: `docs/13-AI-FRAMEWORK/00-Overview.md`
-
-## Contact & Support
-
-- **GitHub Issues**: Report bugs and request features
-- **Demo Site**: https://finaegis.org
-- **Documentation**: Comprehensive guides in `/docs`
+- **Pest PHP**: All unit and feature tests.
+- **Harness**: Use the `MoneyMovementTransactionInspector` for transaction lifecycle verification.
+- **Sanctum**: Always pass `['read', 'write', 'delete']` abilities to `Sanctum::actingAs()`.
 
 ---
 
-Remember: This is a demonstration prototype showcasing modern banking architecture. Always follow best practices and security guidelines when working with financial systems.
+Remember: MaphaPay prioritizes transaction integrity and auditability. Always ensure state changes are backed by persisted events.

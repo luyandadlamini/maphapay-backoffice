@@ -20,14 +20,14 @@ class BudgetCategoriesDeleteController extends Controller
 
         if (! $category) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => ['Category not found'],
             ], 404);
         }
 
         if ($category->is_system) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => ['Cannot delete system category'],
             ], 400);
         }
@@ -35,7 +35,7 @@ class BudgetCategoriesDeleteController extends Controller
         $category->delete();
 
         return response()->json([
-            'status' => 'success',
+            'status'  => 'success',
             'message' => ['Category deleted successfully'],
         ]);
     }

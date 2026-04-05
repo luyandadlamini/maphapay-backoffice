@@ -39,11 +39,11 @@ class PushNotificationsSyncController extends Controller
         return response()->json([
             'status' => 'success',
             'remark' => 'push_notifications_sync',
-            'items' => $notifications
+            'items'  => $notifications
                 ->map(fn (MobilePushNotification $notification): array => $this->payloadBuilder->notification($notification))
                 ->values()
                 ->all(),
-            'deleted_ids' => [],
+            'deleted_ids'     => [],
             'next_sync_token' => $this->nextSyncToken(
                 MobilePushNotification::query()
                     ->where('user_id', $user->id)

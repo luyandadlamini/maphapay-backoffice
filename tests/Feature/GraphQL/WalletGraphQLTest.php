@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\Wallet\Models\MultiSigWallet;
 use App\Models\User;
 
-
 describe('GraphQL Wallet API', function () {
     it('queries wallet by id', function () {
         $user = User::factory()->create();

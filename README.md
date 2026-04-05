@@ -173,6 +173,8 @@ php -d max_execution_time=300 ./vendor/bin/pest \
   tests/Unit/Domain/Monitoring/Services/MoneyMovementTransactionInspectorTest.php
 ```
 
+- **Database Isolation**: Stable testing requires a dedicated MySQL instance (e.g., `3307`) to avoid interference with the main daemon's root password state.
+- **Terminal Success**: The backend now strictly enforces that money movement is only complete when `status` is `success` and `next_step` is `none`.
 - `phpunit.xml` now uses a 300-second default test time limit.
 - On a fresh disposable MySQL instance, `max_execution_time` should be `0` before first-run migrations.
 
@@ -284,7 +286,7 @@ See [Domain Management Guide](docs/06-DEVELOPMENT/DOMAIN_MANAGEMENT.md) for deta
 | **Gas Relayer** | ERC-4337 meta-transactions, pay fees in USDC |
 | **TrustCert** | W3C Verifiable Credentials, QR/deep link verification |
 | **Mobile** | Biometric auth, push notifications, device management |
-| **Mobile Payments** | Payment intents, activity feed, receipts, USDC on Solana/Tron (v2.7.0) |
+| **Mobile Payments** | Payment intents, activity feed, receipts, USDC on Solana/Tron (v2.7.0), **Payment Links for Request Money** (v5.12.0) |
 | **Passkey Auth** | WebAuthn/FIDO2 with rpIdHash, UV/UP flags, COSE validation (v2.7.0+v5.7.0) |
 | **P2P Transfers** | Address validation, name resolution, fee quotes (v2.7.0) |
 | **Rewards** | Gamification: XP/levels, quests, points shop, streaks, race-safe redemption (v5.7.0) |
@@ -326,8 +328,9 @@ See [Domain Management Guide](docs/06-DEVELOPMENT/DOMAIN_MANAGEMENT.md) for deta
 - **Event Sourcing** - Domain-specific event tables with Event Store v2, replay, and upcasting (v4.0.0)
 - **CQRS** - Separated read/write models for optimal performance
 - **Saga Pattern** - Distributed transactions with automatic rollback
-- **DDD** - 49 bounded contexts with clear boundaries
-- **Multi-Tenancy** - Team-based data isolation with stancl/tenancy v3.9
+- **DDD** — 49 bounded contexts with clear boundaries
+- **Atomic Transfers** — Multi-layered **Zero-Amount Guards** and unified transfer workflows for financial integrity
+- **Multi-Tenancy** — Team-based data isolation with stancl/tenancy v3.9
 - **GraphQL** - Schema-first Lighthouse PHP across 39 domains with subscriptions (v4.0.0+)
 - **Event Streaming** - Redis Streams publisher/consumer with live dashboard (v5.0.0)
 

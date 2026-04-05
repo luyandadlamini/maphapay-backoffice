@@ -6,7 +6,6 @@ use App\Domain\Product\Models\Product;
 use App\Models\User;
 use Illuminate\Support\Str;
 
-
 describe('GraphQL Product API', function () {
     it('returns unauthorized without authentication', function () {
         $response = $this->postJson('/graphql', [

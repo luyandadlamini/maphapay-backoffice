@@ -13,10 +13,11 @@ use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Wallet\Events\Broadcast\WalletBalanceUpdated;
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
+use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\ControllerTestCase;
 
@@ -35,17 +36,17 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
         parent::setUp();
 
         config([
-            'maphapay_migration.enable_send_money' => true,
-            'maphapay_migration.enable_dashboard' => true,
-            'maphapay_migration.enable_transaction_history' => true,
+            'maphapay_migration.enable_send_money'                           => true,
+            'maphapay_migration.enable_dashboard'                            => true,
+            'maphapay_migration.enable_transaction_history'                  => true,
             'maphapay_migration.money_movement.send_money.step_up_threshold' => '100.00',
         ]);
 
         Asset::firstOrCreate(
             ['code' => 'SZL'],
             [
-                'name' => 'Swazi Lilangeni',
-                'type' => 'fiat',
+                'name'      => 'Swazi Lilangeni',
+                'type'      => 'fiat',
                 'precision' => 2,
                 'is_active' => true,
             ],
@@ -67,11 +68,11 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
         $this->recipient = User::factory()->create(['kyc_status' => 'approved']);
         $this->senderAccount = Account::factory()->create([
             'user_uuid' => $this->sender->uuid,
-            'frozen' => false,
+            'frozen'    => false,
         ]);
         $this->recipientAccount = Account::factory()->create([
             'user_uuid' => $this->recipient->uuid,
-            'frozen' => false,
+            'frozen'    => false,
         ]);
 
         AccountBalance::query()->updateOrCreate(
@@ -105,10 +106,10 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
         $response = $this->withHeaders([
             'Idempotency-Key' => '00000000-0000-0000-0000-000000009901',
         ])->postJson('/api/send-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '10.00',
+            'user'              => $this->recipient->email,
+            'amount'            => '10.00',
             'verification_type' => 'sms',
-            'note' => 'Lunch split',
+            'note'              => 'Lunch split',
         ]);
 
         $response->assertOk()
@@ -122,23 +123,23 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
         $this->assertIsString($reference);
 
         $this->assertDatabaseHas('authorized_transactions', [
-            'trx' => $trx,
-            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'trx'               => $trx,
+            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
             'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
         ]);
         $this->assertDatabaseHas('asset_transfers', [
             'reference' => $reference,
-            'status' => 'completed',
+            'status'    => 'completed',
         ]);
         $this->assertDatabaseHas('account_balances', [
             'account_uuid' => $this->senderAccount->uuid,
-            'asset_code' => 'SZL',
-            'balance' => 499_000,
+            'asset_code'   => 'SZL',
+            'balance'      => 499_000,
         ]);
         $this->assertDatabaseHas('account_balances', [
             'account_uuid' => $this->recipientAccount->uuid,
-            'asset_code' => 'SZL',
-            'balance' => 1_000,
+            'asset_code'   => 'SZL',
+            'balance'      => 1_000,
         ]);
 
         $this->getJson('/api/dashboard')
@@ -185,8 +186,8 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
         $response = $this->withHeaders([
             'Idempotency-Key' => '00000000-0000-0000-0000-000000009902',
         ])->postJson('/api/send-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '1000.00',
+            'user'              => $this->recipient->email,
+            'amount'            => '1000.00',
             'verification_type' => 'none',
         ]);
 
@@ -195,8 +196,8 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
 
         $trx = (string) $response->json('data.trx');
         $this->assertDatabaseHas('authorized_transactions', [
-            'trx' => $trx,
-            'status' => AuthorizedTransaction::STATUS_PENDING,
+            'trx'               => $trx,
+            'status'            => AuthorizedTransaction::STATUS_PENDING,
             'verification_type' => AuthorizedTransaction::VERIFICATION_OTP,
         ]);
         $this->assertDatabaseMissing('asset_transfers', [
@@ -212,8 +213,8 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
         $response = $this->postJson('/api/send-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '25.00',
+            'user'              => $this->recipient->email,
+            'amount'            => '25.00',
             'verification_type' => 'none',
         ]);
 
@@ -232,8 +233,8 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
         $response = $this->withHeaders([
             'Idempotency-Key' => '00000000-0000-0000-0000-000000009905',
         ])->postJson('/api/send-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '25.00',
+            'user'              => $this->recipient->email,
+            'amount'            => '25.00',
             'verification_type' => 'pin',
         ]);
 
@@ -252,8 +253,8 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
         $response = $this->withHeaders([
             'Idempotency-Key' => '00000000-0000-0000-0000-000000009906',
         ])->postJson('/api/send-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '1000.00',
+            'user'              => $this->recipient->email,
+            'amount'            => '1000.00',
             'verification_type' => 'none',
         ]);
 
@@ -268,10 +269,10 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
 
         $idempotencyKey = '00000000-0000-0000-0000-000000009903';
         $payload = [
-            'user' => $this->recipient->email,
-            'amount' => '10.00',
+            'user'              => $this->recipient->email,
+            'amount'            => '10.00',
             'verification_type' => 'sms',
-            'note' => 'Cache-loss replay',
+            'note'              => 'Cache-loss replay',
         ];
 
         $first = $this->withHeaders([
@@ -309,13 +310,13 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
 
         $this->assertDatabaseHas('account_balances', [
             'account_uuid' => $this->senderAccount->uuid,
-            'asset_code' => 'SZL',
-            'balance' => 499_000,
+            'asset_code'   => 'SZL',
+            'balance'      => 499_000,
         ]);
         $this->assertDatabaseHas('account_balances', [
             'account_uuid' => $this->recipientAccount->uuid,
-            'asset_code' => 'SZL',
-            'balance' => 1_000,
+            'asset_code'   => 'SZL',
+            'balance'      => 1_000,
         ]);
     }
 
@@ -329,10 +330,10 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
         $first = $this->withHeaders([
             'Idempotency-Key' => $idempotencyKey,
         ])->postJson('/api/send-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '10.00',
+            'user'              => $this->recipient->email,
+            'amount'            => '10.00',
             'verification_type' => 'sms',
-            'note' => 'Hint drift replay',
+            'note'              => 'Hint drift replay',
         ]);
 
         $first->assertOk()
@@ -344,10 +345,10 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
         $second = $this->withHeaders([
             'Idempotency-Key' => $idempotencyKey,
         ])->postJson('/api/send-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '10.00',
+            'user'              => $this->recipient->email,
+            'amount'            => '10.00',
             'verification_type' => 'none',
-            'note' => 'Hint drift replay',
+            'note'              => 'Hint drift replay',
         ]);
 
         $second->assertOk()
@@ -360,17 +361,17 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
     #[Test]
     public function it_fails_closed_when_pre_execution_risk_hooks_block_a_none_send_money_finalization(): void
     {
-        $provider = \Mockery::mock(MoneyMovementRiskSignalProviderInterface::class);
+        $provider = Mockery::mock(MoneyMovementRiskSignalProviderInterface::class);
         $provider->shouldReceive('evaluateInitiation')
             ->once()
             ->andReturn([
                 'step_up' => false,
-                'reason' => null,
+                'reason'  => null,
             ]);
         $provider->shouldReceive('evaluatePreExecution')
             ->once()
             ->andReturn([
-                'allow' => false,
+                'allow'  => false,
                 'reason' => 'pre_execution_blocked',
             ]);
         $this->app->instance(MoneyMovementRiskSignalProviderInterface::class, $provider);
@@ -380,10 +381,10 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
         $response = $this->withHeaders([
             'Idempotency-Key' => '00000000-0000-0000-0000-000000009905',
         ])->postJson('/api/send-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '10.00',
+            'user'              => $this->recipient->email,
+            'amount'            => '10.00',
             'verification_type' => 'none',
-            'note' => 'Pre-execution hard block',
+            'note'              => 'Pre-execution hard block',
         ]);
 
         $response->assertStatus(422)
@@ -392,9 +393,9 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
             ->assertJsonPath('message.0', 'pre_execution_blocked');
 
         $this->assertDatabaseHas('authorized_transactions', [
-            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'user_id' => $this->sender->id,
-            'status' => AuthorizedTransaction::STATUS_FAILED,
+            'remark'         => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'user_id'        => $this->sender->id,
+            'status'         => AuthorizedTransaction::STATUS_FAILED,
             'failure_reason' => 'pre_execution_blocked',
         ]);
         $this->assertDatabaseCount('asset_transfers', 0);

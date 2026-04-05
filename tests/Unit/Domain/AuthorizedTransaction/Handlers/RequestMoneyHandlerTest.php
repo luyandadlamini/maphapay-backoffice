@@ -152,12 +152,12 @@ class RequestMoneyHandlerTest extends DomainTestCase
         ]);
 
         $txn = AuthorizedTransaction::query()->create([
-            'user_id'           => $user->id,
-            'remark'            => AuthorizedTransaction::REMARK_REQUEST_MONEY,
-            'trx'               => 'TRX-TEST-005',
-            'payload'           => [
+            'user_id' => $user->id,
+            'remark'  => AuthorizedTransaction::REMARK_REQUEST_MONEY,
+            'trx'     => 'TRX-TEST-005',
+            'payload' => [
                 'money_request_id' => $moneyRequest->id,
-                'chat_friend_id' => $recipient->id,
+                'chat_friend_id'   => $recipient->id,
             ],
             'status'            => AuthorizedTransaction::STATUS_PENDING,
             'verification_type' => AuthorizedTransaction::VERIFICATION_OTP,

@@ -18,7 +18,7 @@ class BudgetController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => [
+            'data'   => [
                 'monthly_budget' => $budget ? (float) $budget->monthly_budget : null,
             ],
         ]);

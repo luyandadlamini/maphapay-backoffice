@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use InvalidArgumentException;
 
 /**
  * @property int $id
@@ -38,12 +39,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Account extends Model
 {
-    private const ACCOUNT_NUMBER_LENGTH = 10;
-
     use UsesTenantConnection;
     use HasFactory;
     use HasUuids;
     use BelongsToTeam;
+
+    private const ACCOUNT_NUMBER_LENGTH = 10;
 
     protected static function boot(): void
     {
@@ -51,7 +52,7 @@ class Account extends Model
 
         static::creating(function (Account $account) {
             if (empty($account->user_uuid)) {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     'Account must have a user_uuid. Use SystemUserService to get a system user for platform accounts.'
                 );
             }
@@ -107,6 +108,7 @@ class Account extends Model
         }
 
         $prefix = (string) config('banking.account_prefix', '8');
+
         return str_starts_with($accountNumber, $prefix);
     }
 

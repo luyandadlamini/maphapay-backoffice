@@ -9,7 +9,6 @@ use App\Domain\Basket\Services\BasketValueCalculationService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 
-
 beforeEach(function () {
     // Create test assets (use firstOrCreate to avoid duplicates in parallel tests)
     Asset::firstOrCreate(['code' => 'USD'], ['name' => 'US Dollar', 'type' => 'fiat', 'precision' => 2]);

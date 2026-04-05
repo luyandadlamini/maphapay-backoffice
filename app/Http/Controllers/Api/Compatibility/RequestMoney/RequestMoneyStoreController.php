@@ -41,17 +41,18 @@ class RequestMoneyStoreController extends Controller
         private readonly MoneyMovementVerificationPolicyResolver $verificationPolicyResolver,
         private readonly MaphaPayMoneyMovementTelemetry $telemetry,
         private readonly PaymentLinkService $paymentLinkService,
-    ) {}
+    ) {
+    }
 
     public function __invoke(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'user' => ['required', 'string'],
-            'amount' => ['required', 'string', new MajorUnitAmountString],
-            'note' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'user'              => ['required', 'string'],
+            'amount'            => ['required', 'string', new MajorUnitAmountString()],
+            'note'              => ['sometimes', 'nullable', 'string', 'max:2000'],
             'verification_type' => ['prohibited'],
-            'asset_code' => ['sometimes', 'string', 'exists:assets,code'],
-            'chat_friend_id' => ['sometimes', 'nullable', 'integer'],
+            'asset_code'        => ['sometimes', 'string', 'exists:assets,code'],
+            'chat_friend_id'    => ['sometimes', 'nullable', 'integer'],
         ]);
 
         /** @var User $authUser */
@@ -74,7 +75,7 @@ class RequestMoneyStoreController extends Controller
         if ($chatFriendId !== null && $chatFriendId !== (int) $recipient->id) {
             return $this->errorResponse($request, 'Chat context does not match the selected recipient.', 422, [
                 'recipient_user_id' => $recipient->id,
-                'chat_friend_id' => $chatFriendId,
+                'chat_friend_id'    => $chatFriendId,
             ]);
         }
 
@@ -117,28 +118,28 @@ class RequestMoneyStoreController extends Controller
         if ($replayedTxn !== null) {
             if (! $this->requestMoneyReplayMatches($replayedTxn, $recipient, $normalizedAmount, $asset->code, $validated['note'] ?? null)) {
                 return response()->json([
-                    'error' => 'Idempotency key already used',
+                    'error'   => 'Idempotency key already used',
                     'message' => 'The provided idempotency key has already been used with different request parameters',
                 ], 409);
             }
 
             $this->telemetry->logIdempotencyReplay($request, $idempotencyKey, [
                 'status_code' => 200,
-                'source' => 'authorized_transaction',
+                'source'      => 'authorized_transaction',
             ]);
 
             return response()->json($this->requestMoneyReplayPayload($replayedTxn));
         }
 
         $this->telemetry->logEvent('request_money_initiation_started', $this->telemetry->requestContext($request, [
-            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY,
-            'sender_user_id' => $authUser->id,
-            'recipient_user_id' => $recipient->id,
-            'amount' => $normalizedAmount,
-            'asset_code' => $asset->code,
-            'status' => AuthorizedTransaction::STATUS_PENDING,
-            'verification_policy' => $policy['verification_type'],
-            'risk_reason' => $policy['risk_reason'],
+            'remark'                 => AuthorizedTransaction::REMARK_REQUEST_MONEY,
+            'sender_user_id'         => $authUser->id,
+            'recipient_user_id'      => $recipient->id,
+            'amount'                 => $normalizedAmount,
+            'asset_code'             => $asset->code,
+            'status'                 => AuthorizedTransaction::STATUS_PENDING,
+            'verification_policy'    => $policy['verification_type'],
+            'risk_reason'            => $policy['risk_reason'],
             'idempotency_key_suffix' => $this->telemetry->maskIdempotencyKey($idempotencyKey),
         ]));
 
@@ -155,26 +156,26 @@ class RequestMoneyStoreController extends Controller
                 $idempotencyKey,
             ): array {
                 $moneyRequest = MoneyRequest::query()->create([
-                    'id' => (string) Str::uuid(),
+                    'id'                => (string) Str::uuid(),
                     'requester_user_id' => (int) $authUser->getAuthIdentifier(),
                     'recipient_user_id' => (int) $recipient->getAuthIdentifier(),
-                    'amount' => $normalizedAmount,
-                    'asset_code' => $asset->code,
-                    'note' => $validated['note'] ?? null,
-                    'status' => MoneyRequest::STATUS_PENDING,
+                    'amount'            => $normalizedAmount,
+                    'asset_code'        => $asset->code,
+                    'note'              => $validated['note'] ?? null,
+                    'status'            => MoneyRequest::STATUS_PENDING,
                 ]);
 
                 // Generate payment token for the money request
                 $moneyRequest = $this->paymentLinkService->assignPaymentToken($moneyRequest);
 
                 $payload = [
-                    'money_request_id' => $moneyRequest->id,
-                    'recipient_user_id' => (int) $recipient->getAuthIdentifier(),
-                    'amount' => $normalizedAmount,
-                    'asset_code' => $asset->code,
-                    'note' => $validated['note'] ?? null,
+                    'money_request_id'     => $moneyRequest->id,
+                    'recipient_user_id'    => (int) $recipient->getAuthIdentifier(),
+                    'amount'               => $normalizedAmount,
+                    'asset_code'           => $asset->code,
+                    'note'                 => $validated['note'] ?? null,
                     '_verification_policy' => $policy,
-                    'chat_friend_id' => $chatFriendId,
+                    'chat_friend_id'       => $chatFriendId,
                 ];
 
                 $txn = $this->authorizedTransactionManager->initiate(
@@ -193,31 +194,31 @@ class RequestMoneyStoreController extends Controller
             });
         } catch (Throwable $throwable) {
             $this->telemetry->logEvent('request_money_initiation_failed', $this->telemetry->requestContext($request, [
-                'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY,
-                'sender_user_id' => $authUser->id,
-                'recipient_user_id' => $recipient->id,
-                'amount' => $normalizedAmount,
-                'asset_code' => $asset->code,
-                'status' => AuthorizedTransaction::STATUS_PENDING,
-                'verification_policy' => $policy['verification_type'],
-                'risk_reason' => $policy['risk_reason'],
+                'remark'                 => AuthorizedTransaction::REMARK_REQUEST_MONEY,
+                'sender_user_id'         => $authUser->id,
+                'recipient_user_id'      => $recipient->id,
+                'amount'                 => $normalizedAmount,
+                'asset_code'             => $asset->code,
+                'status'                 => AuthorizedTransaction::STATUS_PENDING,
+                'verification_policy'    => $policy['verification_type'],
+                'risk_reason'            => $policy['risk_reason'],
                 'idempotency_key_suffix' => $this->telemetry->maskIdempotencyKey($idempotencyKey),
-                'message' => $this->telemetry->exceptionMessage($throwable),
+                'message'                => $this->telemetry->exceptionMessage($throwable),
             ]), 'error');
 
             throw $throwable;
         }
 
         $this->telemetry->logEvent('request_money_initiation_succeeded', $this->telemetry->requestContext($request, [
-            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY,
-            'money_request_id' => $txn->payload['money_request_id'] ?? null,
-            'sender_user_id' => $authUser->id,
-            'recipient_user_id' => $recipient->id,
-            'trx' => $txn->trx,
-            'next_step' => 'none',
-            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'remark'              => AuthorizedTransaction::REMARK_REQUEST_MONEY,
+            'money_request_id'    => $txn->payload['money_request_id'] ?? null,
+            'sender_user_id'      => $authUser->id,
+            'recipient_user_id'   => $recipient->id,
+            'trx'                 => $txn->trx,
+            'next_step'           => 'none',
+            'status'              => AuthorizedTransaction::STATUS_COMPLETED,
             'verification_policy' => $policy['verification_type'],
-            'risk_reason' => $policy['risk_reason'],
+            'risk_reason'         => $policy['risk_reason'],
         ]));
 
         $moneyRequestId = $result['money_request_id'] ?? $txn->payload['money_request_id'] ?? null;
@@ -226,15 +227,15 @@ class RequestMoneyStoreController extends Controller
         return response()->json([
             'status' => 'success',
             'remark' => 'request_money',
-            'data' => [
-                'next_step' => 'none',
-                'trx' => $txn->trx,
+            'data'   => [
+                'next_step'         => 'none',
+                'trx'               => $txn->trx,
                 'code_sent_message' => null,
-                'money_request_id' => $moneyRequestId,
-                'chat_message_id' => $result['chat_message_id'] ?? null,
-                'chat_linked' => $result['chat_linked'] ?? null,
-                'payment_token' => $moneyRequest?->payment_token,
-                'payment_link' => $moneyRequest?->payment_token
+                'money_request_id'  => $moneyRequestId,
+                'chat_message_id'   => $result['chat_message_id'] ?? null,
+                'chat_linked'       => $result['chat_linked'] ?? null,
+                'payment_token'     => $moneyRequest?->payment_token,
+                'payment_link'      => $moneyRequest?->payment_token
                     ? $this->paymentLinkService->buildDynamicLink($moneyRequest->payment_token)
                     : null,
                 'expires_at' => $moneyRequest?->expires_at?->toIso8601String(),
@@ -248,8 +249,8 @@ class RequestMoneyStoreController extends Controller
     private function errorPayload(string $message): array
     {
         return [
-            'status' => 'error',
-            'remark' => 'request_money',
+            'status'  => 'error',
+            'remark'  => 'request_money',
             'message' => [$message],
         ];
     }
@@ -260,8 +261,8 @@ class RequestMoneyStoreController extends Controller
     private function errorResponse(Request $request, string $message, int $status, array $context = []): JsonResponse
     {
         $this->telemetry->logEvent('request_money_initiation_failed', $this->telemetry->requestContext($request, array_merge($context, [
-            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY,
-            'message' => $message,
+            'remark'      => AuthorizedTransaction::REMARK_REQUEST_MONEY,
+            'message'     => $message,
             'status_code' => $status,
         ])), 'warning');
 
@@ -347,15 +348,15 @@ class RequestMoneyStoreController extends Controller
         return [
             'status' => 'success',
             'remark' => 'request_money',
-            'data' => [
-                'next_step' => 'none',
-                'trx' => $txn->trx,
+            'data'   => [
+                'next_step'         => 'none',
+                'trx'               => $txn->trx,
                 'code_sent_message' => null,
-                'money_request_id' => $moneyRequestId,
-                'chat_message_id' => $result['chat_message_id'] ?? null,
-                'chat_linked' => $result['chat_linked'] ?? null,
-                'payment_token' => $moneyRequest?->payment_token,
-                'payment_link' => $moneyRequest?->payment_token
+                'money_request_id'  => $moneyRequestId,
+                'chat_message_id'   => $result['chat_message_id'] ?? null,
+                'chat_linked'       => $result['chat_linked'] ?? null,
+                'payment_token'     => $moneyRequest?->payment_token,
+                'payment_link'      => $moneyRequest?->payment_token
                     ? $this->paymentLinkService->buildDynamicLink($moneyRequest->payment_token)
                     : null,
                 'expires_at' => $moneyRequest?->expires_at?->toIso8601String(),

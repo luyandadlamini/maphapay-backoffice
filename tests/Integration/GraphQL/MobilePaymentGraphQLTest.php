@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Models\User;
 
-
 describe('GraphQL MobilePayment API', function () {
     it('rejects unauthenticated payment intent queries', function () {
         $response = $this->postJson('/graphql', [

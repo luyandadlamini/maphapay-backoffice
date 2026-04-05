@@ -35,7 +35,7 @@ return [
 
     'issuers' => [
         'demo' => [
-            'driver'   => 'demo',
+            'driver' => 'demo',
             // ISO 4217 currency code for demo transactions and balances.
             // Default: SZL (Swazi Lilangeni). Set CARD_DEMO_CURRENCY=ZAR or USD as needed.
             'currency' => env('CARD_DEMO_CURRENCY', 'SZL'),

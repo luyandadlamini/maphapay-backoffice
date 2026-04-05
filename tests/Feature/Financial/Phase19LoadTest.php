@@ -283,9 +283,9 @@ class Phase19LoadTest extends ControllerTestCase
                     ->increment('balance', $delta);
 
                 return [
-                    'amount' => $amount,
+                    'amount'     => $amount,
                     'asset_code' => $assetCode,
-                    'reference' => 'stub-transfer-' . $reference,
+                    'reference'  => 'stub-transfer-' . $reference,
                 ];
             },
         );

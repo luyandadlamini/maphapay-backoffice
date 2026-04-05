@@ -20,6 +20,16 @@ php artisan user:demote user@email   # Remove admin role
 php artisan user:admins              # List all admin users
 ```
 
+## Filament AI Development (Blueprint Style)
+
+When planning new features or modifying existing ones in the Admin panel:
+1. **Define User Flows**: Describe the interaction from the admin's perspective.
+2. **Map Primitives**: 
+   - **Resources**: `app/Filament/Admin/Resources/`
+   - **Relation Managers**: `app/Filament/Admin/Resources/<Resource>/RelationManagers`
+   - **Actions**: Define where buttons/modals live (List, View, Edit).
+3. **State Transitions**: Explicitly identify how domain state changes (e.g., `draft` -> `active`) are triggered in the UI.
+
 ## Current MaphaPay Focus
 
 - Companion mobile repo: `/Users/Lihle/Development/Coding/maphapayrn`

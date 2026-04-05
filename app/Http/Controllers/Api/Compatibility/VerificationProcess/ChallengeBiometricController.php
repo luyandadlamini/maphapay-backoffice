@@ -16,14 +16,15 @@ class ChallengeBiometricController extends Controller
 {
     public function __construct(
         private readonly AuthorizedTransactionBiometricService $biometricService,
-    ) {}
+    ) {
+    }
 
     public function __invoke(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'trx' => ['required', 'string'],
+            'trx'       => ['required', 'string'],
             'device_id' => ['required', 'string'],
-            'remark' => ['sometimes', 'string'],
+            'remark'    => ['sometimes', 'string'],
         ]);
 
         if ($validator->fails()) {
@@ -51,10 +52,10 @@ class ChallengeBiometricController extends Controller
             return response()->json([
                 'status' => 'success',
                 'remark' => $validated['remark'] ?? 'biometric_challenge',
-                'data' => [
-                    'trx' => $validated['trx'],
-                    'device_id' => $validated['device_id'],
-                    'challenge' => $challenge->challenge,
+                'data'   => [
+                    'trx'        => $validated['trx'],
+                    'device_id'  => $validated['device_id'],
+                    'challenge'  => $challenge->challenge,
                     'expires_at' => $challenge->expires_at->toIso8601String(),
                 ],
             ]);
@@ -76,10 +77,10 @@ class ChallengeBiometricController extends Controller
     private function errorResponse(string $remark, string $message, int $status): JsonResponse
     {
         return response()->json([
-            'status' => 'error',
-            'remark' => $remark,
+            'status'  => 'error',
+            'remark'  => $remark,
             'message' => [$message],
-            'data' => null,
+            'data'    => null,
         ], $status);
     }
 }

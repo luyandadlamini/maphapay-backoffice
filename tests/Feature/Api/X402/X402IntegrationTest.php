@@ -8,7 +8,6 @@ use App\Domain\X402\Models\X402SpendingLimit;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 
-
 // ----------------------------------------------------------------
 // Helpers
 // ----------------------------------------------------------------

@@ -45,15 +45,15 @@ class TransactionProjector extends Projector
         }
 
         return [
-            'uuid' => (string) Str::uuid(),
+            'uuid'         => (string) Str::uuid(),
             'account_uuid' => $accountUuid,
-            'type' => $type,
-            'subtype' => $subtype,
-            'asset_code' => $assetCode,
-            'amount' => $amount,
-            'description' => $description,
-            'reference' => $reference,
-            'hash' => hash('sha512', implode('|', [
+            'type'         => $type,
+            'subtype'      => $subtype,
+            'asset_code'   => $assetCode,
+            'amount'       => $amount,
+            'description'  => $description,
+            'reference'    => $reference,
+            'hash'         => hash('sha512', implode('|', [
                 $accountUuid,
                 $type,
                 (string) $subtype,
@@ -62,14 +62,14 @@ class TransactionProjector extends Projector
                 (string) $reference,
                 (string) ($metadata['event_uuid'] ?? Str::uuid()->toString()),
             ])),
-            'status' => 'completed',
-            'metadata' => $metadata,
-            'analytics_bucket' => $classification['analytics_bucket'],
-            'budget_eligible' => $classification['budget_eligible'],
-            'source_domain' => $classification['source_domain'],
-            'system_category_slug' => $classification['system_category_slug'],
+            'status'                  => 'completed',
+            'metadata'                => $metadata,
+            'analytics_bucket'        => $classification['analytics_bucket'],
+            'budget_eligible'         => $classification['budget_eligible'],
+            'source_domain'           => $classification['source_domain'],
+            'system_category_slug'    => $classification['system_category_slug'],
             'effective_category_slug' => $classification['system_category_slug'],
-            'categorization_source' => 'system',
+            'categorization_source'   => 'system',
         ];
     }
 
@@ -80,9 +80,9 @@ class TransactionProjector extends Projector
 
         if ($source === 'pocket_transfer') {
             return match ($direction) {
-                'to_pocket' => 'pocket_deposit',
+                'to_pocket'   => 'pocket_deposit',
                 'from_pocket' => 'pocket_withdrawal',
-                default => 'pocket_transfer',
+                default       => 'pocket_transfer',
             };
         }
 
@@ -135,8 +135,8 @@ class TransactionProjector extends Projector
             Log::error(
                 'Error creating transaction projection',
                 [
-                    'event' => 'AssetTransactionCreated',
-                    'error' => $e->getMessage(),
+                    'event'      => 'AssetTransactionCreated',
+                    'error'      => $e->getMessage(),
                     'event_uuid' => $event->aggregateRootUuid(),
                     'connection' => TransactionProjection::query()->getModel()->getConnectionName(),
                 ]
@@ -206,13 +206,13 @@ class TransactionProjector extends Projector
             Log::error(
                 'Error creating transaction projections for transfer',
                 [
-                    'event' => 'AssetTransferCompleted',
-                    'error' => $e->getMessage(),
-                    'event_uuid' => $event->aggregateRootUuid(),
+                    'event'              => 'AssetTransferCompleted',
+                    'error'              => $e->getMessage(),
+                    'event_uuid'         => $event->aggregateRootUuid(),
                     'transfer_reference' => $event->transferId ?? null,
-                    'from_account_uuid' => (string) $event->fromAccountUuid,
-                    'to_account_uuid' => (string) $event->toAccountUuid,
-                    'connection' => TransactionProjection::query()->getModel()->getConnectionName(),
+                    'from_account_uuid'  => (string) $event->fromAccountUuid,
+                    'to_account_uuid'    => (string) $event->toAccountUuid,
+                    'connection'         => TransactionProjection::query()->getModel()->getConnectionName(),
                 ]
             );
         }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Tests\Feature\Http\Controllers\Api\GroupSavings;
@@ -109,7 +110,7 @@ class GroupPocketControllerTest extends TestCase
     #[Test]
     public function add_funds_marks_pocket_completed_when_target_reached(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $thread = $this->makeGroupThread($admin);
 
         $pocket = GroupPocket::create([
@@ -131,7 +132,7 @@ class GroupPocketControllerTest extends TestCase
     #[Test]
     public function deduct_funds_resets_completed_status(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $thread = $this->makeGroupThread($admin);
 
         $pocket = GroupPocket::create([
@@ -155,7 +156,7 @@ class GroupPocketControllerTest extends TestCase
     #[Test]
     public function would_exceed_regulatory_max_returns_true_when_over_limit(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $thread = $this->makeGroupThread($admin);
 
         $pocket = GroupPocket::create([
@@ -193,7 +194,7 @@ class GroupPocketControllerTest extends TestCase
     #[Test]
     public function member_can_create_a_group_pocket(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $member = User::factory()->create();
         $thread = $this->makeGroupThread($admin, [$member]);
 
@@ -217,9 +218,9 @@ class GroupPocketControllerTest extends TestCase
     #[Test]
     public function non_member_cannot_create_a_group_pocket(): void
     {
-        $admin    = User::factory()->create();
+        $admin = User::factory()->create();
         $outsider = User::factory()->create();
-        $thread   = $this->makeGroupThread($admin);
+        $thread = $this->makeGroupThread($admin);
 
         Sanctum::actingAs($outsider, ['read', 'write']);
 
@@ -235,13 +236,13 @@ class GroupPocketControllerTest extends TestCase
     #[Test]
     public function member_can_list_pockets_for_their_thread(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $member = User::factory()->create();
         $thread = $this->makeGroupThread($admin, [$member]);
 
         GroupPocket::create([
             'thread_id' => $thread->id, 'created_by' => $admin->id,
-            'name' => 'Fund A', 'category' => 'general', 'color' => '#fff', 'target_amount' => 1000,
+            'name'      => 'Fund A', 'category' => 'general', 'color' => '#fff', 'target_amount' => 1000,
         ]);
 
         Sanctum::actingAs($member, ['read']);
@@ -254,12 +255,12 @@ class GroupPocketControllerTest extends TestCase
     #[Test]
     public function admin_can_update_pocket_name(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $thread = $this->makeGroupThread($admin);
 
         $pocket = GroupPocket::create([
             'thread_id' => $thread->id, 'created_by' => $admin->id,
-            'name' => 'Old Name', 'category' => 'general', 'color' => '#fff', 'target_amount' => 1000,
+            'name'      => 'Old Name', 'category' => 'general', 'color' => '#fff', 'target_amount' => 1000,
         ]);
 
         Sanctum::actingAs($admin, ['read', 'write']);
@@ -272,13 +273,13 @@ class GroupPocketControllerTest extends TestCase
     #[Test]
     public function non_admin_cannot_update_pocket(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $member = User::factory()->create();
         $thread = $this->makeGroupThread($admin, [$member]);
 
         $pocket = GroupPocket::create([
             'thread_id' => $thread->id, 'created_by' => $admin->id,
-            'name' => 'Fund', 'category' => 'general', 'color' => '#fff', 'target_amount' => 1000,
+            'name'      => 'Fund', 'category' => 'general', 'color' => '#fff', 'target_amount' => 1000,
         ]);
 
         Sanctum::actingAs($member, ['read', 'write']);
@@ -290,17 +291,17 @@ class GroupPocketControllerTest extends TestCase
     #[Test]
     public function authenticated_user_can_list_all_their_pockets(): void
     {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $thread1 = $this->makeGroupThread($user);
         $thread2 = $this->makeGroupThread($user);
 
         GroupPocket::create([
             'thread_id' => $thread1->id, 'created_by' => $user->id,
-            'name' => 'Fund 1', 'category' => 'general', 'color' => '#fff', 'target_amount' => 1000,
+            'name'      => 'Fund 1', 'category' => 'general', 'color' => '#fff', 'target_amount' => 1000,
         ]);
         GroupPocket::create([
             'thread_id' => $thread2->id, 'created_by' => $user->id,
-            'name' => 'Fund 2', 'category' => 'travel', 'color' => '#000', 'target_amount' => 2000,
+            'name'      => 'Fund 2', 'category' => 'travel', 'color' => '#000', 'target_amount' => 2000,
         ]);
 
         Sanctum::actingAs($user, ['read']);
@@ -313,11 +314,11 @@ class GroupPocketControllerTest extends TestCase
     #[Test]
     public function admin_can_close_pocket(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $thread = $this->makeGroupThread($admin);
         $pocket = GroupPocket::create([
             'thread_id' => $thread->id, 'created_by' => $admin->id,
-            'name' => 'Fund', 'category' => 'general', 'color' => '#fff', 'target_amount' => 1000,
+            'name'      => 'Fund', 'category' => 'general', 'color' => '#fff', 'target_amount' => 1000,
         ]);
 
         Sanctum::actingAs($admin, ['read', 'write', 'delete']);
@@ -335,12 +336,12 @@ class GroupPocketControllerTest extends TestCase
     #[Test]
     public function non_admin_cannot_close_pocket(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $member = User::factory()->create();
         $thread = $this->makeGroupThread($admin, [$member]);
         $pocket = GroupPocket::create([
             'thread_id' => $thread->id, 'created_by' => $admin->id,
-            'name' => 'Fund', 'category' => 'general', 'color' => '#fff', 'target_amount' => 1000,
+            'name'      => 'Fund', 'category' => 'general', 'color' => '#fff', 'target_amount' => 1000,
         ]);
 
         Sanctum::actingAs($member, ['read', 'write', 'delete']);
@@ -357,7 +358,7 @@ class GroupPocketControllerTest extends TestCase
     #[Test]
     public function member_can_view_contributions_breakdown(): void
     {
-        $admin  = User::factory()->create(['name' => 'Alice']);
+        $admin = User::factory()->create(['name' => 'Alice']);
         $member = User::factory()->create(['name' => 'Bob']);
         $thread = $this->makeGroupThread($admin, [$member]);
 
@@ -388,7 +389,7 @@ class GroupPocketControllerTest extends TestCase
     #[Test]
     public function member_contributions_are_refunded_on_group_leave(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $member = User::factory()->create();
         $thread = $this->makeGroupThread($admin, [$member]);
 
@@ -423,7 +424,7 @@ class GroupPocketControllerTest extends TestCase
     #[Test]
     public function all_contributions_are_refunded_when_group_is_deleted(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $member = User::factory()->create();
         $thread = $this->makeGroupThread($admin, [$member]);
 

@@ -34,13 +34,13 @@ return [
     | Linked External Bank Accounts
     |--------------------------------------------------------------------------
     |
-    | Settings for users' linked external bank accounts (for withdrawals 
+    | Settings for users' linked external bank accounts (for withdrawals
     | and external transfers).
     |
     */
 
     'linked_bank_accounts' => [
-        'enabled' => true,
+        'enabled'              => true,
         'require_verification' => env('BANK_REQUIRE_VERIFICATION', true),
     ],
 

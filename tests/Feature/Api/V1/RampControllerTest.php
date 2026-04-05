@@ -11,7 +11,6 @@ use Tests\TestCase;
 
 class RampControllerTest extends TestCase
 {
-
     protected User $user;
 
     protected function setUp(): void

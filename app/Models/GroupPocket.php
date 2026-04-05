@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Models;
@@ -25,9 +26,11 @@ class GroupPocket extends Model
 
     public const REGULATORY_MAX = 100000.00;
 
-    public const STATUS_ACTIVE    = 'active';
+    public const STATUS_ACTIVE = 'active';
+
     public const STATUS_COMPLETED = 'completed';
-    public const STATUS_CLOSED    = 'closed';
+
+    public const STATUS_CLOSED = 'closed';
 
     /** @return BelongsTo<Thread, $this> */
     public function thread(): BelongsTo

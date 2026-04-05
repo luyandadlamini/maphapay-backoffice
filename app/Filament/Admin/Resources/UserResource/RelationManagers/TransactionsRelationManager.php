@@ -43,8 +43,8 @@ class TransactionsRelationManager extends RelationManager
                             'deposit', 'transfer_in' => 'success',
                             'withdrawal', 'transfer_out' => 'warning',
                             'adjustment_credit' => 'info',
-                            'adjustment_debit' => 'danger',
-                            default => 'gray',
+                            'adjustment_debit'  => 'danger',
+                            default             => 'gray',
                         }
                     ),
                 Tables\Columns\TextColumn::make('asset_code')
@@ -73,9 +73,9 @@ class TransactionsRelationManager extends RelationManager
                     ->color(
                         fn (string $state): string => match ($state) {
                             'completed' => 'success',
-                            'pending' => 'warning',
-                            'failed' => 'danger',
-                            default => 'gray',
+                            'pending'   => 'warning',
+                            'failed'    => 'danger',
+                            default     => 'gray',
                         }
                     ),
             ])
@@ -83,18 +83,18 @@ class TransactionsRelationManager extends RelationManager
             ->filters([
                 Tables\Filters\SelectFilter::make('type')
                     ->options([
-                        'deposit' => 'Deposit',
-                        'withdrawal' => 'Withdrawal',
-                        'transfer_in' => 'Transfer In',
-                        'transfer_out' => 'Transfer Out',
+                        'deposit'           => 'Deposit',
+                        'withdrawal'        => 'Withdrawal',
+                        'transfer_in'       => 'Transfer In',
+                        'transfer_out'      => 'Transfer Out',
                         'adjustment_credit' => 'Adjustment Credit',
-                        'adjustment_debit' => 'Adjustment Debit',
+                        'adjustment_debit'  => 'Adjustment Debit',
                     ]),
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
                         'completed' => 'Completed',
-                        'pending' => 'Pending',
-                        'failed' => 'Failed',
+                        'pending'   => 'Pending',
+                        'failed'    => 'Failed',
                     ]),
             ])
             ->actions([

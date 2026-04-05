@@ -10,7 +10,6 @@ use Illuminate\Support\Str;
 
 class BudgetCategoryTransaction extends Model
 {
-
     protected $table = 'budget_category_transactions';
 
     protected static function boot(): void
@@ -30,7 +29,7 @@ class BudgetCategoryTransaction extends Model
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
+        'amount'           => 'decimal:2',
         'transaction_date' => 'date',
     ];
 

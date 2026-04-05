@@ -31,73 +31,73 @@ class MoneyMovementTransactionInspectorTest extends DomainTestCase
         $trx = 'TRX-' . Str::upper(Str::random(10));
 
         $moneyRequest = MoneyRequest::query()->create([
-            'id' => (string) Str::uuid(),
+            'id'                => (string) Str::uuid(),
             'requester_user_id' => $sender->id,
             'recipient_user_id' => $recipient->id,
-            'amount' => '10.00',
-            'asset_code' => 'SZL',
-            'status' => MoneyRequest::STATUS_FULFILLED,
-            'trx' => $trx,
+            'amount'            => '10.00',
+            'asset_code'        => 'SZL',
+            'status'            => MoneyRequest::STATUS_FULFILLED,
+            'trx'               => $trx,
         ]);
 
         AuthorizedTransaction::query()->create([
             'user_id' => $sender->id,
-            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx' => $trx,
+            'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'     => $trx,
             'payload' => [
-                'money_request_id' => $moneyRequest->id,
+                'money_request_id'     => $moneyRequest->id,
                 '_verification_policy' => [
                     'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
-                    'reason' => 'user_preference',
-                    'risk_reason' => null,
+                    'reason'            => 'user_preference',
+                    'risk_reason'       => null,
                 ],
             ],
             'result' => [
-                'trx' => $trx,
-                'reference' => $reference,
-                'amount' => '10.00',
+                'trx'        => $trx,
+                'reference'  => $reference,
+                'amount'     => '10.00',
                 'asset_code' => 'SZL',
             ],
-            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
             'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
         ]);
 
         AssetTransfer::query()->create([
-            'uuid' => $reference,
-            'reference' => $reference,
-            'transfer_id' => $reference,
+            'uuid'              => $reference,
+            'reference'         => $reference,
+            'transfer_id'       => $reference,
             'from_account_uuid' => (string) Str::uuid(),
-            'to_account_uuid' => (string) Str::uuid(),
-            'from_asset_code' => 'SZL',
-            'to_asset_code' => 'SZL',
-            'from_amount' => 1000,
-            'to_amount' => 1000,
-            'status' => 'completed',
+            'to_account_uuid'   => (string) Str::uuid(),
+            'from_asset_code'   => 'SZL',
+            'to_asset_code'     => 'SZL',
+            'from_amount'       => 1000,
+            'to_amount'         => 1000,
+            'status'            => 'completed',
         ]);
 
         TransactionProjection::query()->create([
-            'uuid' => (string) Str::uuid(),
+            'uuid'         => (string) Str::uuid(),
             'account_uuid' => (string) Str::uuid(),
-            'asset_code' => 'SZL',
-            'amount' => 1000,
-            'type' => 'transfer_out',
-            'subtype' => 'send_money',
-            'description' => 'Transfer out',
-            'reference' => $reference,
-            'hash' => hash('sha256', 'one'),
-            'status' => 'completed',
+            'asset_code'   => 'SZL',
+            'amount'       => 1000,
+            'type'         => 'transfer_out',
+            'subtype'      => 'send_money',
+            'description'  => 'Transfer out',
+            'reference'    => $reference,
+            'hash'         => hash('sha256', 'one'),
+            'status'       => 'completed',
         ]);
         TransactionProjection::query()->create([
-            'uuid' => (string) Str::uuid(),
+            'uuid'         => (string) Str::uuid(),
             'account_uuid' => (string) Str::uuid(),
-            'asset_code' => 'SZL',
-            'amount' => 1000,
-            'type' => 'transfer_in',
-            'subtype' => 'send_money',
-            'description' => 'Transfer in',
-            'reference' => $reference,
-            'hash' => hash('sha256', 'two'),
-            'status' => 'completed',
+            'asset_code'   => 'SZL',
+            'amount'       => 1000,
+            'type'         => 'transfer_in',
+            'subtype'      => 'send_money',
+            'description'  => 'Transfer in',
+            'reference'    => $reference,
+            'hash'         => hash('sha256', 'two'),
+            'status'       => 'completed',
         ]);
 
         $result = app(MoneyMovementTransactionInspector::class)->inspect(reference: $reference);
@@ -124,19 +124,19 @@ class MoneyMovementTransactionInspectorTest extends DomainTestCase
 
         AuthorizedTransaction::query()->create([
             'user_id' => $user->id,
-            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx' => $trx,
+            'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'     => $trx,
             'payload' => [
                 '_verification_policy' => [
                     'verification_type' => AuthorizedTransaction::VERIFICATION_OTP,
-                    'reason' => 'risk_signal',
-                    'risk_reason' => 'recent_verification_failures',
+                    'reason'            => 'risk_signal',
+                    'risk_reason'       => 'recent_verification_failures',
                 ],
             ],
-            'status' => AuthorizedTransaction::STATUS_FAILED,
-            'verification_type' => AuthorizedTransaction::VERIFICATION_OTP,
+            'status'                => AuthorizedTransaction::STATUS_FAILED,
+            'verification_type'     => AuthorizedTransaction::VERIFICATION_OTP,
             'verification_failures' => 3,
-            'failure_reason' => 'Verification attempt limit exceeded.',
+            'failure_reason'        => 'Verification attempt limit exceeded.',
         ]);
 
         $result = app(MoneyMovementTransactionInspector::class)->inspect(trx: $trx);
@@ -161,43 +161,43 @@ class MoneyMovementTransactionInspectorTest extends DomainTestCase
 
         AuthorizedTransaction::query()->create([
             'user_id' => $user->id,
-            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx' => $trx,
+            'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'     => $trx,
             'payload' => [],
-            'result' => [
-                'trx' => $trx,
-                'reference' => $reference,
-                'amount' => '10.00',
+            'result'  => [
+                'trx'        => $trx,
+                'reference'  => $reference,
+                'amount'     => '10.00',
                 'asset_code' => 'SZL',
             ],
-            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
             'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
         ]);
 
         AssetTransfer::query()->create([
-            'uuid' => $reference,
-            'reference' => $reference,
-            'transfer_id' => $reference,
+            'uuid'              => $reference,
+            'reference'         => $reference,
+            'transfer_id'       => $reference,
             'from_account_uuid' => (string) Str::uuid(),
-            'to_account_uuid' => (string) Str::uuid(),
-            'from_asset_code' => 'SZL',
-            'to_asset_code' => 'SZL',
-            'from_amount' => 1000,
-            'to_amount' => 1000,
-            'status' => 'completed',
+            'to_account_uuid'   => (string) Str::uuid(),
+            'from_asset_code'   => 'SZL',
+            'to_asset_code'     => 'SZL',
+            'from_amount'       => 1000,
+            'to_amount'         => 1000,
+            'status'            => 'completed',
         ]);
 
         TransactionProjection::query()->create([
-            'uuid' => (string) Str::uuid(),
+            'uuid'         => (string) Str::uuid(),
             'account_uuid' => (string) Str::uuid(),
-            'asset_code' => 'SZL',
-            'amount' => 1000,
-            'type' => 'transfer_out',
-            'subtype' => 'send_money',
-            'description' => 'Transfer out',
-            'reference' => $reference,
-            'hash' => hash('sha256', 'only-one'),
-            'status' => 'completed',
+            'asset_code'   => 'SZL',
+            'amount'       => 1000,
+            'type'         => 'transfer_out',
+            'subtype'      => 'send_money',
+            'description'  => 'Transfer out',
+            'reference'    => $reference,
+            'hash'         => hash('sha256', 'only-one'),
+            'status'       => 'completed',
         ]);
 
         $result = app(MoneyMovementTransactionInspector::class)->inspect(reference: $reference);
@@ -223,73 +223,73 @@ class MoneyMovementTransactionInspectorTest extends DomainTestCase
         $trx = 'TRX-' . Str::upper(Str::random(10));
 
         $moneyRequest = MoneyRequest::query()->create([
-            'id' => (string) Str::uuid(),
+            'id'                => (string) Str::uuid(),
             'requester_user_id' => $requester->id,
             'recipient_user_id' => $recipient->id,
-            'amount' => '25.00',
-            'asset_code' => 'SZL',
-            'status' => MoneyRequest::STATUS_FULFILLED,
-            'trx' => $trx,
+            'amount'            => '25.00',
+            'asset_code'        => 'SZL',
+            'status'            => MoneyRequest::STATUS_FULFILLED,
+            'trx'               => $trx,
         ]);
 
         AuthorizedTransaction::query()->create([
             'user_id' => $recipient->id,
-            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
-            'trx' => $trx,
+            'remark'  => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+            'trx'     => $trx,
             'payload' => [
-                'money_request_id' => $moneyRequest->id,
+                'money_request_id'     => $moneyRequest->id,
                 '_verification_policy' => [
                     'verification_type' => AuthorizedTransaction::VERIFICATION_OTP,
-                    'reason' => 'default_step_up',
-                    'risk_reason' => null,
+                    'reason'            => 'default_step_up',
+                    'risk_reason'       => null,
                 ],
             ],
             'result' => [
-                'trx' => $trx,
-                'reference' => $reference,
-                'amount' => '25.00',
+                'trx'        => $trx,
+                'reference'  => $reference,
+                'amount'     => '25.00',
                 'asset_code' => 'SZL',
             ],
-            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
             'verification_type' => AuthorizedTransaction::VERIFICATION_OTP,
         ]);
 
         AssetTransfer::query()->create([
-            'uuid' => $reference,
-            'reference' => $reference,
-            'transfer_id' => $reference,
+            'uuid'              => $reference,
+            'reference'         => $reference,
+            'transfer_id'       => $reference,
             'from_account_uuid' => (string) Str::uuid(),
-            'to_account_uuid' => (string) Str::uuid(),
-            'from_asset_code' => 'SZL',
-            'to_asset_code' => 'SZL',
-            'from_amount' => 2500,
-            'to_amount' => 2500,
-            'status' => 'completed',
+            'to_account_uuid'   => (string) Str::uuid(),
+            'from_asset_code'   => 'SZL',
+            'to_asset_code'     => 'SZL',
+            'from_amount'       => 2500,
+            'to_amount'         => 2500,
+            'status'            => 'completed',
         ]);
 
         TransactionProjection::query()->create([
-            'uuid' => (string) Str::uuid(),
+            'uuid'         => (string) Str::uuid(),
             'account_uuid' => (string) Str::uuid(),
-            'asset_code' => 'SZL',
-            'amount' => 2500,
-            'type' => 'transfer_out',
-            'subtype' => 'request_money_accept',
-            'description' => 'Money request accepted',
-            'reference' => $reference,
-            'hash' => hash('sha256', 'request-accept-one'),
-            'status' => 'completed',
+            'asset_code'   => 'SZL',
+            'amount'       => 2500,
+            'type'         => 'transfer_out',
+            'subtype'      => 'request_money_accept',
+            'description'  => 'Money request accepted',
+            'reference'    => $reference,
+            'hash'         => hash('sha256', 'request-accept-one'),
+            'status'       => 'completed',
         ]);
         TransactionProjection::query()->create([
-            'uuid' => (string) Str::uuid(),
+            'uuid'         => (string) Str::uuid(),
             'account_uuid' => (string) Str::uuid(),
-            'asset_code' => 'SZL',
-            'amount' => 2500,
-            'type' => 'transfer_in',
-            'subtype' => 'request_money_accept',
-            'description' => 'Money request fulfilled',
-            'reference' => $reference,
-            'hash' => hash('sha256', 'request-accept-two'),
-            'status' => 'completed',
+            'asset_code'   => 'SZL',
+            'amount'       => 2500,
+            'type'         => 'transfer_in',
+            'subtype'      => 'request_money_accept',
+            'description'  => 'Money request fulfilled',
+            'reference'    => $reference,
+            'hash'         => hash('sha256', 'request-accept-two'),
+            'status'       => 'completed',
         ]);
 
         $result = app(MoneyMovementTransactionInspector::class)->inspect(trx: $trx);
@@ -317,30 +317,30 @@ class MoneyMovementTransactionInspectorTest extends DomainTestCase
 
         AuthorizedTransaction::query()->create([
             'user_id' => $user->id,
-            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx' => $trx,
+            'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'     => $trx,
             'payload' => [],
-            'result' => [
-                'trx' => $trx,
-                'reference' => $reference,
-                'amount' => '10.00',
+            'result'  => [
+                'trx'        => $trx,
+                'reference'  => $reference,
+                'amount'     => '10.00',
                 'asset_code' => 'SZL',
             ],
-            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
             'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
         ]);
 
         AssetTransfer::query()->create([
-            'uuid' => $reference,
-            'reference' => $reference,
-            'transfer_id' => $reference,
+            'uuid'              => $reference,
+            'reference'         => $reference,
+            'transfer_id'       => $reference,
             'from_account_uuid' => (string) Str::uuid(),
-            'to_account_uuid' => (string) Str::uuid(),
-            'from_asset_code' => 'SZL',
-            'to_asset_code' => 'SZL',
-            'from_amount' => 1000,
-            'to_amount' => 1000,
-            'status' => 'completed',
+            'to_account_uuid'   => (string) Str::uuid(),
+            'from_asset_code'   => 'SZL',
+            'to_asset_code'     => 'SZL',
+            'from_amount'       => 1000,
+            'to_amount'         => 1000,
+            'status'            => 'completed',
         ]);
 
         $result = app(MoneyMovementTransactionInspector::class)->inspect(reference: $reference);

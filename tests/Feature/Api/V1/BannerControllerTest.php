@@ -11,7 +11,6 @@ use Tests\TestCase;
 
 class BannerControllerTest extends TestCase
 {
-
     protected function setUp(): void
     {
         parent::setUp();

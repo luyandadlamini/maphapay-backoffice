@@ -120,7 +120,7 @@ class ThreadRequestController extends Controller
         $moneyRequest->update(['status' => MoneyRequest::STATUS_REJECTED]);
 
         $message = Message::whereRaw(
-            "JSON_UNQUOTE(JSON_EXTRACT(payload, ?)) = ?",
+            'JSON_UNQUOTE(JSON_EXTRACT(payload, ?)) = ?',
             [self::MONEY_REQUEST_ID_JSON_PATH, $requestId],
         )->first();
         if ($message !== null && is_array($message->payload)) {
@@ -148,7 +148,7 @@ class ThreadRequestController extends Controller
         $moneyRequest->update(['status' => MoneyRequest::STATUS_REJECTED]);
 
         $message = Message::whereRaw(
-            "JSON_UNQUOTE(JSON_EXTRACT(payload, ?)) = ?",
+            'JSON_UNQUOTE(JSON_EXTRACT(payload, ?)) = ?',
             [self::MONEY_REQUEST_ID_JSON_PATH, $requestId],
         )->first();
         if ($message !== null && is_array($message->payload)) {
@@ -188,7 +188,7 @@ class ThreadRequestController extends Controller
         $moneyRequest->update($updates);
 
         $message = Message::whereRaw(
-            "JSON_UNQUOTE(JSON_EXTRACT(payload, ?)) = ?",
+            'JSON_UNQUOTE(JSON_EXTRACT(payload, ?)) = ?',
             [self::MONEY_REQUEST_ID_JSON_PATH, $requestId],
         )->first();
         if ($message !== null && is_array($message->payload)) {

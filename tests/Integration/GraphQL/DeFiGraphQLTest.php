@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\DeFi\Models\DeFiPosition;
 use App\Models\User;
 
-
 describe('GraphQL DeFi API', function () {
     it('returns unauthorized without authentication', function () {
         $response = $this->postJson('/graphql', [

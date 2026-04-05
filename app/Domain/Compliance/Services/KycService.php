@@ -271,9 +271,9 @@ class KycService
             AuditLog::log($action, $auditable, $oldValues, $newValues, $metadata, $tags);
         } catch (Throwable $e) {
             Log::warning('KYC audit logging failed (continuing)', [
-                'action' => $action,
+                'action'  => $action,
                 'user_id' => $auditable?->id,
-                'error' => $e->getMessage(),
+                'error'   => $e->getMessage(),
             ]);
         }
     }

@@ -6,9 +6,11 @@ namespace Tests\Unit\Domain\Monitoring\Services;
 
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
+use DateTimeInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Mockery;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -32,7 +34,7 @@ class MaphaPayMoneyMovementTelemetryTest extends TestCase
             ->with(
                 MaphaPayMoneyMovementTelemetry::METRIC_VERIFICATION_FAILURES_TOTAL,
                 0,
-                \Mockery::type(\DateTimeInterface::class),
+                Mockery::type(DateTimeInterface::class),
             )
             ->andReturnTrue();
         Cache::shouldReceive('increment')
@@ -62,19 +64,19 @@ class MaphaPayMoneyMovementTelemetryTest extends TestCase
         $request = Request::create('/api/verification-process/verify/otp', 'POST');
 
         $transaction = new AuthorizedTransaction([
-            'user_id' => 42,
-            'trx' => 'TRX-123',
-            'status' => AuthorizedTransaction::STATUS_FAILED,
+            'user_id'        => 42,
+            'trx'            => 'TRX-123',
+            'status'         => AuthorizedTransaction::STATUS_FAILED,
             'failure_reason' => 'Invalid OTP.',
-            'payload' => [
-                'from_account_uuid' => 'from-uuid',
-                'to_account_uuid' => 'to-uuid',
-                'recipient_user_id' => 77,
-                'amount' => '10.00',
-                'asset_code' => 'SZL',
+            'payload'        => [
+                'from_account_uuid'    => 'from-uuid',
+                'to_account_uuid'      => 'to-uuid',
+                'recipient_user_id'    => 77,
+                'amount'               => '10.00',
+                'asset_code'           => 'SZL',
                 '_verification_policy' => [
                     'verification_type' => AuthorizedTransaction::VERIFICATION_OTP,
-                    'risk_reason' => 'velocity_limit_exceeded',
+                    'risk_reason'       => 'velocity_limit_exceeded',
                 ],
             ],
             'result' => [
@@ -90,7 +92,7 @@ class MaphaPayMoneyMovementTelemetryTest extends TestCase
         Log::shouldReceive('log')->once()->with(
             'warning',
             'maphapay.compat.money_movement',
-            \Mockery::on(function (array $payload): bool {
+            Mockery::on(function (array $payload): bool {
                 return $payload['event'] === 'verification_failed'
                     && $payload['transaction_id'] === 'txn-123'
                     && $payload['trx'] === 'TRX-123'

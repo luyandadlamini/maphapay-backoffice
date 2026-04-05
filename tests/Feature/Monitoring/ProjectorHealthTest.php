@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Domain\Monitoring\Services\ProjectorHealthService;
 
-
 describe('ProjectorHealthService', function () {
     it('can be instantiated', function () {
         $service = new ProjectorHealthService();

@@ -18,11 +18,11 @@ class PayFallbackController extends Controller
 
         return view('pay.fallback', [
             'display_name' => $user?->name ?? $username,
-            'avatar_url' => $user?->profile_photo_url ?? null,
-            'amount' => null,
-            'note' => null,
-            'deep_link' => "https://pay.maphapay.com/u/{$username}",
-            'found' => $user !== null,
+            'avatar_url'   => $user?->profile_photo_url ?? null,
+            'amount'       => null,
+            'note'         => null,
+            'deep_link'    => "https://pay.maphapay.com/u/{$username}",
+            'found'        => $user !== null,
         ]);
     }
 
@@ -37,11 +37,11 @@ class PayFallbackController extends Controller
         if (! $mr) {
             return view('pay.fallback', [
                 'display_name' => null,
-                'avatar_url' => null,
-                'amount' => null,
-                'note' => null,
-                'deep_link' => null,
-                'found' => false,
+                'avatar_url'   => null,
+                'amount'       => null,
+                'note'         => null,
+                'deep_link'    => null,
+                'found'        => false,
             ]);
         }
 
@@ -50,11 +50,11 @@ class PayFallbackController extends Controller
 
         return view('pay.fallback', [
             'display_name' => $requester?->name,
-            'avatar_url' => $requester?->profile_photo_url ?? null,
-            'amount' => $mr->amount,
-            'note' => $mr->note,
-            'deep_link' => "https://pay.maphapay.com/r/{$token}",
-            'found' => true,
+            'avatar_url'   => $requester?->profile_photo_url ?? null,
+            'amount'       => $mr->amount,
+            'note'         => $mr->note,
+            'deep_link'    => "https://pay.maphapay.com/r/{$token}",
+            'found'        => true,
         ]);
     }
 }

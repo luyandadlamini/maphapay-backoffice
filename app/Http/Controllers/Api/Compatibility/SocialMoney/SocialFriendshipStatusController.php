@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
- * GET /api/social-money/friendship-status/{userId}
+ * GET /api/social-money/friendship-status/{userId}.
  */
 class SocialFriendshipStatusController extends Controller
 {
@@ -23,7 +23,7 @@ class SocialFriendshipStatusController extends Controller
             return response()->json([
                 'status' => 'success',
                 'remark' => 'social_friendship_status',
-                'data' => ['status' => 'none'],
+                'data'   => ['status' => 'none'],
             ]);
         }
 
@@ -33,7 +33,7 @@ class SocialFriendshipStatusController extends Controller
             return response()->json([
                 'status' => 'success',
                 'remark' => 'social_friendship_status',
-                'data' => ['status' => 'none'],
+                'data'   => ['status' => 'none'],
             ]);
         }
 
@@ -47,9 +47,9 @@ class SocialFriendshipStatusController extends Controller
             return response()->json([
                 'status' => 'success',
                 'remark' => 'social_friendship_status',
-                'data' => [
+                'data'   => [
                     'status' => 'friends',
-                    'peer' => $this->mapPeer($peer),
+                    'peer'   => $this->mapPeer($peer),
                 ],
             ]);
         }
@@ -63,10 +63,10 @@ class SocialFriendshipStatusController extends Controller
             return response()->json([
                 'status' => 'success',
                 'remark' => 'social_friendship_status',
-                'data' => [
-                    'status' => 'pending_outgoing',
+                'data'   => [
+                    'status'    => 'pending_outgoing',
                     'requestId' => (string) $outgoing->id,
-                    'peer' => $this->mapPeer($peer),
+                    'peer'      => $this->mapPeer($peer),
                 ],
             ]);
         }
@@ -80,10 +80,10 @@ class SocialFriendshipStatusController extends Controller
             return response()->json([
                 'status' => 'success',
                 'remark' => 'social_friendship_status',
-                'data' => [
-                    'status' => 'pending_incoming',
+                'data'   => [
+                    'status'    => 'pending_incoming',
                     'requestId' => (string) $incoming->id,
-                    'peer' => $this->mapPeer($peer),
+                    'peer'      => $this->mapPeer($peer),
                 ],
             ]);
         }
@@ -91,9 +91,9 @@ class SocialFriendshipStatusController extends Controller
         return response()->json([
             'status' => 'success',
             'remark' => 'social_friendship_status',
-            'data' => [
+            'data'   => [
                 'status' => 'none',
-                'peer' => $this->mapPeer($peer),
+                'peer'   => $this->mapPeer($peer),
             ],
         ]);
     }
@@ -104,16 +104,15 @@ class SocialFriendshipStatusController extends Controller
         $parts = preg_split('/\s+/', trim($name)) ?: [];
         $first = $parts[0] ?? '';
         $second = $parts[1] ?? '';
-        $initials = strtoupper(substr($first, 0, 1).substr($second, 0, 1));
+        $initials = strtoupper(substr($first, 0, 1) . substr($second, 0, 1));
 
         return [
-            'id' => (string) $peer->id,
-            'name' => $name,
-            'handle' => (string) ($peer->username ?? ''),
+            'id'             => (string) $peer->id,
+            'name'           => $name,
+            'handle'         => (string) ($peer->username ?? ''),
             'avatarInitials' => $initials !== '' ? $initials : 'U',
-            'avatarColor' => '#5B8DEF',
-            'phoneNumber' => (string) ($peer->mobile ?? ''),
+            'avatarColor'    => '#5B8DEF',
+            'phoneNumber'    => (string) ($peer->mobile ?? ''),
         ];
     }
 }
-

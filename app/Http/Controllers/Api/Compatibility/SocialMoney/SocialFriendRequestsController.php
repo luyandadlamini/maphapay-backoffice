@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Compatibility\SocialMoney;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +44,7 @@ class SocialFriendRequestsController extends Controller
         return response()->json([
             'status' => 'success',
             'remark' => 'social_friend_requests_incoming',
-            'data' => ['requests' => $requests],
+            'data'   => ['requests' => $requests],
         ]);
     }
 
@@ -74,7 +73,7 @@ class SocialFriendRequestsController extends Controller
         return response()->json([
             'status' => 'success',
             'remark' => 'social_friend_requests_outgoing',
-            'data' => ['requests' => $requests],
+            'data'   => ['requests' => $requests],
         ]);
     }
 
@@ -93,23 +92,23 @@ class SocialFriendRequestsController extends Controller
 
         DB::transaction(function () use ($fr): void {
             DB::table('friend_requests')->where('id', $fr->id)->update([
-                'status' => 'accepted',
+                'status'     => 'accepted',
                 'updated_at' => now(),
             ]);
 
             DB::table('friendships')->upsert(
                 [
                     [
-                        'user_id' => $fr->sender_id,
-                        'friend_id' => $fr->recipient_id,
-                        'status' => 'accepted',
+                        'user_id'    => $fr->sender_id,
+                        'friend_id'  => $fr->recipient_id,
+                        'status'     => 'accepted',
                         'created_at' => now(),
                         'updated_at' => now(),
                     ],
                     [
-                        'user_id' => $fr->recipient_id,
-                        'friend_id' => $fr->sender_id,
-                        'status' => 'accepted',
+                        'user_id'    => $fr->recipient_id,
+                        'friend_id'  => $fr->sender_id,
+                        'status'     => 'accepted',
                         'created_at' => now(),
                         'updated_at' => now(),
                     ],
@@ -122,7 +121,7 @@ class SocialFriendRequestsController extends Controller
         return response()->json([
             'status' => 'success',
             'remark' => 'social_friend_requests_accept',
-            'data' => [],
+            'data'   => [],
         ]);
     }
 
@@ -142,7 +141,7 @@ class SocialFriendRequestsController extends Controller
         return response()->json([
             'status' => 'success',
             'remark' => 'social_friend_requests_reject',
-            'data' => [],
+            'data'   => [],
         ]);
     }
 
@@ -162,7 +161,7 @@ class SocialFriendRequestsController extends Controller
         return response()->json([
             'status' => 'success',
             'remark' => 'social_friend_requests_cancel',
-            'data' => [],
+            'data'   => [],
         ]);
     }
 
@@ -172,27 +171,26 @@ class SocialFriendRequestsController extends Controller
         $parts = preg_split('/\s+/', trim($name)) ?: [];
         $first = $parts[0] ?? '';
         $second = $parts[1] ?? '';
-        $initials = strtoupper(substr($first, 0, 1).substr($second, 0, 1));
+        $initials = strtoupper(substr($first, 0, 1) . substr($second, 0, 1));
 
         return [
-            'id' => (string) $row->id,
-            'userId' => (string) $row->user_id,
-            'name' => $name,
-            'handle' => (string) ($row->username ?? ''),
+            'id'             => (string) $row->id,
+            'userId'         => (string) $row->user_id,
+            'name'           => $name,
+            'handle'         => (string) ($row->username ?? ''),
             'avatarInitials' => $initials !== '' ? $initials : 'U',
-            'avatarColor' => '#5B8DEF',
-            'phoneNumber' => (string) ($row->mobile ?? ''),
-            'createdAt' => (string) $row->created_at,
+            'avatarColor'    => '#5B8DEF',
+            'phoneNumber'    => (string) ($row->mobile ?? ''),
+            'createdAt'      => (string) $row->created_at,
         ];
     }
 
     private function notFound(): JsonResponse
     {
         return response()->json([
-            'status' => 'error',
-            'remark' => 'social_friend_requests',
+            'status'  => 'error',
+            'remark'  => 'social_friend_requests',
             'message' => ['Not found.'],
         ], 404);
     }
 }
-

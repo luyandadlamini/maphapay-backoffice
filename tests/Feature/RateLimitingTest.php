@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 
-
 beforeEach(function () {
     Cache::flush(); // Clear rate limit counters between tests
     $this->user = User::factory()->create();

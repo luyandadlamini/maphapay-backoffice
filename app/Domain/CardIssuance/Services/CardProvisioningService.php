@@ -163,8 +163,9 @@ class CardProvisioningService
         if (! $user) {
             Log::warning('Skipping card persistence: user not found', [
                 'user_identifier' => $userId,
-                'card_token' => $card->cardToken,
+                'card_token'      => $card->cardToken,
             ]);
+
             return;
         }
 
@@ -174,16 +175,16 @@ class CardProvisioningService
         Card::query()->updateOrCreate(
             ['issuer_card_token' => $card->cardToken],
             [
-                'user_id' => $user->id,
+                'user_id'       => $user->id,
                 'cardholder_id' => $user->id,
-                'issuer' => $issuer,
-                'last4' => $card->last4,
-                'network' => $card->network->value,
-                'status' => $card->status->value,
-                'currency' => $currency,
-                'label' => $card->label,
-                'metadata' => $card->metadata,
-                'expires_at' => $card->expiresAt->format('Y-m-d H:i:s'),
+                'issuer'        => $issuer,
+                'last4'         => $card->last4,
+                'network'       => $card->network->value,
+                'status'        => $card->status->value,
+                'currency'      => $currency,
+                'label'         => $card->label,
+                'metadata'      => $card->metadata,
+                'expires_at'    => $card->expiresAt->format('Y-m-d H:i:s'),
             ],
         );
     }

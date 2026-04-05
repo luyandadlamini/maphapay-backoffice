@@ -15,7 +15,8 @@ class AuthorizedTransactionBiometricService
 {
     public function __construct(
         private readonly BiometricAuthenticationService $biometricAuthenticationService,
-    ) {}
+    ) {
+    }
 
     public function issueChallengeForUser(
         string $trx,

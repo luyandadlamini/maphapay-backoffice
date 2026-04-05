@@ -38,7 +38,7 @@ class AuthorizedTransactionBiometricChallenge extends Model
     ];
 
     protected $casts = [
-        'expires_at' => 'datetime',
+        'expires_at'  => 'datetime',
         'verified_at' => 'datetime',
     ];
 
@@ -71,7 +71,7 @@ class AuthorizedTransactionBiometricChallenge extends Model
     public function markAsVerified(): void
     {
         $this->update([
-            'status' => self::STATUS_VERIFIED,
+            'status'      => self::STATUS_VERIFIED,
             'verified_at' => now(),
         ]);
     }
@@ -93,12 +93,12 @@ class AuthorizedTransactionBiometricChallenge extends Model
     ): self {
         return self::create([
             'authorized_transaction_id' => $transaction->id,
-            'mobile_device_id' => $device->id,
-            'user_id' => $transaction->user_id,
-            'challenge' => bin2hex(random_bytes(32)),
-            'status' => self::STATUS_PENDING,
-            'ip_address' => $ipAddress,
-            'expires_at' => now()->addSeconds(self::CHALLENGE_TTL_SECONDS),
+            'mobile_device_id'          => $device->id,
+            'user_id'                   => $transaction->user_id,
+            'challenge'                 => bin2hex(random_bytes(32)),
+            'status'                    => self::STATUS_PENDING,
+            'ip_address'                => $ipAddress,
+            'expires_at'                => now()->addSeconds(self::CHALLENGE_TTL_SECONDS),
         ]);
     }
 }

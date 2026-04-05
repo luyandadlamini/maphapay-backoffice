@@ -11,7 +11,6 @@ use Illuminate\Support\Str;
 
 class BudgetCategory extends Model
 {
-
     protected $table = 'budget_categories';
 
     protected static function boot(): void
@@ -34,17 +33,24 @@ class BudgetCategory extends Model
 
     protected $casts = [
         'budget_amount' => 'decimal:2',
-        'sort_order' => 'integer',
-        'is_system' => 'boolean',
+        'sort_order'    => 'integer',
+        'is_system'     => 'boolean',
     ];
 
     public const SLUG_FOOD = 'food';
+
     public const SLUG_BILLS = 'bills';
+
     public const SLUG_TRANSPORT = 'transport';
+
     public const SLUG_SHOPPING = 'shopping';
+
     public const SLUG_ENTERTAINMENT = 'entertainment';
+
     public const SLUG_HEALTH = 'health';
+
     public const SLUG_EDUCATION = 'education';
+
     public const SLUG_OTHER = 'other';
 
     public const DEFAULT_SLUGS = [

@@ -21,54 +21,54 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
         Asset::firstOrCreate(
             ['code' => 'SZL'],
             [
-                'name' => 'Swazi Lilangeni',
-                'type' => 'fiat',
+                'name'      => 'Swazi Lilangeni',
+                'type'      => 'fiat',
                 'precision' => 2,
                 'is_active' => true,
             ],
         );
 
         config([
-            'maphapay_migration.money_movement.send_money.step_up_threshold' => '100.00',
+            'maphapay_migration.money_movement.send_money.step_up_threshold'    => '100.00',
             'maphapay_migration.money_movement.request_money.step_up_threshold' => '100.00',
-            'maphapay_migration.money_movement.risk_signals' => [
+            'maphapay_migration.money_movement.risk_signals'                    => [
                 'velocity' => [
                     'lookback_minutes' => 15,
-                    'max_initiations' => 3,
+                    'max_initiations'  => 3,
                 ],
                 'verification_failures' => [
                     'lookback_minutes' => 30,
-                    'max_failures' => 2,
+                    'max_failures'     => 2,
                 ],
                 'amount_anomaly' => [
                     'lookback_minutes' => 1440,
-                    'min_samples' => 3,
-                    'multiplier' => 4,
+                    'min_samples'      => 3,
+                    'multiplier'       => 4,
                 ],
                 'recipient_churn' => [
-                    'lookback_minutes' => 1440,
+                    'lookback_minutes'            => 1440,
                     'max_distinct_counterparties' => 3,
                 ],
             ],
         ]);
 
         \App\Models\Setting::set('send_money_threshold_low_enhanced_or_full', 5000, [
-            'type' => 'float',
-            'label' => 'Low Risk Threshold',
+            'type'        => 'float',
+            'label'       => 'Low Risk Threshold',
             'description' => 'Test threshold',
-            'group' => 'limits',
+            'group'       => 'limits',
         ]);
         \App\Models\Setting::set('send_money_threshold_medium_or_standard', 2500, [
-            'type' => 'float',
-            'label' => 'Medium Risk Threshold',
+            'type'        => 'float',
+            'label'       => 'Medium Risk Threshold',
             'description' => 'Test threshold',
-            'group' => 'limits',
+            'group'       => 'limits',
         ]);
         \App\Models\Setting::set('send_money_threshold_high_or_basic', 1000, [
-            'type' => 'float',
-            'label' => 'High Risk Threshold',
+            'type'        => 'float',
+            'label'       => 'High Risk Threshold',
             'description' => 'Test threshold',
-            'group' => 'limits',
+            'group'       => 'limits',
         ]);
     }
 
@@ -172,8 +172,8 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
     {
         $user = User::factory()->create([
             'transaction_pin' => null,
-            'kyc_level' => 'enhanced',
-            'risk_rating' => 'low',
+            'kyc_level'       => 'enhanced',
+            'risk_rating'     => 'low',
         ]);
         $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
 
@@ -194,8 +194,8 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
     {
         $user = User::factory()->create([
             'transaction_pin' => null,
-            'kyc_level' => 'standard',
-            'risk_rating' => 'low',
+            'kyc_level'       => 'standard',
+            'risk_rating'     => 'low',
         ]);
         $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
 
@@ -217,8 +217,8 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
     {
         $user = User::factory()->create([
             'transaction_pin' => null,
-            'kyc_level' => 'full',
-            'risk_rating' => 'high',
+            'kyc_level'       => 'full',
+            'risk_rating'     => 'high',
         ]);
         $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
 
@@ -238,9 +238,9 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
     public function it_prefers_the_per_user_send_money_threshold_override(): void
     {
         $user = User::factory()->create([
-            'transaction_pin' => null,
-            'kyc_level' => 'enhanced',
-            'risk_rating' => 'low',
+            'transaction_pin'                       => null,
+            'kyc_level'                             => 'enhanced',
+            'risk_rating'                           => 'low',
             'send_money_step_up_threshold_override' => '750.00',
         ]);
         $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
@@ -304,39 +304,39 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
         $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
 
         AuthorizedTransaction::query()->create([
-            'user_id' => $user->id,
-            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx' => 'TRX-VEL-1',
-            'payload' => ['amount' => '10.00', 'asset_code' => 'SZL'],
-            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'user_id'           => $user->id,
+            'remark'            => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'               => 'TRX-VEL-1',
+            'payload'           => ['amount' => '10.00', 'asset_code' => 'SZL'],
+            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
             'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
-            'expires_at' => now()->addHour(),
-            'created_at' => now()->subMinutes(5),
-            'updated_at' => now()->subMinutes(5),
+            'expires_at'        => now()->addHour(),
+            'created_at'        => now()->subMinutes(5),
+            'updated_at'        => now()->subMinutes(5),
         ]);
 
         AuthorizedTransaction::query()->create([
-            'user_id' => $user->id,
-            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY,
-            'trx' => 'TRX-VEL-2',
-            'payload' => ['amount' => '10.00', 'asset_code' => 'SZL'],
-            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'user_id'           => $user->id,
+            'remark'            => AuthorizedTransaction::REMARK_REQUEST_MONEY,
+            'trx'               => 'TRX-VEL-2',
+            'payload'           => ['amount' => '10.00', 'asset_code' => 'SZL'],
+            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
             'verification_type' => AuthorizedTransaction::VERIFICATION_OTP,
-            'expires_at' => now()->addHour(),
-            'created_at' => now()->subMinutes(4),
-            'updated_at' => now()->subMinutes(4),
+            'expires_at'        => now()->addHour(),
+            'created_at'        => now()->subMinutes(4),
+            'updated_at'        => now()->subMinutes(4),
         ]);
 
         AuthorizedTransaction::query()->create([
-            'user_id' => $user->id,
-            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
-            'trx' => 'TRX-VEL-3',
-            'payload' => ['amount' => '10.00', 'asset_code' => 'SZL'],
-            'status' => AuthorizedTransaction::STATUS_PENDING,
+            'user_id'           => $user->id,
+            'remark'            => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+            'trx'               => 'TRX-VEL-3',
+            'payload'           => ['amount' => '10.00', 'asset_code' => 'SZL'],
+            'status'            => AuthorizedTransaction::STATUS_PENDING,
             'verification_type' => AuthorizedTransaction::VERIFICATION_PIN,
-            'expires_at' => now()->addHour(),
-            'created_at' => now()->subMinutes(3),
-            'updated_at' => now()->subMinutes(3),
+            'expires_at'        => now()->addHour(),
+            'created_at'        => now()->subMinutes(3),
+            'updated_at'        => now()->subMinutes(3),
         ]);
 
         $policy = app(MoneyMovementVerificationPolicyResolver::class)->resolveSendMoneyPolicy(
@@ -359,31 +359,31 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
         $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
 
         AuthorizedTransaction::query()->create([
-            'user_id' => $user->id,
-            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx' => 'TRX-FAIL-1',
-            'payload' => ['amount' => '10.00', 'asset_code' => 'SZL'],
-            'status' => AuthorizedTransaction::STATUS_FAILED,
-            'verification_type' => AuthorizedTransaction::VERIFICATION_PIN,
+            'user_id'               => $user->id,
+            'remark'                => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'                   => 'TRX-FAIL-1',
+            'payload'               => ['amount' => '10.00', 'asset_code' => 'SZL'],
+            'status'                => AuthorizedTransaction::STATUS_FAILED,
+            'verification_type'     => AuthorizedTransaction::VERIFICATION_PIN,
             'verification_failures' => 1,
-            'failure_reason' => 'Invalid transaction PIN.',
-            'expires_at' => now()->addHour(),
-            'created_at' => now()->subMinutes(8),
-            'updated_at' => now()->subMinutes(8),
+            'failure_reason'        => 'Invalid transaction PIN.',
+            'expires_at'            => now()->addHour(),
+            'created_at'            => now()->subMinutes(8),
+            'updated_at'            => now()->subMinutes(8),
         ]);
 
         AuthorizedTransaction::query()->create([
-            'user_id' => $user->id,
-            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
-            'trx' => 'TRX-FAIL-2',
-            'payload' => ['amount' => '10.00', 'asset_code' => 'SZL'],
-            'status' => AuthorizedTransaction::STATUS_FAILED,
-            'verification_type' => AuthorizedTransaction::VERIFICATION_OTP,
+            'user_id'               => $user->id,
+            'remark'                => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+            'trx'                   => 'TRX-FAIL-2',
+            'payload'               => ['amount' => '10.00', 'asset_code' => 'SZL'],
+            'status'                => AuthorizedTransaction::STATUS_FAILED,
+            'verification_type'     => AuthorizedTransaction::VERIFICATION_OTP,
             'verification_failures' => 1,
-            'failure_reason' => 'Invalid OTP.',
-            'expires_at' => now()->addHour(),
-            'created_at' => now()->subMinutes(6),
-            'updated_at' => now()->subMinutes(6),
+            'failure_reason'        => 'Invalid OTP.',
+            'expires_at'            => now()->addHour(),
+            'created_at'            => now()->subMinutes(6),
+            'updated_at'            => now()->subMinutes(6),
         ]);
 
         $policy = app(MoneyMovementVerificationPolicyResolver::class)->resolveSendMoneyPolicy(
@@ -408,18 +408,18 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
         foreach ([10.00, 12.00, 11.50] as $index => $historicalAmount) {
             AuthorizedTransaction::query()->create([
                 'user_id' => $user->id,
-                'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-                'trx' => 'TRX-AMOUNT-' . $index . '-' . Str::upper((string) Str::ulid()),
+                'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+                'trx'     => 'TRX-AMOUNT-' . $index . '-' . Str::upper((string) Str::ulid()),
                 'payload' => [
-                    'amount' => number_format($historicalAmount, 2, '.', ''),
-                    'asset_code' => 'SZL',
+                    'amount'          => number_format($historicalAmount, 2, '.', ''),
+                    'asset_code'      => 'SZL',
                     'to_account_uuid' => 'recipient-' . $index,
                 ],
-                'status' => AuthorizedTransaction::STATUS_COMPLETED,
+                'status'            => AuthorizedTransaction::STATUS_COMPLETED,
                 'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
-                'expires_at' => now()->addHour(),
-                'created_at' => now()->subMinutes(10 - $index),
-                'updated_at' => now()->subMinutes(10 - $index),
+                'expires_at'        => now()->addHour(),
+                'created_at'        => now()->subMinutes(10 - $index),
+                'updated_at'        => now()->subMinutes(10 - $index),
             ]);
         }
 
@@ -448,18 +448,18 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
         foreach (['recipient-a', 'recipient-b', 'recipient-c'] as $index => $counterparty) {
             AuthorizedTransaction::query()->create([
                 'user_id' => $user->id,
-                'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-                'trx' => 'TRX-CHURN-' . $index . '-' . Str::upper((string) Str::ulid()),
+                'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+                'trx'     => 'TRX-CHURN-' . $index . '-' . Str::upper((string) Str::ulid()),
                 'payload' => [
-                    'amount' => '10.00',
-                    'asset_code' => 'SZL',
+                    'amount'          => '10.00',
+                    'asset_code'      => 'SZL',
                     'to_account_uuid' => $counterparty,
                 ],
-                'status' => AuthorizedTransaction::STATUS_COMPLETED,
+                'status'            => AuthorizedTransaction::STATUS_COMPLETED,
                 'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
-                'expires_at' => now()->addHour(),
-                'created_at' => now()->subMinutes(20 - $index),
-                'updated_at' => now()->subMinutes(20 - $index),
+                'expires_at'        => now()->addHour(),
+                'created_at'        => now()->subMinutes(20 - $index),
+                'updated_at'        => now()->subMinutes(20 - $index),
             ]);
         }
 

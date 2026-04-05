@@ -4,7 +4,6 @@ use App\Console\Commands\CacheWarmup;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Services\Cache\CacheManager;
 
-
 it('can warm up cache for all accounts', function () {
     // Create test accounts (let's see how many the command actually processes)
     $accounts = Account::factory()->count(3)->create(['frozen' => false]);

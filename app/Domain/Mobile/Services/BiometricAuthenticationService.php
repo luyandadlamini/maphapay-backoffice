@@ -273,7 +273,7 @@ class BiometricAuthenticationService
         if ($device->is_blocked) {
             Log::warning('Device is blocked, cannot use biometric', [
                 'device_id' => $device->id,
-                'reason' => $device->blocked_reason,
+                'reason'    => $device->blocked_reason,
             ]);
             $this->recordFailure($device, BiometricFailure::REASON_DEVICE_BLOCKED, $verifyIp);
 
@@ -282,7 +282,7 @@ class BiometricAuthenticationService
 
         if ($device->isBiometricBlocked()) {
             Log::warning('Biometric temporarily blocked for device', [
-                'device_id' => $device->id,
+                'device_id'     => $device->id,
                 'blocked_until' => $device->biometric_blocked_until,
             ]);
 
@@ -307,7 +307,7 @@ class BiometricAuthenticationService
 
         if (! $device->canUseBiometric()) {
             Log::warning('Device cannot use biometric', [
-                'device_id' => $device->id,
+                'device_id'         => $device->id,
                 'biometric_enabled' => $device->biometric_enabled,
             ]);
 
@@ -316,9 +316,9 @@ class BiometricAuthenticationService
 
         if (! $this->validateIpNetwork($challengeIp, $verifyIp)) {
             Log::warning('Biometric verification from different network', [
-                'device_id' => $device->id,
+                'device_id'    => $device->id,
                 'challenge_ip' => $challengeIp,
-                'verify_ip' => $verifyIp,
+                'verify_ip'    => $verifyIp,
             ]);
             $this->recordFailure($device, BiometricFailure::REASON_IP_MISMATCH, $verifyIp);
 
@@ -331,7 +331,7 @@ class BiometricAuthenticationService
             $this->recordFailure($device, BiometricFailure::REASON_SIGNATURE_INVALID, $verifyIp);
 
             Log::warning('Biometric signature verification failed', [
-                'device_id' => $device->id,
+                'device_id'     => $device->id,
                 'failure_count' => $device->biometric_failure_count + 1,
             ]);
 

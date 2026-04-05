@@ -47,7 +47,7 @@ class FinanceCompatibilityEndpointsTest extends ControllerTestCase
 
         $account = Account::factory()->create([
             'user_uuid' => $user->uuid,
-            'frozen' => false,
+            'frozen'    => false,
         ]);
 
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
@@ -180,19 +180,19 @@ class FinanceCompatibilityEndpointsTest extends ControllerTestCase
 
         $older = TransactionProjection::factory()->create([
             'account_uuid' => $account->uuid,
-            'asset_code' => 'SZL',
-            'reference' => 'REF-OLD',
-            'description' => 'Older transaction',
-            'subtype' => 'send_money',
-            'status' => 'completed',
+            'asset_code'   => 'SZL',
+            'reference'    => 'REF-OLD',
+            'description'  => 'Older transaction',
+            'subtype'      => 'send_money',
+            'status'       => 'completed',
         ]);
         $newer = TransactionProjection::factory()->create([
             'account_uuid' => $account->uuid,
-            'asset_code' => 'SZL',
-            'reference' => 'REF-NEW',
-            'description' => 'Newer transaction',
-            'subtype' => 'request_money',
-            'status' => 'completed',
+            'asset_code'   => 'SZL',
+            'reference'    => 'REF-NEW',
+            'description'  => 'Newer transaction',
+            'subtype'      => 'request_money',
+            'status'       => 'completed',
         ]);
 
         $this->setModelTimestamp($older, CarbonImmutable::parse('2026-04-01T08:00:00Z'));
@@ -216,26 +216,26 @@ class FinanceCompatibilityEndpointsTest extends ControllerTestCase
         [$user] = $this->makeUserWithAccount();
 
         $older = Pocket::create([
-            'uuid' => (string) Str::uuid(),
-            'user_uuid' => $user->uuid,
-            'name' => 'Trip',
-            'target_amount' => '2000.00',
+            'uuid'           => (string) Str::uuid(),
+            'user_uuid'      => $user->uuid,
+            'name'           => 'Trip',
+            'target_amount'  => '2000.00',
             'current_amount' => '150.00',
-            'target_date' => '2026-12-31',
-            'category' => 'travel',
-            'color' => '#00A86B',
-            'is_completed' => false,
+            'target_date'    => '2026-12-31',
+            'category'       => 'travel',
+            'color'          => '#00A86B',
+            'is_completed'   => false,
         ]);
         $newer = Pocket::create([
-            'uuid' => (string) Str::uuid(),
-            'user_uuid' => $user->uuid,
-            'name' => 'Emergency',
-            'target_amount' => '5000.00',
+            'uuid'           => (string) Str::uuid(),
+            'user_uuid'      => $user->uuid,
+            'name'           => 'Emergency',
+            'target_amount'  => '5000.00',
             'current_amount' => '750.00',
-            'target_date' => '2026-10-01',
-            'category' => 'emergency',
-            'color' => '#FF6B35',
-            'is_completed' => false,
+            'target_date'    => '2026-10-01',
+            'category'       => 'emergency',
+            'color'          => '#FF6B35',
+            'is_completed'   => false,
         ]);
 
         PocketSmartRule::create([
@@ -264,42 +264,42 @@ class FinanceCompatibilityEndpointsTest extends ControllerTestCase
         [$user] = $this->makeUserWithAccount();
 
         RewardProfile::create([
-            'user_id' => $user->id,
-            'xp' => 120,
-            'level' => 2,
+            'user_id'        => $user->id,
+            'xp'             => 120,
+            'level'          => 2,
             'current_streak' => 3,
             'longest_streak' => 7,
             'points_balance' => 420,
         ]);
 
         $rewardA = RewardShopItem::create([
-            'slug' => 'coffee-voucher',
-            'title' => 'Coffee Voucher',
+            'slug'        => 'coffee-voucher',
+            'title'       => 'Coffee Voucher',
             'description' => 'Free coffee',
             'points_cost' => 150,
-            'category' => 'food',
-            'icon' => 'coffee',
-            'stock' => 10,
-            'is_active' => true,
-            'sort_order' => 1,
+            'category'    => 'food',
+            'icon'        => 'coffee',
+            'stock'       => 10,
+            'is_active'   => true,
+            'sort_order'  => 1,
         ]);
         $rewardB = RewardShopItem::create([
-            'slug' => 'travel-discount',
-            'title' => 'Travel Discount',
+            'slug'        => 'travel-discount',
+            'title'       => 'Travel Discount',
             'description' => 'Discount on travel',
             'points_cost' => 700,
-            'category' => 'travel',
-            'icon' => 'plane',
-            'stock' => 5,
-            'is_active' => true,
-            'sort_order' => 2,
+            'category'    => 'travel',
+            'icon'        => 'plane',
+            'stock'       => 5,
+            'is_active'   => true,
+            'sort_order'  => 2,
         ]);
 
         $redemption = RewardRedemption::create([
             'reward_profile_id' => RewardProfile::where('user_id', $user->id)->firstOrFail()->id,
-            'shop_item_id' => $rewardA->id,
-            'points_spent' => $rewardA->points_cost,
-            'status' => 'completed',
+            'shop_item_id'      => $rewardA->id,
+            'points_spent'      => $rewardA->points_cost,
+            'status'            => 'completed',
         ]);
 
         $this->setModelTimestamp($rewardA, CarbonImmutable::parse('2026-04-01T08:00:00Z'));
@@ -330,18 +330,18 @@ class FinanceCompatibilityEndpointsTest extends ControllerTestCase
         [$user] = $this->makeUserWithAccount();
 
         $older = MobilePushNotification::create([
-            'user_id' => $user->id,
+            'user_id'           => $user->id,
             'notification_type' => MobilePushNotification::TYPE_GENERAL,
-            'title' => 'Older notice',
-            'body' => 'Already here',
-            'status' => MobilePushNotification::STATUS_DELIVERED,
+            'title'             => 'Older notice',
+            'body'              => 'Already here',
+            'status'            => MobilePushNotification::STATUS_DELIVERED,
         ]);
         $newer = MobilePushNotification::create([
-            'user_id' => $user->id,
+            'user_id'           => $user->id,
             'notification_type' => MobilePushNotification::TYPE_TRANSACTION_RECEIVED,
-            'title' => 'New money',
-            'body' => 'Money received',
-            'status' => MobilePushNotification::STATUS_DELIVERED,
+            'title'             => 'New money',
+            'body'              => 'Money received',
+            'status'            => MobilePushNotification::STATUS_DELIVERED,
         ]);
 
         $this->setModelTimestamp($older, CarbonImmutable::parse('2026-04-01T09:00:00Z'));
@@ -371,22 +371,22 @@ class FinanceCompatibilityEndpointsTest extends ControllerTestCase
         [$user] = $this->makeUserWithAccount();
 
         MobileNotificationPreference::create([
-            'user_id' => $user->id,
+            'user_id'           => $user->id,
             'notification_type' => MobileNotificationPreference::TYPE_TRANSACTION_RECEIVED,
-            'push_enabled' => true,
-            'email_enabled' => false,
+            'push_enabled'      => true,
+            'email_enabled'     => false,
         ]);
         MobileNotificationPreference::create([
-            'user_id' => $user->id,
+            'user_id'           => $user->id,
             'notification_type' => MobileNotificationPreference::TYPE_TRANSACTION_SENT,
-            'push_enabled' => true,
-            'email_enabled' => false,
+            'push_enabled'      => true,
+            'email_enabled'     => false,
         ]);
         MobileNotificationPreference::create([
-            'user_id' => $user->id,
+            'user_id'           => $user->id,
             'notification_type' => MobileNotificationPreference::TYPE_MARKETING,
-            'push_enabled' => false,
-            'email_enabled' => false,
+            'push_enabled'      => false,
+            'email_enabled'     => false,
         ]);
 
         $this->getJson('/api/notification/settings')
@@ -397,9 +397,9 @@ class FinanceCompatibilityEndpointsTest extends ControllerTestCase
 
         $this->postJson('/api/notification/settings', [
             'transactions' => false,
-            'promotions' => true,
-            'security' => false,
-            'social' => true,
+            'promotions'   => true,
+            'security'     => false,
+            'social'       => true,
         ])->assertOk()
             ->assertJsonPath('status', 'success')
             ->assertJsonPath('data.transactions', false)

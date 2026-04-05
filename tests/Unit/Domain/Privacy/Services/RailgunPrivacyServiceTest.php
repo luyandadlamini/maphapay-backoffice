@@ -17,7 +17,6 @@ use Tests\TestCase;
 
 class RailgunPrivacyServiceTest extends TestCase
 {
-
     /** @var RailgunBridgeClient&MockInterface */
     private RailgunBridgeClient $bridge;
 

@@ -67,43 +67,43 @@ class DashboardController extends Controller
             $totalBalanceStr = number_format($totalBalanceMinor / $divisor, $precision, '.', '');
 
             return [
-                'balance' => $balanceStr,
-                'total_balance' => $totalBalanceStr,
+                'balance'         => $balanceStr,
+                'total_balance'   => $totalBalanceStr,
                 'currency_symbol' => $currencySymbol,
             ];
         });
 
         Log::info('[compat:dashboard] response', [
-            'user_id' => $user->id,
-            'mobile' => $user->mobile,
-            'mobile_verified_at' => $user->mobile_verified_at?->toISOString(),
-            'kyc_status' => $user->kyc_status,
+            'user_id'                  => $user->id,
+            'mobile'                   => $user->mobile,
+            'mobile_verified_at'       => $user->mobile_verified_at?->toISOString(),
+            'kyc_status'               => $user->kyc_status,
             'has_completed_onboarding' => $user->has_completed_onboarding,
-            'balance' => $dashboardData['balance'],
-            'total_balance' => $dashboardData['total_balance'],
-            'currency_symbol' => $dashboardData['currency_symbol'],
+            'balance'                  => $dashboardData['balance'],
+            'total_balance'            => $dashboardData['total_balance'],
+            'currency_symbol'          => $dashboardData['currency_symbol'],
         ]);
 
         return response()->json([
             'status' => 'success',
             'remark' => 'dashboard',
-            'data' => [
+            'data'   => [
                 'user' => [
-                    'id' => $user->id,
-                    'email' => $user->email,
-                    'mobile' => $user->mobile,
-                    'dial_code' => $user->dial_code,
-                    'mobile_verified_at' => $user->mobile_verified_at?->toISOString(),
-                    'kyc_status' => $user->kyc_status,
+                    'id'                       => $user->id,
+                    'email'                    => $user->email,
+                    'mobile'                   => $user->mobile,
+                    'dial_code'                => $user->dial_code,
+                    'mobile_verified_at'       => $user->mobile_verified_at?->toISOString(),
+                    'kyc_status'               => $user->kyc_status,
                     'has_completed_onboarding' => $user->has_completed_onboarding,
-                    'balance' => $dashboardData['balance'],
-                    'total_balance' => $dashboardData['total_balance'],
-                    'currency_symbol' => $dashboardData['currency_symbol'],
+                    'balance'                  => $dashboardData['balance'],
+                    'total_balance'            => $dashboardData['total_balance'],
+                    'currency_symbol'          => $dashboardData['currency_symbol'],
                 ],
-                'balance' => $dashboardData['balance'],
-                'total_balance' => $dashboardData['total_balance'],
+                'balance'         => $dashboardData['balance'],
+                'total_balance'   => $dashboardData['total_balance'],
                 'currency_symbol' => $dashboardData['currency_symbol'],
-                'offers' => [],
+                'offers'          => [],
             ],
         ]);
     }

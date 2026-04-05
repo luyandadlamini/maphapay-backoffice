@@ -9,6 +9,7 @@ use App\Domain\AuthorizedTransaction\Services\AuthorizedTransactionBiometricServ
 use App\Domain\AuthorizedTransaction\Services\AuthorizedTransactionManager;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
+use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
 use Tests\ControllerTestCase;
@@ -32,7 +33,7 @@ class VerifyBiometricControllerTest extends ControllerTestCase
         $this->mock(AuthorizedTransactionBiometricService::class, function ($mock) use ($user): void {
             $mock->shouldReceive('verifyChallengeForUser')
                 ->once()
-                ->with('TRX-BIO-VERIFY', $user->id, 'device-1', 'challenge-token', 'signed-payload', 'send_money', \Mockery::type('string'));
+                ->with('TRX-BIO-VERIFY', $user->id, 'device-1', 'challenge-token', 'signed-payload', 'send_money', Mockery::type('string'));
         });
 
         $this->mock(AuthorizedTransactionManager::class, function ($mock) use ($user): void {
@@ -40,21 +41,21 @@ class VerifyBiometricControllerTest extends ControllerTestCase
                 ->once()
                 ->with('TRX-BIO-VERIFY', $user->id)
                 ->andReturn([
-                    'trx' => 'TRX-BIO-VERIFY',
-                    'amount' => '25.00',
+                    'trx'        => 'TRX-BIO-VERIFY',
+                    'amount'     => '25.00',
                     'asset_code' => 'SZL',
-                    'reference' => 'mock-transfer-id',
+                    'reference'  => 'mock-transfer-id',
                 ]);
         });
 
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
 
         $response = $this->postJson(self::ROUTE, [
-            'trx' => 'TRX-BIO-VERIFY',
+            'trx'       => 'TRX-BIO-VERIFY',
             'device_id' => 'device-1',
             'challenge' => 'challenge-token',
             'signature' => 'signed-payload',
-            'remark' => 'send_money',
+            'remark'    => 'send_money',
         ]);
 
         $response->assertOk()
@@ -72,14 +73,14 @@ class VerifyBiometricControllerTest extends ControllerTestCase
         $this->mock(AuthorizedTransactionBiometricService::class, function ($mock) use ($user): void {
             $mock->shouldReceive('verifyChallengeForUser')
                 ->once()
-                ->with('TRX-MISSING', $user->id, 'device-1', 'challenge-token', 'signed-payload', null, \Mockery::type('string'))
+                ->with('TRX-MISSING', $user->id, 'device-1', 'challenge-token', 'signed-payload', null, Mockery::type('string'))
                 ->andThrow(new TransactionNotFoundException('Transaction not found.'));
         });
 
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
 
         $response = $this->postJson(self::ROUTE, [
-            'trx' => 'TRX-MISSING',
+            'trx'       => 'TRX-MISSING',
             'device_id' => 'device-1',
             'challenge' => 'challenge-token',
             'signature' => 'signed-payload',
@@ -87,10 +88,10 @@ class VerifyBiometricControllerTest extends ControllerTestCase
 
         $response->assertNotFound()
             ->assertExactJson([
-                'status' => 'error',
-                'remark' => 'biometric_verified',
+                'status'  => 'error',
+                'remark'  => 'biometric_verified',
                 'message' => ['Transaction not found.'],
-                'data' => null,
+                'data'    => null,
             ]);
     }
 
@@ -102,14 +103,14 @@ class VerifyBiometricControllerTest extends ControllerTestCase
         $this->mock(AuthorizedTransactionBiometricService::class, function ($mock) use ($user): void {
             $mock->shouldReceive('verifyChallengeForUser')
                 ->once()
-                ->with('TRX-BIO-VERIFY', $user->id, 'device-1', 'challenge-token', 'signed-payload', null, \Mockery::type('string'))
+                ->with('TRX-BIO-VERIFY', $user->id, 'device-1', 'challenge-token', 'signed-payload', null, Mockery::type('string'))
                 ->andThrow(new RuntimeException('Unable to verify your identity. Please try again.'));
         });
 
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
 
         $response = $this->postJson(self::ROUTE, [
-            'trx' => 'TRX-BIO-VERIFY',
+            'trx'       => 'TRX-BIO-VERIFY',
             'device_id' => 'device-1',
             'challenge' => 'challenge-token',
             'signature' => 'signed-payload',
@@ -117,10 +118,10 @@ class VerifyBiometricControllerTest extends ControllerTestCase
 
         $response->assertStatus(422)
             ->assertExactJson([
-                'status' => 'error',
-                'remark' => 'biometric_verified',
+                'status'  => 'error',
+                'remark'  => 'biometric_verified',
                 'message' => ['Unable to verify your identity. Please try again.'],
-                'data' => null,
+                'data'    => null,
             ]);
     }
 }

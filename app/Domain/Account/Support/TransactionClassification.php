@@ -6,8 +6,8 @@ namespace App\Domain\Account\Support;
 
 use App\Domain\Account\Models\TransactionProjection;
 use App\Domain\Mobile\Models\BudgetCategory;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 final class TransactionClassification
 {
@@ -36,62 +36,62 @@ final class TransactionClassification
 
         if ($source === 'pocket_transfer' || Str::startsWith($normalizedSubtype, 'pocket_')) {
             return [
-                'direction' => $direction,
-                'analytics_bucket' => 'savings',
-                'budget_eligible' => false,
-                'source_domain' => 'savings',
+                'direction'            => $direction,
+                'analytics_bucket'     => 'savings',
+                'budget_eligible'      => false,
+                'source_domain'        => 'savings',
                 'system_category_slug' => 'savings_transfer',
-                'category_label' => 'Savings transfer',
-                'editable_category' => false,
+                'category_label'       => 'Savings transfer',
+                'editable_category'    => false,
             ];
         }
 
         if (in_array($normalizedSubtype, ['send_money', 'request_money_accept'], true) || in_array($type, ['transfer_in', 'transfer_out'], true)) {
             return [
-                'direction' => $direction,
-                'analytics_bucket' => $direction === 'out' ? 'expense' : 'income',
-                'budget_eligible' => $direction === 'out',
-                'source_domain' => 'p2p',
+                'direction'            => $direction,
+                'analytics_bucket'     => $direction === 'out' ? 'expense' : 'income',
+                'budget_eligible'      => $direction === 'out',
+                'source_domain'        => 'p2p',
                 'system_category_slug' => 'peer_transfer',
-                'category_label' => 'Peer transfer',
-                'editable_category' => $direction === 'out',
+                'category_label'       => 'Peer transfer',
+                'editable_category'    => $direction === 'out',
             ];
         }
 
         if (str_contains($normalizedSubtype, 'cash_out')) {
             return [
-                'direction' => $direction,
-                'analytics_bucket' => 'expense',
-                'budget_eligible' => false,
-                'source_domain' => 'cash_out',
+                'direction'            => $direction,
+                'analytics_bucket'     => 'expense',
+                'budget_eligible'      => false,
+                'source_domain'        => 'cash_out',
                 'system_category_slug' => 'cash_out',
-                'category_label' => 'Cash out',
-                'editable_category' => false,
+                'category_label'       => 'Cash out',
+                'editable_category'    => false,
             ];
         }
 
         if (str_contains($normalizedSubtype, 'merchant') || str_contains($normalizedSubtype, 'pay')) {
             return [
-                'direction' => $direction,
-                'analytics_bucket' => $direction === 'out' ? 'expense' : 'income',
-                'budget_eligible' => $direction === 'out',
-                'source_domain' => 'merchant_payment',
+                'direction'            => $direction,
+                'analytics_bucket'     => $direction === 'out' ? 'expense' : 'income',
+                'budget_eligible'      => $direction === 'out',
+                'source_domain'        => 'merchant_payment',
                 'system_category_slug' => $direction === 'out' ? 'bills' : 'income',
-                'category_label' => $direction === 'out' ? 'Bills' : 'Income',
-                'editable_category' => $direction === 'out',
+                'category_label'       => $direction === 'out' ? 'Bills' : 'Income',
+                'editable_category'    => $direction === 'out',
             ];
         }
 
         $systemCategory = $direction === 'out' ? 'other' : 'income';
 
         return [
-            'direction' => $direction,
-            'analytics_bucket' => $direction === 'out' ? 'expense' : 'income',
-            'budget_eligible' => $direction === 'out',
-            'source_domain' => $source !== '' ? $source : 'wallet',
+            'direction'            => $direction,
+            'analytics_bucket'     => $direction === 'out' ? 'expense' : 'income',
+            'budget_eligible'      => $direction === 'out',
+            'source_domain'        => $source !== '' ? $source : 'wallet',
             'system_category_slug' => $systemCategory,
-            'category_label' => self::labelForCategorySlug($systemCategory),
-            'editable_category' => $direction === 'out',
+            'category_label'       => self::labelForCategorySlug($systemCategory),
+            'editable_category'    => $direction === 'out',
         ];
     }
 
@@ -120,13 +120,13 @@ final class TransactionClassification
         $source = $transaction->user_category_slug ? 'user' : (string) ($transaction->categorization_source ?: 'system');
 
         return [
-            'direction' => $defaults['direction'],
-            'analytics_bucket' => $transaction->analytics_bucket ?: $defaults['analytics_bucket'],
-            'budget_eligible' => $transaction->budget_eligible ?? $defaults['budget_eligible'],
-            'source_domain' => $transaction->source_domain ?: $defaults['source_domain'],
-            'category_slug' => $effectiveSlug,
-            'category_label' => self::labelForCategorySlug($effectiveSlug, $transaction->account?->user_uuid),
-            'category_source' => $source === 'user' ? 'user' : 'system',
+            'direction'         => $defaults['direction'],
+            'analytics_bucket'  => $transaction->analytics_bucket ?: $defaults['analytics_bucket'],
+            'budget_eligible'   => $transaction->budget_eligible ?? $defaults['budget_eligible'],
+            'source_domain'     => $transaction->source_domain ?: $defaults['source_domain'],
+            'category_slug'     => $effectiveSlug,
+            'category_label'    => self::labelForCategorySlug($effectiveSlug, $transaction->account?->user_uuid),
+            'category_source'   => $source === 'user' ? 'user' : 'system',
             'editable_category' => $defaults['editable_category'],
         ];
     }
@@ -149,18 +149,18 @@ final class TransactionClassification
         }
 
         return match ($slug) {
-            'peer_transfer' => 'Peer transfer',
+            'peer_transfer'    => 'Peer transfer',
             'savings_transfer' => 'Savings transfer',
-            'cash_out' => 'Cash out',
-            'bills' => 'Bills',
-            'food' => 'Food',
-            'transport' => 'Transport',
-            'shopping' => 'Shopping',
-            'entertainment' => 'Entertainment',
-            'health' => 'Health',
-            'education' => 'Education',
-            'income' => 'Income',
-            default => Str::of($slug)->replace('_', ' ')->headline()->toString(),
+            'cash_out'         => 'Cash out',
+            'bills'            => 'Bills',
+            'food'             => 'Food',
+            'transport'        => 'Transport',
+            'shopping'         => 'Shopping',
+            'entertainment'    => 'Entertainment',
+            'health'           => 'Health',
+            'education'        => 'Education',
+            'income'           => 'Income',
+            default            => Str::of($slug)->replace('_', ' ')->headline()->toString(),
         };
     }
 }

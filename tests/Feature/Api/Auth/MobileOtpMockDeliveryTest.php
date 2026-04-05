@@ -5,13 +5,12 @@ declare(strict_types=1);
 use App\Models\User;
 use App\Models\UserOtp;
 
-
 it('stores mock-provider OTP without SMS and accepts spaced OTP when debug bypass is on', function (): void {
     config(['sms.otp_provider' => 'mock']);
 
     $this->postJson('/api/auth/mobile/login', [
         'dial_code' => '+268',
-        'mobile' => '76199901',
+        'mobile'    => '76199901',
     ])->assertOk()
         ->assertJsonPath('success', true);
 
@@ -21,18 +20,18 @@ it('stores mock-provider OTP without SMS and accepts spaced OTP when debug bypas
 
     config([
         'otp.debug_enabled' => true,
-        'otp.debug_code' => '123456',
+        'otp.debug_code'    => '123456',
     ]);
 
     $this->postJson('/api/auth/mobile/login', [
         'dial_code' => '+268',
-        'mobile' => '76199902',
+        'mobile'    => '76199902',
     ])->assertOk();
 
     $this->postJson('/api/auth/mobile/verify-otp', [
         'dial_code' => '+268',
-        'mobile' => '76199902',
-        'otp' => '12 34 56',
+        'mobile'    => '76199902',
+        'otp'       => '12 34 56',
     ])->assertOk()
         ->assertJsonPath('success', true)
         ->assertJsonStructure(['data' => ['access_token', 'refresh_token']]);
@@ -40,13 +39,13 @@ it('stores mock-provider OTP without SMS and accepts spaced OTP when debug bypas
 
 it('can send a new login OTP after a previous OTP was verified (user_otps unique slot)', function (): void {
     config([
-        'sms.otp_provider' => 'mock',
+        'sms.otp_provider'  => 'mock',
         'otp.debug_enabled' => false,
     ]);
 
     $this->postJson('/api/auth/mobile/login', [
         'dial_code' => '+268',
-        'mobile' => '76199904',
+        'mobile'    => '76199904',
     ])->assertOk();
 
     $user = User::where('dial_code', '+268')->where('mobile', '76199904')->first();
@@ -58,7 +57,7 @@ it('can send a new login OTP after a previous OTP was verified (user_otps unique
 
     $this->postJson('/api/auth/mobile/login', [
         'dial_code' => '+268',
-        'mobile' => '76199904',
+        'mobile'    => '76199904',
     ])->assertOk()
         ->assertJsonPath('success', true);
 
@@ -67,15 +66,15 @@ it('can send a new login OTP after a previous OTP was verified (user_otps unique
 
 it('skip_otp_send creates user without OTP row when server allows it; verify works with debug code', function (): void {
     config([
-        'sms.otp_provider' => 'mock',
+        'sms.otp_provider'                => 'mock',
         'otp.allow_skip_send_on_register' => true,
-        'otp.debug_enabled' => true,
-        'otp.debug_code' => '123456',
+        'otp.debug_enabled'               => true,
+        'otp.debug_code'                  => '123456',
     ]);
 
     $this->postJson('/api/auth/mobile/login', [
-        'dial_code' => '+268',
-        'mobile' => '76199906',
+        'dial_code'     => '+268',
+        'mobile'        => '76199906',
         'skip_otp_send' => true,
     ])->assertOk()
         ->assertJsonPath('data.otp_sent', false);
@@ -86,8 +85,8 @@ it('skip_otp_send creates user without OTP row when server allows it; verify wor
 
     $this->postJson('/api/auth/mobile/verify-otp', [
         'dial_code' => '+268',
-        'mobile' => '76199906',
-        'otp' => '123456',
+        'mobile'    => '76199906',
+        'otp'       => '123456',
     ])->assertOk()
         ->assertJsonPath('success', true)
         ->assertJsonStructure(['data' => ['access_token', 'refresh_token']]);
@@ -95,13 +94,13 @@ it('skip_otp_send creates user without OTP row when server allows it; verify wor
 
 it('ignores skip_otp_send when allow_skip_send_on_register is false', function (): void {
     config([
-        'sms.otp_provider' => 'mock',
+        'sms.otp_provider'                => 'mock',
         'otp.allow_skip_send_on_register' => false,
     ]);
 
     $this->postJson('/api/auth/mobile/login', [
-        'dial_code' => '+268',
-        'mobile' => '76199907',
+        'dial_code'     => '+268',
+        'mobile'        => '76199907',
         'skip_otp_send' => true,
     ])->assertOk()
         ->assertJsonPath('data.otp_sent', true);

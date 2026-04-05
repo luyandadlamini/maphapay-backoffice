@@ -7,7 +7,6 @@ use App\Domain\Cgo\Models\CgoPricingRound;
 use App\Models\User;
 use Illuminate\Support\Str;
 
-
 describe('GraphQL CGO API', function () {
     it('returns unauthorized without authentication', function () {
         $response = $this->postJson('/graphql', [

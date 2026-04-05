@@ -52,15 +52,15 @@ class TransactionCategoryUpdateController extends Controller
         $classification = TransactionClassification::forProjection($transaction);
         if (! $classification['editable_category']) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => ['This transaction category cannot be changed.'],
             ], 422);
         }
 
         $transaction->forceFill([
-            'user_category_slug' => $validated['category_slug'],
+            'user_category_slug'      => $validated['category_slug'],
             'effective_category_slug' => $validated['category_slug'],
-            'categorization_source' => 'user',
+            'categorization_source'   => 'user',
         ])->save();
 
         $transaction->refresh();
@@ -68,11 +68,11 @@ class TransactionCategoryUpdateController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => [
-                'id' => $transaction->uuid,
-                'category_slug' => $updated['category_slug'],
-                'category_label' => $updated['category_label'],
-                'category_source' => $updated['category_source'],
+            'data'   => [
+                'id'                => $transaction->uuid,
+                'category_slug'     => $updated['category_slug'],
+                'category_label'    => $updated['category_label'],
+                'category_source'   => $updated['category_source'],
                 'editable_category' => $updated['editable_category'],
             ],
         ]);

@@ -30,7 +30,7 @@ return [
     'enable_dashboard' => (bool) env('MAPHAPAY_MIGRATION_ENABLE_DASHBOARD', false),
 
     'observability' => [
-        'log_channel' => env('MAPHAPAY_MIGRATION_LOG_CHANNEL', 'structured'),
+        'log_channel'   => env('MAPHAPAY_MIGRATION_LOG_CHANNEL', 'structured'),
         'audit_channel' => env('MAPHAPAY_MIGRATION_AUDIT_CHANNEL', 'audit'),
     ],
 
@@ -44,19 +44,19 @@ return [
         'risk_signals' => [
             'velocity' => [
                 'lookback_minutes' => (int) env('MAPHAPAY_MONEY_MOVEMENT_VELOCITY_LOOKBACK_MINUTES', 15),
-                'max_initiations' => (int) env('MAPHAPAY_MONEY_MOVEMENT_VELOCITY_MAX_INITIATIONS', 3),
+                'max_initiations'  => (int) env('MAPHAPAY_MONEY_MOVEMENT_VELOCITY_MAX_INITIATIONS', 3),
             ],
             'verification_failures' => [
                 'lookback_minutes' => (int) env('MAPHAPAY_MONEY_MOVEMENT_VERIFICATION_FAILURES_LOOKBACK_MINUTES', 30),
-                'max_failures' => (int) env('MAPHAPAY_MONEY_MOVEMENT_VERIFICATION_FAILURES_MAX_FAILURES', 2),
+                'max_failures'     => (int) env('MAPHAPAY_MONEY_MOVEMENT_VERIFICATION_FAILURES_MAX_FAILURES', 2),
             ],
             'amount_anomaly' => [
                 'lookback_minutes' => (int) env('MAPHAPAY_MONEY_MOVEMENT_AMOUNT_ANOMALY_LOOKBACK_MINUTES', 1440),
-                'min_samples' => (int) env('MAPHAPAY_MONEY_MOVEMENT_AMOUNT_ANOMALY_MIN_SAMPLES', 3),
-                'multiplier' => (float) env('MAPHAPAY_MONEY_MOVEMENT_AMOUNT_ANOMALY_MULTIPLIER', 4),
+                'min_samples'      => (int) env('MAPHAPAY_MONEY_MOVEMENT_AMOUNT_ANOMALY_MIN_SAMPLES', 3),
+                'multiplier'       => (float) env('MAPHAPAY_MONEY_MOVEMENT_AMOUNT_ANOMALY_MULTIPLIER', 4),
             ],
             'recipient_churn' => [
-                'lookback_minutes' => (int) env('MAPHAPAY_MONEY_MOVEMENT_RECIPIENT_CHURN_LOOKBACK_MINUTES', 1440),
+                'lookback_minutes'            => (int) env('MAPHAPAY_MONEY_MOVEMENT_RECIPIENT_CHURN_LOOKBACK_MINUTES', 1440),
                 'max_distinct_counterparties' => (int) env('MAPHAPAY_MONEY_MOVEMENT_RECIPIENT_CHURN_MAX_DISTINCT_COUNTERPARTIES', 3),
             ],
         ],

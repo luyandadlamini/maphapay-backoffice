@@ -8,7 +8,6 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Asset\Models\Asset;
 use App\Models\GroupPocket;
-use App\Models\GroupPocketContribution;
 use App\Models\Thread;
 use App\Models\ThreadParticipant;
 use App\Models\User;
@@ -49,13 +48,13 @@ class GroupPocketFundsControllerTest extends TestCase
 
         ThreadParticipant::create([
             'thread_id' => $thread->id, 'user_id' => $admin->id,
-            'role' => 'admin', 'joined_at' => now(),
+            'role'      => 'admin', 'joined_at' => now(),
         ]);
 
         foreach ($members as $member) {
             ThreadParticipant::create([
                 'thread_id' => $thread->id, 'user_id' => $member->id,
-                'role' => 'member', 'joined_at' => now(),
+                'role'      => 'member', 'joined_at' => now(),
             ]);
         }
 
@@ -93,7 +92,7 @@ class GroupPocketFundsControllerTest extends TestCase
     #[Test]
     public function member_can_deposit_into_group_pocket(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $member = User::factory()->create();
         $thread = $this->makeGroupThread($admin, [$member]);
         $pocket = $this->makePocket($thread, $admin);
@@ -124,7 +123,7 @@ class GroupPocketFundsControllerTest extends TestCase
     #[Test]
     public function deposit_is_rejected_when_it_would_exceed_regulatory_cap(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $thread = $this->makeGroupThread($admin);
         $pocket = $this->makePocket($thread, $admin, 200000);
 
@@ -142,10 +141,10 @@ class GroupPocketFundsControllerTest extends TestCase
     #[Test]
     public function non_member_cannot_deposit(): void
     {
-        $admin    = User::factory()->create();
+        $admin = User::factory()->create();
         $outsider = User::factory()->create();
-        $thread   = $this->makeGroupThread($admin);
-        $pocket   = $this->makePocket($thread, $admin);
+        $thread = $this->makeGroupThread($admin);
+        $pocket = $this->makePocket($thread, $admin);
 
         $this->fundUser($outsider, 1000.00);
 

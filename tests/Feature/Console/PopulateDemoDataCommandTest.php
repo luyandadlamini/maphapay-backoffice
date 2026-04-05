@@ -9,7 +9,6 @@ use App\Domain\Governance\Models\Vote;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 
-
 beforeEach(function () {
     // Seed the database with base data
     $this->seed();

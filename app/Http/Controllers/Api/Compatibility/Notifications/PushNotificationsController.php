@@ -30,16 +30,16 @@ class PushNotificationsController extends Controller
         return response()->json([
             'status' => 'success',
             'remark' => 'push_notifications',
-            'data' => [
+            'data'   => [
                 'notifications' => [
                     'data' => collect($paginator->items())
                         ->map(fn (MobilePushNotification $notification): array => $this->payloadBuilder->notification($notification))
                         ->values()
                         ->all(),
-                    'current_page' => $paginator->currentPage(),
+                    'current_page'  => $paginator->currentPage(),
                     'next_page_url' => $paginator->nextPageUrl(),
-                    'last_page' => $paginator->lastPage(),
-                    'total' => $paginator->total(),
+                    'last_page'     => $paginator->lastPage(),
+                    'total'         => $paginator->total(),
                 ],
             ],
         ]);

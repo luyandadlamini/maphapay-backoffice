@@ -5,7 +5,6 @@ use App\Domain\Basket\Models\BasketAsset;
 use App\Domain\Basket\Models\BasketValue;
 use App\Models\User;
 
-
 beforeEach(function () {
     // Create test assets (use firstOrCreate to avoid duplicates in parallel tests)
     Asset::firstOrCreate(['code' => 'USD'], ['name' => 'US Dollar', 'type' => 'fiat', 'precision' => 2]);

@@ -45,8 +45,16 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([])
             ->navigationGroups(
                 [
-                    'Banking',
-                    'System',
+                    'Dashboard',
+                    'Customers',
+                    'Merchants & Orgs',
+                    'Wallets & Ledgers',
+                    'Transactions',
+                    'Compliance',
+                    'Risk & Fraud',
+                    'Support Hub',
+                    'Finance & Reconciliation',
+                    'Platform',
                 ]
             )
             ->sidebarCollapsibleOnDesktop()
@@ -80,6 +88,6 @@ class AdminPanelProvider extends PanelProvider
             return config('app.gcu_basket_name', 'Global Currency Unit');
         }
 
-        return config('brand.name', 'FinAegis') . ' Admin';
+        return config('brand.name', 'MaphaPay') . ' Admin';
     }
 }

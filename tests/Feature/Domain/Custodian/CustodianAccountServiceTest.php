@@ -7,7 +7,6 @@ use App\Domain\Custodian\Models\CustodianAccount;
 use App\Domain\Custodian\Services\CustodianAccountService;
 use App\Domain\Custodian\Services\CustodianRegistry;
 
-
 beforeEach(function () {
     // Set up custodian registry with mock connector
     $this->registry = new CustodianRegistry();

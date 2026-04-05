@@ -28,11 +28,11 @@ class RewardsSyncController extends Controller
         return response()->json([
             'status' => 'success',
             'remark' => 'rewards_sync',
-            'data' => [
+            'data'   => [
                 'rewards' => $this->payloadBuilder->rewards($user, $changedSince),
-                'points' => $this->payloadBuilder->points($user),
+                'points'  => $this->payloadBuilder->points($user),
             ],
-            'deleted_ids' => [],
+            'deleted_ids'     => [],
             'next_sync_token' => $this->nextSyncToken($this->payloadBuilder->latestTimestamps($user)),
         ]);
     }

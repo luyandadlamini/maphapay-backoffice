@@ -50,7 +50,7 @@ class TransactionCategoryUpdateControllerTest extends ControllerTestCase
 
         $account = Account::factory()->create([
             'user_uuid' => $user->uuid,
-            'frozen' => false,
+            'frozen'    => false,
         ]);
 
         return [$user, $account];
@@ -62,19 +62,19 @@ class TransactionCategoryUpdateControllerTest extends ControllerTestCase
         [$user, $account] = $this->createUserWithAccount();
 
         $transaction = TransactionProjection::factory()->create([
-            'account_uuid' => $account->uuid,
-            'asset_code' => 'SZL',
-            'type' => 'transfer_out',
-            'subtype' => 'send_money',
-            'description' => 'Lunch split',
-            'reference' => 'REF-CAT-001',
-            'status' => 'completed',
-            'analytics_bucket' => 'expense',
-            'budget_eligible' => true,
-            'source_domain' => 'p2p',
-            'system_category_slug' => 'peer_transfer',
+            'account_uuid'            => $account->uuid,
+            'asset_code'              => 'SZL',
+            'type'                    => 'transfer_out',
+            'subtype'                 => 'send_money',
+            'description'             => 'Lunch split',
+            'reference'               => 'REF-CAT-001',
+            'status'                  => 'completed',
+            'analytics_bucket'        => 'expense',
+            'budget_eligible'         => true,
+            'source_domain'           => 'p2p',
+            'system_category_slug'    => 'peer_transfer',
             'effective_category_slug' => 'peer_transfer',
-            'categorization_source' => 'system',
+            'categorization_source'   => 'system',
         ]);
 
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
@@ -87,10 +87,10 @@ class TransactionCategoryUpdateControllerTest extends ControllerTestCase
             ->assertJsonPath('data.category_source', 'user');
 
         $this->assertDatabaseHas('transaction_projections', [
-            'uuid' => $transaction->uuid,
-            'user_category_slug' => 'food',
+            'uuid'                    => $transaction->uuid,
+            'user_category_slug'      => 'food',
             'effective_category_slug' => 'food',
-            'categorization_source' => 'user',
+            'categorization_source'   => 'user',
         ]);
     }
 }

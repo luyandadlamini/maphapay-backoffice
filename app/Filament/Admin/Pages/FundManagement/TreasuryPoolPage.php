@@ -9,7 +9,6 @@ use App\Domain\Treasury\Models\TreasurySnapshot;
 use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 
 class TreasuryPoolPage extends Page
 {
@@ -38,10 +37,10 @@ class TreasuryPoolPage extends Page
 
         foreach ($assets as $asset) {
             $this->treasuryBalances[$asset->code] = [
-                'code' => $asset->code,
-                'name' => $asset->name,
-                'type' => $asset->type,
-                'balance' => $this->getTreasuryBalance($asset->code),
+                'code'      => $asset->code,
+                'name'      => $asset->name,
+                'type'      => $asset->type,
+                'balance'   => $this->getTreasuryBalance($asset->code),
                 'formatted' => $asset->formatAmount($this->getTreasuryBalance($asset->code)),
             ];
         }

@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domain\AuthorizedTransaction\Services;
 
-use App\Domain\Account\Models\Account;
 use App\Domain\Account\DataObjects\Money;
+use App\Domain\Account\Models\Account;
 use App\Domain\Asset\Aggregates\AssetTransferAggregate;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\Shared\Money\MoneyConverter;
 use App\Models\User;
 use RuntimeException;
+use Throwable;
 
 /**
  * Canonical internal P2P transfer executor for compat money movement.
@@ -37,13 +38,13 @@ class InternalP2pTransferService
         $sender = $this->resolveAccountOwner($fromAccountUuid);
         $recipient = $this->resolveAccountOwner($toAccountUuid);
         $metadata = array_filter([
-            'source' => 'p2p',
+            'source'         => 'p2p',
             'operation_type' => $operationType,
-            'note' => $note,
-            'p2p_display' => [
-                'sender_label' => $this->userLabel($sender),
+            'note'           => $note,
+            'p2p_display'    => [
+                'sender_label'    => $this->userLabel($sender),
                 'recipient_label' => $this->userLabel($recipient),
-                'note_preview' => $note,
+                'note_preview'    => $note,
             ],
         ], static fn (mixed $value): bool => $value !== null && $value !== '');
 
@@ -67,7 +68,7 @@ class InternalP2pTransferService
             $aggregate
                 ->complete($reference, $metadata)
                 ->persist();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             throw new RuntimeException(
                 sprintf('Failed to persist internal P2P transfer [%s]: %s', $reference, $e->getMessage()),
                 previous: $e,

@@ -15,7 +15,7 @@ class UserProfileControllerTest extends ControllerTestCase
     public function it_disables_transaction_pin_requirement_without_removing_the_stored_pin(): void
     {
         $user = User::factory()->create([
-            'transaction_pin' => '1234',
+            'transaction_pin'         => '1234',
             'transaction_pin_enabled' => true,
         ]);
 
@@ -38,7 +38,7 @@ class UserProfileControllerTest extends ControllerTestCase
     public function it_reenables_transaction_pin_requirement_without_requiring_pin_reset_when_a_pin_exists(): void
     {
         $user = User::factory()->create([
-            'transaction_pin' => '1234',
+            'transaction_pin'         => '1234',
             'transaction_pin_enabled' => false,
         ]);
 
@@ -61,7 +61,7 @@ class UserProfileControllerTest extends ControllerTestCase
     public function auth_user_payload_exposes_transaction_pin_set_and_enabled_separately(): void
     {
         $user = User::factory()->create([
-            'transaction_pin' => '1234',
+            'transaction_pin'         => '1234',
             'transaction_pin_enabled' => false,
         ]);
 

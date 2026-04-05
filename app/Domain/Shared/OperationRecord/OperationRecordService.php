@@ -25,7 +25,8 @@ class OperationRecordService
 {
     public function __construct(
         private readonly MaphaPayMoneyMovementTelemetry $telemetry,
-    ) {}
+    ) {
+    }
 
     /**
      * Execute $fn exactly once for the given (userId, type, key) triple.
@@ -77,12 +78,12 @@ class OperationRecordService
 
         try {
             $record = OperationRecord::create([
-                'id' => (string) Str::ulid(),
-                'user_id' => $userId,
-                'operation_type' => $type,
+                'id'              => (string) Str::ulid(),
+                'user_id'         => $userId,
+                'operation_type'  => $type,
                 'idempotency_key' => $key,
-                'payload_hash' => $payloadHash,
-                'status' => OperationRecord::STATUS_PENDING,
+                'payload_hash'    => $payloadHash,
+                'status'          => OperationRecord::STATUS_PENDING,
             ]);
         } catch (UniqueConstraintViolationException) {
             // Concurrent request created the record first.
@@ -111,7 +112,7 @@ class OperationRecordService
         }
 
         $record->update([
-            'status' => OperationRecord::STATUS_COMPLETED,
+            'status'         => OperationRecord::STATUS_COMPLETED,
             'result_payload' => $result,
         ]);
 

@@ -67,11 +67,11 @@ class SystemUserService
     public function getUserByType(string $type): User
     {
         return match ($type) {
-            'system' => $this->getSystemUser(),
+            'system'   => $this->getSystemUser(),
             'suspense' => $this->getSuspenseUser(),
             'treasury' => $this->getTreasuryUser(),
-            'pool' => $this->getPoolUser(),
-            default => $this->getSystemUser(),
+            'pool'     => $this->getPoolUser(),
+            default    => $this->getSystemUser(),
         };
     }
 
@@ -80,9 +80,9 @@ class SystemUserService
         return User::firstOrCreate(
             ['email' => $email],
             [
-                'name' => $name,
+                'name'     => $name,
                 'password' => Hash::make(Str::uuid()->toString()),
-                'uuid' => $this->getUuidForType($email),
+                'uuid'     => $this->getUuidForType($email),
             ]
         );
     }
@@ -90,11 +90,11 @@ class SystemUserService
     private function getUuidForType(string $email): ?string
     {
         $type = match ($email) {
-            config('system_users.email.system') => 'system',
+            config('system_users.email.system')   => 'system',
             config('system_users.email.suspense') => 'suspense',
             config('system_users.email.treasury') => 'treasury',
-            config('system_users.email.pool') => 'pool',
-            default => null,
+            config('system_users.email.pool')     => 'pool',
+            default                               => null,
         };
 
         return $type ? config("system_users.uuid.{$type}") : null;

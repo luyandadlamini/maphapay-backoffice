@@ -12,6 +12,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Alignment;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class FundAccountPage extends Page
 {
@@ -28,7 +29,9 @@ class FundAccountPage extends Page
     protected static string $view = 'filament.admin.pages.fund-management.fund-account';
 
     public ?string $accountUuid = null;
+
     public ?Account $selectedAccount = null;
+
     public array $availableAssets = [];
 
     public function mount(): void
@@ -42,9 +45,9 @@ class FundAccountPage extends Page
 
         foreach ($assets as $asset) {
             $this->availableAssets[$asset->code] = [
-                'code' => $asset->code,
-                'name' => $asset->name,
-                'type' => $asset->type,
+                'code'      => $asset->code,
+                'name'      => $asset->name,
+                'type'      => $asset->type,
                 'precision' => $asset->precision,
             ];
         }
@@ -112,12 +115,12 @@ class FundAccountPage extends Page
                     \Filament\Forms\Components\Select::make('reason')
                         ->label('Reason')
                         ->options([
-                            'testing' => 'Testing',
-                            'refund' => 'Refund',
-                            'compensation' => 'Compensation',
+                            'testing'          => 'Testing',
+                            'refund'           => 'Refund',
+                            'compensation'     => 'Compensation',
                             'error_correction' => 'Error Correction',
-                            'goodwill' => 'Goodwill',
-                            'other' => 'Other',
+                            'goodwill'         => 'Goodwill',
+                            'other'            => 'Other',
                         ])
                         ->default('testing')
                         ->required(),
@@ -134,6 +137,7 @@ class FundAccountPage extends Page
     {
         if (empty($uuid)) {
             $this->selectedAccount = null;
+
             return;
         }
 
@@ -188,7 +192,7 @@ class FundAccountPage extends Page
 
             $this->reset(['accountUuid', 'selectedAccount']);
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             DB::rollBack();
 
             Notification::make()

@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\Fraud\Models\FraudCase;
 use App\Models\User;
 
-
 describe('GraphQL Fraud API', function () {
     it('queries fraud case by id', function () {
         $user = User::factory()->create();

@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
 use Laravel\Sanctum\Sanctum;
 
-
 beforeEach(function () {
     $this->user = User::factory()->create();
     // Clear only monitoring-related cache keys to avoid conflicts in parallel tests

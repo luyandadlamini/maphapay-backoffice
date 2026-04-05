@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use RuntimeException;
+use Throwable;
 use Workflow\Activity;
 
 class TransferAssetActivity extends Activity
@@ -62,15 +63,15 @@ class TransferAssetActivity extends Activity
                 $assetTransfer
                     ->complete($reference)
                     ->persist();
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 Log::error('TransferAssetActivity failed to persist asset transfer', [
-                    'reference'      => $reference,
-                    'from_account'   => $fromAccountUuid->toString(),
-                    'to_account'     => $toAccountUuid->toString(),
-                    'asset_code'     => $assetCode,
-                    'amount'         => $amount,
-                    'aggregateStatus'=> $assetTransfer->getStatus(),
-                    'error'          => $e->getMessage(),
+                    'reference'       => $reference,
+                    'from_account'    => $fromAccountUuid->toString(),
+                    'to_account'      => $toAccountUuid->toString(),
+                    'asset_code'      => $assetCode,
+                    'amount'          => $amount,
+                    'aggregateStatus' => $assetTransfer->getStatus(),
+                    'error'           => $e->getMessage(),
                 ]);
 
                 throw new RuntimeException(

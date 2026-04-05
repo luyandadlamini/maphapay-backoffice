@@ -7,7 +7,6 @@ use App\Domain\X402\Models\X402MonetizedEndpoint;
 use App\Domain\X402\Models\X402SpendingLimit;
 use Database\Seeders\DemoDataSeeder;
 
-
 beforeEach(function () {
     $this->seed();
     (new DemoDataSeeder())->run();

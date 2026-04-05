@@ -154,8 +154,8 @@ class PocketResource extends Resource
     {
         return [
             'index' => Pages\ListPockets::route('/'),
-            'view' => Pages\ViewPocket::route('/{record}'),
-            'edit' => Pages\EditPocket::route('/{record}/edit'),
+            'view'  => Pages\ViewPocket::route('/{record}'),
+            'edit'  => Pages\EditPocket::route('/{record}/edit'),
         ];
     }
 }

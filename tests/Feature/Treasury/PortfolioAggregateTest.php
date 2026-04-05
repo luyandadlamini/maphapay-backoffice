@@ -14,7 +14,6 @@ use App\Domain\Treasury\ValueObjects\InvestmentStrategy;
 use App\Domain\Treasury\ValueObjects\PortfolioMetrics;
 use Illuminate\Support\Str;
 
-
 it('creates a portfolio with investment strategy', function () {
     $portfolioId = Str::uuid()->toString();
     $treasuryId = Str::uuid()->toString();

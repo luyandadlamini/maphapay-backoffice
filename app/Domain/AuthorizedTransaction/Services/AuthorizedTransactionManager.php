@@ -315,9 +315,9 @@ class AuthorizedTransactionManager
                 DB::table('authorized_transactions')
                     ->where('id', $txn->id)
                     ->update([
-                        'status' => AuthorizedTransaction::STATUS_FAILED,
+                        'status'         => AuthorizedTransaction::STATUS_FAILED,
                         'failure_reason' => $e->getMessage(),
-                        'updated_at' => now(),
+                        'updated_at'     => now(),
                     ]);
             }
 

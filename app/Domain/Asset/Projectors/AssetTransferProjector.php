@@ -130,13 +130,13 @@ class AssetTransferProjector extends Projector
             Log::info(
                 'Asset transfer completed successfully',
                 [
-                    'from_account'     => $event->fromAccountUuid->toString(),
-                    'to_account'       => $event->toAccountUuid->toString(),
-                    'from_asset'       => $event->fromAssetCode,
-                    'to_asset'         => $event->toAssetCode,
-                    'from_amount'      => $event->fromAmount->getAmount(),
-                    'to_amount'        => $event->toAmount->getAmount(),
-                    'transfer_id'      => $event->transferId,
+                    'from_account' => $event->fromAccountUuid->toString(),
+                    'to_account'   => $event->toAccountUuid->toString(),
+                    'from_asset'   => $event->fromAssetCode,
+                    'to_asset'     => $event->toAssetCode,
+                    'from_amount'  => $event->fromAmount->getAmount(),
+                    'to_amount'    => $event->toAmount->getAmount(),
+                    'transfer_id'  => $event->transferId,
                 ]
             );
         } catch (Exception $e) {

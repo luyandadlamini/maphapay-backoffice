@@ -22,7 +22,6 @@ use App\Domain\Stablecoin\ValueObjects\LiquidationThreshold;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Str;
 
-
 beforeEach(function () {
     $this->positionId = Str::uuid()->toString();
     $this->ownerId = Str::uuid()->toString();

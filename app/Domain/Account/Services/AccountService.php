@@ -6,8 +6,6 @@ use App\Domain\Account\Aggregates\LedgerAggregate;
 use App\Domain\Account\Aggregates\TransactionAggregate;
 use App\Domain\Account\Aggregates\TransferAggregate;
 use App\Domain\Account\DataObjects\Account;
-use App\Domain\Account\Events\AccountCreated;
-use App\Domain\Account\Models\Account as AccountModel;
 use App\Domain\Account\Repositories\AccountRepository;
 use App\Domain\Account\Workflows\CreateAccountWorkflow;
 use App\Domain\Account\Workflows\DepositAccountWorkflow;
@@ -32,6 +30,7 @@ class AccountService
     public function create(Account|array $account): string
     {
         $workflow = WorkflowStub::make(CreateAccountWorkflow::class);
+
         return $workflow->execute(__account($account));
     }
 
@@ -78,7 +77,7 @@ class AccountService
         $balance = \App\Domain\Account\Models\AccountBalance::firstOrCreate(
             [
                 'account_uuid' => $uuid,
-                'asset_code' => $assetCode,
+                'asset_code'   => $assetCode,
             ],
             [
                 'balance' => 0,
@@ -111,7 +110,7 @@ class AccountService
         $balance = \App\Domain\Account\Models\AccountBalance::firstOrCreate(
             [
                 'account_uuid' => $uuid,
-                'asset_code' => $assetCode,
+                'asset_code'   => $assetCode,
             ],
             [
                 'balance' => 0,
@@ -126,16 +125,16 @@ class AccountService
     protected function recordDepositTransaction(mixed $uuid, mixed $amount, string $description): string
     {
         $reference = 'dep_' . Str::uuid()->toString();
-        
+
         \App\Domain\Account\Models\TransactionProjection::create([
-            'uuid' => $reference,
+            'uuid'         => $reference,
             'account_uuid' => $uuid,
-            'asset_code' => config('banking.default_currency', 'SZL'),
-            'amount' => $amount,
-            'type' => 'deposit',
-            'description' => $description,
-            'reference' => $reference,
-            'status' => 'completed',
+            'asset_code'   => config('banking.default_currency', 'SZL'),
+            'amount'       => $amount,
+            'type'         => 'deposit',
+            'description'  => $description,
+            'reference'    => $reference,
+            'status'       => 'completed',
         ]);
 
         return $reference;
@@ -144,16 +143,16 @@ class AccountService
     protected function recordWithdrawTransaction(mixed $uuid, mixed $amount, string $description): string
     {
         $reference = 'wd_' . Str::uuid()->toString();
-        
+
         \App\Domain\Account\Models\TransactionProjection::create([
-            'uuid' => $reference,
+            'uuid'         => $reference,
             'account_uuid' => $uuid,
-            'asset_code' => config('banking.default_currency', 'SZL'),
-            'amount' => -abs($amount),
-            'type' => 'withdrawal',
-            'description' => $description,
-            'reference' => $reference,
-            'status' => 'completed',
+            'asset_code'   => config('banking.default_currency', 'SZL'),
+            'amount'       => -abs($amount),
+            'type'         => 'withdrawal',
+            'description'  => $description,
+            'reference'    => $reference,
+            'status'       => 'completed',
         ]);
 
         return $reference;

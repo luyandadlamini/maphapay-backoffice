@@ -38,16 +38,17 @@ class SendMoneyStoreController extends Controller
         private readonly AuthorizedTransactionManager $authorizedTransactionManager,
         private readonly MoneyMovementVerificationPolicyResolver $verificationPolicyResolver,
         private readonly MaphaPayMoneyMovementTelemetry $telemetry,
-    ) {}
+    ) {
+    }
 
     public function __invoke(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'user' => ['required', 'string'],
-            'amount' => ['required', 'string', new MajorUnitAmountString],
-            'note' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'user'              => ['required', 'string'],
+            'amount'            => ['required', 'string', new MajorUnitAmountString()],
+            'note'              => ['sometimes', 'nullable', 'string', 'max:2000'],
             'verification_type' => ['sometimes', 'nullable', 'string', Rule::in(['sms', 'email', 'pin', 'none'])],
-            'asset_code' => ['sometimes', 'string', 'exists:assets,code'],
+            'asset_code'        => ['sometimes', 'string', 'exists:assets,code'],
         ]);
 
         /** @var User $requestUser */
@@ -66,7 +67,7 @@ class SendMoneyStoreController extends Controller
 
         if ((int) $recipient->id === (int) $authUser->id) {
             return $this->errorResponse($request, 'You cannot send money to yourself.', 422, [
-                'event' => 'send_money_initiation_failed',
+                'event'             => 'send_money_initiation_failed',
                 'recipient_user_id' => $recipient->id,
             ]);
         }
@@ -83,14 +84,14 @@ class SendMoneyStoreController extends Controller
 
         if (! $fromAccount || $fromAccount->frozen) {
             return $this->errorResponse($request, 'Sender wallet account not found or is frozen.', 422, [
-                'event' => 'send_money_initiation_failed',
+                'event'             => 'send_money_initiation_failed',
                 'recipient_user_id' => $recipient->id,
             ]);
         }
 
         if (! $toAccount) {
             return $this->errorResponse($request, 'Recipient wallet account not found.', 422, [
-                'event' => 'send_money_initiation_failed',
+                'event'             => 'send_money_initiation_failed',
                 'recipient_user_id' => $recipient->id,
             ]);
         }
@@ -99,7 +100,7 @@ class SendMoneyStoreController extends Controller
         $asset = Asset::query()->where('code', $assetCode)->first();
         if (! $asset) {
             return $this->errorResponse($request, "Unknown asset: {$assetCode}", 422, [
-                'event' => 'send_money_initiation_failed',
+                'event'             => 'send_money_initiation_failed',
                 'recipient_user_id' => $recipient->id,
             ]);
         }
@@ -108,13 +109,13 @@ class SendMoneyStoreController extends Controller
             $normalizedAmount = MoneyConverter::normalise($validated['amount'], $asset->precision);
             if ((float) $normalizedAmount <= 0) {
                 return $this->errorResponse($request, 'Amount must be greater than zero.', 422, [
-                    'event' => 'send_money_initiation_failed',
+                    'event'             => 'send_money_initiation_failed',
                     'recipient_user_id' => $recipient->id,
                 ]);
             }
         } catch (InvalidArgumentException) {
             return $this->errorResponse($request, 'Invalid amount.', 422, [
-                'event' => 'send_money_initiation_failed',
+                'event'             => 'send_money_initiation_failed',
                 'recipient_user_id' => $recipient->id,
             ]);
         }
@@ -125,19 +126,19 @@ class SendMoneyStoreController extends Controller
             asset: $asset,
             clientHint: isset($validated['verification_type']) ? (string) $validated['verification_type'] : null,
             context: [
-                'sender_account_uuid' => $fromAccount->uuid,
+                'sender_account_uuid'    => $fromAccount->uuid,
                 'recipient_account_uuid' => $toAccount->uuid,
-                'recipient_user_id' => $recipient->id,
+                'recipient_user_id'      => $recipient->id,
             ],
         );
         $verificationType = $policy['verification_type'];
 
         $payload = [
-            'from_account_uuid' => $fromAccount->uuid,
-            'to_account_uuid' => $toAccount->uuid,
-            'amount' => $normalizedAmount,
-            'asset_code' => $asset->code,
-            'note' => $validated['note'] ?? '',
+            'from_account_uuid'    => $fromAccount->uuid,
+            'to_account_uuid'      => $toAccount->uuid,
+            'amount'               => $normalizedAmount,
+            'asset_code'           => $asset->code,
+            'note'                 => $validated['note'] ?? '',
             '_verification_policy' => $policy,
         ];
 
@@ -148,30 +149,30 @@ class SendMoneyStoreController extends Controller
         if ($replayedTxn !== null) {
             if (! $this->sendMoneyReplayMatches($replayedTxn, $payload)) {
                 return response()->json([
-                    'error' => 'Idempotency key already used',
+                    'error'   => 'Idempotency key already used',
                     'message' => 'The provided idempotency key has already been used with different request parameters',
                 ], 409);
             }
 
             $this->telemetry->logIdempotencyReplay($request, $idempotencyKey, [
                 'status_code' => 200,
-                'source' => 'authorized_transaction',
+                'source'      => 'authorized_transaction',
             ]);
 
             return response()->json($this->sendMoneyReplayPayload($replayedTxn, $validated));
         }
 
         $this->telemetry->logEvent('send_money_initiation_started', $this->telemetry->requestContext($request, [
-            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'sender_account_uuid' => $fromAccount->uuid,
+            'remark'                 => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'sender_account_uuid'    => $fromAccount->uuid,
             'recipient_account_uuid' => $toAccount->uuid,
-            'sender_user_id' => $authUser->id,
-            'recipient_user_id' => $recipient->id,
-            'amount' => $normalizedAmount,
-            'asset_code' => $asset->code,
-            'status' => AuthorizedTransaction::STATUS_PENDING,
-            'verification_policy' => $policy['verification_type'],
-            'risk_reason' => $policy['risk_reason'],
+            'sender_user_id'         => $authUser->id,
+            'recipient_user_id'      => $recipient->id,
+            'amount'                 => $normalizedAmount,
+            'asset_code'             => $asset->code,
+            'status'                 => AuthorizedTransaction::STATUS_PENDING,
+            'verification_policy'    => $policy['verification_type'],
+            'risk_reason'            => $policy['risk_reason'],
             'idempotency_key_suffix' => $this->telemetry->maskIdempotencyKey($idempotencyKey),
         ]));
 
@@ -185,16 +186,16 @@ class SendMoneyStoreController extends Controller
             );
         } catch (Throwable $throwable) {
             $this->telemetry->logEvent('send_money_initiation_failed', $this->telemetry->requestContext($request, [
-                'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-                'recipient_user_id' => $recipient->id,
-                'sender_account_uuid' => $fromAccount->uuid,
+                'remark'                 => AuthorizedTransaction::REMARK_SEND_MONEY,
+                'recipient_user_id'      => $recipient->id,
+                'sender_account_uuid'    => $fromAccount->uuid,
                 'recipient_account_uuid' => $toAccount->uuid,
-                'amount' => $normalizedAmount,
-                'asset_code' => $asset->code,
-                'verification_policy' => $policy['verification_type'],
-                'risk_reason' => $policy['risk_reason'],
+                'amount'                 => $normalizedAmount,
+                'asset_code'             => $asset->code,
+                'verification_policy'    => $policy['verification_type'],
+                'risk_reason'            => $policy['risk_reason'],
                 'idempotency_key_suffix' => $this->telemetry->maskIdempotencyKey($idempotencyKey),
-                'message' => $this->telemetry->exceptionMessage($throwable),
+                'message'                => $this->telemetry->exceptionMessage($throwable),
             ]), 'error');
 
             throw $throwable;
@@ -205,49 +206,49 @@ class SendMoneyStoreController extends Controller
                 $result = $this->authorizedTransactionManager->finalize($txn);
             } catch (RuntimeException $throwable) {
                 $this->telemetry->logEvent('send_money_initiation_failed', $this->telemetry->requestContext($request, [
-                    'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-                    'trx' => $txn->trx,
-                    'sender_account_uuid' => $fromAccount->uuid,
+                    'remark'                 => AuthorizedTransaction::REMARK_SEND_MONEY,
+                    'trx'                    => $txn->trx,
+                    'sender_account_uuid'    => $fromAccount->uuid,
                     'recipient_account_uuid' => $toAccount->uuid,
-                    'sender_user_id' => $authUser->id,
-                    'recipient_user_id' => $recipient->id,
-                    'amount' => $normalizedAmount,
-                    'asset_code' => $asset->code,
-                    'verification_policy' => $policy['verification_type'],
-                    'risk_reason' => $policy['risk_reason'],
-                    'message' => $throwable->getMessage(),
+                    'sender_user_id'         => $authUser->id,
+                    'recipient_user_id'      => $recipient->id,
+                    'amount'                 => $normalizedAmount,
+                    'asset_code'             => $asset->code,
+                    'verification_policy'    => $policy['verification_type'],
+                    'risk_reason'            => $policy['risk_reason'],
+                    'message'                => $throwable->getMessage(),
                 ]), 'warning');
 
                 return $this->errorResponse($request, $throwable->getMessage(), 422, [
-                    'recipient_user_id' => $recipient->id,
-                    'sender_account_uuid' => $fromAccount->uuid,
+                    'recipient_user_id'      => $recipient->id,
+                    'sender_account_uuid'    => $fromAccount->uuid,
                     'recipient_account_uuid' => $toAccount->uuid,
-                    'sender_user_id' => $authUser->id,
-                    'amount' => $normalizedAmount,
-                    'asset_code' => $asset->code,
-                    'verification_policy' => $policy['verification_type'],
-                    'risk_reason' => $policy['risk_reason'],
+                    'sender_user_id'         => $authUser->id,
+                    'amount'                 => $normalizedAmount,
+                    'asset_code'             => $asset->code,
+                    'verification_policy'    => $policy['verification_type'],
+                    'risk_reason'            => $policy['risk_reason'],
                 ]);
             }
 
             $this->telemetry->logEvent('send_money_initiation_succeeded', $this->telemetry->requestContext($request, [
-                'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-                'trx' => $txn->trx,
-                'reference' => $result['reference'] ?? null,
-                'sender_account_uuid' => $fromAccount->uuid,
+                'remark'                 => AuthorizedTransaction::REMARK_SEND_MONEY,
+                'trx'                    => $txn->trx,
+                'reference'              => $result['reference'] ?? null,
+                'sender_account_uuid'    => $fromAccount->uuid,
                 'recipient_account_uuid' => $toAccount->uuid,
-                'sender_user_id' => $authUser->id,
-                'next_step' => 'none',
-                'verification_policy' => $policy['verification_type'],
-                'risk_reason' => $policy['risk_reason'],
-                'status' => AuthorizedTransaction::STATUS_COMPLETED,
-                'recipient_user_id' => $recipient->id,
+                'sender_user_id'         => $authUser->id,
+                'next_step'              => 'none',
+                'verification_policy'    => $policy['verification_type'],
+                'risk_reason'            => $policy['risk_reason'],
+                'status'                 => AuthorizedTransaction::STATUS_COMPLETED,
+                'recipient_user_id'      => $recipient->id,
             ]));
 
             return response()->json([
                 'status' => 'success',
                 'remark' => 'send_money',
-                'data' => array_merge(['next_step' => 'none'], $result),
+                'data'   => array_merge(['next_step' => 'none'], $result),
             ]);
         }
 
@@ -261,24 +262,24 @@ class SendMoneyStoreController extends Controller
         }
 
         $this->telemetry->logEvent('send_money_initiation_succeeded', $this->telemetry->requestContext($request, [
-            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx' => $txn->trx,
-            'sender_account_uuid' => $fromAccount->uuid,
+            'remark'                 => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'                    => $txn->trx,
+            'sender_account_uuid'    => $fromAccount->uuid,
             'recipient_account_uuid' => $toAccount->uuid,
-            'sender_user_id' => $authUser->id,
-            'next_step' => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
-            'verification_policy' => $policy['verification_type'],
-            'risk_reason' => $policy['risk_reason'],
-            'status' => AuthorizedTransaction::STATUS_PENDING,
-            'recipient_user_id' => $recipient->id,
+            'sender_user_id'         => $authUser->id,
+            'next_step'              => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
+            'verification_policy'    => $policy['verification_type'],
+            'risk_reason'            => $policy['risk_reason'],
+            'status'                 => AuthorizedTransaction::STATUS_PENDING,
+            'recipient_user_id'      => $recipient->id,
         ]));
 
         return response()->json([
             'status' => 'success',
             'remark' => 'send_money',
-            'data' => [
-                'next_step' => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
-                'trx' => $txn->trx,
+            'data'   => [
+                'next_step'         => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
+                'trx'               => $txn->trx,
                 'code_sent_message' => $codeSentMessage,
             ],
         ]);
@@ -290,8 +291,8 @@ class SendMoneyStoreController extends Controller
     private function errorPayload(string $message): array
     {
         return [
-            'status' => 'error',
-            'remark' => 'send_money',
+            'status'  => 'error',
+            'remark'  => 'send_money',
             'message' => [$message],
         ];
     }
@@ -305,8 +306,8 @@ class SendMoneyStoreController extends Controller
         unset($context['event']);
 
         $this->telemetry->logEvent($event, $this->telemetry->requestContext($request, array_merge($context, [
-            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'message' => $message,
+            'remark'      => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'message'     => $message,
             'status_code' => $status,
         ])), 'warning');
 
@@ -377,7 +378,7 @@ class SendMoneyStoreController extends Controller
             return [
                 'status' => 'success',
                 'remark' => 'send_money',
-                'data' => array_merge([
+                'data'   => array_merge([
                     'next_step' => 'none',
                 ], $txn->result),
             ];
@@ -395,9 +396,9 @@ class SendMoneyStoreController extends Controller
         return [
             'status' => 'success',
             'remark' => 'send_money',
-            'data' => [
-                'next_step' => $nextStep,
-                'trx' => $txn->trx,
+            'data'   => [
+                'next_step'         => $nextStep,
+                'trx'               => $txn->trx,
                 'code_sent_message' => $codeSentMessage,
             ],
         ];

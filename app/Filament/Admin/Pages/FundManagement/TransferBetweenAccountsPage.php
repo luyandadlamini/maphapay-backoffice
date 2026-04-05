@@ -12,6 +12,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Alignment;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class TransferBetweenAccountsPage extends Page
 {
@@ -28,9 +29,13 @@ class TransferBetweenAccountsPage extends Page
     protected static string $view = 'filament.admin.pages.fund-management.transfer-between-accounts';
 
     public ?string $sourceAccountUuid = null;
+
     public ?string $destinationAccountUuid = null;
+
     public ?Account $sourceAccount = null;
+
     public ?Account $destinationAccount = null;
+
     public array $availableAssets = [];
 
     public function mount(): void
@@ -44,9 +49,9 @@ class TransferBetweenAccountsPage extends Page
 
         foreach ($assets as $asset) {
             $this->availableAssets[$asset->code] = [
-                'code' => $asset->code,
-                'name' => $asset->name,
-                'type' => $asset->type,
+                'code'      => $asset->code,
+                'name'      => $asset->name,
+                'type'      => $asset->type,
                 'precision' => $asset->precision,
             ];
         }
@@ -122,6 +127,7 @@ class TransferBetweenAccountsPage extends Page
     {
         if (empty($uuid)) {
             $this->sourceAccount = null;
+
             return;
         }
 
@@ -132,6 +138,7 @@ class TransferBetweenAccountsPage extends Page
     {
         if (empty($uuid)) {
             $this->destinationAccount = null;
+
             return;
         }
 
@@ -206,7 +213,7 @@ class TransferBetweenAccountsPage extends Page
 
             $this->reset(['sourceAccountUuid', 'destinationAccountUuid', 'sourceAccount', 'destinationAccount']);
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             DB::rollBack();
 
             Notification::make()

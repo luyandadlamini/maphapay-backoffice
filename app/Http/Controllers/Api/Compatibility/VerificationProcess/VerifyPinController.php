@@ -28,13 +28,14 @@ class VerifyPinController extends Controller
     public function __construct(
         private readonly AuthorizedTransactionManager $manager,
         private readonly MaphaPayMoneyMovementTelemetry $telemetry,
-    ) {}
+    ) {
+    }
 
     public function __invoke(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'trx' => ['required', 'string'],
-            'pin' => ['required', 'string', 'digits:4'],
+            'trx'    => ['required', 'string'],
+            'pin'    => ['required', 'string', 'digits:4'],
             'remark' => ['sometimes', 'string'],
         ]);
 
@@ -53,10 +54,10 @@ class VerifyPinController extends Controller
             );
 
             return response()->json([
-                'status' => 'error',
-                'remark' => $remark,
+                'status'  => 'error',
+                'remark'  => $remark,
                 'message' => [$message],
-                'data' => null,
+                'data'    => null,
             ], 422);
         }
 
@@ -73,14 +74,14 @@ class VerifyPinController extends Controller
 
             $this->telemetry->logEvent('verification_succeeded', $this->telemetry->requestContext($request, [
                 'verification_method' => 'pin',
-                'remark' => $validated['remark'] ?? 'pin_verified',
-                'trx' => $validated['trx'],
+                'remark'              => $validated['remark'] ?? 'pin_verified',
+                'trx'                 => $validated['trx'],
             ] + $this->telemetry->transactionContext($transaction)));
 
             return response()->json([
                 'status' => 'success',
                 'remark' => $validated['remark'] ?? 'pin_verified',
-                'data' => $result,
+                'data'   => $result,
             ]);
         } catch (TransactionNotFoundException $e) {
             $this->telemetry->logVerificationFailure(
@@ -136,10 +137,10 @@ class VerifyPinController extends Controller
     private function errorResponse(string $remark, string $message, int $status): JsonResponse
     {
         return response()->json([
-            'status' => 'error',
-            'remark' => $remark,
+            'status'  => 'error',
+            'remark'  => $remark,
             'message' => [$message],
-            'data' => null,
+            'data'    => null,
         ], $status);
     }
 

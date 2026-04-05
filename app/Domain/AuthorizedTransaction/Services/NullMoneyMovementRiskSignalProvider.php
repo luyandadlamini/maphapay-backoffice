@@ -19,7 +19,7 @@ class NullMoneyMovementRiskSignalProvider implements MoneyMovementRiskSignalProv
     ): array {
         return [
             'step_up' => false,
-            'reason' => null,
+            'reason'  => null,
         ];
     }
 
@@ -28,7 +28,7 @@ class NullMoneyMovementRiskSignalProvider implements MoneyMovementRiskSignalProv
         array $context = [],
     ): array {
         return [
-            'allow' => true,
+            'allow'  => true,
             'reason' => null,
         ];
     }

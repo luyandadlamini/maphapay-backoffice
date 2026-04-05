@@ -76,7 +76,7 @@ trait HasApiScopes
 
         return [
             'plain_text_token' => $token->plainTextToken,
-            'token_id' => $token->accessToken->id,
+            'token_id'         => $token->accessToken->id,
         ];
     }
 
@@ -99,7 +99,7 @@ trait HasApiScopes
 
         return [
             'plain_text_token' => $token->plainTextToken,
-            'token_id' => $token->accessToken->id,
+            'token_id'         => $token->accessToken->id,
         ];
     }
 
@@ -120,10 +120,10 @@ trait HasApiScopes
         $refreshExpirationMinutes = config('sanctum.refresh_token_expiration');
 
         return [
-            'access_token' => $accessTokenResult['plain_text_token'],
-            'refresh_token' => $refreshTokenResult['plain_text_token'],
-            'expires_in' => $expirationMinutes ? (int) $expirationMinutes * 60 : null,
-            'refresh_expires_in' => $refreshExpirationMinutes ? (int) $refreshExpirationMinutes * 60 : null,
+            'access_token'            => $accessTokenResult['plain_text_token'],
+            'refresh_token'           => $refreshTokenResult['plain_text_token'],
+            'expires_in'              => $expirationMinutes ? (int) $expirationMinutes * 60 : null,
+            'refresh_expires_in'      => $refreshExpirationMinutes ? (int) $refreshExpirationMinutes * 60 : null,
             'newly_created_token_ids' => [$accessTokenResult['token_id'], $refreshTokenResult['token_id']],
         ];
     }

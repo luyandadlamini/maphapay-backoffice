@@ -137,6 +137,7 @@ class ScheduledSendStoreController extends Controller
 
             if ($verificationType === AuthorizedTransaction::VERIFICATION_NONE) {
                 $result = $this->authorizedTransactionManager->finalize($txn);
+
                 return ['_none_result' => $result];
             }
 
@@ -156,7 +157,7 @@ class ScheduledSendStoreController extends Controller
             'status' => 'success',
             'remark' => 'scheduled_send',
             'data'   => [
-                'next_step' => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
+                'next_step'         => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
                 'trx'               => $txn->trx,
                 'code_sent_message' => $codeSentMessage,
             ],

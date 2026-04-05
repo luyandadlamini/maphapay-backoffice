@@ -10,7 +10,6 @@ use Illuminate\Support\Str;
 
 class UserBudget extends Model
 {
-
     protected $table = 'user_budgets';
 
     protected static function boot(): void
@@ -30,8 +29,8 @@ class UserBudget extends Model
 
     protected $casts = [
         'monthly_budget' => 'decimal:2',
-        'month' => 'integer',
-        'year' => 'integer',
+        'month'          => 'integer',
+        'year'           => 'integer',
     ];
 
     public function user(): BelongsTo

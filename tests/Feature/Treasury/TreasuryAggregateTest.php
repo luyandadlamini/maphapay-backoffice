@@ -12,7 +12,6 @@ use App\Domain\Treasury\ValueObjects\AllocationStrategy;
 use App\Domain\Treasury\ValueObjects\RiskProfile;
 use Illuminate\Support\Str;
 
-
 beforeEach(function () {
     $this->accountId = Str::uuid()->toString();
 });

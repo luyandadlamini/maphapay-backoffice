@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\Compliance\Models\DataClassification;
 use App\Domain\Compliance\Services\Certification\DataClassificationService;
 
-
 describe('DataClassificationService', function () {
     it('seeds default classifications', function () {
         $service = new DataClassificationService();

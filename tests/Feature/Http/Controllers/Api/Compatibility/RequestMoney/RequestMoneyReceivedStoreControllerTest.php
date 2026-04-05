@@ -10,10 +10,10 @@ use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Models\MoneyRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Testing\TestResponse;
 use Illuminate\Support\Str;
-use PHPUnit\Framework\Attributes\Large;
+use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
+use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\ControllerTestCase;
 
@@ -35,8 +35,8 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
         Asset::firstOrCreate(
             ['code' => 'SZL'],
             [
-                'name' => 'Swazi Lilangeni',
-                'type' => 'fiat',
+                'name'      => 'Swazi Lilangeni',
+                'type'      => 'fiat',
                 'precision' => 2,
                 'is_active' => true,
             ],
@@ -65,14 +65,14 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '10.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => 'TRX-ORIGINAL1',
+            'amount'            => '10.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => 'TRX-ORIGINAL1',
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
@@ -97,8 +97,8 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
         $this->assertIsString($trx);
 
         $this->assertDatabaseHas('authorized_transactions', [
-            'trx' => $trx,
-            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+            'trx'     => $trx,
+            'remark'  => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
             'user_id' => $this->recipient->id,
         ]);
     }
@@ -112,14 +112,14 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '10.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_AWAITING_OTP,
-            'trx' => null,
+            'amount'            => '10.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_AWAITING_OTP,
+            'trx'               => null,
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
@@ -141,14 +141,14 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '10.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => null,
+            'amount'            => '10.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => null,
         ]);
 
         Sanctum::actingAs($other, ['read', 'write', 'delete']);
@@ -167,14 +167,14 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '10.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_FULFILLED,
-            'trx' => 'TRX-DONE',
+            'amount'            => '10.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_FULFILLED,
+            'trx'               => 'TRX-DONE',
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
@@ -197,14 +197,14 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $frozenRecipient->id,
-            'amount' => '10.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => null,
+            'amount'            => '10.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => null,
         ]);
 
         Sanctum::actingAs($frozenRecipient, ['read', 'write', 'delete']);
@@ -223,14 +223,14 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '12.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => 'TRX-IDEM-RECV',
+            'amount'            => '12.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => 'TRX-IDEM-RECV',
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
@@ -259,14 +259,14 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '12.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => 'TRX-IDEM-RECV-REPLAY',
+            'amount'            => '12.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => 'TRX-IDEM-RECV-REPLAY',
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
@@ -308,14 +308,14 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '12.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => 'TRX-IDEM-RECV-POLICY-REPLAY',
+            'amount'            => '12.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => 'TRX-IDEM-RECV-POLICY-REPLAY',
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
@@ -358,14 +358,14 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '12.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => 'TRX-IDEM-RECV',
+            'amount'            => '12.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => 'TRX-IDEM-RECV',
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
@@ -388,14 +388,14 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '12.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => 'TRX-IDEM-RECV-PIN',
+            'amount'            => '12.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => 'TRX-IDEM-RECV-PIN',
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
@@ -430,14 +430,14 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '12.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => 'TRX-IDEM-RECV-OTP',
+            'amount'            => '12.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => 'TRX-IDEM-RECV-OTP',
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
@@ -470,34 +470,34 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '12.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => 'TRX-IDEM-RECV',
+            'amount'            => '12.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => 'TRX-IDEM-RECV',
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
 
         $existingTxn = AuthorizedTransaction::query()->create([
             'user_id' => $this->recipient->id,
-            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
-            'trx' => 'TRX-EXISTING-RECV',
+            'remark'  => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+            'trx'     => 'TRX-EXISTING-RECV',
             'payload' => [
-                'money_request_id' => $moneyRequestId,
+                'money_request_id'  => $moneyRequestId,
                 'requester_user_id' => $this->requester->id,
-                'amount' => '12.00',
-                'asset_code' => 'SZL',
+                'amount'            => '12.00',
+                'asset_code'        => 'SZL',
                 'from_account_uuid' => Account::query()->where('user_uuid', $this->recipient->uuid)->value('uuid'),
-                'to_account_uuid' => Account::query()->where('user_uuid', $this->requester->uuid)->value('uuid'),
-                '_idempotency_key' => '00000000-0000-0000-0000-000000000021',
+                'to_account_uuid'   => Account::query()->where('user_uuid', $this->requester->uuid)->value('uuid'),
+                '_idempotency_key'  => '00000000-0000-0000-0000-000000000021',
             ],
-            'status' => AuthorizedTransaction::STATUS_PENDING,
+            'status'            => AuthorizedTransaction::STATUS_PENDING,
             'verification_type' => AuthorizedTransaction::VERIFICATION_OTP,
-            'expires_at' => now()->addHour(),
+            'expires_at'        => now()->addHour(),
         ]);
 
         $response = $this->withHeaders([
@@ -528,14 +528,14 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '12.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => 'TRX-IDEM-RECV-CONFLICT',
+            'amount'            => '12.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => 'TRX-IDEM-RECV-CONFLICT',
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
@@ -578,14 +578,14 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '12.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => 'TRX-IDEM-RECV',
+            'amount'            => '12.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => 'TRX-IDEM-RECV',
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
@@ -615,20 +615,20 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
     public function test_received_store_route_not_registered_when_accept_flag_disabled_even_if_parent_flag_enabled(): void
     {
         config([
-            'maphapay_migration.enable_request_money' => true,
+            'maphapay_migration.enable_request_money'        => true,
             'maphapay_migration.enable_request_money_accept' => false,
         ]);
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '12.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => null,
+            'amount'            => '12.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => null,
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);

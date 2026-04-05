@@ -187,5 +187,4 @@ class ValidateWebhookSignature
 
         return hash_equals($expectedState, $state);
     }
-
 }

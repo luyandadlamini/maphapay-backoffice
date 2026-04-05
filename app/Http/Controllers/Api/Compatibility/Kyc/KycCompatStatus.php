@@ -14,8 +14,8 @@ final class KycCompatStatus
     {
         return match ($status) {
             'partial_identity' => 'pending',
-            'not_submitted' => 'not_started',
-            default => $status,
+            'not_submitted'    => 'not_started',
+            default            => $status,
         };
     }
 }

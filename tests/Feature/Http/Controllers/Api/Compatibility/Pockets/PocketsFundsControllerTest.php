@@ -18,7 +18,9 @@ use Tests\ControllerTestCase;
 class PocketsFundsControllerTest extends ControllerTestCase
 {
     private const ROUTE_STORE = '/api/pockets/store';
+
     private const ROUTE_ADD = '/api/pockets/add-funds';
+
     private const ROUTE_WITHDRAW = '/api/pockets/withdraw-funds';
 
     protected function setUp(): void
@@ -34,8 +36,8 @@ class PocketsFundsControllerTest extends ControllerTestCase
         Asset::firstOrCreate(
             ['code' => 'SZL'],
             [
-                'name' => 'Swazi Lilangeni',
-                'type' => 'fiat',
+                'name'      => 'Swazi Lilangeni',
+                'type'      => 'fiat',
                 'precision' => 2,
                 'is_active' => true,
             ],
@@ -49,7 +51,7 @@ class PocketsFundsControllerTest extends ControllerTestCase
 
         $account = Account::factory()->create([
             'user_uuid' => $user->uuid,
-            'frozen' => false,
+            'frozen'    => false,
         ]);
 
         $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
@@ -65,11 +67,11 @@ class PocketsFundsControllerTest extends ControllerTestCase
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
 
         $pocketResponse = $this->postJson(self::ROUTE_STORE, [
-            'name' => 'Holiday',
+            'name'          => 'Holiday',
             'target_amount' => 10000,
-            'target_date' => '2027-06-01',
-            'category' => 'travel',
-            'color' => '#4F8CFF',
+            'target_date'   => '2027-06-01',
+            'category'      => 'travel',
+            'color'         => '#4F8CFF',
         ]);
 
         $pocketResponse->assertCreated()
@@ -114,7 +116,7 @@ class PocketsFundsControllerTest extends ControllerTestCase
 
         $account = Account::factory()->create([
             'user_uuid' => $user->uuid,
-            'frozen' => false,
+            'frozen'    => false,
         ]);
 
         $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
@@ -131,11 +133,11 @@ class PocketsFundsControllerTest extends ControllerTestCase
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
 
         $pocketResponse = $this->postJson(self::ROUTE_STORE, [
-            'name' => 'Holiday',
+            'name'          => 'Holiday',
             'target_amount' => 10000,
-            'target_date' => '2027-06-01',
-            'category' => 'travel',
-            'color' => '#4F8CFF',
+            'target_date'   => '2027-06-01',
+            'category'      => 'travel',
+            'color'         => '#4F8CFF',
         ]);
 
         $pocketUuid = (string) $pocketResponse->json('data.pocket.id');
@@ -166,7 +168,7 @@ class PocketsFundsControllerTest extends ControllerTestCase
 
         $account = Account::factory()->create([
             'user_uuid' => $user->uuid,
-            'frozen' => false,
+            'frozen'    => false,
         ]);
 
         $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
@@ -184,11 +186,11 @@ class PocketsFundsControllerTest extends ControllerTestCase
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
 
         $pocketResponse = $this->postJson(self::ROUTE_STORE, [
-            'name' => 'Holiday',
+            'name'          => 'Holiday',
             'target_amount' => 10000,
-            'target_date' => '2027-06-01',
-            'category' => 'travel',
-            'color' => '#4F8CFF',
+            'target_date'   => '2027-06-01',
+            'category'      => 'travel',
+            'color'         => '#4F8CFF',
         ]);
 
         $pocketUuid = (string) $pocketResponse->json('data.pocket.id');

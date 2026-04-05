@@ -22,6 +22,11 @@ use App\Models\UserOtp;
 use Exception;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists\Components\Grid;
+use Filament\Infolists\Components\IconEntry;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -109,6 +114,50 @@ class UserResource extends Resource
             );
     }
 
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Section::make('Customer 360 Profile')
+                    ->description('Comprehensive view of the user\'s personal and security status.')
+                    ->schema([
+                        Grid::make(3)->schema([
+                            TextEntry::make('name')->label('Full Name'),
+                            TextEntry::make('email')->label('Email Address'),
+                            TextEntry::make('mobile')->label('Mobile Number'),
+                            TextEntry::make('kyc_status')
+                                ->label('KYC Status')
+                                ->badge()
+                                ->colors([
+                                    'warning' => 'not_started',
+                                    'info'    => 'pending',
+                                    'success' => 'approved',
+                                    'danger'  => 'rejected',
+                                ]),
+                            IconEntry::make('frozen_at')
+                                ->label('Account Frozen')
+                                ->boolean()
+                                ->trueIcon('heroicon-o-lock-closed')
+                                ->falseIcon('heroicon-o-check-circle')
+                                ->trueColor('danger')
+                                ->falseColor('success'),
+                            TextEntry::make('frozen_reason')->label('Reason'),
+                            TextEntry::make('uuid')->label('System UUID')->copyable(),
+                            TextEntry::make('created_at')->dateTime()->label('Joined At'),
+                            IconEntry::make('email_verified_at')
+                                ->label('Email Verified')
+                                ->boolean(),
+                            IconEntry::make('two_factor_confirmed_at')
+                                ->label('2FA Enabled')
+                                ->boolean(),
+                            TextEntry::make('send_money_step_up_threshold_override')
+                                ->label('Send Money Auth Override')
+                                ->money('SZL'),
+                        ]),
+                    ]),
+            ]);
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -126,9 +175,9 @@ class UserResource extends Resource
                         ->label('KYC')
                         ->colors([
                             'warning' => 'not_started',
-                            'info' => 'pending',
+                            'info'    => 'pending',
                             'success' => 'approved',
-                            'danger' => 'rejected',
+                            'danger'  => 'rejected',
                         ])
                         ->sortable(),
                     Tables\Columns\IconColumn::make('frozen_at')
@@ -139,7 +188,7 @@ class UserResource extends Resource
                         ->trueColor('danger')
                         ->falseColor('success')
                         ->tooltip(fn (User $record): string => $record->frozen_at
-                            ? 'Frozen: '.($record->frozen_reason ?? 'No reason')
+                            ? 'Frozen: ' . ($record->frozen_reason ?? 'No reason')
                             : 'Active'),
                     Tables\Columns\TextColumn::make('accounts_sum_balance')
                         ->label('Total Balance')
@@ -196,9 +245,9 @@ class UserResource extends Resource
                         ->label('KYC Status')
                         ->options([
                             'not_started' => 'Not Started',
-                            'pending' => 'Pending',
-                            'approved' => 'Approved',
-                            'rejected' => 'Rejected',
+                            'pending'     => 'Pending',
+                            'approved'    => 'Approved',
+                            'rejected'    => 'Rejected',
                         ]),
                 ]
             )
@@ -213,9 +262,9 @@ class UserResource extends Resource
                             Forms\Components\Select::make('otp_type')
                                 ->label('OTP Type')
                                 ->options([
-                                    UserOtp::TYPE_LOGIN => 'Login',
+                                    UserOtp::TYPE_LOGIN               => 'Login',
                                     UserOtp::TYPE_MOBILE_VERIFICATION => 'Mobile Verification',
-                                    UserOtp::TYPE_PIN_RESET => 'PIN Reset',
+                                    UserOtp::TYPE_PIN_RESET           => 'PIN Reset',
                                 ])
                                 ->default(UserOtp::TYPE_LOGIN)
                                 ->required(),
@@ -267,7 +316,7 @@ class UserResource extends Resource
                                 Notification::make()
                                     ->title('Password Reset Sent')
                                     ->success()
-                                    ->body('A password reset link has been sent to '.$record->email)
+                                    ->body('A password reset link has been sent to ' . $record->email)
                                     ->send();
                             } catch (Throwable $e) {
                                 Notification::make()
@@ -298,7 +347,7 @@ class UserResource extends Resource
                                 Notification::make()
                                     ->title('User Frozen')
                                     ->success()
-                                    ->body($record->name.' has been frozen.')
+                                    ->body($record->name . ' has been frozen.')
                                     ->send();
                             } catch (Throwable $e) {
                                 Notification::make()
@@ -324,7 +373,7 @@ class UserResource extends Resource
                                 Notification::make()
                                     ->title('User Unfrozen')
                                     ->success()
-                                    ->body($record->name.' has been unfrozen.')
+                                    ->body($record->name . ' has been unfrozen.')
                                     ->send();
                             } catch (Throwable $e) {
                                 Notification::make()
@@ -452,10 +501,10 @@ class UserResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListUsers::route('/'),
+            'index'  => Pages\ListUsers::route('/'),
             'create' => Pages\CreateUser::route('/create'),
-            'view' => Pages\ViewUser::route('/{record}'),
-            'edit' => Pages\EditUser::route('/{record}/edit'),
+            'view'   => Pages\ViewUser::route('/{record}'),
+            'edit'   => Pages\EditUser::route('/{record}/edit'),
         ];
     }
 }

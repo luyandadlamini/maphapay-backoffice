@@ -14,8 +14,8 @@ use App\Models\MoneyRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Testing\TestResponse;
 use Illuminate\Support\Str;
+use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
@@ -49,19 +49,19 @@ class DoubleSpendProtectionTest extends ControllerTestCase
         Asset::firstOrCreate(
             ['code' => 'SZL'],
             [
-                'name' => 'Swazi Lilangeni',
-                'type' => 'fiat',
+                'name'      => 'Swazi Lilangeni',
+                'type'      => 'fiat',
                 'precision' => 2,
                 'is_active' => true,
             ],
         );
 
         $this->requester = User::factory()->create([
-            'kyc_status' => 'approved',
+            'kyc_status'     => 'approved',
             'kyc_expires_at' => null,
         ]);
         $this->recipient = User::factory()->create([
-            'kyc_status' => 'approved',
+            'kyc_status'     => 'approved',
             'kyc_expires_at' => null,
         ]);
         $this->requesterAccount = $this->createAccount($this->requester);
@@ -90,14 +90,14 @@ class DoubleSpendProtectionTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '10.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_FULFILLED,
-            'trx' => 'TRX-DONE',
+            'amount'            => '10.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_FULFILLED,
+            'trx'               => 'TRX-DONE',
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
@@ -118,14 +118,14 @@ class DoubleSpendProtectionTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '10.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_REJECTED,
-            'trx' => null,
+            'amount'            => '10.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_REJECTED,
+            'trx'               => null,
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
@@ -142,28 +142,28 @@ class DoubleSpendProtectionTest extends ControllerTestCase
     {
         config([
             'maphapay_migration.enable_request_money' => true,
-            'maphapay_migration.enable_verification' => true,
+            'maphapay_migration.enable_verification'  => true,
         ]);
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '5.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => null,
+            'amount'            => '5.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => null,
         ]);
 
         $transferService = $this->createMock(InternalP2pTransferService::class);
         $transferService->expects($this->once())
             ->method('execute')
             ->willReturn([
-                'amount' => '5.00',
+                'amount'     => '5.00',
                 'asset_code' => 'SZL',
-                'reference' => 'stub-transfer-id',
+                'reference'  => 'stub-transfer-id',
             ]);
         $this->app->instance(InternalP2pTransferService::class, $transferService);
 
@@ -179,8 +179,8 @@ class DoubleSpendProtectionTest extends ControllerTestCase
         $this->forceOtpForTrx($trx);
 
         $payload = [
-            'trx' => $trx,
-            'otp' => '123456',
+            'trx'    => $trx,
+            'otp'    => '123456',
             'remark' => 'request_money_received',
         ];
 
@@ -192,12 +192,12 @@ class DoubleSpendProtectionTest extends ControllerTestCase
         $second->assertStatus(422)->assertJsonPath('status', 'error');
 
         $this->assertDatabaseHas('money_requests', [
-            'id' => $moneyRequestId,
+            'id'     => $moneyRequestId,
             'status' => MoneyRequest::STATUS_FULFILLED,
         ]);
 
         $this->assertDatabaseHas('authorized_transactions', [
-            'trx' => $trx,
+            'trx'    => $trx,
             'status' => AuthorizedTransaction::STATUS_COMPLETED,
         ]);
     }
@@ -211,14 +211,14 @@ class DoubleSpendProtectionTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '7.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => null,
+            'amount'            => '7.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => null,
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
@@ -262,14 +262,14 @@ class DoubleSpendProtectionTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '3.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => null,
+            'amount'            => '3.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => null,
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
@@ -305,7 +305,7 @@ class DoubleSpendProtectionTest extends ControllerTestCase
     {
         config([
             'maphapay_migration.enable_request_money' => true,
-            'maphapay_migration.enable_verification' => true,
+            'maphapay_migration.enable_verification'  => true,
         ]);
 
         $transferService = $this->createMock(InternalP2pTransferService::class);
@@ -325,14 +325,14 @@ class DoubleSpendProtectionTest extends ControllerTestCase
 
         $moneyRequestId = (string) Str::uuid();
         MoneyRequest::query()->create([
-            'id' => $moneyRequestId,
+            'id'                => $moneyRequestId,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '5.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => null,
+            'amount'            => '5.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => null,
         ]);
 
         Sanctum::actingAs($this->recipient, ['read', 'write', 'delete']);
@@ -354,8 +354,8 @@ class DoubleSpendProtectionTest extends ControllerTestCase
             ->value('balance');
 
         $verify = $this->postJson('/api/verification-process/verify/otp', [
-            'trx' => $trx,
-            'otp' => '123456',
+            'trx'    => $trx,
+            'otp'    => '123456',
             'remark' => 'request_money_received',
         ]);
 
@@ -376,12 +376,12 @@ class DoubleSpendProtectionTest extends ControllerTestCase
             ->value('balance'));
 
         $this->assertDatabaseHas('money_requests', [
-            'id' => $moneyRequestId,
+            'id'     => $moneyRequestId,
             'status' => MoneyRequest::STATUS_PENDING,
         ]);
 
         $this->assertDatabaseHas('authorized_transactions', [
-            'trx' => $trx,
+            'trx'    => $trx,
             'status' => AuthorizedTransaction::STATUS_PENDING,
         ]);
     }
@@ -390,8 +390,8 @@ class DoubleSpendProtectionTest extends ControllerTestCase
     {
         $txn = AuthorizedTransaction::query()->where('trx', $trx)->firstOrFail();
         $txn->update([
-            'otp_hash' => Hash::make('123456'),
-            'otp_sent_at' => now(),
+            'otp_hash'       => Hash::make('123456'),
+            'otp_sent_at'    => now(),
             'otp_expires_at' => now()->addMinutes(10),
         ]);
     }

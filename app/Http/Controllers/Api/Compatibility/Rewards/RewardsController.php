@@ -9,7 +9,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 
 /**
- * GET /api/rewards
+ * GET /api/rewards.
  *
  * Returns the rewards list for the authenticated user.
  */

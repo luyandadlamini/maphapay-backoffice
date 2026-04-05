@@ -6,13 +6,13 @@ namespace App\Filament\Admin\Pages\FundManagement;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Asset\Models\Asset;
-use App\Domain\FundManagement\Models\FundAdjustmentJournal;
 use App\Domain\FundManagement\Services\FundManagementService;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Alignment;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class AdjustBalancePage extends Page
 {
@@ -29,7 +29,9 @@ class AdjustBalancePage extends Page
     protected static string $view = 'filament.admin.pages.fund-management.adjust-balance';
 
     public ?string $accountUuid = null;
+
     public ?Account $selectedAccount = null;
+
     public array $availableAssets = [];
 
     public function mount(): void
@@ -43,9 +45,9 @@ class AdjustBalancePage extends Page
 
         foreach ($assets as $asset) {
             $this->availableAssets[$asset->code] = [
-                'code' => $asset->code,
-                'name' => $asset->name,
-                'type' => $asset->type,
+                'code'      => $asset->code,
+                'name'      => $asset->name,
+                'type'      => $asset->type,
                 'precision' => $asset->precision,
             ];
         }
@@ -108,7 +110,7 @@ class AdjustBalancePage extends Page
                         ->label('Adjustment Type')
                         ->options([
                             'credit' => 'Credit (+) - Add funds',
-                            'debit' => 'Debit (-) - Remove funds',
+                            'debit'  => 'Debit (-) - Remove funds',
                         ])
                         ->required(),
 
@@ -121,11 +123,11 @@ class AdjustBalancePage extends Page
                     \Filament\Forms\Components\Select::make('reason_category')
                         ->label('Reason Category')
                         ->options([
-                            'error' => 'Error Correction',
-                            'goodwill' => 'Goodwill Payment',
+                            'error'      => 'Error Correction',
+                            'goodwill'   => 'Goodwill Payment',
                             'regulatory' => 'Regulatory Requirement',
-                            'refund' => 'Refund',
-                            'other' => 'Other',
+                            'refund'     => 'Refund',
+                            'other'      => 'Other',
                         ])
                         ->required(),
 
@@ -142,6 +144,7 @@ class AdjustBalancePage extends Page
     {
         if (empty($uuid)) {
             $this->selectedAccount = null;
+
             return;
         }
 
@@ -191,7 +194,7 @@ class AdjustBalancePage extends Page
 
             $this->reset(['accountUuid', 'selectedAccount']);
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             DB::rollBack();
 
             Notification::make()

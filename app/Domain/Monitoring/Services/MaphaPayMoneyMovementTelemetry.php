@@ -30,7 +30,7 @@ class MaphaPayMoneyMovementTelemetry
         $payload = array_filter(
             array_merge([
                 'domain' => 'maphapay_money_movement',
-                'event' => $event,
+                'event'  => $event,
             ], $context),
             static fn (mixed $value): bool => $value !== null && $value !== [],
         );
@@ -72,7 +72,7 @@ class MaphaPayMoneyMovementTelemetry
 
         $this->logEvent('idempotency_conflict', $this->requestContext($request, [
             'idempotency_key_suffix' => $this->maskIdempotencyKey($idempotencyKey),
-            'reason' => $reason,
+            'reason'                 => $reason,
         ]), 'warning');
     }
 
@@ -89,10 +89,10 @@ class MaphaPayMoneyMovementTelemetry
 
         $this->logEvent('verification_failed', $this->requestContext($request, [
             'verification_method' => $method,
-            'remark' => $remark,
-            'trx' => $trx,
-            'status_code' => $status,
-            'message' => $message,
+            'remark'              => $remark,
+            'trx'                 => $trx,
+            'status_code'         => $status,
+            'message'             => $message,
         ] + $this->transactionContext($transaction)), 'warning');
     }
 
@@ -105,9 +105,9 @@ class MaphaPayMoneyMovementTelemetry
         $this->incrementCounter(self::METRIC_DUPLICATE_ACCEPTANCE_PREVENTED_TOTAL);
 
         $this->logEvent('duplicate_acceptance_prevented', $this->requestContext($request, [
-            'money_request_id' => $moneyRequest->id,
-            'money_request_status' => $moneyRequest->status,
-            'reason' => $reason,
+            'money_request_id'       => $moneyRequest->id,
+            'money_request_status'   => $moneyRequest->status,
+            'reason'                 => $reason,
             'idempotency_key_suffix' => $this->maskIdempotencyKey($idempotencyKey),
         ]), 'warning', true);
     }
@@ -119,14 +119,14 @@ class MaphaPayMoneyMovementTelemetry
         array $context = [],
     ): void {
         $this->logEvent('money_request_transition', array_merge([
-            'money_request_id' => $moneyRequest->id,
-            'from_status' => $fromStatus,
-            'to_status' => $toStatus,
+            'money_request_id'  => $moneyRequest->id,
+            'from_status'       => $fromStatus,
+            'to_status'         => $toStatus,
             'requester_user_id' => $moneyRequest->requester_user_id,
             'recipient_user_id' => $moneyRequest->recipient_user_id,
-            'amount' => $moneyRequest->amount,
-            'asset_code' => $moneyRequest->asset_code,
-            'trx' => $moneyRequest->trx,
+            'amount'            => $moneyRequest->amount,
+            'asset_code'        => $moneyRequest->asset_code,
+            'trx'               => $moneyRequest->trx,
         ], $context), 'info', true);
     }
 
@@ -139,8 +139,8 @@ class MaphaPayMoneyMovementTelemetry
         $this->incrementCounter(self::METRIC_RETRIES_TOTAL);
 
         $this->logEvent('operation_record_replay', [
-            'user_id' => $userId,
-            'operation_type' => $operationType,
+            'user_id'                => $userId,
+            'operation_type'         => $operationType,
             'idempotency_key_suffix' => $this->maskIdempotencyKey($idempotencyKey),
         ]);
     }
@@ -151,10 +151,10 @@ class MaphaPayMoneyMovementTelemetry
     public function metricSnapshot(): array
     {
         return [
-            'retries_total' => (int) Cache::get(self::METRIC_RETRIES_TOTAL, 0),
-            'verification_failures_total' => (int) Cache::get(self::METRIC_VERIFICATION_FAILURES_TOTAL, 0),
+            'retries_total'                        => (int) Cache::get(self::METRIC_RETRIES_TOTAL, 0),
+            'verification_failures_total'          => (int) Cache::get(self::METRIC_VERIFICATION_FAILURES_TOTAL, 0),
             'duplicate_acceptance_prevented_total' => (int) Cache::get(self::METRIC_DUPLICATE_ACCEPTANCE_PREVENTED_TOTAL, 0),
-            'rollout_blocked_total' => (int) Cache::get(self::METRIC_ROLLOUT_BLOCKED_TOTAL, 0),
+            'rollout_blocked_total'                => (int) Cache::get(self::METRIC_ROLLOUT_BLOCKED_TOTAL, 0),
         ];
     }
 
@@ -172,10 +172,10 @@ class MaphaPayMoneyMovementTelemetry
     public function requestContext(Request $request, array $context = []): array
     {
         return array_merge([
-            'method' => $request->method(),
-            'path' => $request->path(),
+            'method'  => $request->method(),
+            'path'    => $request->path(),
             'user_id' => $request->user()?->getAuthIdentifier(),
-            'ip' => $request->ip(),
+            'ip'      => $request->ip(),
         ], $context);
     }
 
@@ -208,19 +208,19 @@ class MaphaPayMoneyMovementTelemetry
         $policy = is_array($payload['_verification_policy'] ?? null) ? $payload['_verification_policy'] : [];
 
         return array_filter([
-            'transaction_id' => $transaction->id,
-            'trx' => $transaction->trx,
-            'reference' => $result['reference'] ?? null,
-            'sender_account_uuid' => $payload['from_account_uuid'] ?? null,
+            'transaction_id'         => $transaction->id,
+            'trx'                    => $transaction->trx,
+            'reference'              => $result['reference'] ?? null,
+            'sender_account_uuid'    => $payload['from_account_uuid'] ?? null,
             'recipient_account_uuid' => $payload['to_account_uuid'] ?? null,
-            'sender_user_id' => $transaction->user_id,
-            'recipient_user_id' => $payload['recipient_user_id'] ?? $payload['requester_user_id'] ?? null,
-            'amount' => $payload['amount'] ?? $result['amount'] ?? null,
-            'asset_code' => $payload['asset_code'] ?? $result['asset_code'] ?? null,
-            'status' => $transaction->status,
-            'failure_reason' => $transaction->failure_reason,
-            'verification_policy' => $policy['verification_type'] ?? $transaction->verification_type,
-            'risk_reason' => $policy['risk_reason'] ?? null,
+            'sender_user_id'         => $transaction->user_id,
+            'recipient_user_id'      => $payload['recipient_user_id'] ?? $payload['requester_user_id'] ?? null,
+            'amount'                 => $payload['amount'] ?? $result['amount'] ?? null,
+            'asset_code'             => $payload['asset_code'] ?? $result['asset_code'] ?? null,
+            'status'                 => $transaction->status,
+            'failure_reason'         => $transaction->failure_reason,
+            'verification_policy'    => $policy['verification_type'] ?? $transaction->verification_type,
+            'risk_reason'            => $policy['risk_reason'] ?? null,
         ], static fn (mixed $value): bool => $value !== null);
     }
 

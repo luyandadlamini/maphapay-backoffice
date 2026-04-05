@@ -26,18 +26,18 @@ class BudgetUpdateController extends Controller
             $budget->update(['monthly_budget' => $validated['amount']]);
         } else {
             $budget = UserBudget::create([
-                'uuid' => Str::uuid()->toString(),
-                'user_uuid' => $user->uuid,
+                'uuid'           => Str::uuid()->toString(),
+                'user_uuid'      => $user->uuid,
                 'monthly_budget' => $validated['amount'],
-                'month' => now()->month,
-                'year' => now()->year,
+                'month'          => now()->month,
+                'year'           => now()->year,
             ]);
         }
 
         return response()->json([
-            'status' => 'success',
+            'status'  => 'success',
             'message' => ['Monthly budget updated successfully'],
-            'data' => [
+            'data'    => [
                 'monthly_budget' => (float) $budget->monthly_budget,
             ],
         ]);

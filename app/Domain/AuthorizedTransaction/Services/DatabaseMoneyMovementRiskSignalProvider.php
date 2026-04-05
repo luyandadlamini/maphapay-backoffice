@@ -24,34 +24,34 @@ class DatabaseMoneyMovementRiskSignalProvider implements MoneyMovementRiskSignal
         if ($this->hasAmountAnomaly($user, $amount, $assetCode)) {
             return [
                 'step_up' => true,
-                'reason' => 'amount_anomaly_detected',
+                'reason'  => 'amount_anomaly_detected',
             ];
         }
 
         if ($this->hasRecipientChurnSignal($user, $context)) {
             return [
                 'step_up' => true,
-                'reason' => 'recipient_churn_detected',
+                'reason'  => 'recipient_churn_detected',
             ];
         }
 
         if ($this->hasRecentVerificationFailures($user)) {
             return [
                 'step_up' => true,
-                'reason' => 'recent_verification_failures',
+                'reason'  => 'recent_verification_failures',
             ];
         }
 
         if ($this->hasHighRecentVelocity($user)) {
             return [
                 'step_up' => true,
-                'reason' => 'velocity_limit_exceeded',
+                'reason'  => 'velocity_limit_exceeded',
             ];
         }
 
         return [
             'step_up' => false,
-            'reason' => null,
+            'reason'  => null,
         ];
     }
 
@@ -64,7 +64,7 @@ class DatabaseMoneyMovementRiskSignalProvider implements MoneyMovementRiskSignal
         array $context = [],
     ): array {
         return [
-            'allow' => true,
+            'allow'  => true,
             'reason' => null,
         ];
     }

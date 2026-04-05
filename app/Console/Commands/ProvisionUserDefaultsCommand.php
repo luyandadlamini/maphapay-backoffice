@@ -9,6 +9,7 @@ use App\Domain\Rewards\Services\RewardsService;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Throwable;
 
 class ProvisionUserDefaultsCommand extends Command
 {
@@ -54,7 +55,7 @@ class ProvisionUserDefaultsCommand extends Command
                     $provisioningService->ensureForUser($user);
                     $succeeded++;
                     $this->info("✓ {$user->uuid} ({$user->email}) provisioned for all three resources");
-                } catch (\Throwable $exception) {
+                } catch (Throwable $exception) {
                     $failed++;
                     $this->error("✗ {$user->uuid} ({$user->email}) failed: {$exception->getMessage()}");
                 }
@@ -76,7 +77,7 @@ class ProvisionUserDefaultsCommand extends Command
                     $rewardsService->getProfile($user);
                     $succeeded++;
                     $this->info("✓ {$user->uuid} ({$user->email}) rewards profile ensured");
-                } catch (\Throwable $exception) {
+                } catch (Throwable $exception) {
                     $failed++;
                     $this->error("✗ {$user->uuid} ({$user->email}) failed: {$exception->getMessage()}");
                 }

@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 class PaymentLinkService
 {
     private const TOKEN_LENGTH = 12;
+
     private const LINK_EXPIRY_DAYS = 10;
 
     public function generatePaymentToken(): string
@@ -19,7 +20,7 @@ class PaymentLinkService
 
     public function buildDynamicLink(string $token): string
     {
-        return 'https://pay.maphapay.com/r/'.$token;
+        return 'https://pay.maphapay.com/r/' . $token;
     }
 
     public function assignPaymentToken(MoneyRequest $moneyRequest): MoneyRequest
@@ -29,7 +30,7 @@ class PaymentLinkService
 
         $moneyRequest->update([
             'payment_token' => $token,
-            'expires_at' => $expiresAt,
+            'expires_at'    => $expiresAt,
         ]);
 
         return $moneyRequest->fresh();
@@ -67,18 +68,18 @@ class PaymentLinkService
 
         return [
             'display_name' => $requester?->name ?? 'Unknown',
-            'avatar_url' => $requester?->profile_photo_url ?? null,
-            'amount' => $moneyRequest->amount,
-            'note' => $moneyRequest->note,
-            'currency' => 'SZL',
-            'asset_code' => $moneyRequest->asset_code,
+            'avatar_url'   => $requester?->profile_photo_url ?? null,
+            'amount'       => $moneyRequest->amount,
+            'note'         => $moneyRequest->note,
+            'currency'     => 'SZL',
+            'asset_code'   => $moneyRequest->asset_code,
         ];
     }
 
     public function markAsPaid(MoneyRequest $moneyRequest): MoneyRequest
     {
         $moneyRequest->update([
-            'status' => MoneyRequest::STATUS_FULFILLED,
+            'status'  => MoneyRequest::STATUS_FULFILLED,
             'paid_at' => now(),
         ]);
 

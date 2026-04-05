@@ -53,8 +53,8 @@ class GroupPocketTransferService
                 throw new InvalidArgumentException('This pocket has reached the regulatory maximum of E100,000');
             }
 
-            $account     = $this->requireAccount($user);
-            $asset       = $this->requireAsset();
+            $account = $this->requireAccount($user);
+            $asset = $this->requireAsset();
             $amountMinor = $asset->toSmallestUnit((float) $rounded);
 
             $accountBalance = AccountBalance::query()
@@ -126,9 +126,9 @@ class GroupPocketTransferService
                 throw new InvalidArgumentException('Insufficient funds in pocket');
             }
 
-            $requester   = User::findOrFail($lockedRequest->requested_by);
-            $account     = $this->requireAccount($requester);
-            $asset       = $this->requireAsset();
+            $requester = User::findOrFail($lockedRequest->requested_by);
+            $account = $this->requireAccount($requester);
+            $asset = $this->requireAsset();
             $amountMinor = $asset->toSmallestUnit((float) $rounded);
 
             AssetTransactionAggregate::retrieve((string) Str::uuid())
@@ -187,7 +187,7 @@ class GroupPocketTransferService
                 ->sum('amount');
 
             $currentAmount = (float) $lockedPocket->current_amount;
-            $memberAmount  = (float) $contribution->amount;
+            $memberAmount = (float) $contribution->amount;
 
             if ($totalContributions <= 0 || $currentAmount <= 0) {
                 $contribution->update(['amount' => 0]);
@@ -195,12 +195,12 @@ class GroupPocketTransferService
                 return;
             }
 
-            $share  = $memberAmount / $totalContributions;
+            $share = $memberAmount / $totalContributions;
             $refund = number_format(min($memberAmount, $currentAmount * $share), 2, '.', '');
 
             if ((float) $refund > 0) {
-                $account     = $this->requireAccount($user);
-                $asset       = $this->requireAsset();
+                $account = $this->requireAccount($user);
+                $asset = $this->requireAsset();
                 $amountMinor = $asset->toSmallestUnit((float) $refund);
 
                 AssetTransactionAggregate::retrieve((string) Str::uuid())
@@ -247,7 +247,7 @@ class GroupPocketTransferService
         }
 
         $totalContributions = $contributions->sum(fn ($c) => (float) $c->amount);
-        $currentAmount      = (float) ($pocket->fresh() ?? $pocket)->current_amount;
+        $currentAmount = (float) ($pocket->fresh() ?? $pocket)->current_amount;
 
         if ($currentAmount <= 0) {
             $contributions->each(fn ($c) => $c->update(['amount' => 0]));
@@ -262,14 +262,14 @@ class GroupPocketTransferService
                 continue;
             }
 
-            $share  = (float) $contribution->amount / $totalContributions;
+            $share = (float) $contribution->amount / $totalContributions;
             $refund = number_format(min((float) $contribution->amount, $currentAmount * $share), 2, '.', '');
 
             if ((float) $refund > 0) {
                 $account = Account::query()->where('user_uuid', $user->uuid)->orderBy('id')->first();
 
                 $assetCode = (string) config('banking.default_currency', self::ASSET_CODE);
-                $asset     = $account !== null ? Asset::query()->where('code', $assetCode)->first() : null;
+                $asset = $account !== null ? Asset::query()->where('code', $assetCode)->first() : null;
 
                 if ($account !== null && $asset !== null) {
                     $amountMinor = $asset->toSmallestUnit((float) $refund);
@@ -315,7 +315,7 @@ class GroupPocketTransferService
     private function requireAsset(): Asset
     {
         $assetCode = (string) config('banking.default_currency', self::ASSET_CODE);
-        $asset     = Asset::query()->where('code', $assetCode)->first();
+        $asset = Asset::query()->where('code', $assetCode)->first();
 
         if (! $asset) {
             throw new InvalidArgumentException('Unsupported wallet currency');

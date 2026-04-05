@@ -2,8 +2,6 @@
 
 use App\Actions\Jetstream\AddTeamMember;
 
-
-
 it('can be instantiated', function () {
     expect(new AddTeamMember())->toBeInstanceOf(AddTeamMember::class);
 });

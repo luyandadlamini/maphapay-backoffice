@@ -53,17 +53,17 @@ class VerifyPinControllerTest extends ControllerTestCase
     {
         return AuthorizedTransaction::create([
             'user_id' => $user->id,
-            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx' => 'TRX-PINTEST-' . Str::upper((string) Str::ulid()),
+            'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'     => 'TRX-PINTEST-' . Str::upper((string) Str::ulid()),
             'payload' => [
                 'from_account_uuid' => '00000000-0000-0000-0000-000000000001',
-                'to_account_uuid' => '00000000-0000-0000-0000-000000000002',
-                'amount' => '10.00',
-                'asset_code' => 'SZL',
+                'to_account_uuid'   => '00000000-0000-0000-0000-000000000002',
+                'amount'            => '10.00',
+                'asset_code'        => 'SZL',
             ],
-            'status' => AuthorizedTransaction::STATUS_PENDING,
+            'status'            => AuthorizedTransaction::STATUS_PENDING,
             'verification_type' => AuthorizedTransaction::VERIFICATION_PIN,
-            'expires_at' => now()->addHour(),
+            'expires_at'        => now()->addHour(),
         ]);
     }
 
@@ -81,10 +81,10 @@ class VerifyPinControllerTest extends ControllerTestCase
                 ->with($txn->trx, $txn->user_id, self::PIN)
                 ->andReturnUsing(function () use ($txn): array {
                     $result = [
-                        'trx' => $txn->trx,
-                        'amount' => '10.00',
+                        'trx'        => $txn->trx,
+                        'amount'     => '10.00',
                         'asset_code' => 'SZL',
-                        'reference' => 'mock-transfer-id',
+                        'reference'  => 'mock-transfer-id',
                     ];
 
                     $txn->forceFill([
@@ -99,8 +99,8 @@ class VerifyPinControllerTest extends ControllerTestCase
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
 
         $response = $this->postJson(self::ROUTE, [
-            'trx' => $txn->trx,
-            'pin' => self::PIN,
+            'trx'    => $txn->trx,
+            'pin'    => self::PIN,
             'remark' => 'send_money',
         ]);
 
@@ -110,7 +110,7 @@ class VerifyPinControllerTest extends ControllerTestCase
             ->assertJsonStructure(['data' => ['trx', 'amount', 'asset_code', 'reference']]);
 
         $this->assertDatabaseHas('authorized_transactions', [
-            'id' => $txn->id,
+            'id'     => $txn->id,
             'status' => AuthorizedTransaction::STATUS_COMPLETED,
         ]);
     }
@@ -137,10 +137,10 @@ class VerifyPinControllerTest extends ControllerTestCase
 
         $response->assertStatus(422)
             ->assertExactJson([
-                'status' => 'error',
-                'remark' => 'pin_verified',
+                'status'  => 'error',
+                'remark'  => 'pin_verified',
                 'message' => ['Invalid transaction PIN.'],
-                'data' => null,
+                'data'    => null,
             ]);
 
         $this->assertSame(
@@ -158,17 +158,17 @@ class VerifyPinControllerTest extends ControllerTestCase
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
 
         $response = $this->postJson(self::ROUTE, [
-            'trx' => $txn->trx,
-            'pin' => '12',
+            'trx'    => $txn->trx,
+            'pin'    => '12',
             'remark' => 'send_money',
         ]);
 
         $response->assertStatus(422)
             ->assertExactJson([
-                'status' => 'error',
-                'remark' => 'send_money',
+                'status'  => 'error',
+                'remark'  => 'send_money',
                 'message' => ['The pin field must be 4 digits.'],
-                'data' => null,
+                'data'    => null,
             ]);
     }
 
@@ -195,10 +195,10 @@ class VerifyPinControllerTest extends ControllerTestCase
 
         $response->assertStatus(422)
             ->assertExactJson([
-                'status' => 'error',
-                'remark' => 'pin_verified',
+                'status'  => 'error',
+                'remark'  => 'pin_verified',
                 'message' => ['Transaction PIN has not been set for this account.'],
-                'data' => null,
+                'data'    => null,
             ]);
     }
 
@@ -240,8 +240,8 @@ class VerifyPinControllerTest extends ControllerTestCase
                     $attempt++;
                     $txn->forceFill([
                         'verification_failures' => $attempt,
-                        'status' => $attempt >= 5 ? AuthorizedTransaction::STATUS_FAILED : AuthorizedTransaction::STATUS_PENDING,
-                        'failure_reason' => $attempt >= 5 ? 'Verification attempt limit exceeded.' : 'Invalid transaction PIN.',
+                        'status'                => $attempt >= 5 ? AuthorizedTransaction::STATUS_FAILED : AuthorizedTransaction::STATUS_PENDING,
+                        'failure_reason'        => $attempt >= 5 ? 'Verification attempt limit exceeded.' : 'Invalid transaction PIN.',
                     ])->save();
 
                     throw new RuntimeException(
@@ -271,10 +271,10 @@ class VerifyPinControllerTest extends ControllerTestCase
             ->assertJsonPath('message.0', 'Verification attempt limit exceeded. This transaction has been cancelled.');
 
         $this->assertDatabaseHas('authorized_transactions', [
-            'id' => $txn->id,
-            'status' => AuthorizedTransaction::STATUS_FAILED,
+            'id'                    => $txn->id,
+            'status'                => AuthorizedTransaction::STATUS_FAILED,
             'verification_failures' => 5,
-            'failure_reason' => 'Verification attempt limit exceeded.',
+            'failure_reason'        => 'Verification attempt limit exceeded.',
         ]);
     }
 
@@ -284,13 +284,13 @@ class VerifyPinControllerTest extends ControllerTestCase
         $user = $this->makeUserWithPin();
 
         $txn = AuthorizedTransaction::create([
-            'user_id' => $user->id,
-            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx' => 'TRX-COMPLETED-' . Str::upper((string) Str::ulid()),
-            'payload' => ['amount' => '5.00'],
-            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'user_id'           => $user->id,
+            'remark'            => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'               => 'TRX-COMPLETED-' . Str::upper((string) Str::ulid()),
+            'payload'           => ['amount' => '5.00'],
+            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
             'verification_type' => AuthorizedTransaction::VERIFICATION_PIN,
-            'expires_at' => now()->addHour(),
+            'expires_at'        => now()->addHour(),
         ]);
 
         $this->mock(AuthorizedTransactionManager::class, function ($mock) use ($txn): void {

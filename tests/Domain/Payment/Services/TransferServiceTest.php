@@ -4,7 +4,6 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Payment\Services\TransferService;
 use Workflow\WorkflowStub;
 
-
 beforeEach(function () {
     WorkflowStub::fake();
     $this->transferService = app(TransferService::class);

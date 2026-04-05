@@ -39,17 +39,17 @@ class SystemUsersSeeder extends Seeder
     private function createSystemUser(string $email, string $name, string $type): void
     {
         $existingUuid = match ($type) {
-            'system' => config('system_users.uuid.system'),
+            'system'   => config('system_users.uuid.system'),
             'suspense' => config('system_users.uuid.suspense'),
             'treasury' => config('system_users.uuid.treasury'),
-            'pool' => config('system_users.uuid.pool'),
-            default => null,
+            'pool'     => config('system_users.uuid.pool'),
+            default    => null,
         };
 
         $userData = [
-            'name' => $name,
+            'name'     => $name,
             'password' => Hash::make(Str::uuid()->toString()),
-            'email' => $email,
+            'email'    => $email,
         ];
 
         if ($existingUuid) {

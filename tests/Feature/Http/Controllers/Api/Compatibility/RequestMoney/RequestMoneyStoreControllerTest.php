@@ -31,8 +31,8 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         Asset::firstOrCreate(
             ['code' => 'SZL'],
             [
-                'name' => 'Swazi Lilangeni',
-                'type' => 'fiat',
+                'name'      => 'Swazi Lilangeni',
+                'type'      => 'fiat',
                 'precision' => 2,
                 'is_active' => true,
             ],
@@ -49,9 +49,9 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
 
         $response = $this->postJson('/api/request-money/store', [
-            'user' => $this->recipient->email,
+            'user'   => $this->recipient->email,
             'amount' => '25.00',
-            'note' => 'Lunch',
+            'note'   => 'Lunch',
         ]);
 
         $response->assertOk()
@@ -71,19 +71,19 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         $this->assertIsString($trx);
 
         $this->assertDatabaseHas('authorized_transactions', [
-            'trx' => $trx,
-            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY,
-            'user_id' => $this->requester->id,
-            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'trx'               => $trx,
+            'remark'            => AuthorizedTransaction::REMARK_REQUEST_MONEY,
+            'user_id'           => $this->requester->id,
+            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
             'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
         ]);
 
         $this->assertDatabaseHas('money_requests', [
-            'trx' => $trx,
+            'trx'               => $trx,
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'amount' => '25.00',
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'amount'            => '25.00',
         ]);
     }
 
@@ -99,7 +99,7 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         $response = $this->withHeaders([
             'X-Idempotency-Key' => '00000000-0000-0000-0000-000000000010',
         ])->postJson('/api/request-money/store', [
-            'user' => $this->recipient->email,
+            'user'   => $this->recipient->email,
             'amount' => '15.00',
         ]);
 
@@ -123,9 +123,9 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
 
         $idem = (string) Str::uuid();
         $body = [
-            'user' => $this->recipient->email,
+            'user'   => $this->recipient->email,
             'amount' => '15.00',
-            'note' => 'Replay-safe request',
+            'note'   => 'Replay-safe request',
         ];
 
         $first = $this->withHeaders([
@@ -167,9 +167,9 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
 
         $idem = (string) Str::uuid();
         $body = [
-            'user' => $this->recipient->email,
+            'user'   => $this->recipient->email,
             'amount' => '15.00',
-            'note' => 'Cache-loss replay-safe request',
+            'note'   => 'Cache-loss replay-safe request',
         ];
 
         $first = $this->withHeaders([
@@ -212,9 +212,9 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
 
         $idem = (string) Str::uuid();
         $body = [
-            'user' => $this->recipient->email,
+            'user'   => $this->recipient->email,
             'amount' => '15.00',
-            'note' => 'Idempotent request replay',
+            'note'   => 'Idempotent request replay',
         ];
 
         $first = $this->withHeaders([
@@ -260,8 +260,8 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
 
         $this->postJson('/api/request-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '15.00',
+            'user'              => $this->recipient->email,
+            'amount'            => '15.00',
             'verification_type' => 'none',
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['verification_type']);
@@ -278,8 +278,8 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
 
         $this->postJson('/api/request-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '15.00',
+            'user'              => $this->recipient->email,
+            'amount'            => '15.00',
             'verification_type' => 'sms',
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['verification_type']);
@@ -296,8 +296,8 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
 
         $this->postJson('/api/request-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '15.00',
+            'user'              => $this->recipient->email,
+            'amount'            => '15.00',
             'verification_type' => 'pin',
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['verification_type']);
@@ -313,8 +313,8 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
 
         $response = $this->postJson('/api/request-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '12.00',
+            'user'           => $this->recipient->email,
+            'amount'         => '12.00',
             'chat_friend_id' => $this->recipient->id,
         ]);
 
@@ -339,8 +339,8 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
 
         $this->postJson('/api/request-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '12.00',
+            'user'           => $this->recipient->email,
+            'amount'         => '12.00',
             'chat_friend_id' => $other->id,
         ])->assertStatus(422)
             ->assertJsonPath('message.0', 'Chat context does not match the selected recipient.');
@@ -351,16 +351,16 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
     {
         config([
             'maphapay_migration.enable_request_money' => true,
-            'maphapay_migration.enable_verification' => true,
+            'maphapay_migration.enable_verification'  => true,
         ]);
 
         $this->requester->update(['transaction_pin' => '1234', 'transaction_pin_enabled' => true]);
         Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
 
         $initiation = $this->postJson('/api/request-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '18.00',
-            'note' => 'Dinner',
+            'user'           => $this->recipient->email,
+            'amount'         => '18.00',
+            'note'           => 'Dinner',
             'chat_friend_id' => $this->recipient->id,
         ]);
 
@@ -382,7 +382,7 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
 
         $this->postJson('/api/request-money/store', [
-            'user' => $this->recipient->email,
+            'user'   => $this->recipient->email,
             'amount' => '10.00',
         ])->assertNotFound();
     }
@@ -391,14 +391,14 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
     public function test_store_route_not_registered_when_create_flag_disabled_even_if_parent_flag_enabled(): void
     {
         config([
-            'maphapay_migration.enable_request_money' => true,
+            'maphapay_migration.enable_request_money'        => true,
             'maphapay_migration.enable_request_money_create' => false,
         ]);
 
         Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
 
         $this->postJson('/api/request-money/store', [
-            'user' => $this->recipient->email,
+            'user'   => $this->recipient->email,
             'amount' => '10.00',
         ])->assertNotFound();
 
@@ -416,9 +416,9 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
 
         $idem = (string) Str::uuid();
         $body = [
-            'user' => $this->recipient->email,
+            'user'   => $this->recipient->email,
             'amount' => '25.00',
-            'note' => 'Payment link test',
+            'note'   => 'Payment link test',
         ];
 
         // 1. Initial request

@@ -26,7 +26,7 @@ class NotificationSettingsController extends Controller
         return response()->json([
             'status' => 'success',
             'remark' => 'notification_settings',
-            'data' => $this->compactSettings($this->preferenceService->getUserPreferences($user)),
+            'data'   => $this->compactSettings($this->preferenceService->getUserPreferences($user)),
         ]);
     }
 
@@ -37,9 +37,9 @@ class NotificationSettingsController extends Controller
 
         $validated = $request->validate([
             'transactions' => ['required', 'boolean'],
-            'promotions' => ['required', 'boolean'],
-            'security' => ['required', 'boolean'],
-            'social' => ['required', 'boolean'],
+            'promotions'   => ['required', 'boolean'],
+            'security'     => ['required', 'boolean'],
+            'social'       => ['required', 'boolean'],
         ]);
 
         $this->preferenceService->updatePreferences($user, $this->expandedSettings($validated));
@@ -47,7 +47,7 @@ class NotificationSettingsController extends Controller
         return response()->json([
             'status' => 'success',
             'remark' => 'notification_settings_updated',
-            'data' => $this->compactSettings($this->preferenceService->getUserPreferences($user)),
+            'data'   => $this->compactSettings($this->preferenceService->getUserPreferences($user)),
         ]);
     }
 
@@ -66,7 +66,7 @@ class NotificationSettingsController extends Controller
                 MobileNotificationPreference::TYPE_TRANSACTION_SENT,
             ]),
             'promotions' => (bool) ($preferences[MobileNotificationPreference::TYPE_MARKETING]['push_enabled'] ?? false),
-            'security' => $allEnabled([
+            'security'   => $allEnabled([
                 MobileNotificationPreference::TYPE_LOW_BALANCE,
                 MobileNotificationPreference::TYPE_SECURITY_LOGIN,
                 MobileNotificationPreference::TYPE_SECURITY_DEVICE,
@@ -83,31 +83,31 @@ class NotificationSettingsController extends Controller
     {
         return [
             MobileNotificationPreference::TYPE_TRANSACTION_RECEIVED => [
-                'push_enabled' => $validated['transactions'],
+                'push_enabled'  => $validated['transactions'],
                 'email_enabled' => false,
             ],
             MobileNotificationPreference::TYPE_TRANSACTION_SENT => [
-                'push_enabled' => $validated['transactions'],
+                'push_enabled'  => $validated['transactions'],
                 'email_enabled' => false,
             ],
             MobileNotificationPreference::TYPE_MARKETING => [
-                'push_enabled' => $validated['promotions'],
+                'push_enabled'  => $validated['promotions'],
                 'email_enabled' => false,
             ],
             MobileNotificationPreference::TYPE_LOW_BALANCE => [
-                'push_enabled' => $validated['security'],
+                'push_enabled'  => $validated['security'],
                 'email_enabled' => $validated['security'],
             ],
             MobileNotificationPreference::TYPE_SECURITY_LOGIN => [
-                'push_enabled' => $validated['security'],
+                'push_enabled'  => $validated['security'],
                 'email_enabled' => $validated['security'],
             ],
             MobileNotificationPreference::TYPE_SECURITY_DEVICE => [
-                'push_enabled' => $validated['security'],
+                'push_enabled'  => $validated['security'],
                 'email_enabled' => $validated['security'],
             ],
             MobileNotificationPreference::TYPE_SYSTEM_UPDATE => [
-                'push_enabled' => $validated['social'],
+                'push_enabled'  => $validated['social'],
                 'email_enabled' => false,
             ],
         ];

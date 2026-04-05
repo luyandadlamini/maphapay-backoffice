@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\Mobile\Models\MobileDevice;
 use App\Models\User;
 
-
 describe('GraphQL Mobile API', function () {
     it('paginates mobile devices', function () {
         $user = User::factory()->create();

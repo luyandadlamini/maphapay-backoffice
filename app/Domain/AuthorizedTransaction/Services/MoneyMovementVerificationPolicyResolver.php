@@ -15,7 +15,8 @@ class MoneyMovementVerificationPolicyResolver
 {
     public function __construct(
         private readonly MoneyMovementRiskSignalProviderInterface $riskSignals,
-    ) {}
+    ) {
+    }
 
     /**
      * @param  array<string, mixed>  $context
@@ -109,13 +110,13 @@ class MoneyMovementVerificationPolicyResolver
         $stepUpThresholdMinor = (int) MoneyConverter::toSmallestUnit($stepUpThresholdAmount, $asset->precision);
 
         return [
-            'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
-            'next_step' => 'none',
-            'reason' => 'request_creation_no_funds_moved',
-            'risk_reason' => null,
-            'client_hint' => $clientHint,
-            'user_preference' => AuthorizedTransaction::VERIFICATION_NONE,
-            'amount_minor' => $amountMinor,
+            'verification_type'       => AuthorizedTransaction::VERIFICATION_NONE,
+            'next_step'               => 'none',
+            'reason'                  => 'request_creation_no_funds_moved',
+            'risk_reason'             => null,
+            'client_hint'             => $clientHint,
+            'user_preference'         => AuthorizedTransaction::VERIFICATION_NONE,
+            'amount_minor'            => $amountMinor,
             'step_up_threshold_minor' => $stepUpThresholdMinor,
         ];
     }
@@ -160,7 +161,7 @@ class MoneyMovementVerificationPolicyResolver
             assetCode: $asset->code,
             context: array_merge($context, [
                 'amount_minor' => $amountMinor,
-                'client_hint' => $clientHint,
+                'client_hint'  => $clientHint,
             ]),
         );
 
@@ -185,13 +186,13 @@ class MoneyMovementVerificationPolicyResolver
             : $userPreference;
 
         return [
-            'verification_type' => $verificationType,
-            'next_step' => $verificationType === AuthorizedTransaction::VERIFICATION_OTP ? 'otp' : $verificationType,
-            'reason' => $reason,
-            'risk_reason' => $riskReason,
-            'client_hint' => $clientHint,
-            'user_preference' => $userPreference,
-            'amount_minor' => $amountMinor,
+            'verification_type'       => $verificationType,
+            'next_step'               => $verificationType === AuthorizedTransaction::VERIFICATION_OTP ? 'otp' : $verificationType,
+            'reason'                  => $reason,
+            'risk_reason'             => $riskReason,
+            'client_hint'             => $clientHint,
+            'user_preference'         => $userPreference,
+            'amount_minor'            => $amountMinor,
             'step_up_threshold_minor' => $stepUpThresholdMinor,
         ];
     }
@@ -215,29 +216,29 @@ class MoneyMovementVerificationPolicyResolver
         }
 
         return match ($this->resolveSendMoneyThresholdTier($user)) {
-            'low' => $this->settingAmount('send_money_threshold_low_enhanced_or_full', '5000.00'),
+            'low'    => $this->settingAmount('send_money_threshold_low_enhanced_or_full', '5000.00'),
             'medium' => $this->settingAmount('send_money_threshold_medium_or_standard', '2500.00'),
-            default => $this->settingAmount('send_money_threshold_high_or_basic', '1000.00'),
+            default  => $this->settingAmount('send_money_threshold_high_or_basic', '1000.00'),
         };
     }
 
     private function resolveSendMoneyThresholdTier(User $user): string
     {
         $riskRank = match (strtolower((string) ($user->risk_rating ?? ''))) {
-            'low' => 1,
+            'low'    => 1,
             'medium' => 2,
-            default => 3,
+            default  => 3,
         };
 
         $kycRank = match (strtolower((string) ($user->kyc_level ?? ''))) {
             'full', 'enhanced' => 1,
             'standard' => 2,
-            default => 3,
+            default    => 3,
         };
 
         return match (max($riskRank, $kycRank)) {
-            1 => 'low',
-            2 => 'medium',
+            1       => 'low',
+            2       => 'medium',
             default => 'high',
         };
     }

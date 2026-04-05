@@ -20,19 +20,19 @@ class BackfillPendingRequestMoneyStatusMigrationTest extends TestCase
         $recipient = User::factory()->create();
 
         $moneyRequest = MoneyRequest::query()->create([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'id'                => (string) \Illuminate\Support\Str::uuid(),
             'requester_user_id' => $requester->id,
             'recipient_user_id' => $recipient->id,
-            'amount' => '15.00',
-            'asset_code' => 'SZL',
-            'status' => MoneyRequest::STATUS_AWAITING_OTP,
+            'amount'            => '15.00',
+            'asset_code'        => 'SZL',
+            'status'            => MoneyRequest::STATUS_AWAITING_OTP,
         ]);
 
         $migration = require base_path('database/migrations/2026_04_03_180000_backfill_pending_request_money_status.php');
         $migration->up();
 
         $this->assertDatabaseHas('money_requests', [
-            'id' => $moneyRequest->id,
+            'id'     => $moneyRequest->id,
             'status' => MoneyRequest::STATUS_PENDING,
         ]);
     }

@@ -62,12 +62,12 @@ class MobileAuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'dial_code'       => 'required|string|max:10',
-            'mobile'          => 'nullable|string|max:20|required_without:mobile_number',
-            'mobile_number'   => 'nullable|string|max:20|required_without:mobile',
-            'pin'             => 'sometimes|nullable|string|min:4|max:6',
-            'device_name'     => 'sometimes|string',
-            'skip_otp_send'   => 'sometimes|boolean',
+            'dial_code'     => 'required|string|max:10',
+            'mobile'        => 'nullable|string|max:20|required_without:mobile_number',
+            'mobile_number' => 'nullable|string|max:20|required_without:mobile',
+            'pin'           => 'sometimes|nullable|string|min:4|max:6',
+            'device_name'   => 'sometimes|string',
+            'skip_otp_send' => 'sometimes|boolean',
         ]);
 
         $dialCode = self::normalizeDialCode($validated['dial_code']);
@@ -106,7 +106,7 @@ class MobileAuthController extends Controller
 
             if ($pinMatchesLegacyPassword) {
                 User::whereKey($user->id)->update([
-                    'transaction_pin' => $user->getRawOriginal('password'),
+                    'transaction_pin'         => $user->getRawOriginal('password'),
                     'transaction_pin_enabled' => true,
                 ]);
                 $user->refresh();
@@ -599,7 +599,7 @@ class MobileAuthController extends Controller
         Cache::forget($grantKey);
 
         $user->update([
-            'transaction_pin' => Hash::make($validated['pin']),
+            'transaction_pin'         => Hash::make($validated['pin']),
             'transaction_pin_enabled' => true,
         ]);
 

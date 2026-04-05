@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\FinancialInstitution\Models\FinancialInstitutionPartner;
 use App\Models\User;
 
-
 describe('GraphQL FinancialInstitution API', function () {
     it('returns unauthorized without authentication', function () {
         $response = $this->postJson('/graphql', [

@@ -10,8 +10,6 @@ use Illuminate\Validation\ValidationException;
 use Laravel\Jetstream\Events\AddingTeamMember;
 use Laravel\Jetstream\Events\TeamMemberAdded;
 
-
-
 beforeEach(function () {
     Event::fake();
 });

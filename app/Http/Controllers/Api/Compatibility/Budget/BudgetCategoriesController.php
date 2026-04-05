@@ -20,19 +20,19 @@ class BudgetCategoriesController extends Controller
 
         $data = $categories->map(function (BudgetCategory $category): array {
             return [
-                'id' => (int) $category->id,
-                'slug' => $category->slug,
-                'name' => $category->name,
-                'icon' => $category->icon,
+                'id'            => (int) $category->id,
+                'slug'          => $category->slug,
+                'name'          => $category->name,
+                'icon'          => $category->icon,
                 'budget_amount' => number_format((float) $category->budget_amount, 2, '.', ''),
-                'sort_order' => $category->sort_order,
-                'is_system' => $category->is_system,
+                'sort_order'    => $category->sort_order,
+                'is_system'     => $category->is_system,
             ];
         });
 
         return response()->json([
             'status' => 'success',
-            'data' => [
+            'data'   => [
                 'categories' => $data,
             ],
         ]);

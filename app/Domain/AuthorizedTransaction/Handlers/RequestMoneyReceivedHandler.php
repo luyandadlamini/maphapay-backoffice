@@ -27,7 +27,8 @@ class RequestMoneyReceivedHandler implements AuthorizedTransactionHandlerInterfa
     public function __construct(
         private readonly InternalP2pTransferService $transferService,
         private readonly MaphaPayMoneyMovementTelemetry $telemetry,
-    ) {}
+    ) {
+    }
 
     public function handle(AuthorizedTransaction $transaction): array
     {
@@ -75,24 +76,24 @@ class RequestMoneyReceivedHandler implements AuthorizedTransactionHandlerInterfa
         if ($moneyRequest !== null) {
             $fromStatus = $moneyRequest->status;
             $moneyRequest->update([
-                'status' => MoneyRequest::STATUS_FULFILLED,
+                'status'  => MoneyRequest::STATUS_FULFILLED,
                 'paid_at' => now(),
             ]);
             $moneyRequest->refresh();
 
             $this->telemetry->logMoneyRequestTransition($moneyRequest, $fromStatus, MoneyRequest::STATUS_FULFILLED, [
-                'remark' => $transaction->remark,
+                'remark'                     => $transaction->remark,
                 'authorized_transaction_trx' => $transaction->trx,
-                'reference' => $transfer['reference'],
+                'reference'                  => $transfer['reference'],
             ]);
         }
 
         return [
-            'trx' => $transaction->trx,
-            'amount' => $transfer['amount'],
-            'asset_code' => $transfer['asset_code'],
+            'trx'              => $transaction->trx,
+            'amount'           => $transfer['amount'],
+            'asset_code'       => $transfer['asset_code'],
             'money_request_id' => $moneyRequestId,
-            'reference' => $transfer['reference'],
+            'reference'        => $transfer['reference'],
         ];
     }
 }

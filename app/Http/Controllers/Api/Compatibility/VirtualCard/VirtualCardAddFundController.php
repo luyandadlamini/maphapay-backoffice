@@ -24,37 +24,37 @@ class VirtualCardAddFundController extends Controller
 
         if (! $card || ($card->metadata['user_id'] ?? null) !== $user->uuid) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => ['Virtual card not found'],
-                'data' => null,
+                'data'    => null,
             ], 404);
         }
 
         $newBalance = $cardService->addFunds($id, (float) $validated['amount']);
 
         return response()->json([
-            'status' => 'success',
+            'status'  => 'success',
             'message' => 'Funds added to virtual card successfully',
-            'data' => [
+            'data'    => [
                 'card' => [
-                    'id' => 1,
-                    'user_id' => $user->uuid,
-                    'last4' => $card->last4,
-                    'exp_month' => $card->expiresAt->format('m'),
-                    'exp_year' => $card->expiresAt->format('Y'),
-                    'balance' => $newBalance,
-                    'brand' => $card->network->value,
+                    'id'             => 1,
+                    'user_id'        => $user->uuid,
+                    'last4'          => $card->last4,
+                    'exp_month'      => $card->expiresAt->format('m'),
+                    'exp_year'       => $card->expiresAt->format('Y'),
+                    'balance'        => $newBalance,
+                    'brand'          => $card->network->value,
                     'spending_limit' => '0.00',
-                    'current_spend' => '0.00',
-                    'cardholder_id' => $user->uuid,
-                    'card_id' => $card->cardToken,
-                    'card_type' => 'virtual',
-                    'charged_at' => $card->expiresAt->format('Y-m-d'),
-                    'status' => $card->status->value,
-                    'created_at' => now()->toDateString(),
-                    'updated_at' => now()->toDateString(),
-                    'is_default' => false,
-                    'card_holder' => [
+                    'current_spend'  => '0.00',
+                    'cardholder_id'  => $user->uuid,
+                    'card_id'        => $card->cardToken,
+                    'card_type'      => 'virtual',
+                    'charged_at'     => $card->expiresAt->format('Y-m-d'),
+                    'status'         => $card->status->value,
+                    'created_at'     => now()->toDateString(),
+                    'updated_at'     => now()->toDateString(),
+                    'is_default'     => false,
+                    'card_holder'    => [
                         'name' => $card->cardholderName,
                     ],
                 ],

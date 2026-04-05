@@ -65,9 +65,9 @@ class KycSubmitController extends Controller
         } catch (Throwable $e) {
             Log::error('KYC compat submit failed', [
                 'user_id' => $user->id,
-                'step' => $user->kyc_current_step,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'step'    => $user->kyc_current_step,
+                'error'   => $e->getMessage(),
+                'trace'   => $e->getTraceAsString(),
             ]);
 
             return response()->json([

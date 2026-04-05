@@ -13,7 +13,6 @@ use Tests\TestCase;
 
 class SubscriberEmailServiceTest extends TestCase
 {
-
     private SubscriberEmailService $service;
 
     protected function setUp(): void

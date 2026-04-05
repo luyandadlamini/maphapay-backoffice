@@ -163,29 +163,29 @@ class User extends Authenticatable implements FilamentUser
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'mobile_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'kyc_submitted_at' => 'datetime',
-            'kyc_approved_at' => 'datetime',
-            'kyc_expires_at' => 'datetime',
-            'pep_status' => 'boolean',
-            'kyc_data' => 'encrypted:array',
-            'kyc_steps_completed' => 'array',
-            'privacy_policy_accepted_at' => 'datetime',
-            'terms_accepted_at' => 'datetime',
-            'marketing_consent_at' => 'datetime',
-            'data_retention_consent' => 'boolean',
-            'has_completed_onboarding' => 'boolean',
-            'onboarding_completed_at' => 'datetime',
-            'transaction_pin' => 'hashed',
-            'transaction_pin_enabled' => 'boolean',
-            'mobile_preferences' => 'array',
-            'free_tx_until' => 'datetime',
-            'sponsored_tx_used' => 'integer',
-            'sponsored_tx_limit' => 'integer',
-            'frozen_at' => 'datetime',
-            'send_money_step_up_threshold_override' => 'decimal:2',
+            'email_verified_at'                                => 'datetime',
+            'mobile_verified_at'                               => 'datetime',
+            'password'                                         => 'hashed',
+            'kyc_submitted_at'                                 => 'datetime',
+            'kyc_approved_at'                                  => 'datetime',
+            'kyc_expires_at'                                   => 'datetime',
+            'pep_status'                                       => 'boolean',
+            'kyc_data'                                         => 'encrypted:array',
+            'kyc_steps_completed'                              => 'array',
+            'privacy_policy_accepted_at'                       => 'datetime',
+            'terms_accepted_at'                                => 'datetime',
+            'marketing_consent_at'                             => 'datetime',
+            'data_retention_consent'                           => 'boolean',
+            'has_completed_onboarding'                         => 'boolean',
+            'onboarding_completed_at'                          => 'datetime',
+            'transaction_pin'                                  => 'hashed',
+            'transaction_pin_enabled'                          => 'boolean',
+            'mobile_preferences'                               => 'array',
+            'free_tx_until'                                    => 'datetime',
+            'sponsored_tx_used'                                => 'integer',
+            'sponsored_tx_limit'                               => 'integer',
+            'frozen_at'                                        => 'datetime',
+            'send_money_step_up_threshold_override'            => 'decimal:2',
             'send_money_step_up_threshold_override_updated_at' => 'datetime',
         ];
     }
@@ -328,7 +328,7 @@ class User extends Authenticatable implements FilamentUser
         $this->update(
             [
                 'has_completed_onboarding' => true,
-                'onboarding_completed_at' => now(),
+                'onboarding_completed_at'  => now(),
             ]
         );
     }
@@ -437,18 +437,18 @@ class User extends Authenticatable implements FilamentUser
     public function freeze(string $reason, ?string $frozenBy = null): void
     {
         $this->update([
-            'frozen_at' => now(),
+            'frozen_at'     => now(),
             'frozen_reason' => $reason,
-            'frozen_by' => $frozenBy ?? auth()->user()?->email,
+            'frozen_by'     => $frozenBy ?? auth()->user()?->email,
         ]);
     }
 
     public function unfreeze(): void
     {
         $this->update([
-            'frozen_at' => null,
+            'frozen_at'     => null,
             'frozen_reason' => null,
-            'frozen_by' => null,
+            'frozen_by'     => null,
         ]);
     }
 }

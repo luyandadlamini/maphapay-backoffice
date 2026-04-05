@@ -13,7 +13,8 @@ class PrometheusExporter
 {
     public function __construct(
         private readonly MaphaPayMoneyMovementTelemetry $maphaPayMoneyMovementTelemetry,
-    ) {}
+    ) {
+    }
 
     /**
      * Export metrics in Prometheus format.
@@ -309,19 +310,19 @@ class PrometheusExporter
 
         $output = "# HELP maphapay_money_movement_retries_total Total replayed or retried money-movement operations\n";
         $output .= "# TYPE maphapay_money_movement_retries_total counter\n";
-        $output .= 'maphapay_money_movement_retries_total '.$snapshot['retries_total']."\n";
+        $output .= 'maphapay_money_movement_retries_total ' . $snapshot['retries_total'] . "\n";
 
         $output .= "# HELP maphapay_money_movement_verification_failures_total Total money-movement verification failures\n";
         $output .= "# TYPE maphapay_money_movement_verification_failures_total counter\n";
-        $output .= 'maphapay_money_movement_verification_failures_total '.$snapshot['verification_failures_total']."\n";
+        $output .= 'maphapay_money_movement_verification_failures_total ' . $snapshot['verification_failures_total'] . "\n";
 
         $output .= "# HELP maphapay_money_request_duplicate_acceptance_prevented_total Total duplicate request-acceptance attempts blocked\n";
         $output .= "# TYPE maphapay_money_request_duplicate_acceptance_prevented_total counter\n";
-        $output .= 'maphapay_money_request_duplicate_acceptance_prevented_total '.$snapshot['duplicate_acceptance_prevented_total']."\n";
+        $output .= 'maphapay_money_request_duplicate_acceptance_prevented_total ' . $snapshot['duplicate_acceptance_prevented_total'] . "\n";
 
         $output .= "# HELP maphapay_money_movement_rollout_blocked_total Total requests blocked by rollout flags\n";
         $output .= "# TYPE maphapay_money_movement_rollout_blocked_total counter\n";
-        $output .= 'maphapay_money_movement_rollout_blocked_total '.$snapshot['rollout_blocked_total']."\n";
+        $output .= 'maphapay_money_movement_rollout_blocked_total ' . $snapshot['rollout_blocked_total'] . "\n";
 
         return $output;
     }

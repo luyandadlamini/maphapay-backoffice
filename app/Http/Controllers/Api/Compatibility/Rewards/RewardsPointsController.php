@@ -9,7 +9,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 
 /**
- * GET /api/rewards/points
+ * GET /api/rewards/points.
  *
  * Returns the rewards points balance for the authenticated user.
  */

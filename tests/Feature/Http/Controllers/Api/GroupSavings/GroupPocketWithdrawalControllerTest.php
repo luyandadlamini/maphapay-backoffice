@@ -48,13 +48,13 @@ class GroupPocketWithdrawalControllerTest extends TestCase
 
         ThreadParticipant::create([
             'thread_id' => $thread->id, 'user_id' => $admin->id,
-            'role' => 'admin', 'joined_at' => now(),
+            'role'      => 'admin', 'joined_at' => now(),
         ]);
 
         foreach ($members as $member) {
             ThreadParticipant::create([
                 'thread_id' => $thread->id, 'user_id' => $member->id,
-                'role' => 'member', 'joined_at' => now(),
+                'role'      => 'member', 'joined_at' => now(),
             ]);
         }
 
@@ -93,7 +93,7 @@ class GroupPocketWithdrawalControllerTest extends TestCase
     #[Test]
     public function member_can_request_a_withdrawal(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $member = User::factory()->create();
         $thread = $this->makeGroupThread($admin, [$member]);
         $pocket = $this->makeFundedPocket($thread, $admin);
@@ -116,7 +116,7 @@ class GroupPocketWithdrawalControllerTest extends TestCase
     #[Test]
     public function withdrawal_request_is_rejected_when_pocket_is_locked(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $member = User::factory()->create();
         $thread = $this->makeGroupThread($admin, [$member]);
         $pocket = $this->makeFundedPocket($thread, $admin);
@@ -132,7 +132,7 @@ class GroupPocketWithdrawalControllerTest extends TestCase
     #[Test]
     public function admin_can_approve_withdrawal_request(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $member = User::factory()->create();
         $thread = $this->makeGroupThread($admin, [$member]);
         $pocket = $this->makeFundedPocket($thread, $admin, 1000);
@@ -161,7 +161,7 @@ class GroupPocketWithdrawalControllerTest extends TestCase
     #[Test]
     public function non_admin_cannot_approve_withdrawal(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $member = User::factory()->create();
         $thread = $this->makeGroupThread($admin, [$member]);
         $pocket = $this->makeFundedPocket($thread, $admin);
@@ -182,7 +182,7 @@ class GroupPocketWithdrawalControllerTest extends TestCase
     #[Test]
     public function admin_can_reject_withdrawal_request(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $member = User::factory()->create();
         $thread = $this->makeGroupThread($admin, [$member]);
         $pocket = $this->makeFundedPocket($thread, $admin);

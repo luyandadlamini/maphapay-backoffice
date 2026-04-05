@@ -2,7 +2,6 @@
 
 use App\Models\TeamInvitation;
 
-
 it('extends JetstreamTeamInvitation', function () {
     $reflection = new ReflectionClass(TeamInvitation::class);
     expect($reflection->getParentClass()->getName())->toBe('Laravel\Jetstream\TeamInvitation');

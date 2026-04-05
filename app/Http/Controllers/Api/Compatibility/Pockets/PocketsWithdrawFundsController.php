@@ -27,7 +27,7 @@ class PocketsWithdrawFundsController extends Controller
         $user = $request->user();
         if (! $user) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => ['Unauthenticated'],
             ], 401);
         }
@@ -38,7 +38,7 @@ class PocketsWithdrawFundsController extends Controller
 
         if (! $pocket) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => ['Pocket not found'],
             ], 404);
         }
@@ -46,7 +46,7 @@ class PocketsWithdrawFundsController extends Controller
         $smartRule = $pocket->smartRule;
         if ($smartRule?->lock_pocket) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => ['Pocket is locked. Unlock it first to withdraw funds.'],
             ], 400);
         }
@@ -55,7 +55,7 @@ class PocketsWithdrawFundsController extends Controller
         $withdrawAmountStr = number_format((float) $validated['amount'], 2, '.', '');
         if (bccomp($pocketAmountStr, $withdrawAmountStr, 2) < 0) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => ['Insufficient funds in pocket'],
             ], 400);
         }
@@ -68,15 +68,15 @@ class PocketsWithdrawFundsController extends Controller
             );
         } catch (InvalidArgumentException $e) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => [$e->getMessage()],
             ], 400);
         }
 
         return response()->json([
-            'status' => 'success',
+            'status'  => 'success',
             'message' => ['Funds withdrawn successfully'],
-            'data' => [
+            'data'    => [
                 'pocket' => $this->formatPocket($pocket),
             ],
         ]);
@@ -90,27 +90,27 @@ class PocketsWithdrawFundsController extends Controller
         $smartRule = $pocket->smartRule;
 
         return [
-            'id' => $pocket->uuid,
-            'user_id' => $pocket->user_uuid,
-            'name' => $pocket->name,
-            'target_amount' => number_format((float) $pocket->target_amount, 2, '.', ''),
+            'id'             => $pocket->uuid,
+            'user_id'        => $pocket->user_uuid,
+            'name'           => $pocket->name,
+            'target_amount'  => number_format((float) $pocket->target_amount, 2, '.', ''),
             'current_amount' => number_format((float) $pocket->current_amount, 2, '.', ''),
-            'target_date' => $pocket->target_date?->format('Y-m-d') ?? '2027-12-31',
-            'category' => $pocket->category,
-            'color' => $pocket->color,
-            'is_completed' => $pocket->is_completed,
-            'smart_rules' => $smartRule ? [
-                'id' => (string) $smartRule->id,
-                'pocket_id' => (string) $pocket->uuid,
-                'round_up_change' => $smartRule->round_up_change,
+            'target_date'    => $pocket->target_date?->format('Y-m-d') ?? '2027-12-31',
+            'category'       => $pocket->category,
+            'color'          => $pocket->color,
+            'is_completed'   => $pocket->is_completed,
+            'smart_rules'    => $smartRule ? [
+                'id'                 => (string) $smartRule->id,
+                'pocket_id'          => (string) $pocket->uuid,
+                'round_up_change'    => $smartRule->round_up_change,
                 'auto_save_deposits' => $smartRule->auto_save_deposits,
-                'auto_save_salary' => $smartRule->auto_save_salary,
-                'lock_pocket' => $smartRule->lock_pocket,
+                'auto_save_salary'   => $smartRule->auto_save_salary,
+                'lock_pocket'        => $smartRule->lock_pocket,
             ] : [
-                'round_up_change' => false,
+                'round_up_change'    => false,
                 'auto_save_deposits' => false,
-                'auto_save_salary' => false,
-                'lock_pocket' => false,
+                'auto_save_salary'   => false,
+                'lock_pocket'        => false,
             ],
         ];
     }

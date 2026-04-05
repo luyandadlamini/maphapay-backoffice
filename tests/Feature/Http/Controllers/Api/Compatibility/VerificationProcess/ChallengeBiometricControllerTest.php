@@ -9,8 +9,8 @@ use App\Domain\AuthorizedTransaction\Models\AuthorizedTransactionBiometricChalle
 use App\Domain\AuthorizedTransaction\Services\AuthorizedTransactionBiometricService;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
+use Mockery;
 use PHPUnit\Framework\Attributes\Test;
-use RuntimeException;
 use Tests\ControllerTestCase;
 
 class ChallengeBiometricControllerTest extends ControllerTestCase
@@ -30,23 +30,23 @@ class ChallengeBiometricControllerTest extends ControllerTestCase
         $user = User::factory()->create();
 
         $challenge = new AuthorizedTransactionBiometricChallenge([
-            'challenge' => str_repeat('a', 64),
+            'challenge'  => str_repeat('a', 64),
             'expires_at' => now()->addMinutes(5),
         ]);
 
         $this->mock(AuthorizedTransactionBiometricService::class, function ($mock) use ($user, $challenge): void {
             $mock->shouldReceive('issueChallengeForUser')
                 ->once()
-                ->with('TRX-BIO-1', $user->id, 'device-1', 'send_money', \Mockery::type('string'))
+                ->with('TRX-BIO-1', $user->id, 'device-1', 'send_money', Mockery::type('string'))
                 ->andReturn($challenge);
         });
 
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
 
         $response = $this->postJson(self::ROUTE, [
-            'trx' => 'TRX-BIO-1',
+            'trx'       => 'TRX-BIO-1',
             'device_id' => 'device-1',
-            'remark' => 'send_money',
+            'remark'    => 'send_money',
         ]);
 
         $response->assertOk()
@@ -65,23 +65,23 @@ class ChallengeBiometricControllerTest extends ControllerTestCase
         $this->mock(AuthorizedTransactionBiometricService::class, function ($mock) use ($user): void {
             $mock->shouldReceive('issueChallengeForUser')
                 ->once()
-                ->with('TRX-MISSING', $user->id, 'device-1', null, \Mockery::type('string'))
+                ->with('TRX-MISSING', $user->id, 'device-1', null, Mockery::type('string'))
                 ->andThrow(new TransactionNotFoundException('Transaction not found.'));
         });
 
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
 
         $response = $this->postJson(self::ROUTE, [
-            'trx' => 'TRX-MISSING',
+            'trx'       => 'TRX-MISSING',
             'device_id' => 'device-1',
         ]);
 
         $response->assertNotFound()
             ->assertExactJson([
-                'status' => 'error',
-                'remark' => 'biometric_challenge',
+                'status'  => 'error',
+                'remark'  => 'biometric_challenge',
                 'message' => ['Transaction not found.'],
-                'data' => null,
+                'data'    => null,
             ]);
     }
 
@@ -98,10 +98,10 @@ class ChallengeBiometricControllerTest extends ControllerTestCase
 
         $response->assertStatus(422)
             ->assertExactJson([
-                'status' => 'error',
-                'remark' => 'biometric_challenge',
+                'status'  => 'error',
+                'remark'  => 'biometric_challenge',
                 'message' => ['The device id field is required.'],
-                'data' => null,
+                'data'    => null,
             ]);
     }
 }

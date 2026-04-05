@@ -6,6 +6,7 @@ use App\Domain\Account\Services\AccountService;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class CreateUserAccountsCommand extends Command
 {
@@ -75,7 +76,7 @@ class CreateUserAccountsCommand extends Command
             ]);
 
             return 0;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->error("Failed to create account: {$e->getMessage()}");
             Log::error('Failed to create account via CLI', [
                 'user_uuid' => $user->uuid,
@@ -124,13 +125,13 @@ class CreateUserAccountsCommand extends Command
                 ]);
 
                 $success++;
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $this->error("  ❌ Failed: {$e->getMessage()}");
 
                 Log::error('Failed to create account via CLI (batch)', [
-                    'user_uuid' => $user->uuid,
+                    'user_uuid'  => $user->uuid,
                     'user_email' => $user->email,
-                    'error'     => $e->getMessage(),
+                    'error'      => $e->getMessage(),
                 ]);
 
                 $failed++;

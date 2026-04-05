@@ -7,7 +7,6 @@ use App\Domain\Monitoring\Services\MetricsCollector;
 use App\Domain\Monitoring\Services\PrometheusExporter;
 use Illuminate\Support\Facades\Cache;
 
-
 beforeEach(function () {
     // Clear only monitoring-related cache keys to avoid conflicts in parallel tests
     $keysToForget = [

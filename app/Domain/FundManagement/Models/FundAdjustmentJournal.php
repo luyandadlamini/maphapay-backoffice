@@ -35,22 +35,30 @@ class FundAdjustmentJournal extends Model
 
     protected $casts = [
         'adjustment_amount' => 'integer',
-        'performed_at' => 'datetime',
-        'approved_at' => 'datetime',
+        'performed_at'      => 'datetime',
+        'approved_at'       => 'datetime',
     ];
 
     public const TYPE_CREDIT = 'credit';
+
     public const TYPE_DEBIT = 'debit';
 
     public const REASON_ERROR = 'error';
+
     public const REASON_GOODWILL = 'goodwill';
+
     public const REASON_REGULATORY = 'regulatory';
+
     public const REASON_REFUND = 'refund';
+
     public const REASON_OTHER = 'other';
 
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_COMPLETED = 'completed';
+
     public const STATUS_FAILED = 'failed';
+
     public const STATUS_REVERSED = 'reversed';
 
     public function account(): BelongsTo

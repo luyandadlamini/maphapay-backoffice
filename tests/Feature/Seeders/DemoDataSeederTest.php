@@ -10,7 +10,6 @@ use App\Models\User;
 use Database\Seeders\DemoDataSeeder;
 use Illuminate\Support\Facades\Hash;
 
-
 beforeEach(function () {
     // Seed the database with base data
     $this->seed();

@@ -12,7 +12,8 @@ class PaymentLinkController extends Controller
 {
     public function __construct(
         private readonly PaymentLinkService $paymentLinkService,
-    ) {}
+    ) {
+    }
 
     /**
      * Validate payment token and return link data (unauthenticated).
@@ -23,14 +24,14 @@ class PaymentLinkController extends Controller
 
         if (! $data) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => ['Payment link not found or expired'],
             ], 404);
         }
 
         return response()->json([
             'status' => 'success',
-            'data' => $data,
+            'data'   => $data,
         ]);
     }
 }

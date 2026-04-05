@@ -6,7 +6,6 @@ use App\Domain\Batch\Models\BatchJob;
 use App\Models\User;
 use Illuminate\Support\Str;
 
-
 describe('GraphQL Batch API', function () {
     it('returns unauthorized without authentication', function () {
         $response = $this->postJson('/graphql', [

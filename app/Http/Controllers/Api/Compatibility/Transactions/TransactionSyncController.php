@@ -28,10 +28,10 @@ class TransactionSyncController extends Controller
 
         if ($account === null) {
             return response()->json([
-                'status' => 'success',
-                'remark' => 'transactions_sync',
-                'items' => [],
-                'deleted_ids' => [],
+                'status'          => 'success',
+                'remark'          => 'transactions_sync',
+                'items'           => [],
+                'deleted_ids'     => [],
                 'next_sync_token' => $this->nextSyncToken([]),
             ]);
         }
@@ -48,10 +48,10 @@ class TransactionSyncController extends Controller
         $transactions = $query->get();
 
         return response()->json([
-            'status' => 'success',
-            'remark' => 'transactions_sync',
-            'items' => $transactions->map(fn (TransactionProjection $tx): array => $this->formatTransaction($tx))->values()->all(),
-            'deleted_ids' => [],
+            'status'          => 'success',
+            'remark'          => 'transactions_sync',
+            'items'           => $transactions->map(fn (TransactionProjection $tx): array => $this->formatTransaction($tx))->values()->all(),
+            'deleted_ids'     => [],
             'next_sync_token' => $this->nextSyncToken(
                 TransactionProjection::query()
                     ->where('account_uuid', $account->uuid)
@@ -76,24 +76,24 @@ class TransactionSyncController extends Controller
         );
 
         return [
-            'id' => $tx->uuid,
-            'reference' => $tx->reference,
-            'description' => $tx->description,
-            'display' => $display,
-            'amount' => $tx->formatted_amount,
-            'type' => $tx->type,
-            'subtype' => $tx->subtype,
-            'asset_code' => $tx->asset_code,
-            'direction' => $classification['direction'],
-            'analytics_bucket' => $classification['analytics_bucket'],
-            'budget_eligible' => $classification['budget_eligible'],
-            'source_domain' => $classification['source_domain'],
-            'category_slug' => $classification['category_slug'],
-            'category_label' => $classification['category_label'],
-            'category_source' => $classification['category_source'],
+            'id'                => $tx->uuid,
+            'reference'         => $tx->reference,
+            'description'       => $tx->description,
+            'display'           => $display,
+            'amount'            => $tx->formatted_amount,
+            'type'              => $tx->type,
+            'subtype'           => $tx->subtype,
+            'asset_code'        => $tx->asset_code,
+            'direction'         => $classification['direction'],
+            'analytics_bucket'  => $classification['analytics_bucket'],
+            'budget_eligible'   => $classification['budget_eligible'],
+            'source_domain'     => $classification['source_domain'],
+            'category_slug'     => $classification['category_slug'],
+            'category_label'    => $classification['category_label'],
+            'category_source'   => $classification['category_source'],
             'editable_category' => $classification['editable_category'],
-            'created_at' => $tx->created_at?->toIso8601String(),
-            'updated_at' => $tx->updated_at?->toIso8601String(),
+            'created_at'        => $tx->created_at?->toIso8601String(),
+            'updated_at'        => $tx->updated_at?->toIso8601String(),
         ];
     }
 }

@@ -54,7 +54,7 @@ class ThreadPaymentController extends Controller
                 $moneyRequest->update(['status' => MoneyRequest::STATUS_FULFILLED]);
 
                 $requestMessage = Message::whereRaw(
-                    "JSON_UNQUOTE(JSON_EXTRACT(payload, ?)) = ?",
+                    'JSON_UNQUOTE(JSON_EXTRACT(payload, ?)) = ?',
                     [self::MONEY_REQUEST_ID_JSON_PATH, $moneyRequest->id],
                 )->first();
                 if ($requestMessage !== null && is_array($requestMessage->payload)) {

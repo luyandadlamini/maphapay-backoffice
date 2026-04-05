@@ -12,8 +12,8 @@ beforeEach(function (): void {
     Asset::firstOrCreate(
         ['code' => 'SZL'],
         [
-            'name' => 'Swazi Lilangeni',
-            'type' => 'fiat',
+            'name'      => 'Swazi Lilangeni',
+            'type'      => 'fiat',
             'precision' => 2,
             'is_active' => true,
         ],
@@ -25,21 +25,21 @@ test('money movement inspector resolves a transaction by trx', function (): void
 
     $txn = AuthorizedTransaction::query()->create([
         'user_id' => $user->id,
-        'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-        'trx' => 'TRX-INSPECT-0001',
+        'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+        'trx'     => 'TRX-INSPECT-0001',
         'payload' => [
-            'amount' => '10.00',
+            'amount'     => '10.00',
             'asset_code' => 'SZL',
         ],
         'status' => AuthorizedTransaction::STATUS_COMPLETED,
         'result' => [
-            'trx' => 'TRX-INSPECT-0001',
-            'reference' => 'REF-INSPECT-0001',
-            'amount' => '10.00',
+            'trx'        => 'TRX-INSPECT-0001',
+            'reference'  => 'REF-INSPECT-0001',
+            'amount'     => '10.00',
             'asset_code' => 'SZL',
         ],
         'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
-        'expires_at' => now()->addHour(),
+        'expires_at'        => now()->addHour(),
     ]);
 
     Livewire::test(MoneyMovementInspector::class)

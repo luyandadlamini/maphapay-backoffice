@@ -42,7 +42,7 @@ class BillSplitUpdated implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
-            'friendId' => (string) $this->friendId,
+            'friendId'  => (string) $this->friendId,
             'messageId' => $this->messageId,
         ];
     }

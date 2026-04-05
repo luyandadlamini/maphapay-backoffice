@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\Account\Models\Account;
 use App\Models\User;
 
-
 describe('GraphQL Core Domain Mutations', function () {
     it('freezes an account via mutation', function () {
         $user = User::factory()->create();

@@ -7,7 +7,6 @@ use App\Domain\Wallet\Models\MultiSigWallet;
 use App\GraphQL\DataLoaders\AccountDataLoader;
 use App\GraphQL\DataLoaders\WalletDataLoader;
 
-
 describe('GraphQL DataLoaders', function () {
     it('batch loads accounts by id', function () {
         $accounts = Account::factory()->count(3)->create();

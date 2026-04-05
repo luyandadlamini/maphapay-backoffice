@@ -3,7 +3,6 @@
 use App\Domain\Banking\Models\UserBankPreference;
 use App\Models\User;
 
-
 test('user can have bank preferences', function () {
     $user = User::factory()->create();
 

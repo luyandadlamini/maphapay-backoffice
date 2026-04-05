@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\Basket\Models\BasketAsset;
 use App\Models\User;
 
-
 describe('GraphQL Basket API', function () {
     it('returns unauthorized without authentication', function () {
         $response = $this->postJson('/graphql', [

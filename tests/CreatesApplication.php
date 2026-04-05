@@ -23,9 +23,9 @@ trait CreatesApplication
         }
 
         $paths = [
-            'APP_CONFIG_CACHE' => $cacheDir . DIRECTORY_SEPARATOR . 'config.php',
-            'APP_ROUTES_CACHE' => $cacheDir . DIRECTORY_SEPARATOR . 'routes.php',
-            'APP_EVENTS_CACHE' => $cacheDir . DIRECTORY_SEPARATOR . 'events.php',
+            'APP_CONFIG_CACHE'   => $cacheDir . DIRECTORY_SEPARATOR . 'config.php',
+            'APP_ROUTES_CACHE'   => $cacheDir . DIRECTORY_SEPARATOR . 'routes.php',
+            'APP_EVENTS_CACHE'   => $cacheDir . DIRECTORY_SEPARATOR . 'events.php',
             'APP_PACKAGES_CACHE' => $cacheDir . DIRECTORY_SEPARATOR . 'packages.php',
             'APP_SERVICES_CACHE' => $cacheDir . DIRECTORY_SEPARATOR . 'services.php',
         ];

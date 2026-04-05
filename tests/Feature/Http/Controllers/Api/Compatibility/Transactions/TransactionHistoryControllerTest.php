@@ -304,9 +304,9 @@ class TransactionHistoryControllerTest extends ControllerTestCase
                 'display' => [
                     'counterparty_name' => 'Lihle',
                     'counterparty_role' => 'recipient',
-                    'title' => 'Sent to Lihle',
-                    'subtitle' => 'Peer transfer',
-                    'note_preview' => 'Lunch money',
+                    'title'             => 'Sent to Lihle',
+                    'subtitle'          => 'Peer transfer',
+                    'note_preview'      => 'Lunch money',
                     'reference_visible' => false,
                 ],
             ],
@@ -317,11 +317,11 @@ class TransactionHistoryControllerTest extends ControllerTestCase
         $row = $this->getJson(self::ROUTE)->assertOk()->json('data.transactions.data.0');
 
         $this->assertSame([
-            'title' => 'Sent to Lihle',
-            'subtitle' => 'Peer transfer',
+            'title'             => 'Sent to Lihle',
+            'subtitle'          => 'Peer transfer',
             'counterparty_name' => 'Lihle',
             'counterparty_role' => 'recipient',
-            'note_preview' => 'Lunch money',
+            'note_preview'      => 'Lunch money',
             'reference_visible' => false,
         ], $row['display']);
     }
@@ -343,9 +343,9 @@ class TransactionHistoryControllerTest extends ControllerTestCase
                 'display' => [
                     'counterparty_name' => 'Lihle',
                     'counterparty_role' => 'recipient',
-                    'title' => 'Sent to Lihle',
-                    'subtitle' => 'Peer transfer',
-                    'note_preview' => 'Lunch money',
+                    'title'             => 'Sent to Lihle',
+                    'subtitle'          => 'Peer transfer',
+                    'note_preview'      => 'Lunch money',
                     'reference_visible' => false,
                 ],
             ],
@@ -418,8 +418,8 @@ class TransactionHistoryControllerTest extends ControllerTestCase
             'description'  => 'Savings pocket: Holiday',
             'status'       => 'completed',
             'metadata'     => [
-                'source' => 'pocket_transfer',
-                'direction' => 'to_pocket',
+                'source'      => 'pocket_transfer',
+                'direction'   => 'to_pocket',
                 'pocket_uuid' => 'pocket-123',
             ],
         ]);

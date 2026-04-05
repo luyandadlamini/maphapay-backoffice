@@ -94,11 +94,11 @@ class TransactionProjection extends Model
     ];
 
     protected $casts = [
-        'amount'     => 'integer',
+        'amount'          => 'integer',
         'budget_eligible' => 'boolean',
-        'metadata'   => 'array',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'metadata'        => 'array',
+        'created_at'      => 'datetime',
+        'updated_at'      => 'datetime',
     ];
 
     /**

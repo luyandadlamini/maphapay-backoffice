@@ -26,6 +26,7 @@ class UnblockIp extends Command
 
         if (! filter_var($ip, FILTER_VALIDATE_IP)) {
             $this->error("Invalid IP address: {$ip}");
+
             return self::FAILURE;
         }
 

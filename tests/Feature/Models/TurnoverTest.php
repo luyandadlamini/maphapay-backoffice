@@ -4,7 +4,6 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\Turnover;
 use Illuminate\Support\Carbon;
 
-
 it('can create a turnover record', function () {
     $account = Account::factory()->create();
     $date = Carbon::now()->toDateString();

@@ -7,7 +7,6 @@ use App\Domain\Compliance\Models\ComplianceCase;
 use App\Domain\Compliance\Models\KycVerification;
 use App\Models\User;
 
-
 describe('GraphQL Compliance API', function () {
     it('paginates kyc verifications', function () {
         $user = User::factory()->create();

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Models\User;
 
-
 describe('GraphQL TrustCert API', function () {
     it('rejects unauthenticated certificate queries', function () {
         $response = $this->postJson('/graphql', [

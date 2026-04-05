@@ -19,18 +19,18 @@ class VirtualCardCancelController extends Controller
 
         if (! $card || ($card->metadata['user_id'] ?? null) !== $user->uuid) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => ['Virtual card not found'],
-                'data' => null,
+                'data'    => null,
             ], 404);
         }
 
         $cardService->cancelCard($id, 'User requested cancellation');
 
         return response()->json([
-            'status' => 'success',
+            'status'  => 'success',
             'message' => 'Virtual card cancelled successfully',
-            'data' => [
+            'data'    => [
                 'card_id' => $id,
             ],
         ]);

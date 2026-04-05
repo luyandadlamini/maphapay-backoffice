@@ -35,10 +35,10 @@ class VerifyOtpControllerTest extends ControllerTestCase
     private function makePendingTransaction(User $user): AuthorizedTransaction
     {
         return AuthorizedTransaction::create([
-            'user_id'           => $user->id,
-            'remark'            => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx'               => 'TRX-OTPTEST-' . Str::upper((string) Str::ulid()),
-            'payload'           => [
+            'user_id' => $user->id,
+            'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'     => 'TRX-OTPTEST-' . Str::upper((string) Str::ulid()),
+            'payload' => [
                 'from_account_uuid' => '00000000-0000-0000-0000-000000000001',
                 'to_account_uuid'   => '00000000-0000-0000-0000-000000000002',
                 'amount'            => '10.00',
@@ -64,10 +64,10 @@ class VerifyOtpControllerTest extends ControllerTestCase
                 ->with($txn->trx, $txn->user_id, self::OTP)
                 ->andReturnUsing(function () use ($txn): array {
                     $result = [
-                        'trx' => $txn->trx,
-                        'amount' => '10.00',
+                        'trx'        => $txn->trx,
+                        'amount'     => '10.00',
                         'asset_code' => 'SZL',
-                        'reference' => 'mock-transfer-id',
+                        'reference'  => 'mock-transfer-id',
                     ];
 
                     $txn->forceFill([
@@ -138,7 +138,7 @@ class VerifyOtpControllerTest extends ControllerTestCase
                 ->with('TRX-OTPEXPIRED1', $txn->user_id, self::OTP)
                 ->andReturnUsing(function () use ($txn): never {
                     $txn->forceFill([
-                        'status' => AuthorizedTransaction::STATUS_EXPIRED,
+                        'status'         => AuthorizedTransaction::STATUS_EXPIRED,
                         'failure_reason' => 'OTP has expired. Please request a new one.',
                     ])->save();
 
@@ -162,9 +162,9 @@ class VerifyOtpControllerTest extends ControllerTestCase
             ]);
 
         $this->assertDatabaseHas('authorized_transactions', [
-            'id'            => $txn->id,
-            'status'        => AuthorizedTransaction::STATUS_EXPIRED,
-            'failure_reason'=> 'OTP has expired. Please request a new one.',
+            'id'             => $txn->id,
+            'status'         => AuthorizedTransaction::STATUS_EXPIRED,
+            'failure_reason' => 'OTP has expired. Please request a new one.',
         ]);
     }
 
@@ -208,8 +208,8 @@ class VerifyOtpControllerTest extends ControllerTestCase
                     $attempt++;
                     $txn->forceFill([
                         'verification_failures' => $attempt,
-                        'status' => $attempt >= 5 ? AuthorizedTransaction::STATUS_FAILED : AuthorizedTransaction::STATUS_PENDING,
-                        'failure_reason' => $attempt >= 5 ? 'Verification attempt limit exceeded.' : 'Invalid OTP.',
+                        'status'                => $attempt >= 5 ? AuthorizedTransaction::STATUS_FAILED : AuthorizedTransaction::STATUS_PENDING,
+                        'failure_reason'        => $attempt >= 5 ? 'Verification attempt limit exceeded.' : 'Invalid OTP.',
                     ])->save();
 
                     throw new RuntimeException(
@@ -255,17 +255,17 @@ class VerifyOtpControllerTest extends ControllerTestCase
         Sanctum::actingAs($user, ['read', 'write', 'delete']);
 
         $response = $this->postJson(self::ROUTE, [
-            'trx' => $txn->trx,
-            'otp' => '123',
+            'trx'    => $txn->trx,
+            'otp'    => '123',
             'remark' => 'send_money',
         ]);
 
         $response->assertStatus(422)
             ->assertExactJson([
-                'status' => 'error',
-                'remark' => 'send_money',
+                'status'  => 'error',
+                'remark'  => 'send_money',
                 'message' => ['The otp field must be 6 digits.'],
-                'data' => null,
+                'data'    => null,
             ]);
     }
 }

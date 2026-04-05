@@ -16,7 +16,8 @@ class TransactionInspectorTool extends Tool
 {
     public function __construct(
         private readonly MoneyMovementTransactionInspector $inspector,
-    ) {}
+    ) {
+    }
 
     public function handle(Request $request): Response
     {

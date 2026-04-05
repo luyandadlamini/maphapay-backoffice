@@ -30,7 +30,7 @@ class MoneyMovementInspector extends Page
     public function mount(): void
     {
         $this->form->fill([
-            'lookupType' => 'trx',
+            'lookupType'  => 'trx',
             'lookupValue' => '',
         ]);
     }
@@ -45,7 +45,7 @@ class MoneyMovementInspector extends Page
                         Forms\Components\Select::make('lookupType')
                             ->label('Lookup by')
                             ->options([
-                                'trx' => 'TRX',
+                                'trx'       => 'TRX',
                                 'reference' => 'Reference',
                             ])
                             ->required()

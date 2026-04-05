@@ -11,7 +11,6 @@ use App\Models\User;
 use Database\Seeders\DemoDataSeeder;
 use Database\Seeders\MobileRewardsDemoSeeder;
 
-
 beforeEach(function () {
     // Base seeders (includes RewardsSeeder for quests + shop items)
     $this->seed();

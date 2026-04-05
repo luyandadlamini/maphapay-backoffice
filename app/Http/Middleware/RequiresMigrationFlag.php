@@ -21,7 +21,8 @@ class RequiresMigrationFlag
 {
     public function __construct(
         private readonly MaphaPayMoneyMovementTelemetry $telemetry,
-    ) {}
+    ) {
+    }
 
     public function handle(Request $request, Closure $next, string $flag): Response
     {

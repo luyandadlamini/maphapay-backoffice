@@ -89,7 +89,7 @@ class SocialTypingControllerTest extends ControllerTestCase
 
         $this->postJson('/api/social-money/send', [
             'friendId' => $peer->id,
-            'text' => 'hello there',
+            'text'     => 'hello there',
         ])->assertOk();
 
         Event::assertDispatched(ChatMessageSent::class, function (ChatMessageSent $event) use ($sender, $peer): bool {
@@ -114,16 +114,16 @@ class SocialTypingControllerTest extends ControllerTestCase
     {
         DB::table('friendships')->insert([
             [
-                'user_id' => $a,
-                'friend_id' => $b,
-                'status' => 'accepted',
+                'user_id'    => $a,
+                'friend_id'  => $b,
+                'status'     => 'accepted',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'user_id' => $b,
-                'friend_id' => $a,
-                'status' => 'accepted',
+                'user_id'    => $b,
+                'friend_id'  => $a,
+                'status'     => 'accepted',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

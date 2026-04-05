@@ -14,17 +14,17 @@ return [
     */
 
     'uuid' => [
-        'system' => env('SYSTEM_USER_UUID'),
+        'system'   => env('SYSTEM_USER_UUID'),
         'suspense' => env('SUSPENSE_USER_UUID'),
         'treasury' => env('TREASURY_USER_UUID'),
-        'pool' => env('POOL_USER_UUID'),
+        'pool'     => env('POOL_USER_UUID'),
     ],
 
     'email' => [
-        'system' => 'system@maphapay.com',
+        'system'   => 'system@maphapay.com',
         'suspense' => 'suspense@maphapay.com',
         'treasury' => 'treasury@maphapay.com',
-        'pool' => 'pool@maphapay.com',
+        'pool'     => 'pool@maphapay.com',
     ],
 
 ];

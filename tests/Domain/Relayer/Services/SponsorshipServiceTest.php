@@ -10,7 +10,6 @@ use Tests\TestCase;
 
 class SponsorshipServiceTest extends TestCase
 {
-
     private SponsorshipService $service;
 
     protected User $user;

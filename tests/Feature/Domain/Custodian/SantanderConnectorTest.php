@@ -5,7 +5,6 @@ use App\Domain\Custodian\Connectors\SantanderConnector;
 use App\Domain\Custodian\ValueObjects\TransferRequest;
 use Illuminate\Support\Facades\Http;
 
-
 beforeEach(function () {
     // Mock successful OAuth response
     Http::fake([

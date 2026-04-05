@@ -124,8 +124,8 @@ class UserProfileController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Transaction PIN settings updated.',
-            'data' => [
-                'transaction_pin_set' => $user->fresh()?->transaction_pin_set ?? $user->transaction_pin_set,
+            'data'    => [
+                'transaction_pin_set'     => $user->fresh()?->transaction_pin_set ?? $user->transaction_pin_set,
                 'transaction_pin_enabled' => $user->fresh()?->transaction_pin_enabled ?? $user->transaction_pin_enabled,
             ],
         ]);

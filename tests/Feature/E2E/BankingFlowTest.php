@@ -8,7 +8,6 @@ use App\Domain\Asset\Models\Asset;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 
-
 beforeEach(function () {
     Asset::updateOrCreate(
         ['code' => 'USD'],

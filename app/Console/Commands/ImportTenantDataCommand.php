@@ -530,7 +530,7 @@ class ImportTenantDataCommand extends Command
     {
         return match ($table) {
             'transfers' => 'asset_transfers',
-            default => $table,
+            default     => $table,
         };
     }
 }

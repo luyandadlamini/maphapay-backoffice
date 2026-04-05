@@ -4,7 +4,6 @@ use App\Domain\Account\Services\BankAllocationService;
 use App\Domain\Banking\Models\UserBankPreference;
 use App\Models\User;
 
-
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->service = app(BankAllocationService::class);

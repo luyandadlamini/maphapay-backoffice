@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
- * POST /api/social-money/friend-requests
+ * POST /api/social-money/friend-requests.
  *
  * Compatibility endpoint for mobile Add Friend action.
  */
@@ -30,8 +30,8 @@ class SocialFriendRequestStoreController extends Controller
 
         if ($senderId === $recipientId) {
             return response()->json([
-                'status' => 'error',
-                'remark' => 'social_friend_request',
+                'status'  => 'error',
+                'remark'  => 'social_friend_request',
                 'message' => ['You cannot add yourself.'],
             ], 422);
         }
@@ -47,7 +47,7 @@ class SocialFriendRequestStoreController extends Controller
             if ($alreadyFriends) {
                 return [
                     'requestId' => null,
-                    'accepted' => true,
+                    'accepted'  => true,
                 ];
             }
 
@@ -62,23 +62,23 @@ class SocialFriendRequestStoreController extends Controller
                 DB::table('friend_requests')
                     ->where('id', $incoming->id)
                     ->update([
-                        'status' => 'accepted',
+                        'status'     => 'accepted',
                         'updated_at' => now(),
                     ]);
 
                 DB::table('friendships')->upsert(
                     [
                         [
-                            'user_id' => $senderId,
-                            'friend_id' => $recipientId,
-                            'status' => 'accepted',
+                            'user_id'    => $senderId,
+                            'friend_id'  => $recipientId,
+                            'status'     => 'accepted',
                             'created_at' => now(),
                             'updated_at' => now(),
                         ],
                         [
-                            'user_id' => $recipientId,
-                            'friend_id' => $senderId,
-                            'status' => 'accepted',
+                            'user_id'    => $recipientId,
+                            'friend_id'  => $senderId,
+                            'status'     => 'accepted',
                             'created_at' => now(),
                             'updated_at' => now(),
                         ],
@@ -89,17 +89,17 @@ class SocialFriendRequestStoreController extends Controller
 
                 return [
                     'requestId' => (string) $incoming->id,
-                    'accepted' => true,
+                    'accepted'  => true,
                 ];
             }
 
             DB::table('friend_requests')->upsert(
                 [
-                    'sender_id' => $senderId,
+                    'sender_id'    => $senderId,
                     'recipient_id' => $recipientId,
-                    'status' => 'pending',
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'status'       => 'pending',
+                    'created_at'   => now(),
+                    'updated_at'   => now(),
                 ],
                 ['sender_id', 'recipient_id'],
                 ['status', 'updated_at'],
@@ -112,15 +112,14 @@ class SocialFriendRequestStoreController extends Controller
 
             return [
                 'requestId' => $requestId !== null ? (string) $requestId : null,
-                'accepted' => false,
+                'accepted'  => false,
             ];
         });
 
         return response()->json([
             'status' => 'success',
             'remark' => 'social_friend_request',
-            'data' => $payload,
+            'data'   => $payload,
         ]);
     }
 }
-

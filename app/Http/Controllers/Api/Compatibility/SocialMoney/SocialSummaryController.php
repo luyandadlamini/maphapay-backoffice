@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
- * GET /api/social-money/summary
+ * GET /api/social-money/summary.
  *
  * Returns the social money hub summary for the authenticated user.
  * Friends count, threads, pending requests, and unread messages.
@@ -33,17 +33,17 @@ class SocialSummaryController extends Controller
             'status' => 'success',
             'data'   => [
                 // Expected by RN `SocialSummary` normalizer.
-                'youOweTotal' => 0,
-                'owedToYouTotal' => 0,
+                'youOweTotal'       => 0,
+                'owedToYouTotal'    => 0,
                 'activeSplitsCount' => 0,
-                'topSplits' => [],
-                'settleTarget' => null,
-                'remindTargets' => [],
+                'topSplits'         => [],
+                'settleTarget'      => null,
+                'remindTargets'     => [],
                 // Backward-compatible extra counters.
-                'friends_count' => $friendsCount,
-                'threads_count' => $friendsCount,
+                'friends_count'    => $friendsCount,
+                'threads_count'    => $friendsCount,
                 'pending_requests' => $pendingIncoming,
-                'unread_messages' => 0,
+                'unread_messages'  => 0,
             ],
         ]);
     }

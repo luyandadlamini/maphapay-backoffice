@@ -43,6 +43,7 @@ class DefaultUserResourceProvisioningService
                 $account->account_number = Account::generateAccountNumber();
                 $account->save();
             }
+
             return;
         }
 

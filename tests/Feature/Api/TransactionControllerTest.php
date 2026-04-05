@@ -8,7 +8,6 @@ use App\Domain\Asset\Models\Asset;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 
-
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->account = Account::factory()->create(['user_uuid' => $this->user->uuid]);

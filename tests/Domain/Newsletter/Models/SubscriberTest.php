@@ -9,7 +9,6 @@ use Tests\TestCase;
 
 class SubscriberTest extends TestCase
 {
-
     /** @param array<string, mixed> $overrides */
     private function createSubscriber(array $overrides = []): Subscriber
     {

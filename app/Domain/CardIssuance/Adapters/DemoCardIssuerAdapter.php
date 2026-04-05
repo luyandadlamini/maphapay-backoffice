@@ -52,10 +52,10 @@ class DemoCardIssuerAdapter implements CardIssuerInterface
 
     /** @var array{contactless: bool, online_transactions: bool, international: bool, atm_withdrawals: bool} */
     private const DEFAULT_SECURITY = [
-        'contactless'        => true,
+        'contactless'         => true,
         'online_transactions' => true,
-        'international'      => false,
-        'atm_withdrawals'    => true,
+        'international'       => false,
+        'atm_withdrawals'     => true,
     ];
 
     public function getName(): string
@@ -85,8 +85,8 @@ class DemoCardIssuerAdapter implements CardIssuerInterface
             cardholderName: $cardholderName,
             expiresAt: $expiresAt,
             metadata: array_merge($metadata, [
-                'user_id'  => $userId,
-                'label'    => $label,
+                'user_id'   => $userId,
+                'label'     => $label,
                 'lifecycle' => $metadata['lifecycle'] ?? 'standard',
             ]),
             label: $label,

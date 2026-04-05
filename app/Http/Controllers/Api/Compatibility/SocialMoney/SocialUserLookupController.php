@@ -11,7 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * GET /api/social-money/user-lookup/{query}
+ * GET /api/social-money/user-lookup/{query}.
  *
  * Social add-friend lookup endpoint.
  * Accepts username, national mobile digits, or +268 prefixed mobile input.
@@ -36,10 +36,10 @@ class SocialUserLookupController extends Controller
         $e164 = null;
         if (str_starts_with($digits, '268') && strlen($digits) > 8) {
             $national = substr($digits, 3);
-            $e164 = '+268'.$national;
+            $e164 = '+268' . $national;
         } elseif (str_starts_with($raw, '+') && str_starts_with($digits, '268') && strlen($digits) > 8) {
             $national = substr($digits, 3);
-            $e164 = '+268'.$national;
+            $e164 = '+268' . $national;
         }
 
         $peer = User::query()
@@ -67,17 +67,16 @@ class SocialUserLookupController extends Controller
             'remark' => 'social_user_lookup',
             'data'   => [
                 'user' => $peer ? [
-                    'id' => $peer->id,
-                    'username' => $peer->username,
+                    'id'        => $peer->id,
+                    'username'  => $peer->username,
                     'firstname' => $peer->name ? explode(' ', trim($peer->name), 2)[0] : null,
-                    'lastname' => $peer->name && str_contains(trim($peer->name), ' ')
+                    'lastname'  => $peer->name && str_contains(trim($peer->name), ' ')
                         ? explode(' ', trim($peer->name), 2)[1]
                         : null,
                     'mobile' => $peer->mobile,
-                    'email' => $peer->email,
+                    'email'  => $peer->email,
                 ] : null,
             ],
         ]);
     }
 }
-

@@ -32,21 +32,28 @@ class TestFunding extends Model
     ];
 
     protected $casts = [
-        'amount' => 'integer',
+        'amount'           => 'integer',
         'amount_formatted' => 'float',
-        'performed_at' => 'datetime',
-        'completed_at' => 'datetime',
+        'performed_at'     => 'datetime',
+        'completed_at'     => 'datetime',
     ];
 
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_COMPLETED = 'completed';
+
     public const STATUS_FAILED = 'failed';
 
     public const REASON_TESTING = 'testing';
+
     public const REASON_REFUND = 'refund';
+
     public const REASON_COMPENSATION = 'compensation';
+
     public const REASON_ERROR_CORRECTION = 'error_correction';
+
     public const REASON_GOODWILL = 'goodwill';
+
     public const REASON_OTHER = 'other';
 
     public function account(): BelongsTo

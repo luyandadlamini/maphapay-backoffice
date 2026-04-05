@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\Compliance\Models\ComplianceAlert;
 use App\Models\User;
 
-
 describe('GraphQL Compliance API', function () {
     it('returns unauthorized without authentication', function () {
         $response = $this->postJson('/graphql', [

@@ -6,7 +6,6 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Payment\Workflows\TransferWorkflow;
 use Workflow\WorkflowStub;
 
-
 beforeEach(function () {
     WorkflowStub::fake();
 

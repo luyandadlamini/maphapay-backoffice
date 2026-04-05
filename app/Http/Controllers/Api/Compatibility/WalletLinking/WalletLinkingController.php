@@ -8,7 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 
 /**
- * GET /api/wallet-linking
+ * GET /api/wallet-linking.
  *
  * Returns linked external wallets (e.g. MTN MoMo) for the authenticated user.
  */

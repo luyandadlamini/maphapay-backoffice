@@ -91,9 +91,9 @@ class PocketTransferService
                     money: new Money($amountMinor),
                     description: "Savings pocket: {$lockedPocket->name}",
                     metadata: [
-                        'source' => 'pocket_transfer',
+                        'source'      => 'pocket_transfer',
                         'pocket_uuid' => $lockedPocket->uuid,
-                        'direction' => 'to_pocket',
+                        'direction'   => 'to_pocket',
                     ]
                 )
                 ->persist();
@@ -165,9 +165,9 @@ class PocketTransferService
                     money: new Money($amountMinor),
                     description: "Savings pocket: {$lockedPocket->name}",
                     metadata: [
-                        'source' => 'pocket_transfer',
+                        'source'      => 'pocket_transfer',
                         'pocket_uuid' => $lockedPocket->uuid,
-                        'direction' => 'from_pocket',
+                        'direction'   => 'from_pocket',
                     ]
                 )
                 ->persist();

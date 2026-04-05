@@ -61,7 +61,7 @@ class MoneyRequest extends Model
     {
         return [
             'expires_at' => 'datetime',
-            'paid_at' => 'datetime',
+            'paid_at'    => 'datetime',
         ];
     }
 

@@ -9,7 +9,6 @@ use Tests\TestCase;
 
 class ContactSubmissionTest extends TestCase
 {
-
     /** @param array<string, mixed> $overrides */
     private function createSubmission(array $overrides = []): ContactSubmission
     {
