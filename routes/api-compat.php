@@ -109,6 +109,11 @@ Route::middleware(['migration_flag:enable_send_money', 'kyc_approved', 'idempote
     ->post('send-money/store', SendMoneyStoreController::class)
     ->name('maphapay.compat.send-money.store');
 
+// Public payment link (no auth required) - must be outside authenticated group
+Route::get('pay/r/{token}', [App\Http\Controllers\Api\Pay\PaymentLinkController::class, 'show'])
+    ->middleware('throttle:maphapay-payment-link')
+    ->name('maphapay.compat.pay.link');
+
 Route::middleware(['migration_flag:enable_request_money', 'kyc_approved'])->group(function () {
     Route::post('request-money/store', RequestMoneyStoreController::class)
         ->middleware(['migration_flag:enable_request_money_create', 'idempotency', 'throttle:maphapay-request-money'])

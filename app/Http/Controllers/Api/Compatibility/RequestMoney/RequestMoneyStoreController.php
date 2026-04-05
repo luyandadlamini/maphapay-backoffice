@@ -9,6 +9,7 @@ use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\AuthorizedTransaction\Services\AuthorizedTransactionManager;
 use App\Domain\AuthorizedTransaction\Services\MoneyMovementVerificationPolicyResolver;
 use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
+use App\Domain\Payment\Services\PaymentLinkService;
 use App\Domain\Shared\Money\MoneyConverter;
 use App\Http\Controllers\Controller;
 use App\Models\MoneyRequest;
@@ -39,6 +40,7 @@ class RequestMoneyStoreController extends Controller
         private readonly AuthorizedTransactionManager $authorizedTransactionManager,
         private readonly MoneyMovementVerificationPolicyResolver $verificationPolicyResolver,
         private readonly MaphaPayMoneyMovementTelemetry $telemetry,
+        private readonly PaymentLinkService $paymentLinkService,
     ) {}
 
     public function __invoke(Request $request): JsonResponse
@@ -162,6 +164,9 @@ class RequestMoneyStoreController extends Controller
                     'status' => MoneyRequest::STATUS_PENDING,
                 ]);
 
+                // Generate payment token for the money request
+                $moneyRequest = $this->paymentLinkService->assignPaymentToken($moneyRequest);
+
                 $payload = [
                     'money_request_id' => $moneyRequest->id,
                     'recipient_user_id' => (int) $recipient->getAuthIdentifier(),
@@ -225,6 +230,11 @@ class RequestMoneyStoreController extends Controller
                 'money_request_id' => $result['money_request_id'] ?? $txn->payload['money_request_id'] ?? null,
                 'chat_message_id' => $result['chat_message_id'] ?? null,
                 'chat_linked' => $result['chat_linked'] ?? null,
+                'payment_token' => $moneyRequest->payment_token,
+                'payment_link' => $moneyRequest->payment_token
+                    ? $this->paymentLinkService->buildDynamicLink($moneyRequest->payment_token)
+                    : null,
+                'expires_at' => $moneyRequest->expires_at?->toIso8601String(),
             ],
         ]);
     }

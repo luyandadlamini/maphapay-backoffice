@@ -74,7 +74,10 @@ class RequestMoneyReceivedHandler implements AuthorizedTransactionHandlerInterfa
         $moneyRequest = MoneyRequest::query()->where('id', $moneyRequestId)->first();
         if ($moneyRequest !== null) {
             $fromStatus = $moneyRequest->status;
-            $moneyRequest->update(['status' => MoneyRequest::STATUS_FULFILLED]);
+            $moneyRequest->update([
+                'status' => MoneyRequest::STATUS_FULFILLED,
+                'paid_at' => now(),
+            ]);
             $moneyRequest->refresh();
 
             $this->telemetry->logMoneyRequestTransition($moneyRequest, $fromStatus, MoneyRequest::STATUS_FULFILLED, [

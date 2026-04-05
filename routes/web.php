@@ -853,3 +853,16 @@ Route::prefix('foodo')->group(function () {
 // SEO routes - Sitemap and Robots.txt
 Route::get('/sitemap.xml', [App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
 Route::get('/robots.txt', [App\Http\Controllers\SitemapController::class, 'robots'])->name('robots');
+
+// ---------------------------------------------------------------------------
+// Payment Link Fallback (web fallback for non-app users)
+// ---------------------------------------------------------------------------
+Route::prefix('u')->group(function () {
+    Route::get('{username}', [App\Http\Controllers\Pay\PayFallbackController::class, 'staticLink'])
+        ->name('pay.web.static');
+});
+
+Route::prefix('r')->group(function () {
+    Route::get('{token}', [App\Http\Controllers\Pay\PayFallbackController::class, 'dynamicLink'])
+        ->name('pay.web.dynamic');
+});

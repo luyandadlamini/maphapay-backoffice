@@ -18,6 +18,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null                 $note
  * @property string                      $status
  * @property string|null                 $trx
+ * @property string|null                 $payment_token
+ * @property \Carbon\Carbon|null         $expires_at
+ * @property \Carbon\Carbon|null         $paid_at
  * @property \Carbon\Carbon              $created_at
  * @property \Carbon\Carbon              $updated_at
  */
@@ -46,6 +49,9 @@ class MoneyRequest extends Model
         'note',
         'status',
         'trx',
+        'payment_token',
+        'expires_at',
+        'paid_at',
     ];
 
     /** @return BelongsTo<User, $this> */
