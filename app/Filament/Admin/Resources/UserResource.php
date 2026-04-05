@@ -16,6 +16,7 @@ use App\Filament\Admin\Resources\UserResource\RelationManagers\PocketsRelationMa
 use App\Filament\Admin\Resources\UserResource\RelationManagers\ReferralsRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\RewardProfilesRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\TransactionsRelationManager;
+use App\Filament\Admin\Concerns\MasksPii;
 use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use App\Models\User;
 use App\Models\UserOtp;
@@ -36,6 +37,7 @@ use Throwable;
 
 class UserResource extends Resource
 {
+    use MasksPii;
     use RespectsModuleVisibility;
 
     protected static ?string $model = User::class;
@@ -123,8 +125,10 @@ class UserResource extends Resource
                     ->schema([
                         Grid::make(3)->schema([
                             TextEntry::make('name')->label('Full Name'),
-                            TextEntry::make('email')->label('Email Address'),
-                            TextEntry::make('mobile')->label('Mobile Number'),
+                            TextEntry::make('email')->label('Email Address')
+                                ->formatStateUsing(fn ($state) => static::maskEmail($state)),
+                            TextEntry::make('mobile')->label('Mobile Number')
+                                ->formatStateUsing(fn ($state) => static::maskPhone($state)),
                             TextEntry::make('kyc_status')
                                 ->label('KYC Status')
                                 ->badge()
@@ -170,7 +174,8 @@ class UserResource extends Resource
                     Tables\Columns\TextColumn::make('name')
                         ->searchable(),
                     Tables\Columns\TextColumn::make('email')
-                        ->searchable(),
+                        ->searchable()
+                        ->formatStateUsing(fn ($state) => static::maskEmail($state)),
                     Tables\Columns\BadgeColumn::make('kyc_status')
                         ->label('KYC')
                         ->colors([
@@ -229,7 +234,8 @@ class UserResource extends Resource
                         ->falseColor('gray'),
                     Tables\Columns\TextColumn::make('mobile')
                         ->label('Mobile')
-                        ->toggleable(),
+                        ->toggleable()
+                        ->formatStateUsing(fn ($state) => static::maskPhone($state)),
                     Tables\Columns\TextColumn::make('send_money_step_up_threshold_override')
                         ->label('Send Money Override')
                         ->money('SZL')
