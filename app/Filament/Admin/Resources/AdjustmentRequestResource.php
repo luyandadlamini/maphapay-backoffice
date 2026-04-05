@@ -109,12 +109,44 @@ class AdjustmentRequestResource extends Resource
                     ->requiresConfirmation()
                     ->visible(fn (AdjustmentRequest $record) => $record->status === 'pending')
                     ->action(function (AdjustmentRequest $record) {
-                        $record->update([
-                            'status'      => 'approved',
-                            'reviewer_id' => auth()->id(),
-                            'reviewed_at' => now(),
-                        ]);
-                        // TODO: Dispatch domain event (e.g. AccountCredited/AccountDebited)
+                        if ($record->requester_id === auth()->id()) {
+                            \Filament\Notifications\Notification::make()
+                                ->danger()
+                                ->title('Maker-Checker Enforcement')
+                                ->body('You cannot approve an adjustment request that you initiated.')
+                                ->send();
+
+                            return;
+                        }
+
+                        $accountService = app(\App\Domain\Account\Services\AccountService::class);
+                        $description = $record->reason . ' (Adjustment Request #' . $record->id . ')';
+
+                        try {
+                            if ($record->type === 'credit') {
+                                $accountService->depositDirect($record->account->uuid, $record->amount, $description);
+                            } else {
+                                $accountService->withdrawDirect($record->account->uuid, $record->amount, $description);
+                            }
+
+                            $record->update([
+                                'status'      => 'approved',
+                                'reviewer_id' => auth()->id(),
+                                'reviewed_at' => now(),
+                            ]);
+
+                            \Filament\Notifications\Notification::make()
+                                ->success()
+                                ->title('Adjustment Approved')
+                                ->body('The ledger adjustment has been successfully processed.')
+                                ->send();
+                        } catch (\Exception $e) {
+                            \Filament\Notifications\Notification::make()
+                                ->danger()
+                                ->title('Adjustment Failed')
+                                ->body($e->getMessage())
+                                ->send();
+                        }
                     }),
                 Tables\Actions\Action::make('reject')
                     ->label('Reject')
@@ -123,11 +155,26 @@ class AdjustmentRequestResource extends Resource
                     ->requiresConfirmation()
                     ->visible(fn (AdjustmentRequest $record) => $record->status === 'pending')
                     ->action(function (AdjustmentRequest $record) {
+                        if ($record->requester_id === auth()->id()) {
+                            \Filament\Notifications\Notification::make()
+                                ->danger()
+                                ->title('Maker-Checker Enforcement')
+                                ->body('You cannot reject your own adjustment request.')
+                                ->send();
+
+                            return;
+                        }
+
                         $record->update([
                             'status'      => 'rejected',
                             'reviewer_id' => auth()->id(),
                             'reviewed_at' => now(),
                         ]);
+
+                        \Filament\Notifications\Notification::make()
+                            ->success()
+                            ->title('Adjustment Rejected')
+                            ->send();
                     }),
             ])
             ->bulkActions([]);

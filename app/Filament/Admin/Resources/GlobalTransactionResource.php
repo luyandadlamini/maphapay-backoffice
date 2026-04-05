@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Filament\Admin\Resources\GlobalTransactionResource\Pages;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
@@ -11,7 +12,9 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class GlobalTransactionResource extends Resource
 {
@@ -99,14 +102,45 @@ class GlobalTransactionResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
+                    ->label('Status')
                     ->options([
-                        'completed' => 'Completed',
-                        'pending'   => 'Pending',
-                        'failed'    => 'Failed',
-                        'cancelled' => 'Cancelled',
-                        'expired'   => 'Expired',
+                        AuthorizedTransaction::STATUS_COMPLETED => 'Completed',
+                        AuthorizedTransaction::STATUS_PENDING   => 'Pending',
+                        AuthorizedTransaction::STATUS_FAILED    => 'Failed',
+                        AuthorizedTransaction::STATUS_CANCELLED => 'Cancelled',
+                        AuthorizedTransaction::STATUS_EXPIRED   => 'Expired',
                     ]),
+                Tables\Filters\SelectFilter::make('remark')
+                    ->label('Transaction Type')
+                    ->options([
+                        AuthorizedTransaction::REMARK_SEND_MONEY             => 'Send Money',
+                        AuthorizedTransaction::REMARK_SCHEDULED_SEND         => 'Scheduled Send',
+                        AuthorizedTransaction::REMARK_REQUEST_MONEY          => 'Request Money',
+                        AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED => 'Request Money Received',
+                    ]),
+                Filter::make('created_at')
+                    ->label('Date Range')
+                    ->form([
+                        DatePicker::make('from')->label('From'),
+                        DatePicker::make('until')->label('Until'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when($data['from'], fn ($q, $date) => $q->whereDate('created_at', '>=', $date))
+                            ->when($data['until'], fn ($q, $date) => $q->whereDate('created_at', '<=', $date));
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['from'] ?? null) {
+                            $indicators['from'] = 'From ' . $data['from'];
+                        }
+                        if ($data['until'] ?? null) {
+                            $indicators['until'] = 'Until ' . $data['until'];
+                        }
+                        return $indicators;
+                    }),
             ])
+            ->filtersLayout(Tables\Enums\FiltersLayout::AboveContent)
             ->actions([
                 Tables\Actions\ViewAction::make(),
             ])
