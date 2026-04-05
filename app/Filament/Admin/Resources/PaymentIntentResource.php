@@ -153,6 +153,20 @@ class PaymentIntentResource extends Resource
             ->actions(
                 [
                     Tables\Actions\ViewAction::make(),
+                    Tables\Actions\Action::make('cancel')
+                        ->label('Cancel Payment Link')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->visible(fn (PaymentIntent $record): bool => $record->status->isCancellable())
+                        ->action(function (PaymentIntent $record): void {
+                            $record->transitionTo(PaymentIntentStatus::CANCELLED);
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Payment Link Cancelled')
+                                ->success()
+                                ->send();
+                        }),
                 ]
             )
             ->bulkActions([]);

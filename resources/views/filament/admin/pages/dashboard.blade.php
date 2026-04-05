@@ -48,5 +48,6 @@
         </div>
     @endif
     
+    @livewire(\App\Filament\Admin\Widgets\OperationsStatsOverview::class)
     @livewire(\App\Filament\Admin\Resources\AccountResource\Widgets\AccountStatsOverview::class)
 </x-filament-panels::page>
