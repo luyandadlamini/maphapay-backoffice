@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
 uses(TestCase::class);
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 describe('Compliance Certification Artisan Commands', function () {
     it('runs evidence collection command', function () {

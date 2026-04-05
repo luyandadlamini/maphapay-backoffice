@@ -12,10 +12,8 @@ use App\Domain\Treasury\Events\Portfolio\StrategyUpdated;
 use App\Domain\Treasury\ValueObjects\AssetAllocation;
 use App\Domain\Treasury\ValueObjects\InvestmentStrategy;
 use App\Domain\Treasury\ValueObjects\PortfolioMetrics;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 
-uses(RefreshDatabase::class);
 
 it('creates a portfolio with investment strategy', function () {
     $portfolioId = Str::uuid()->toString();

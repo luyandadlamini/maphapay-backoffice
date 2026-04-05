@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Models\UserOtp;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(RefreshDatabase::class);
 
 it('stores mock-provider OTP without SMS and accepts spaced OTP when debug bypass is on', function (): void {
     config(['sms.otp_provider' => 'mock']);

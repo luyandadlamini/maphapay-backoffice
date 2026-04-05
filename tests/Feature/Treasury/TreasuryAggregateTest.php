@@ -10,10 +10,8 @@ use App\Domain\Treasury\Events\TreasuryAccountCreated;
 use App\Domain\Treasury\Events\YieldOptimizationStarted;
 use App\Domain\Treasury\ValueObjects\AllocationStrategy;
 use App\Domain\Treasury\ValueObjects\RiskProfile;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 
-uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->accountId = Str::uuid()->toString();

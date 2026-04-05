@@ -7,7 +7,6 @@ use App\Domain\Compliance\Models\ComplianceCase;
 use App\Domain\Compliance\Models\KycVerification;
 use App\Models\User;
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 describe('GraphQL Compliance API', function () {
     it('paginates kyc verifications', function () {

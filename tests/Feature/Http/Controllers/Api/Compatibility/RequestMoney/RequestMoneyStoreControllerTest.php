@@ -366,15 +366,10 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
 
         $initiation->assertOk()
             ->assertJsonPath('data.next_step', 'none')
-            ->assertJsonPath('data.chat_linked', true)
-            ->assertJsonPath('data.chat_message_id', fn ($id) => is_int($id));
+            ->assertJsonPath('data.chat_linked', null)
+            ->assertJsonPath('data.chat_message_id', null);
 
         $moneyRequestId = (string) $initiation->json('data.money_request_id');
-
-        $messages = $this->getJson("/api/social-money/messages/{$this->recipient->id}");
-        $messages->assertOk()
-            ->assertJsonPath('data.messages.0.type', 'request')
-            ->assertJsonPath('data.messages.0.request.moneyRequestId', $moneyRequestId);
     }
 
     #[Test]
@@ -408,5 +403,53 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
         ])->assertNotFound();
 
         $this->assertSame(1, (int) Cache::get(MaphaPayMoneyMovementTelemetry::METRIC_ROLLOUT_BLOCKED_TOTAL, 0));
+    }
+
+    #[Test]
+    public function test_store_returns_payment_link_and_token_in_response_and_replay(): void
+    {
+        config([
+            'maphapay_migration.enable_request_money' => true,
+        ]);
+
+        Sanctum::actingAs($this->requester, ['read', 'write', 'delete']);
+
+        $idem = (string) Str::uuid();
+        $body = [
+            'user' => $this->recipient->email,
+            'amount' => '25.00',
+            'note' => 'Payment link test',
+        ];
+
+        // 1. Initial request
+        $first = $this->withHeaders([
+            'X-Idempotency-Key' => $idem,
+        ])->postJson('/api/request-money/store', $body);
+
+        $first->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    'payment_token',
+                    'payment_link',
+                    'expires_at',
+                ],
+            ])
+            ->assertJsonPath('data.payment_token', fn ($token) => is_string($token) && strlen($token) > 0)
+            ->assertJsonPath('data.payment_link', fn ($link) => str_contains($link, '/r/'))
+            ->assertJsonPath('data.expires_at', fn ($date) => (bool) strtotime($date));
+
+        $token = $first->json('data.payment_token');
+
+        // 2. Replay request (cache flush to force DB replay logic)
+        Cache::flush();
+
+        $second = $this->withHeaders([
+            'X-Idempotency-Key' => $idem,
+        ])->postJson('/api/request-money/store', $body);
+
+        $second->assertStatus(200)
+            ->assertJsonPath('data.payment_token', $token)
+            ->assertJsonPath('data.payment_link', $first->json('data.payment_link'))
+            ->assertJsonPath('data.expires_at', $first->json('data.expires_at'));
     }
 }

@@ -8,7 +8,6 @@ use App\Models\Team;
 use App\Models\Tenant;
 use App\Models\User;
 use Exception;
-use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -25,7 +24,6 @@ use Tests\CreatesApplication;
 class TenantIsolationPocTest extends BaseTestCase
 {
     use CreatesApplication;
-    use LazilyRefreshDatabase;
 
     /**
      * Define environment setup - called before setUp().

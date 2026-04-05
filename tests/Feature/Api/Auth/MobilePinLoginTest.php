@@ -3,10 +3,8 @@
 declare(strict_types=1);
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 
-uses(RefreshDatabase::class);
 
 it('allows mobile login for legacy users whose pin still lives in password', function (): void {
     $user = User::factory()->create([

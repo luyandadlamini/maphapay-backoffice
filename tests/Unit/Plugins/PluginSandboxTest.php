@@ -6,7 +6,7 @@ use App\Domain\Shared\Models\Plugin;
 use App\Infrastructure\Plugins\PluginPermissions;
 use App\Infrastructure\Plugins\PluginSandbox;
 
-uses(Tests\TestCase::class, Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(Tests\TestCase::class);
 
 describe('PluginSandbox', function () {
     it('allows access with declared permissions', function () {

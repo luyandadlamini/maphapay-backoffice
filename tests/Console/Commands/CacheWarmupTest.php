@@ -3,9 +3,7 @@
 use App\Console\Commands\CacheWarmup;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Services\Cache\CacheManager;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(RefreshDatabase::class);
 
 it('can warm up cache for all accounts', function () {
     // Create test accounts (let's see how many the command actually processes)

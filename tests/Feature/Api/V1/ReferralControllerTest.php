@@ -7,13 +7,11 @@ namespace Tests\Feature\Api\V1;
 use App\Models\Referral;
 use App\Models\ReferralCode;
 use App\Models\User;
-use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class ReferralControllerTest extends TestCase
 {
-    use LazilyRefreshDatabase;
 
     protected function setUp(): void
     {

@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\FinancialInstitution\Models\FinancialInstitutionPartner;
 use App\Models\User;
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 describe('GraphQL FinancialInstitution API', function () {
     it('returns unauthorized without authentication', function () {

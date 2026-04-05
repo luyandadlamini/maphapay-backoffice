@@ -8,13 +8,11 @@ use App\Domain\Newsletter\Mail\SubscriberNewsletter;
 use App\Domain\Newsletter\Mail\SubscriberWelcome;
 use App\Domain\Newsletter\Models\Subscriber;
 use App\Domain\Newsletter\Services\SubscriberEmailService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class SubscriberEmailServiceTest extends TestCase
 {
-    use RefreshDatabase;
 
     private SubscriberEmailService $service;
 

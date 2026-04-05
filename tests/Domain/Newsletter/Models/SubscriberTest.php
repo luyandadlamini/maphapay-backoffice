@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace Tests\Domain\Newsletter\Models;
 
 use App\Domain\Newsletter\Models\Subscriber;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class SubscriberTest extends TestCase
 {
-    use RefreshDatabase;
 
     /** @param array<string, mixed> $overrides */
     private function createSubscriber(array $overrides = []): Subscriber

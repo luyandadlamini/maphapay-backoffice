@@ -6,7 +6,6 @@ use App\Domain\Exchange\Projections\Order;
 use App\Models\User;
 use Illuminate\Support\Str;
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 describe('GraphQL Exchange API', function () {
     it('returns unauthorized without authentication', function () {

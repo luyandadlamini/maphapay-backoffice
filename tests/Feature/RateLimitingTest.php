@@ -4,12 +4,10 @@ use App\Http\Middleware\ApiRateLimitMiddleware;
 use App\Http\Middleware\TransactionRateLimitMiddleware;
 use App\Models\User;
 use App\Services\DynamicRateLimitService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 
-uses(RefreshDatabase::class);
 
 beforeEach(function () {
     Cache::flush(); // Clear rate limit counters between tests

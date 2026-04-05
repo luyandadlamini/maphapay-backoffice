@@ -10,7 +10,6 @@ use App\Domain\Privacy\Models\ShieldedBalance;
 use App\Domain\Privacy\Services\RailgunBridgeClient;
 use App\Domain\Privacy\Services\RailgunPrivacyService;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Mockery\MockInterface;
 use RuntimeException;
@@ -18,7 +17,6 @@ use Tests\TestCase;
 
 class RailgunPrivacyServiceTest extends TestCase
 {
-    use RefreshDatabase;
 
     /** @var RailgunBridgeClient&MockInterface */
     private RailgunBridgeClient $bridge;

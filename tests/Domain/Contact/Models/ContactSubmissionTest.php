@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace Tests\Domain\Contact\Models;
 
 use App\Domain\Contact\Models\ContactSubmission;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ContactSubmissionTest extends TestCase
 {
-    use RefreshDatabase;
 
     /** @param array<string, mixed> $overrides */
     private function createSubmission(array $overrides = []): ContactSubmission

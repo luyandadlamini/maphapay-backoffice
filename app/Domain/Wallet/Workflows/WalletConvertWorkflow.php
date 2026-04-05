@@ -19,7 +19,7 @@ class WalletConvertWorkflow extends Workflow
         AccountUuid $accountUuid,
         string $fromAssetCode,
         string $toAssetCode,
-        int $amount
+        string $amount
     ): Generator {
         try {
             $result = yield ActivityStub::make(

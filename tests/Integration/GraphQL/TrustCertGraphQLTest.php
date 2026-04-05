@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Models\User;
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 describe('GraphQL TrustCert API', function () {
     it('rejects unauthenticated certificate queries', function () {

@@ -7,7 +7,6 @@ use App\Domain\Cgo\Models\CgoPricingRound;
 use App\Models\User;
 use Illuminate\Support\Str;
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 describe('GraphQL CGO API', function () {
     it('returns unauthorized without authentication', function () {

@@ -1,9 +1,7 @@
 <?php
 
 use App\Models\TeamInvitation;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(RefreshDatabase::class);
 
 it('extends JetstreamTeamInvitation', function () {
     $reflection = new ReflectionClass(TeamInvitation::class);

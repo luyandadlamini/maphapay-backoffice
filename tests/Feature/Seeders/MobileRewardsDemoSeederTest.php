@@ -10,9 +10,7 @@ use App\Domain\Rewards\Models\RewardShopItem;
 use App\Models\User;
 use Database\Seeders\DemoDataSeeder;
 use Database\Seeders\MobileRewardsDemoSeeder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(RefreshDatabase::class);
 
 beforeEach(function () {
     // Base seeders (includes RewardsSeeder for quests + shop items)

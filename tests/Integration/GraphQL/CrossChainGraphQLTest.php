@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\CrossChain\Models\BridgeTransaction;
 use App\Models\User;
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 describe('GraphQL CrossChain API', function () {
     it('returns unauthorized without authentication', function () {

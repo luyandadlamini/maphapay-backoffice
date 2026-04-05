@@ -20,10 +20,8 @@ use App\Domain\Stablecoin\Events\MarginCallIssued;
 use App\Domain\Stablecoin\ValueObjects\CollateralType;
 use App\Domain\Stablecoin\ValueObjects\LiquidationThreshold;
 use Brick\Math\BigDecimal;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 
-uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->positionId = Str::uuid()->toString();

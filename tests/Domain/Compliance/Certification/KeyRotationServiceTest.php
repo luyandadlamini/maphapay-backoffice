@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 use App\Domain\Compliance\Models\KeyRotationSchedule;
 use App\Domain\Compliance\Services\Certification\KeyRotationService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(RefreshDatabase::class);
 
 describe('KeyRotationService', function () {
     it('registers a key for rotation tracking', function () {

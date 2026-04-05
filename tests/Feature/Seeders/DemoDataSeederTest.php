@@ -8,10 +8,8 @@ use App\Domain\Governance\Models\Poll;
 use App\Domain\Governance\Models\Vote;
 use App\Models\User;
 use Database\Seeders\DemoDataSeeder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 
-uses(RefreshDatabase::class);
 
 beforeEach(function () {
     // Seed the database with base data

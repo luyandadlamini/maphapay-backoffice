@@ -220,6 +220,9 @@ class RequestMoneyStoreController extends Controller
             'risk_reason' => $policy['risk_reason'],
         ]));
 
+        $moneyRequestId = $result['money_request_id'] ?? $txn->payload['money_request_id'] ?? null;
+        $moneyRequest = $moneyRequestId ? MoneyRequest::query()->find($moneyRequestId) : null;
+
         return response()->json([
             'status' => 'success',
             'remark' => 'request_money',
@@ -227,14 +230,14 @@ class RequestMoneyStoreController extends Controller
                 'next_step' => 'none',
                 'trx' => $txn->trx,
                 'code_sent_message' => null,
-                'money_request_id' => $result['money_request_id'] ?? $txn->payload['money_request_id'] ?? null,
+                'money_request_id' => $moneyRequestId,
                 'chat_message_id' => $result['chat_message_id'] ?? null,
                 'chat_linked' => $result['chat_linked'] ?? null,
-                'payment_token' => $moneyRequest->payment_token,
-                'payment_link' => $moneyRequest->payment_token
+                'payment_token' => $moneyRequest?->payment_token,
+                'payment_link' => $moneyRequest?->payment_token
                     ? $this->paymentLinkService->buildDynamicLink($moneyRequest->payment_token)
                     : null,
-                'expires_at' => $moneyRequest->expires_at?->toIso8601String(),
+                'expires_at' => $moneyRequest?->expires_at?->toIso8601String(),
             ],
         ]);
     }
@@ -335,6 +338,11 @@ class RequestMoneyStoreController extends Controller
     private function requestMoneyReplayPayload(AuthorizedTransaction $txn): array
     {
         $result = is_array($txn->result) ? $txn->result : [];
+        $moneyRequestId = $result['money_request_id'] ?? $txn->payload['money_request_id'] ?? null;
+
+        // Hydrate the MoneyRequest so the replay response includes the payment link —
+        // the RN app needs payment_token to navigate to the QR screen on replay.
+        $moneyRequest = $moneyRequestId ? MoneyRequest::query()->find($moneyRequestId) : null;
 
         return [
             'status' => 'success',
@@ -343,9 +351,14 @@ class RequestMoneyStoreController extends Controller
                 'next_step' => 'none',
                 'trx' => $txn->trx,
                 'code_sent_message' => null,
-                'money_request_id' => $result['money_request_id'] ?? $txn->payload['money_request_id'] ?? null,
+                'money_request_id' => $moneyRequestId,
                 'chat_message_id' => $result['chat_message_id'] ?? null,
                 'chat_linked' => $result['chat_linked'] ?? null,
+                'payment_token' => $moneyRequest?->payment_token,
+                'payment_link' => $moneyRequest?->payment_token
+                    ? $this->paymentLinkService->buildDynamicLink($moneyRequest->payment_token)
+                    : null,
+                'expires_at' => $moneyRequest?->expires_at?->toIso8601String(),
             ],
         ];
     }

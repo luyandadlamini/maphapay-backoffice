@@ -7,7 +7,6 @@ use App\Domain\Monitoring\Services\EventMigrationValidator;
 use App\Domain\Shared\EventSourcing\EventRouter;
 
 uses(Tests\TestCase::class);
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 beforeEach(function () {
     $this->router = new EventRouter();

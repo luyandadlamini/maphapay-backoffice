@@ -7,7 +7,6 @@ use App\Domain\Rewards\Models\RewardQuest;
 use App\Domain\Rewards\Models\RewardShopItem;
 use App\Models\User;
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 describe('GraphQL Rewards API', function () {
     it('returns unauthorized without authentication for rewardProfile', function () {

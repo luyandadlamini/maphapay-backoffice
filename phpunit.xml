@@ -69,7 +69,7 @@
         <env name="LIGHTHOUSE_SUBSCRIPTION_STORAGE" value="array"/>
         <!-- Parallel testing configuration -->
         <env name="PEST_PARALLEL" value="false"/>
-        <!-- Memory limit for test process -->
-        <ini name="memory_limit" value="1G"/>
+        <!-- Memory limit for test process — 2G needed to avoid PHPUnit router-exporter OOM -->
+        <ini name="memory_limit" value="2G"/>
     </php>
 </phpunit>

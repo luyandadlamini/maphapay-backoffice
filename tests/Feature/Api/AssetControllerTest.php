@@ -2,9 +2,8 @@
 
 use App\Domain\Asset\Models\Asset;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(RefreshDatabase::class);
+// removed RefreshDatabase
 
 beforeEach(function () {
     $this->user = User::factory()->create();

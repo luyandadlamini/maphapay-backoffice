@@ -5,10 +5,8 @@ declare(strict_types=1);
 use App\Domain\Monitoring\Services\HealthChecker;
 use App\Domain\Monitoring\Services\MetricsCollector;
 use App\Domain\Monitoring\Services\PrometheusExporter;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 
-uses(RefreshDatabase::class);
 
 beforeEach(function () {
     // Clear only monitoring-related cache keys to avoid conflicts in parallel tests

@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\Basket\Models\BasketAsset;
 use App\Models\User;
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 describe('GraphQL Basket API', function () {
     it('returns unauthorized without authentication', function () {

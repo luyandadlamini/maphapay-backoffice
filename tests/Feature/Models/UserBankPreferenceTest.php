@@ -2,9 +2,7 @@
 
 use App\Domain\Banking\Models\UserBankPreference;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(RefreshDatabase::class);
 
 test('user can have bank preferences', function () {
     $user = User::factory()->create();

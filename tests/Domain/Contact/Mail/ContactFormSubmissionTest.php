@@ -6,12 +6,10 @@ namespace Tests\Domain\Contact\Mail;
 
 use App\Domain\Contact\Mail\ContactFormSubmission;
 use App\Domain\Contact\Models\ContactSubmission;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ContactFormSubmissionTest extends TestCase
 {
-    use RefreshDatabase;
 
     /** @param array<string, mixed> $overrides */
     private function createSubmission(array $overrides = []): ContactSubmission

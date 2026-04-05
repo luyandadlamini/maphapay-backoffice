@@ -15,10 +15,10 @@ class ConvertAssetActivity extends Activity
         AccountUuid $accountUuid,
         string $fromAssetCode,
         string $toAssetCode,
-        int $amount,
+        string $amount,
         AssetTransferAggregate $assetTransfer
     ): array {
-        $fromMoney = new Money($amount);
+        $fromMoney = new Money((int) $amount);
 
         // Get exchange rate
         $exchangeRate = ExchangeRate::getRate($fromAssetCode, $toAssetCode);
@@ -27,8 +27,8 @@ class ConvertAssetActivity extends Activity
         }
 
         // Calculate converted amount
-        $convertedAmount = intval($amount * $exchangeRate);
-        $toMoney = new Money($convertedAmount);
+        $convertedAmount = (string) intval($amount * $exchangeRate);
+        $toMoney = new Money((int) $convertedAmount);
 
         $transferId = uniqid('convert_', true);
         $assetTransfer->retrieve($transferId)

@@ -6,10 +6,8 @@ use App\Domain\X402\Models\X402MonetizedEndpoint;
 use App\Domain\X402\Models\X402Payment;
 use App\Domain\X402\Models\X402SpendingLimit;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 
-uses(RefreshDatabase::class);
 
 // ----------------------------------------------------------------
 // Helpers

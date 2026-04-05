@@ -11,7 +11,6 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Resolvers\TeamTenantResolver;
 use Exception;
-use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
 use Stancl\Tenancy\Tenancy;
@@ -29,7 +28,6 @@ use Tests\CreatesApplication;
 class DataIsolationTest extends BaseTestCase
 {
     use CreatesApplication;
-    use LazilyRefreshDatabase;
 
     /**
      * Define environment setup - called before setUp().

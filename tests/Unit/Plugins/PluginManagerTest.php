@@ -6,7 +6,7 @@ use App\Domain\Shared\Models\Plugin;
 use App\Infrastructure\Plugins\PluginManager;
 use App\Infrastructure\Plugins\PluginManifest;
 
-uses(Tests\TestCase::class, Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(Tests\TestCase::class);
 
 describe('PluginManager', function () {
     it('installs a plugin from manifest', function () {

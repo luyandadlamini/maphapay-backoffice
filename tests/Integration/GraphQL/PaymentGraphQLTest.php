@@ -6,7 +6,6 @@ use App\Domain\Payment\Models\PaymentTransaction;
 use App\Models\User;
 use Illuminate\Support\Str;
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 describe('GraphQL Payment API', function () {
     it('returns unauthorized without authentication', function () {

@@ -2,10 +2,8 @@
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\Turnover;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 
-uses(RefreshDatabase::class);
 
 it('can create a turnover record', function () {
     $account = Account::factory()->create();

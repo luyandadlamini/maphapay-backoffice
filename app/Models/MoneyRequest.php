@@ -54,6 +54,17 @@ class MoneyRequest extends Model
         'paid_at',
     ];
 
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'expires_at' => 'datetime',
+            'paid_at' => 'datetime',
+        ];
+    }
+
     /** @return BelongsTo<User, $this> */
     public function requester(): BelongsTo
     {

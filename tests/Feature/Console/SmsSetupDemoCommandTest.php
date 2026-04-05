@@ -6,9 +6,7 @@ use App\Domain\SMS\Models\SmsMessage;
 use App\Domain\X402\Models\X402MonetizedEndpoint;
 use App\Domain\X402\Models\X402SpendingLimit;
 use Database\Seeders\DemoDataSeeder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->seed();

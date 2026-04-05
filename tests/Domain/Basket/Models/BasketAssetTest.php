@@ -4,9 +4,7 @@ use App\Domain\Asset\Models\Asset;
 use App\Domain\Basket\Models\BasketAsset;
 use App\Domain\Basket\Models\BasketValue;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(RefreshDatabase::class);
 
 beforeEach(function () {
     // Create test assets (use firstOrCreate to avoid duplicates in parallel tests)

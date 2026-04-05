@@ -3,10 +3,8 @@
 use App\Domain\Account\DataObjects\Money;
 use App\Domain\Custodian\Connectors\PayseraConnector;
 use App\Domain\Custodian\ValueObjects\TransferRequest;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 
-uses(RefreshDatabase::class);
 
 beforeEach(function () {
     // Mock successful OAuth response

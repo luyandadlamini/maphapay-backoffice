@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\Compliance\Models\SecurityIncident;
 use App\Domain\Compliance\Services\Certification\IncidentResponseService;
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 describe('IncidentResponseService', function () {
     beforeEach(function () {

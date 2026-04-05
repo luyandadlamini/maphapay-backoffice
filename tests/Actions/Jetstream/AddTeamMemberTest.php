@@ -1,11 +1,8 @@
 <?php
 
 use App\Actions\Jetstream\AddTeamMember;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(RefreshDatabase::class);
 
-uses(RefreshDatabase::class);
 
 it('can be instantiated', function () {
     expect(new AddTeamMember())->toBeInstanceOf(AddTeamMember::class);

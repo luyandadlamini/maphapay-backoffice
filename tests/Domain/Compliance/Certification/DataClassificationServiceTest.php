@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 use App\Domain\Compliance\Models\DataClassification;
 use App\Domain\Compliance\Services\Certification\DataClassificationService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(RefreshDatabase::class);
 
 describe('DataClassificationService', function () {
     it('seeds default classifications', function () {

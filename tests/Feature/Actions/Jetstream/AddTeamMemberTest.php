@@ -3,7 +3,6 @@
 use App\Actions\Jetstream\AddTeamMember;
 use App\Models\Team;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -11,7 +10,7 @@ use Illuminate\Validation\ValidationException;
 use Laravel\Jetstream\Events\AddingTeamMember;
 use Laravel\Jetstream\Events\TeamMemberAdded;
 
-uses(RefreshDatabase::class);
+
 
 beforeEach(function () {
     Event::fake();

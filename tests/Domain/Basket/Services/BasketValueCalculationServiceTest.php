@@ -7,10 +7,8 @@ use App\Domain\Basket\Models\BasketAsset;
 use App\Domain\Basket\Models\BasketValue;
 use App\Domain\Basket\Services\BasketValueCalculationService;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 
-uses(RefreshDatabase::class);
 
 beforeEach(function () {
     // Create test assets (use firstOrCreate to avoid duplicates in parallel tests)

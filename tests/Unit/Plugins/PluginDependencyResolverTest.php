@@ -6,7 +6,7 @@ use App\Domain\Shared\Models\Plugin;
 use App\Infrastructure\Plugins\PluginDependencyResolver;
 use App\Infrastructure\Plugins\PluginManifest;
 
-uses(Tests\TestCase::class, Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(Tests\TestCase::class);
 
 describe('PluginDependencyResolver', function () {
     it('resolves satisfied dependencies', function () {

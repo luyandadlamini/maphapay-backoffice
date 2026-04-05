@@ -5,11 +5,9 @@ declare(strict_types=1);
 use App\Domain\Mobile\Models\MobileDevice;
 use App\Domain\Mobile\Models\MobilePushNotification;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
-uses(RefreshDatabase::class);
 
 /*
 |--------------------------------------------------------------------------

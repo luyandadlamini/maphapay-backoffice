@@ -3,10 +3,8 @@
 use App\Domain\Asset\Models\Asset;
 use App\Domain\Asset\Models\ExchangeRate;
 use App\Domain\Asset\Services\ExchangeRateService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 
-uses(RefreshDatabase::class);
 
 beforeEach(function () {
     // Clear any existing exchange rates to ensure test isolation

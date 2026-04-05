@@ -7,7 +7,6 @@ use App\Domain\Exchange\Projections\OrderBook;
 use App\Domain\Exchange\Projections\Trade;
 use App\Models\User;
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 describe('GraphQL Exchange API', function () {
     it('paginates orders', function () {

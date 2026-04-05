@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Models\User;
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 describe('GraphQL CardIssuance API', function () {
     it('returns unauthorized without authentication', function () {

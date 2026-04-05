@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\User\Models\UserProfile;
 use App\Models\User;
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 describe('GraphQL User API', function () {
     it('returns unauthorized without authentication', function () {

@@ -6,13 +6,11 @@ namespace Tests\Feature\Api\V1;
 
 use App\Models\RampSession;
 use App\Models\User;
-use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class RampControllerTest extends TestCase
 {
-    use LazilyRefreshDatabase;
 
     protected User $user;
 
