@@ -21,7 +21,7 @@ class RewardProfileResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-star';
 
-    protected static ?string $navigationGroup = 'Banking';
+    protected static ?string $navigationGroup = 'Growth & Rewards';
 
     protected static ?string $navigationLabel = 'Reward Profiles';
 

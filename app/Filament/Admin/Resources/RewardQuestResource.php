@@ -20,7 +20,7 @@ class RewardQuestResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-fire';
 
-    protected static ?string $navigationGroup = 'Banking';
+    protected static ?string $navigationGroup = 'Growth & Rewards';
 
     protected static ?string $navigationLabel = 'Reward Quests';
 

@@ -20,7 +20,7 @@ class RewardShopItemResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
 
-    protected static ?string $navigationGroup = 'Banking';
+    protected static ?string $navigationGroup = 'Growth & Rewards';
 
     protected static ?string $navigationLabel = 'Reward Shop Items';
 
