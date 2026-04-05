@@ -89,10 +89,8 @@ class SmartAccount extends Model
      */
     public function decrementPendingOps(): void
     {
-        $this->decrement('pending_ops');
-        if ($this->pending_ops < 0) {
-            $this->pending_ops = 0;
-            $this->save();
+        if ($this->pending_ops > 0) {
+            $this->decrement('pending_ops');
         }
     }
 

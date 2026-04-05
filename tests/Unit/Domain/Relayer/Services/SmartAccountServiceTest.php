@@ -9,6 +9,7 @@ use App\Domain\Relayer\Exceptions\SmartAccountException;
 use App\Domain\Relayer\Models\SmartAccount;
 use App\Domain\Relayer\Services\SmartAccountService;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Mockery\MockInterface;
 use Tests\TestCase;
@@ -21,9 +22,13 @@ class SmartAccountServiceTest extends TestCase
 
     protected User $user;
 
+    protected string $ownerAddress;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->ownerAddress = '0x' . bin2hex(random_bytes(20));
 
         /** @var SmartAccountFactoryInterface&MockInterface $factory */
         $factory = Mockery::mock(SmartAccountFactoryInterface::class);
@@ -34,7 +39,7 @@ class SmartAccountServiceTest extends TestCase
 
     public function test_creates_new_account_when_none_exists(): void
     {
-        $ownerAddress = '0x742d35Cc6634C0532925a3b844Bc454e4438f44e';
+        $ownerAddress = $this->ownerAddress;
         $accountAddress = '0x1234567890abcdef1234567890abcdef12345678';
         $network = 'polygon';
 
@@ -60,7 +65,7 @@ class SmartAccountServiceTest extends TestCase
 
     public function test_returns_existing_account(): void
     {
-        $ownerAddress = '0x742d35Cc6634C0532925a3b844Bc454e4438f44e';
+        $ownerAddress = $this->ownerAddress;
         $network = 'polygon';
 
         // Pre-create an account
@@ -87,7 +92,7 @@ class SmartAccountServiceTest extends TestCase
 
     public function test_normalizes_owner_address_to_lowercase(): void
     {
-        $ownerAddress = '0x742D35CC6634C0532925A3B844BC454E4438F44E'; // Mixed case
+        $ownerAddress = strtoupper($this->ownerAddress); // Mixed/Upper Case
         $network = 'polygon';
 
         $this->factory->shouldReceive('supportsNetwork')
@@ -105,7 +110,7 @@ class SmartAccountServiceTest extends TestCase
 
     public function test_increments_pending_ops(): void
     {
-        $ownerAddress = '0x742d35cc6634c0532925a3b844bc454e4438f44e';
+        $ownerAddress = $this->ownerAddress;
         $network = 'polygon';
 
         $account = SmartAccount::create([
@@ -126,13 +131,13 @@ class SmartAccountServiceTest extends TestCase
 
     public function test_processes_completed_op(): void
     {
-        $ownerAddress = '0x742d35cc6634c0532925a3b844bc454e4438f44e';
+        $ownerAddress = $this->ownerAddress;
         $network = 'polygon';
 
         $account = SmartAccount::create([
             'user_id'         => $this->user->id,
             'owner_address'   => $ownerAddress,
-            'account_address' => '0x1234567890abcdef1234567890abcdef12345678',
+            'account_address' => '0x' . bin2hex(random_bytes(20)),
             'network'         => $network,
             'deployed'        => false,
             'nonce'           => 0,
@@ -148,10 +153,10 @@ class SmartAccountServiceTest extends TestCase
 
     public function test_marks_account_as_deployed(): void
     {
-        $ownerAddress = '0x742d35cc6634c0532925a3b844bc454e4438f44e';
-        $accountAddress = '0x1234567890abcdef1234567890abcdef12345678';
+        $ownerAddress = $this->ownerAddress;
+        $accountAddress = '0x' . bin2hex(random_bytes(20));
         $network = 'polygon';
-        $txHash = '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab';
+        $txHash = '0x' . bin2hex(random_bytes(32));
 
         $account = SmartAccount::create([
             'user_id'         => $this->user->id,
@@ -173,13 +178,13 @@ class SmartAccountServiceTest extends TestCase
 
     public function test_get_nonce_info_returns_account_state(): void
     {
-        $ownerAddress = '0x742d35cc6634c0532925a3b844bc454e4438f44e';
+        $ownerAddress = $this->ownerAddress;
         $network = 'polygon';
 
         SmartAccount::create([
             'user_id'         => $this->user->id,
             'owner_address'   => $ownerAddress,
-            'account_address' => '0x1234567890abcdef1234567890abcdef12345678',
+            'account_address' => '0x' . bin2hex(random_bytes(20)),
             'network'         => $network,
             'deployed'        => true,
             'nonce'           => 5,
@@ -205,7 +210,7 @@ class SmartAccountServiceTest extends TestCase
 
     public function test_creates_accounts_for_different_networks(): void
     {
-        $ownerAddress = '0x742d35cc6634c0532925a3b844bc454e4438f44e';
+        $ownerAddress = $this->ownerAddress;
 
         $this->factory->shouldReceive('supportsNetwork')
             ->andReturn(true);
@@ -227,7 +232,7 @@ class SmartAccountServiceTest extends TestCase
 
     public function test_pending_ops_does_not_go_below_zero(): void
     {
-        $ownerAddress = '0x742d35cc6634c0532925a3b844bc454e4438f44e';
+        $ownerAddress = $this->ownerAddress;
         $network = 'polygon';
 
         $account = SmartAccount::create([

@@ -120,7 +120,7 @@
 <section class="bg-slate-50 py-16">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="text-3xl font-bold mb-4">Available Streams</h2>
-        <p class="text-slate-600 mb-8">Each domain publishes to an isolated Redis Stream. Stream keys are prefixed with <code class="code-font bg-slate-200 px-1.5 py-0.5 rounded">EVENT_STREAMING_PREFIX</code> (default: <code class="code-font bg-slate-200 px-1.5 py-0.5 rounded">{{ config('event-streaming.prefix', 'events') }}</code>).</p>
+        <p class="text-slate-600 mb-8">Each domain publishes to an isolated Redis Stream. Stream keys are prefixed with <code class="code-font bg-slate-200 px-1.5 py-0.5 rounded">EVENT_STREAMING_PREFIX</code> (default: <code class="code-font bg-slate-200 px-1.5 py-0.5 rounded">{{ config('event-streaming.prefix', 'finaegis:events') }}</code>).</p>
 
         @php
         $streams = [
@@ -187,15 +187,15 @@
                 <div class="space-y-2 text-sm">
                     @php
                     $configs = [
-                        ['EVENT_STREAMING_ENABLED', 'false', 'Enable/disable streaming'],
-                        ['EVENT_STREAMING_REDIS_CONNECTION', 'default', 'Redis connection name'],
-                        ['EVENT_STREAMING_PREFIX', '{{ config('event-streaming.prefix', 'events') }}', 'Stream key prefix'],
-                        ['EVENT_STREAMING_MAX_LENGTH', '100000', 'Max entries per stream'],
-                        ['EVENT_STREAMING_CONSUMER_GROUP', '{{ config('event-streaming.consumer_group', 'consumers') }}', 'Consumer group name'],
-                        ['EVENT_STREAMING_BLOCK_TIMEOUT', '5000', 'Read block timeout (ms)'],
-                        ['EVENT_STREAMING_BATCH_SIZE', '100', 'Messages per read'],
-                        ['EVENT_STREAMING_IDLE_TIMEOUT', '30000', 'Idle message reclaim (ms)'],
-                        ['EVENT_STREAMING_TTL_HOURS', '168', 'Retention period (7 days)'],
+                        ['EVENT_STREAMING_ENABLED', config('event-streaming.enabled') ? 'true' : 'false', 'Enable/disable streaming'],
+                        ['EVENT_STREAMING_REDIS_CONNECTION', config('event-streaming.connection', 'default'), 'Redis connection name'],
+                        ['EVENT_STREAMING_PREFIX', config('event-streaming.prefix', 'finaegis:events'), 'Stream key prefix'],
+                        ['EVENT_STREAMING_MAX_LENGTH', (string) config('event-streaming.max_stream_length', 100000), 'Max entries per stream'],
+                        ['EVENT_STREAMING_CONSUMER_GROUP', config('event-streaming.consumer_group', 'finaegis-consumers'), 'Consumer group name'],
+                        ['EVENT_STREAMING_BLOCK_TIMEOUT', (string) config('event-streaming.block_timeout', 5000), 'Read block timeout (ms)'],
+                        ['EVENT_STREAMING_BATCH_SIZE', (string) config('event-streaming.batch_size', 100), 'Messages per read'],
+                        ['EVENT_STREAMING_IDLE_TIMEOUT', (string) config('event-streaming.consumer_idle_timeout', 30000), 'Idle message reclaim (ms)'],
+                        ['EVENT_STREAMING_TTL_HOURS', (string) config('event-streaming.retention.ttl_hours', 168), 'Retention period (7 days)'],
                     ];
                     @endphp
                     @foreach($configs as $c)
