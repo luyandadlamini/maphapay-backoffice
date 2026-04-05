@@ -19,7 +19,10 @@ trait MasksPii
         if (! $value || auth()->user()?->can('view-pii')) {
             return $value ?? '';
         }
-        [$local, $domain] = explode('@', $value) + ['', ''];
+        if (! str_contains($value, '@')) {
+            return $value; // malformed — pass through unchanged
+        }
+        [$local, $domain] = explode('@', $value, 2);
         return substr($local, 0, 2) . '***@' . $domain;
     }
 

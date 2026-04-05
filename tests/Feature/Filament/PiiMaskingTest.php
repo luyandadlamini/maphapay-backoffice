@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Filament\Admin\Concerns\MasksPii;
 use App\Models\User;
 
@@ -110,4 +112,28 @@ it('maskNationalId passes through when user has view-pii', function (): void {
     })->mask('123456789');
 
     expect($result)->toBe('123456789');
+});
+
+it('maskPhone returns empty string for null input', function (): void {
+    $result = (new class {
+        use \App\Filament\Admin\Concerns\MasksPii;
+        public function mask(?string $v): string { return static::maskPhone($v); }
+    })->mask(null);
+
+    expect($result)->toBe('');
+});
+
+it('maskEmail passes through malformed email without @ symbol', function (): void {
+    $this->artisan('db:seed', ['--class' => 'RolesAndPermissionsSeeder']);
+
+    $support = \App\Models\User::factory()->create();
+    $support->assignRole('support-l1');
+    $this->actingAs($support);
+
+    $result = (new class {
+        use \App\Filament\Admin\Concerns\MasksPii;
+        public function mask(?string $v): string { return static::maskEmail($v); }
+    })->mask('not-an-email');
+
+    expect($result)->toBe('not-an-email');
 });

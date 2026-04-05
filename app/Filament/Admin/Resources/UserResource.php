@@ -7,6 +7,7 @@ namespace App\Filament\Admin\Resources;
 use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Compliance\Services\KycService;
 use App\Domain\Shared\Services\OtpService;
+use App\Filament\Admin\Concerns\MasksPii;
 use App\Filament\Admin\Resources\UserResource\Pages;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\AccountsRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\BankAccountsRelationManager;
@@ -16,7 +17,6 @@ use App\Filament\Admin\Resources\UserResource\RelationManagers\PocketsRelationMa
 use App\Filament\Admin\Resources\UserResource\RelationManagers\ReferralsRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\RewardProfilesRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\TransactionsRelationManager;
-use App\Filament\Admin\Concerns\MasksPii;
 use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use App\Models\User;
 use App\Models\UserOtp;
