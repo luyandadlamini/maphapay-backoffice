@@ -451,4 +451,24 @@ class User extends Authenticatable implements FilamentUser
             'frozen_by'     => null,
         ]);
     }
+
+    /**
+     * Get the audit logs for this user (actions performed by this user).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Domain\Compliance\Models\AuditLog, $this>
+     */
+    public function auditLogs(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Domain\Compliance\Models\AuditLog::class, 'user_uuid', 'uuid');
+    }
+
+    /**
+     * Get the support cases for this user.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Domain\Support\Models\SupportCase, $this>
+     */
+    public function supportCases(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Domain\Support\Models\SupportCase::class, 'user_id');
+    }
 }

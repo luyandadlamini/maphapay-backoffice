@@ -15,6 +15,8 @@ use App\Filament\Admin\Resources\UserResource\RelationManagers\CardsRelationMana
 use App\Filament\Admin\Resources\UserResource\RelationManagers\KycStatusRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\PocketsRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\ReferralsRelationManager;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\SupportCasesRelationManager;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\UserAuditLogRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\RewardProfilesRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\TransactionsRelationManager;
 use App\Filament\Admin\Traits\RespectsModuleVisibility;
@@ -501,6 +503,8 @@ class UserResource extends Resource
             CardsRelationManager::class,
             PocketsRelationManager::class,
             ReferralsRelationManager::class,
+            SupportCasesRelationManager::class,
+            UserAuditLogRelationManager::class,
         ];
     }
 
