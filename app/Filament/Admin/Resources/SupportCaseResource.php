@@ -149,7 +149,7 @@ class SupportCaseResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            SupportCaseResource\RelationManagers\NotesRelationManager::class,
         ];
     }
 
