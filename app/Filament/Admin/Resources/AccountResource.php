@@ -30,7 +30,7 @@ class AccountResource extends Resource
 
     protected static ?string $modelLabel = 'Bank Account';
 
-    protected static ?string $navigationGroup = 'Banking';
+    protected static ?string $navigationGroup = 'Wallets & Ledgers';
 
     protected static ?int $navigationSort = 1;
 

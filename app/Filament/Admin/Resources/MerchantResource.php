@@ -21,7 +21,7 @@ class MerchantResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-building-storefront';
 
-    protected static ?string $navigationGroup = 'Commerce';
+    protected static ?string $navigationGroup = 'Merchants & Orgs';
 
     protected static ?int $navigationSort = 1;
 

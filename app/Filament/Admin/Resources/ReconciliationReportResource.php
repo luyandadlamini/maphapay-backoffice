@@ -18,7 +18,7 @@ class ReconciliationReportResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-chart-bar';
 
-    protected static ?string $navigationGroup = 'Banking';
+    protected static ?string $navigationGroup = 'Finance & Reconciliation';
 
     protected static ?int $navigationSort = 6;
 

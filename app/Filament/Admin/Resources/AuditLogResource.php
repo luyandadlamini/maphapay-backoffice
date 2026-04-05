@@ -17,7 +17,7 @@ class AuditLogResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationGroup = 'System';
+    protected static ?string $navigationGroup = 'Platform';
 
     public static function form(Form $form): Form
     {

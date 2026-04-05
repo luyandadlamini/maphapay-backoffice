@@ -54,6 +54,9 @@ class AdminPanelProvider extends PanelProvider
                     'Risk & Fraud',
                     'Support Hub',
                     'Finance & Reconciliation',
+                    'Growth & Rewards',
+                    'Notifications',
+                    'Configuration',
                     'Platform',
                 ]
             )

@@ -21,7 +21,7 @@ class PaymentIntentResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-device-phone-mobile';
 
-    protected static ?string $navigationGroup = 'Mobile Payments';
+    protected static ?string $navigationGroup = 'Transactions';
 
     protected static ?int $navigationSort = 1;
 

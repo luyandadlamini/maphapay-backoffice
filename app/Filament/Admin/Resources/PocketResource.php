@@ -18,7 +18,7 @@ class PocketResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-calculator';
 
-    protected static ?string $navigationGroup = 'Mobile Features';
+    protected static ?string $navigationGroup = 'Wallets & Ledgers';
 
     protected static ?int $navigationSort = 10;
 

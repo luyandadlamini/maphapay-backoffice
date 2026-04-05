@@ -20,7 +20,7 @@ class AnomalyDetectionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-shield-exclamation';
 
-    protected static ?string $navigationGroup = 'Fraud Detection';
+    protected static ?string $navigationGroup = 'Risk & Fraud';
 
     protected static ?int $navigationSort = 1;
 

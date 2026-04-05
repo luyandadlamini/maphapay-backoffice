@@ -17,7 +17,7 @@ class KycDocumentResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationGroup = 'TrustCert';
+    protected static ?string $navigationGroup = 'Compliance';
 
     public static function form(Form $form): Form
     {

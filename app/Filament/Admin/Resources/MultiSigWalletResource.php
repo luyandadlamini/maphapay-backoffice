@@ -20,7 +20,7 @@ class MultiSigWalletResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-wallet';
 
-    protected static ?string $navigationGroup = 'Wallets';
+    protected static ?string $navigationGroup = 'Wallets & Ledgers';
 
     protected static ?int $navigationSort = 1;
 
