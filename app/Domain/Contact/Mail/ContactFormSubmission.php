@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Contact\Mail;
 
 use App\Domain\Contact\Models\ContactSubmission;

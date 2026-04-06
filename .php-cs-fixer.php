@@ -43,6 +43,7 @@ return (new Config())
             'spacing' => 'one',
         ],
         'declare_equal_normalize' => true,
+        'declare_strict_types' => true,
         'elseif' => true,
         'encoding' => true,
         'full_opening_tag' => true,

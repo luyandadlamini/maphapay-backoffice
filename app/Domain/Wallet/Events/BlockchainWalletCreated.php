@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Wallet\Events;
 
 use Spatie\EventSourcing\StoredEvents\ShouldBeStored;

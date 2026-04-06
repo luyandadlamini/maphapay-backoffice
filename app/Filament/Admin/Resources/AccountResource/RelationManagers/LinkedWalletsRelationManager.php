@@ -37,9 +37,9 @@ class LinkedWalletsRelationManager extends RelationManager
                 TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'active' => 'success',
+                        'active'   => 'success',
                         'inactive' => 'danger',
-                        default => 'secondary',
+                        default    => 'secondary',
                     }),
             ])
             ->filters([
@@ -66,12 +66,12 @@ class LinkedWalletsRelationManager extends RelationManager
                         $metadata['unlinked_reason'] = $data['reason'];
                         $metadata['unlinked_by'] = auth()->id();
                         $metadata['unlinked_at'] = now()->toIso8601String();
-                        
+
                         $record->update([
-                            'status' => 'inactive',
-                            'metadata' => $metadata
+                            'status'   => 'inactive',
+                            'metadata' => $metadata,
                         ]);
-                        
+
                         if (function_exists('activity')) {
                             activity()
                                 ->performedOn($record)
@@ -79,7 +79,7 @@ class LinkedWalletsRelationManager extends RelationManager
                                 ->withProperties(['reason' => $data['reason']])
                                 ->log('unlinked_wallet');
                         }
-                    })
+                    }),
             ])
             ->bulkActions([]);
     }

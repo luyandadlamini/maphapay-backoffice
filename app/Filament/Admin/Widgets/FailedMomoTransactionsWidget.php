@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Widgets;
 
 use App\Models\MtnMomoTransaction;
@@ -31,9 +33,9 @@ class FailedMomoTransactionsWidget extends BaseWidget
             Tables\Columns\TextColumn::make('type')
                 ->badge()
                 ->color(fn (string $state): string => match ($state) {
-                    'collection' => 'info',
+                    'collection'   => 'info',
                     'disbursement' => 'warning',
-                    default => 'secondary',
+                    default        => 'secondary',
                 }),
             Tables\Columns\TextColumn::make('amount')
                 ->money('SZL'),
@@ -58,8 +60,8 @@ class FailedMomoTransactionsWidget extends BaseWidget
                 Tables\Actions\Action::make('view')
                     ->label('View')
                     ->icon('heroicon-o-eye')
-                    ->url(fn (MtnMomoTransaction $record): string =>
-                        \App\Filament\Admin\Resources\MtnMomoTransactionResource::getUrl('edit', ['record' => $record])
+                    ->url(
+                        fn (MtnMomoTransaction $record): string => \App\Filament\Admin\Resources\MtnMomoTransactionResource::getUrl('edit', ['record' => $record])
                     ),
             ])
             ->emptyStateIcon('heroicon-o-check-circle')

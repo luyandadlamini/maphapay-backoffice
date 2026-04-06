@@ -1,17 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Domain\CardIssuance\Models\Card;
 use App\Domain\CardIssuance\Services\CardProvisioningService;
 use App\Filament\Admin\Resources\CardIssuanceResource\Pages;
+use Exception;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Notifications\Notification;
-use Exception;
 
 class CardIssuanceResource extends Resource
 {
@@ -78,8 +80,8 @@ class CardIssuanceResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'active' => 'Active',
-                        'frozen' => 'Frozen',
+                        'active'    => 'Active',
+                        'frozen'    => 'Frozen',
                         'cancelled' => 'Cancelled',
                     ]),
             ])
@@ -99,7 +101,7 @@ class CardIssuanceResource extends Resource
                     ->action(function (Card $record, array $data, CardProvisioningService $service): void {
                         try {
                             $service->freezeCard($record->issuer_card_token);
-                            
+
                             if (function_exists('activity')) {
                                 activity()
                                     ->performedOn($record)
@@ -107,7 +109,7 @@ class CardIssuanceResource extends Resource
                                     ->withProperties(['reason' => $data['reason']])
                                     ->log('card_blocked');
                             }
-                            
+
                             Notification::make()
                                 ->title('Card blocked successfully')
                                 ->success()
@@ -137,14 +139,14 @@ class CardIssuanceResource extends Resource
                     ->action(function (Card $record, array $data, CardProvisioningService $service): void {
                         try {
                             $service->cancelCard($record->issuer_card_token, $data['reason']);
-                            
+
                             $newCard = $service->createCard(
                                 $record->user_id,
                                 $record->user->name,
                                 ['reissued_from' => $record->id, 'reason' => $data['reason']],
                                 \App\Domain\CardIssuance\Enums\CardNetwork::tryFrom($record->network)
                             );
-                            
+
                             if (function_exists('activity')) {
                                 activity()
                                     ->performedOn($record)
@@ -152,7 +154,7 @@ class CardIssuanceResource extends Resource
                                     ->withProperties(['reason' => $data['reason'], 'new_card_token' => $newCard->cardToken])
                                     ->log('card_reissued');
                             }
-                            
+
                             Notification::make()
                                 ->title('Card cancelled and re-issued')
                                 ->success()

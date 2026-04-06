@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Controllers\Api\AuditController;
 use App\Http\Controllers\Api\ComplianceAlertController;
 use App\Http\Controllers\Api\ComplianceCaseController;

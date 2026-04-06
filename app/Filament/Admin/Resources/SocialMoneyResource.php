@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
-use App\Models\Thread;
-use App\Filament\Admin\Resources\SocialMoneyResource\Pages;
 use App\Domain\Fraud\Models\AnomalyDetection;
+use App\Filament\Admin\Resources\SocialMoneyResource\Pages;
+use App\Models\Thread;
 use Exception;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -31,7 +30,10 @@ class SocialMoneyResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
-    public static function canCreate(): bool { return false; }
+    public static function canCreate(): bool
+    {
+    return false;
+    }
 
     public static function canAccess(): bool
     {
@@ -55,9 +57,9 @@ class SocialMoneyResource extends Resource
                 TextColumn::make('type')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'group' => 'info',
+                        'group'  => 'info',
                         'direct' => 'gray',
-                        default => 'secondary',
+                        default  => 'secondary',
                     }),
                 TextColumn::make('creator.name')
                     ->label('Created By')

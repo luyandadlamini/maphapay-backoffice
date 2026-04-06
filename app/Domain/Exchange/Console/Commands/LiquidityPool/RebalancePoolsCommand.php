@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Exchange\Console\Commands\LiquidityPool;
 
 use App\Domain\Exchange\LiquidityPool\Services\PoolRebalancingService;

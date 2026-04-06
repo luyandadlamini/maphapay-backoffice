@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Cgo\Console\Commands;
 
 use App\Domain\Cgo\Services\PaymentVerificationService;

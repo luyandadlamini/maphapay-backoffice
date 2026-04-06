@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Account\Models\Account;
 use App\Domain\Custodian\Models\CustodianAccount;
 use App\Domain\Custodian\Services\CustodianRegistry;

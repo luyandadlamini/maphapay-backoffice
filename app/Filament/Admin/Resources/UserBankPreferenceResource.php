@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Domain\Banking\Models\UserBankPreference;
@@ -116,7 +118,7 @@ class UserBankPreferenceResource extends Resource
                         ->boolean()
                         ->trueIcon('heroicon-o-star')
                         ->falseIcon('heroicon-o-star'),
-                    Tables\Columns\BadgeColumn::make('status')
+                    Tables\Columns\TextColumn::make('status')
                         ->colors(
                             [
                                 'success' => 'active',

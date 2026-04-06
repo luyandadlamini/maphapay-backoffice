@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Account\DataObjects\Hash;
 
 it('can be created with valid SHA3-512 hash', function () {

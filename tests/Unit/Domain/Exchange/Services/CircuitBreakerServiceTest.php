@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Domain\Exchange\Services;
 
 use App\Domain\Exchange\Services\CircuitBreakerService;

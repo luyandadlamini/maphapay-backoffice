@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\WebhookResource\RelationManagers;
 
 use Filament\Notifications\Notification;
@@ -28,7 +30,7 @@ class DeliveriesRelationManager extends RelationManager
                     Tables\Columns\TextColumn::make('event_type')
                         ->label('Event')
                         ->searchable(),
-                    Tables\Columns\BadgeColumn::make('status')
+                    Tables\Columns\TextColumn::make('status')
                         ->colors(
                             [
                                 'success' => 'delivered',

@@ -24,9 +24,13 @@ class AnomalyDetection extends Model
     use UsesTenantConnection;
 
     public const TRIAGE_STATUS_DETECTED = 'detected';
+
     public const TRIAGE_STATUS_UNDER_REVIEW = 'under_review';
+
     public const TRIAGE_STATUS_RESOLVED = 'resolved';
+
     public const TRIAGE_STATUS_ESCALATED = 'escalated';
+
     public const TRIAGE_STATUS_DISMISSED = 'dismissed';
 
     protected $fillable = [

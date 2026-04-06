@@ -20,22 +20,26 @@ class KycStatusRelationManager extends RelationManager
     {
         return $table
             ->columns([
-                Tables\Columns\BadgeColumn::make('document_type')
+                Tables\Columns\TextColumn::make('document_type')
                     ->label('Document Type')
-                    ->colors([
-                        'primary'   => 'id_card',
-                        'secondary' => 'passport',
-                        'success'   => 'drivers_license',
-                        'info'      => 'utility_bill',
-                    ]),
-                Tables\Columns\BadgeColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'id_card'         => 'primary',
+                        'passport'        => 'info',
+                        'drivers_license' => 'success',
+                        'utility_bill'    => 'warning',
+                        default           => 'gray',
+                    }),
+                Tables\Columns\TextColumn::make('status')
                     ->label('Status')
-                    ->colors([
-                        'warning' => 'pending',
-                        'success' => 'verified',
-                        'danger'  => 'rejected',
-                        'gray'    => 'expired',
-                    ]),
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'pending'  => 'warning',
+                        'verified' => 'success',
+                        'rejected' => 'danger',
+                        'expired'  => 'gray',
+                        default    => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('uploaded_at')
                     ->label('Uploaded')
                     ->dateTime('M j, Y g:i A')

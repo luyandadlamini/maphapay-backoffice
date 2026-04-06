@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Account\Models;
 
 use App\Domain\Asset\Models\Asset;

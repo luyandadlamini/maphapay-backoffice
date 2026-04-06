@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Account\Aggregates\LedgerAggregate;
 use App\Domain\Account\DataObjects\AccountUuid;
 use App\Domain\Account\Workflows\DestroyAccountActivity;

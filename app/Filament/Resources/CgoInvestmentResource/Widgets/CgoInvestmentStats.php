@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Resources\CgoInvestmentResource\Widgets;
 
 use App\Domain\Cgo\Models\CgoInvestment;

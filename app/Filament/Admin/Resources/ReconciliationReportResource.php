@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Filament\Admin\Resources\ReconciliationReportResource;
+namespace App\Filament\Admin\Resources;
 
+use App\Filament\Admin\Resources\ReconciliationReportResource\Pages;
 use App\Filament\Admin\Resources\ReconciliationReportResource\Widgets\ReconciliationDiscrepancyWidget;
 use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use Filament\Actions\Action;
@@ -99,10 +100,10 @@ class ReconciliationReportResource extends Resource
                         ->badge()
                         ->color(
                             fn (string $state): string => match ($state) {
-                                'completed' => 'success',
-                                'failed' => 'danger',
+                                'completed'   => 'success',
+                                'failed'      => 'danger',
                                 'in_progress' => 'warning',
-                                default => 'gray',
+                                default       => 'gray',
                             }
                         ),
 
@@ -151,7 +152,7 @@ class ReconciliationReportResource extends Resource
                         ->label('Export CSV')
                         ->icon('heroicon-m-arrow-down-tray')
                         ->action(function ($records): StreamedResponse {
-                            $filename = 'reconciliation-report-'.now()->format('Y-m-d-His').'.csv';
+                            $filename = 'reconciliation-report-' . now()->format('Y-m-d-His') . '.csv';
 
                             return response()->streamDownload(function () use ($records): void {
                                 $handle = fopen('php://output', 'w');
@@ -170,7 +171,7 @@ class ReconciliationReportResource extends Resource
 
                                 fclose($handle);
                             }, $filename, [
-                                'Content-Type' => 'text/csv',
+                                'Content-Type'        => 'text/csv',
                                 'Content-Disposition' => "attachment; filename={$filename}",
                             ]);
                         })

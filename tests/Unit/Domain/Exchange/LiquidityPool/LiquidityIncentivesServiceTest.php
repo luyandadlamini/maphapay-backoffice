@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Domain\Exchange\LiquidityPool;
 
 use App\Domain\Exchange\LiquidityPool\Services\LiquidityIncentivesService;

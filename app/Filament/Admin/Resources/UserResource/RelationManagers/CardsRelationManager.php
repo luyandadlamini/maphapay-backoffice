@@ -30,14 +30,16 @@ class CardsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('network')
                     ->label('Network')
                     ->sortable(),
-                Tables\Columns\BadgeColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Status')
-                    ->colors([
-                        'success' => 'active',
-                        'warning' => 'frozen',
-                        'danger'  => 'cancelled',
-                        'gray'    => 'expired',
-                    ]),
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'active'    => 'success',
+                        'frozen'    => 'warning',
+                        'cancelled' => 'danger',
+                        'expired'   => 'gray',
+                        default     => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('currency')
                     ->label('Currency')
                     ->sortable(),

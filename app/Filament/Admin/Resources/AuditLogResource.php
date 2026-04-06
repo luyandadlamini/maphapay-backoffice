@@ -29,9 +29,7 @@ class AuditLogResource extends Resource
 
     public static function canAccess(): bool
     {
-        $user = auth()->user();
-
-        return $user && ($user->hasRole('super-admin') || $user->hasRole('compliance-manager'));
+        return auth()->user()?->can('view-audit-logs') ?? false;
     }
 
     public static function getHeaderActions(): array
@@ -56,7 +54,7 @@ class AuditLogResource extends Resource
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $filename = 'audit-trail-'.now()->format('Y-m-d-His').'.csv';
+        $filename = 'audit-trail-' . now()->format('Y-m-d-His') . '.csv';
 
         $callback = function () use ($logs) {
             $handle = fopen('php://output', 'w');
@@ -78,7 +76,7 @@ class AuditLogResource extends Resource
         };
 
         $response = response()->stream($callback, 200, [
-            'Content-Type' => 'text/csv',
+            'Content-Type'        => 'text/csv',
             'Content-Disposition' => "attachment; filename={$filename}",
         ]);
 
@@ -133,14 +131,14 @@ class AuditLogResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('event')
                     ->options([
-                        'created' => 'Created',
-                        'updated' => 'Updated',
-                        'deleted' => 'Deleted',
-                        'viewed' => 'Viewed',
+                        'created'  => 'Created',
+                        'updated'  => 'Updated',
+                        'deleted'  => 'Deleted',
+                        'viewed'   => 'Viewed',
                         'exported' => 'Exported',
                     ]),
                 Tables\Filters\Filter::make('created_at')
-                    ->form(DatePicker::make('from'))
+                    ->form([DatePicker::make('from')])
                     ->query(fn ($query, $date) => $query->where('created_at', '>=', $date)),
             ])
             ->actions([
@@ -151,7 +149,7 @@ class AuditLogResource extends Resource
                     ->label('Export Selected')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->action(function ($records): StreamedResponse {
-                        $filename = 'audit-export-'.now()->format('Y-m-d-His').'.csv';
+                        $filename = 'audit-export-' . now()->format('Y-m-d-His') . '.csv';
 
                         return response()->streamDownload(function () use ($records) {
                             $handle = fopen('php://output', 'w');

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Domain\Wallet\Services;
 
 use App\Domain\Wallet\Contracts\KeyManagementServiceInterface;

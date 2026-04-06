@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Account\DataObjects\AccountUuid;
 
 it('can be created with valid uuid string', function () {

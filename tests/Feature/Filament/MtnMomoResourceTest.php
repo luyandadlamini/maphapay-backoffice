@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Filament\Admin\Resources\MtnMomoTransactionResource\Pages\ListMtnMomoTransactions;
 use App\Models\MtnMomoTransaction;
 use App\Models\User;
-use function Pest\Livewire\livewire;
 use Filament\Facades\Filament;
+
+use function Pest\Livewire\livewire;
 
 function setupFilamentPanel(): void
 {
@@ -19,9 +22,9 @@ function setupFilamentPanel(): void
 function createTransaction(User $user, string $status, string $type)
 {
     $transaction = new MtnMomoTransaction();
-    $transaction->id = (string) \Illuminate\Support\Str::uuid();
+    $transaction->id = (string) Illuminate\Support\Str::uuid();
     $transaction->user_id = $user->id;
-    $transaction->idempotency_key = (string) \Illuminate\Support\Str::uuid();
+    $transaction->idempotency_key = (string) Illuminate\Support\Str::uuid();
     $transaction->type = $type;
     $transaction->amount = '1000';
     $transaction->currency = 'SZL';

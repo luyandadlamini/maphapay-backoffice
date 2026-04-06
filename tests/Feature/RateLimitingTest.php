@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Middleware\ApiRateLimitMiddleware;
 use App\Http\Middleware\TransactionRateLimitMiddleware;
 use App\Models\User;

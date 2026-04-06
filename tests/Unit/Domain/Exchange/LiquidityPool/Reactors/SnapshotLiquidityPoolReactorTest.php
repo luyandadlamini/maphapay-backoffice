@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Domain\Exchange\LiquidityPool\Reactors;
 
 use App\Domain\Exchange\Events\LiquidityAdded;

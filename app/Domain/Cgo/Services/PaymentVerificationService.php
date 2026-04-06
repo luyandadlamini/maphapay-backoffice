@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Cgo\Services;
 
 use App\Domain\Cgo\Mail\CgoInvestmentConfirmed;

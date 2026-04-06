@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use App\Domain\Commerce\Models\Merchant;
-use App\Domain\Commerce\Enums\MerchantStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class MerchantFactory extends Factory

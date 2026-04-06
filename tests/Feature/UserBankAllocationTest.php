@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Account\Services\BankAllocationService;
 use App\Domain\Banking\Models\UserBankPreference;
 use App\Models\User;

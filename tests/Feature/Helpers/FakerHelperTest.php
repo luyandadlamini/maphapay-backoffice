@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 it('faker function returns generator', function () {
     $faker = faker();
 

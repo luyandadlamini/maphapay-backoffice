@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Payment\Activities;
 
 use App\Domain\Payment\DataObjects\BankWithdrawal;

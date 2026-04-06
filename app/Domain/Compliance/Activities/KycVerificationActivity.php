@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Compliance\Activities;
 
 use App\Domain\Compliance\Services\KycService;

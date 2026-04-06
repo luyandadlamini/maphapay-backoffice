@@ -28,14 +28,14 @@ class Feature extends Model
     public static function getFlags(): array
     {
         return [
-            'send-money-enabled' => 'Send Money',
+            'send-money-enabled'    => 'Send Money',
             'request-money-enabled' => 'Request Money',
-            'exchange-enabled' => 'Exchange',
-            'mtn-momo-enabled' => 'MTN MoMo',
+            'exchange-enabled'      => 'Exchange',
+            'mtn-momo-enabled'      => 'MTN MoMo',
             'virtual-cards-enabled' => 'Virtual Cards',
-            'demo-mode-enabled' => 'Demo Mode',
-            'kyc-required' => 'KYC Required',
-            'maintenance-mode' => 'Maintenance Mode',
+            'demo-mode-enabled'     => 'Demo Mode',
+            'kyc-required'          => 'KYC Required',
+            'maintenance-mode'      => 'Maintenance Mode',
         ];
     }
 }

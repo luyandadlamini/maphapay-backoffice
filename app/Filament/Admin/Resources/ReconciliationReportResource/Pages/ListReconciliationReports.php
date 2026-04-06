@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\ReconciliationReportResource\Pages;
 
+use App\Domain\Custodian\Models\CustodianTransfer;
 use App\Domain\Custodian\Services\DailyReconciliationService;
 use App\Filament\Admin\Resources\ReconciliationReportResource;
 use Exception;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -22,6 +24,7 @@ class ListReconciliationReports extends ListRecords
             Actions\Action::make('run_reconciliation')
                 ->label('Run Reconciliation')
                 ->icon('heroicon-m-play')
+                ->visible(fn (): bool => auth()->user()?->can('approve-adjustments') ?? false)
                 ->action(
                     function () {
                         $service = app(DailyReconciliationService::class);
@@ -71,9 +74,10 @@ class ListReconciliationReports extends ListRecords
         );
     }
 
-    protected function getTableQuery(): ?\Illuminate\Database\Eloquent\Builder
+    protected function getTableQuery(): Builder
     {
-        // We're using file-based storage, so no query needed
-        return null;
+        // Reconciliation data is file-based; this stub Builder satisfies Filament's
+        // type contract while getTableRecords() supplies the actual data.
+        return CustodianTransfer::query()->whereRaw('0=1');
     }
 }

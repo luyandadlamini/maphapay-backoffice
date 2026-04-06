@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Filament\Exports\UserExporter;
 use App\Models\User;
 use Filament\Actions\Exports\Models\Export;

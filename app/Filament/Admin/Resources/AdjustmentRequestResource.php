@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Domain\Account\Models\AdjustmentRequest;
 use App\Filament\Admin\Resources\AdjustmentRequestResource\Pages;
+use Exception;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -140,7 +143,7 @@ class AdjustmentRequestResource extends Resource
                                 ->title('Adjustment Approved')
                                 ->body('The ledger adjustment has been successfully processed.')
                                 ->send();
-                        } catch (\Exception $e) {
+                        } catch (Exception $e) {
                             \Filament\Notifications\Notification::make()
                                 ->danger()
                                 ->title('Adjustment Failed')

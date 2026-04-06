@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Support\Models\SupportCase;
 use App\Models\User;
 
@@ -8,10 +10,10 @@ use function Pest\Laravel\artisan;
 use function Pest\Livewire\livewire;
 
 beforeEach(function () {
-    $panel = \Filament\Facades\Filament::getPanel('admin');
+    $panel = Filament\Facades\Filament::getPanel('admin');
     if ($panel) {
-        \Filament\Facades\Filament::setCurrentPanel($panel);
-        \Filament\Facades\Filament::setServingStatus(true);
+        Filament\Facades\Filament::setCurrentPanel($panel);
+        Filament\Facades\Filament::setServingStatus(true);
         $panel->boot();
     }
 });
@@ -26,7 +28,7 @@ it('support-l1 can create a support case', function () {
 
     actingAs($support);
 
-    livewire(\App\Filament\Admin\Resources\SupportCaseResource\Pages\CreateSupportCase::class)
+    livewire(App\Filament\Admin\Resources\SupportCaseResource\Pages\CreateSupportCase::class)
         ->fillForm([
             'user_id'     => $customer->id,
             'subject'     => 'Failed transfer investigation',
@@ -49,7 +51,7 @@ it('support hub shows open case count badge', function () {
     $admin->assignRole('super-admin');
     actingAs($admin);
 
-    livewire(\App\Filament\Admin\Resources\SupportCaseResource\Pages\ListSupportCases::class)
+    livewire(App\Filament\Admin\Resources\SupportCaseResource\Pages\ListSupportCases::class)
         ->assertSuccessful();
 });
 
@@ -63,9 +65,9 @@ it('support-l1 can add a note to a case', function () {
 
     actingAs($support);
 
-    livewire(\App\Filament\Admin\Resources\SupportCaseResource\RelationManagers\NotesRelationManager::class, [
+    livewire(App\Filament\Admin\Resources\SupportCaseResource\RelationManagers\NotesRelationManager::class, [
         'ownerRecord' => $case,
-        'pageClass'   => \App\Filament\Admin\Resources\SupportCaseResource\Pages\ViewSupportCase::class,
+        'pageClass'   => App\Filament\Admin\Resources\SupportCaseResource\Pages\ViewSupportCase::class,
     ])
         ->callTableAction('create', data: [
             'body'       => 'Reached out to customer regarding the transaction.',

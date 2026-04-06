@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Payment\Aggregates\PaymentWithdrawalAggregate;
 use App\Domain\Payment\DataObjects\BankWithdrawal;
 use App\Domain\Payment\Events\WithdrawalCompleted;

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Domain\Fraud\Enums\AnomalyStatus;
 use App\Domain\Fraud\Models\AnomalyDetection;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;

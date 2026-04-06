@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Asset\Models\Asset;
 use App\Models\User;
 

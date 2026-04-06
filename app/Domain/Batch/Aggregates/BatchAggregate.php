@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Batch\Aggregates;
 
 use App\Domain\Batch\DataObjects\BatchJob;

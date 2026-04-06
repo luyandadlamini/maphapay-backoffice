@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Webhook\Console\Commands;
 
 use App\Domain\Custodian\Jobs\ProcessCustodianWebhook;

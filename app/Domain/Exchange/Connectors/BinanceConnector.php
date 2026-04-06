@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Exchange\Connectors;
 
 use App\Domain\Exchange\Contracts\IExternalExchangeConnector;

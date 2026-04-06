@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Providers\WaterlineServiceProvider;
 
 it('extends WaterlineApplicationServiceProvider', function () {

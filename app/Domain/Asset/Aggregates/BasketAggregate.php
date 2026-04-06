@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Asset\Aggregates;
 
 use App\Domain\Asset\Events\BasketComposed;

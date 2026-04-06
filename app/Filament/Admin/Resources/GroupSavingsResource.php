@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
-use App\Models\GroupPocket;
 use App\Filament\Admin\Resources\GroupSavingsResource\Pages;
+use App\Filament\Admin\Resources\GroupSavingsResource\RelationManagers\ContributionsRelationManager;
+use App\Filament\Admin\Resources\GroupSavingsResource\RelationManagers\ParticipantsRelationManager;
+use App\Models\GroupPocket;
 use Exception;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Form;
+use Filament\Infolists\Components\IconEntry;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -29,7 +35,10 @@ class GroupSavingsResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
-    public static function canCreate(): bool { return false; }
+    public static function canCreate(): bool
+    {
+    return false;
+    }
 
     public static function canAccess(): bool
     {
@@ -39,6 +48,33 @@ class GroupSavingsResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([]);
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Section::make('Overview')
+                    ->schema([
+                        TextEntry::make('name')->label('Group Name')->weight('bold'),
+                        TextEntry::make('creator.name')->label('Created By'),
+                        TextEntry::make('target_amount')->label('Goal Amount')->money('SZL'),
+                        TextEntry::make('current_amount')->label('Current Balance')->money('SZL'),
+                        TextEntry::make('status')
+                            ->badge()
+                            ->color(fn (string $state): string => match ($state) {
+                                'active'    => 'success',
+                                'completed' => 'info',
+                                'closed'    => 'danger',
+                                default     => 'secondary',
+                            }),
+                        IconEntry::make('is_locked')
+                            ->label('Locked')
+                            ->boolean(),
+                        TextEntry::make('created_at')->dateTime()->label('Created At'),
+                    ])
+                    ->columns(3),
+            ]);
     }
 
     public static function table(Table $table): Table
@@ -94,7 +130,8 @@ class GroupSavingsResource extends Resource
                     ->icon('heroicon-o-lock-closed')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->visible(fn (GroupPocket $record) => $record->status === 'active')
+                    ->visible(fn (GroupPocket $record) => $record->status === 'active'
+                        && (auth()->user()?->can('manage-group-savings') ?? false))
                     ->form([
                         Textarea::make('reason')
                             ->label('Reason for freezing')
@@ -125,10 +162,19 @@ class GroupSavingsResource extends Resource
             ->bulkActions([]);
     }
 
+    public static function getRelations(): array
+    {
+        return [
+            ParticipantsRelationManager::class,
+            ContributionsRelationManager::class,
+        ];
+    }
+
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListGroupSavings::route('/'),
+            'view'  => Pages\ViewGroupSavings::route('/{record}'),
         ];
     }
 }

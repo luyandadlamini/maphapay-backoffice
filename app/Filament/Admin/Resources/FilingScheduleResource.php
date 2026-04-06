@@ -6,6 +6,8 @@ namespace App\Filament\Admin\Resources;
 
 use App\Domain\RegTech\Models\FilingSchedule;
 use App\Filament\Admin\Resources\FilingScheduleResource\Pages;
+use App\Filament\Admin\Resources\FilingScheduleResource\Widgets\FilingDeadlineWidget;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -21,7 +23,7 @@ class FilingScheduleResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
 
-    protected static ?string $navigationGroup = 'RegTech';
+    protected static ?string $navigationGroup = 'Compliance';
 
     protected static ?int $navigationSort = 1;
 
@@ -57,13 +59,13 @@ class FilingScheduleResource extends Resource
                                 Forms\Components\Select::make('frequency')
                                     ->options(
                                         [
-                                            'daily' => 'Daily',
-                                            'weekly' => 'Weekly',
-                                            'monthly' => 'Monthly',
-                                            'quarterly' => 'Quarterly',
-                                            'annually' => 'Annually',
+                                            'daily'       => 'Daily',
+                                            'weekly'      => 'Weekly',
+                                            'monthly'     => 'Monthly',
+                                            'quarterly'   => 'Quarterly',
+                                            'annually'    => 'Annually',
                                             'transaction' => 'Per Transaction',
-                                            'event' => 'Event-Driven',
+                                            'event'       => 'Event-Driven',
                                         ]
                                     )
                                     ->required(),
@@ -114,14 +116,14 @@ class FilingScheduleResource extends Resource
                         ->formatStateUsing(fn (string $state): string => ucfirst($state))
                         ->color(
                             fn (string $state): string => match ($state) {
-                                'daily' => 'danger',
-                                'weekly' => 'warning',
-                                'monthly' => 'info',
-                                'quarterly' => 'primary',
-                                'annually' => 'success',
+                                'daily'       => 'danger',
+                                'weekly'      => 'warning',
+                                'monthly'     => 'info',
+                                'quarterly'   => 'primary',
+                                'annually'    => 'success',
                                 'transaction' => 'warning',
-                                'event' => 'gray',
-                                default => 'gray',
+                                'event'       => 'gray',
+                                default       => 'gray',
                             }
                         ),
                     Tables\Columns\TextColumn::make('next_due_date')
@@ -152,13 +154,13 @@ class FilingScheduleResource extends Resource
                     Tables\Filters\SelectFilter::make('frequency')
                         ->options(
                             [
-                                'daily' => 'Daily',
-                                'weekly' => 'Weekly',
-                                'monthly' => 'Monthly',
-                                'quarterly' => 'Quarterly',
-                                'annually' => 'Annually',
+                                'daily'       => 'Daily',
+                                'weekly'      => 'Weekly',
+                                'monthly'     => 'Monthly',
+                                'quarterly'   => 'Quarterly',
+                                'annually'    => 'Annually',
                                 'transaction' => 'Per Transaction',
-                                'event' => 'Event-Driven',
+                                'event'       => 'Event-Driven',
                             ]
                         ),
                     Tables\Filters\TernaryFilter::make('is_active')
@@ -202,7 +204,7 @@ class FilingScheduleResource extends Resource
                         ->action(function ($record, array $data): void {
                             $record->update([
                                 'last_filed_at' => now(),
-                                'metadata' => array_merge($record->metadata ?? [], [
+                                'metadata'      => array_merge($record->metadata ?? [], [
                                     'regulator_reference' => $data['regulator_reference_number'],
                                 ]),
                             ]);
@@ -233,10 +235,10 @@ class FilingScheduleResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListFilingSchedules::route('/'),
+            'index'  => Pages\ListFilingSchedules::route('/'),
             'create' => Pages\CreateFilingSchedule::route('/create'),
-            'view' => Pages\ViewFilingSchedule::route('/{record}'),
-            'edit' => Pages\EditFilingSchedule::route('/{record}/edit'),
+            'view'   => Pages\ViewFilingSchedule::route('/{record}'),
+            'edit'   => Pages\EditFilingSchedule::route('/{record}/edit'),
         ];
     }
 }

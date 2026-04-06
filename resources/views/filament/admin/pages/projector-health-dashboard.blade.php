@@ -1,11 +1,5 @@
 <x-filament-panels::page>
     <div class="space-y-6">
-        {{-- Stats Overview --}}
-        @livewire(\App\Filament\Admin\Pages\ProjectorHealthDashboard\ProjectorLagWidget::class)
-
-        {{-- Event Stream Depth --}}
-        @livewire(\App\Filament\Admin\Pages\ProjectorHealthDashboard\EventStreamDepthWidget::class)
-
         {{-- Projector List Table --}}
         <div class="bg-white rounded-lg shadow dark:bg-gray-800 p-6">
             <h3 class="text-lg font-semibold mb-4">Projector Status Details</h3>

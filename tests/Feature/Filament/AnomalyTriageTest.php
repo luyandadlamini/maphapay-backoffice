@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Fraud\Models\AnomalyDetection;
 use App\Filament\Admin\Resources\AnomalyDetectionResource\Pages\ListAnomalyDetections;
 use App\Models\User;
 use Filament\Facades\Filament;
+
 use function Pest\Livewire\livewire;
 
 beforeEach(function () {

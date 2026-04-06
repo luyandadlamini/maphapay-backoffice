@@ -119,6 +119,7 @@ class User extends Authenticatable implements FilamentUser
         'transaction_pin',
         'transaction_pin_enabled',
         'mobile',
+        'national_id_number',
         'dial_code',
         'mobile_verified_at',
         'username',
@@ -217,7 +218,7 @@ class User extends Authenticatable implements FilamentUser
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->hasRole(UserRoles::ADMIN->value);
+        return $this->hasAnyRole([UserRoles::ADMIN->value, 'super-admin']);
     }
 
     /**
@@ -455,9 +456,9 @@ class User extends Authenticatable implements FilamentUser
     /**
      * Get the audit logs for this user (actions performed by this user).
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Domain\Compliance\Models\AuditLog, $this>
+     * @return HasMany<\App\Domain\Compliance\Models\AuditLog, $this>
      */
-    public function auditLogs(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function auditLogs(): HasMany
     {
         return $this->hasMany(\App\Domain\Compliance\Models\AuditLog::class, 'user_uuid', 'uuid');
     }
@@ -465,9 +466,9 @@ class User extends Authenticatable implements FilamentUser
     /**
      * Get the support cases for this user.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Domain\Support\Models\SupportCase, $this>
+     * @return HasMany<\App\Domain\Support\Models\SupportCase, $this>
      */
-    public function supportCases(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function supportCases(): HasMany
     {
         return $this->hasMany(\App\Domain\Support\Models\SupportCase::class, 'user_id');
     }

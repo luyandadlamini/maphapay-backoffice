@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Batch\Events;
 
 use App\Domain\Batch\DataObjects\BatchJob;

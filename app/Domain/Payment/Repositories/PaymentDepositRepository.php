@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Payment\Repositories;
 
 use App\Domain\Payment\Models\PaymentDeposit;

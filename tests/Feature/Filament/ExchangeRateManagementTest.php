@@ -10,8 +10,13 @@ use Illuminate\Support\Facades\Event;
 
 use function Pest\Livewire\livewire;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->artisan('db:seed', ['--class' => 'RolesAndPermissionsSeeder']);
+
+    $panel = Filament\Facades\Filament::getPanel('admin');
+    Filament\Facades\Filament::setCurrentPanel($panel);
+    Filament\Facades\Filament::setServingStatus(true);
+    $panel->boot();
 });
 
 it('operations-l2 cannot directly edit exchange rate', function () {
@@ -22,7 +27,7 @@ it('operations-l2 cannot directly edit exchange rate', function () {
     $rate = ExchangeRate::factory()->create(['rate' => 15.5000000000]);
 
     livewire(ListExchangeRates::class)
-        ->assertTableActionHidden('edit', $rate);
+        ->assertTableActionDoesNotExist('edit');
 });
 
 it('user with manage-feature-flags can see set rate action', function () {
@@ -49,7 +54,7 @@ it('set rate action updates rate and fires event', function () {
 
     livewire(ListExchangeRates::class)
         ->callTableAction('setRate', $rate, [
-            'rate' => 16.2500000000,
+            'rate'   => 16.2500000000,
             'reason' => 'Market adjustment per treasury review',
         ]);
 

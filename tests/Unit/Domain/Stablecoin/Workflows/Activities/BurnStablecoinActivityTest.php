@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Domain\Stablecoin\Workflows\Activities;
 
 use App\Domain\Account\DataObjects\AccountUuid;

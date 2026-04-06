@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Account;
 
 use App\Domain\Account\Models\Account;

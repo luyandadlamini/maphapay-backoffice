@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Exchange\Jobs;
 
 use App\Domain\Exchange\Services\ExternalLiquidityService;

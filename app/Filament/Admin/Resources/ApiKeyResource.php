@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\ApiKeyResource\Pages;
@@ -108,7 +110,7 @@ class ApiKeyResource extends Resource
                     Tables\Columns\TextColumn::make('key_prefix')
                         ->label('Key')
                         ->formatStateUsing(fn (string $state): string => $state . '...'),
-                    Tables\Columns\BadgeColumn::make('permissions')
+                    Tables\Columns\TextColumn::make('permissions')
                         ->colors(
                             [
                                 'success' => 'read',

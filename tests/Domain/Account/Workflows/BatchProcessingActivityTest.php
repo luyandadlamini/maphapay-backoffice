@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Account\Workflows\BatchProcessingActivity;
 
 it('extends Activity base class', function () {

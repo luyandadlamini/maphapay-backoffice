@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class GroupPocket extends Model
 {
@@ -54,6 +55,12 @@ class GroupPocket extends Model
     public function withdrawalRequests(): HasMany
     {
         return $this->hasMany(GroupPocketWithdrawalRequest::class);
+    }
+
+    /** @return HasManyThrough<ThreadParticipant, Thread, $this> */
+    public function participants(): HasManyThrough
+    {
+        return $this->hasManyThrough(ThreadParticipant::class, Thread::class, 'id', 'thread_id', 'thread_id', 'id');
     }
 
     public function addFunds(string $amount): void

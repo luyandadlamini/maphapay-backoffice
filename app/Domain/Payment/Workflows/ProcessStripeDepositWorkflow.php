@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Payment\Workflows;
 
 use App\Domain\Payment\Activities\CreditAccountActivity;

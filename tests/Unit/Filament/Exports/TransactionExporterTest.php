@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Account\Models\Transaction;
 use App\Filament\Exports\TransactionExporter;
 use Filament\Actions\Exports\Models\Export;

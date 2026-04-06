@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Webhook\Services;
 
 use App\Domain\Webhook\Jobs\ProcessWebhookDelivery;

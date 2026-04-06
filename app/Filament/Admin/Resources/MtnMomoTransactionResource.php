@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\MtnMomoTransactionResource\Pages;
@@ -36,6 +38,11 @@ class MtnMomoTransactionResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view-transactions') ?? false;
     }
 
     public static function form(Form $form): Form
@@ -99,8 +106,8 @@ class MtnMomoTransactionResource extends Resource
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
                     ->requiresConfirmation()
-                    ->visible(fn (MtnMomoTransaction $record): bool =>
-                        $record->status === MtnMomoTransaction::STATUS_FAILED &&
+                    ->visible(
+                        fn (MtnMomoTransaction $record): bool => $record->status === MtnMomoTransaction::STATUS_FAILED &&
                         $record->type === MtnMomoTransaction::TYPE_DISBURSEMENT &&
                         (auth()->user()?->can('approve-adjustments') ?? false)
                     )
@@ -113,15 +120,15 @@ class MtnMomoTransactionResource extends Resource
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->color('primary')
                     ->requiresConfirmation()
-                    ->visible(fn (MtnMomoTransaction $record): bool =>
-                        $record->status === MtnMomoTransaction::STATUS_FAILED &&
+                    ->visible(
+                        fn (MtnMomoTransaction $record): bool => $record->status === MtnMomoTransaction::STATUS_FAILED &&
                         $record->type === MtnMomoTransaction::TYPE_REQUEST_TO_PAY &&
                         (auth()->user()?->can('approve-adjustments') ?? false)
                     )
                     ->action(function (MtnMomoTransaction $record): void {
                         $record->update([
                             'status' => MtnMomoTransaction::STATUS_SUCCESSFUL,
-                            'note' => trim($record->note . ' | Refunded manually by ' . auth()->id(), ' | ')
+                            'note'   => trim($record->note . ' | Refunded manually by ' . auth()->id(), ' | '),
                         ]);
                         \Filament\Notifications\Notification::make()->title('Collection Refunded')->success()->send();
                     }),

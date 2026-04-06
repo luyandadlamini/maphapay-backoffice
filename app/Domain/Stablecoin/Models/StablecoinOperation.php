@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Stablecoin\Models;
 
 use App\Domain\Account\Models\Account;

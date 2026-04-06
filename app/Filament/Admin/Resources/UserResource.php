@@ -15,10 +15,10 @@ use App\Filament\Admin\Resources\UserResource\RelationManagers\CardsRelationMana
 use App\Filament\Admin\Resources\UserResource\RelationManagers\KycStatusRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\PocketsRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\ReferralsRelationManager;
-use App\Filament\Admin\Resources\UserResource\RelationManagers\SupportCasesRelationManager;
-use App\Filament\Admin\Resources\UserResource\RelationManagers\UserAuditLogRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\RewardProfilesRelationManager;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\SupportCasesRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\TransactionsRelationManager;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\UserAuditLogRelationManager;
 use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use App\Models\User;
 use App\Models\UserOtp;
@@ -134,12 +134,13 @@ class UserResource extends Resource
                             TextEntry::make('kyc_status')
                                 ->label('KYC Status')
                                 ->badge()
-                                ->colors([
-                                    'warning' => 'not_started',
-                                    'info'    => 'pending',
-                                    'success' => 'approved',
-                                    'danger'  => 'rejected',
-                                ]),
+                                ->color(fn (string $state): string => match ($state) {
+                                    'not_started' => 'warning',
+                                    'pending'     => 'info',
+                                    'approved'    => 'success',
+                                    'rejected'    => 'danger',
+                                    default       => 'gray',
+                                }),
                             IconEntry::make('frozen_at')
                                 ->label('Account Frozen')
                                 ->boolean()
@@ -178,14 +179,16 @@ class UserResource extends Resource
                     Tables\Columns\TextColumn::make('email')
                         ->searchable()
                         ->formatStateUsing(fn ($state) => static::maskEmail($state)),
-                    Tables\Columns\BadgeColumn::make('kyc_status')
+                    Tables\Columns\TextColumn::make('kyc_status')
                         ->label('KYC')
-                        ->colors([
-                            'warning' => 'not_started',
-                            'info'    => 'pending',
-                            'success' => 'approved',
-                            'danger'  => 'rejected',
-                        ])
+                        ->badge()
+                        ->color(fn (string $state): string => match ($state) {
+                            'not_started' => 'warning',
+                            'pending'     => 'info',
+                            'approved'    => 'success',
+                            'rejected'    => 'danger',
+                            default       => 'gray',
+                        })
                         ->sortable(),
                     Tables\Columns\IconColumn::make('frozen_at')
                         ->label('Status')
@@ -238,6 +241,10 @@ class UserResource extends Resource
                         ->label('Mobile')
                         ->toggleable()
                         ->formatStateUsing(fn ($state) => static::maskPhone($state)),
+                    Tables\Columns\TextColumn::make('national_id_number')
+                        ->label('National ID')
+                        ->toggleable(isToggledHiddenByDefault: true)
+                        ->formatStateUsing(fn ($state) => static::maskNationalId($state)),
                     Tables\Columns\TextColumn::make('send_money_step_up_threshold_override')
                         ->label('Send Money Override')
                         ->money('SZL')

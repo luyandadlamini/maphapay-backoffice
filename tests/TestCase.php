@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests;
 
 use App\Domain\Account\Aggregates\LedgerAggregate;
@@ -123,7 +125,7 @@ abstract class TestCase extends BaseTestCase
 
     protected function createAccount(User $user): Account
     {
-        $uuid = Str::uuid();
+        $uuid = (string) Str::uuid();
 
         app(LedgerAggregate::class)->retrieve($uuid)
             ->createAccount(
@@ -418,6 +420,7 @@ abstract class TestCase extends BaseTestCase
         if ($panel) {
             Filament::setCurrentPanel($panel);
             Filament::setServingStatus(true);
+            $panel->boot();
         }
     }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Custodian\Console\Commands;
 
 use App\Domain\Custodian\Services\SettlementService;

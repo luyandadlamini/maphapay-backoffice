@@ -37,7 +37,7 @@ class DataSubjectRequest extends Model
     ];
 
     protected $casts = [
-        'reviewed_at' => 'datetime',
+        'reviewed_at'  => 'datetime',
         'fulfilled_at' => 'datetime',
     ];
 

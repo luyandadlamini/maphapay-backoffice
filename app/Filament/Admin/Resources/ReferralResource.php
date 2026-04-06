@@ -27,9 +27,7 @@ class ReferralResource extends Resource
 
     public static function canAccess(): bool
     {
-        $user = auth()->user();
-
-        return $user && ($user->hasRole('super-admin') || $user->hasRole('compliance-manager'));
+        return auth()->user()?->can('view-referrals') ?? false;
     }
 
     public static function table(Table $table): Table
@@ -55,11 +53,11 @@ class ReferralResource extends Resource
                     ->badge()
                     ->color(
                         fn (string $state): string => match ($state) {
-                            'pending' => 'warning',
+                            'pending'   => 'warning',
                             'completed' => 'success',
-                            'rewarded' => 'info',
-                            'flagged' => 'danger',
-                            default => 'gray',
+                            'rewarded'  => 'info',
+                            'flagged'   => 'danger',
+                            default     => 'gray',
                         }
                     ),
 
@@ -76,10 +74,10 @@ class ReferralResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'pending' => 'Pending',
+                        'pending'   => 'Pending',
                         'completed' => 'Completed',
-                        'rewarded' => 'Rewarded',
-                        'flagged' => 'Flagged',
+                        'rewarded'  => 'Rewarded',
+                        'flagged'   => 'Flagged',
                     ]),
             ])
             ->actions([
@@ -103,13 +101,13 @@ class ReferralResource extends Resource
 
                         if (class_exists(AnomalyDetection::class)) {
                             AnomalyDetection::create([
-                                'type' => 'referral_fraud',
-                                'severity' => 'high',
+                                'type'        => 'referral_fraud',
+                                'severity'    => 'high',
                                 'description' => $data['reason'],
-                                'metadata' => [
+                                'metadata'    => [
                                     'referral_id' => $record->id,
                                     'referrer_id' => $record->referrer_id,
-                                    'referee_id' => $record->referee_id,
+                                    'referee_id'  => $record->referee_id,
                                 ],
                             ]);
                         }
@@ -128,10 +126,10 @@ class ReferralResource extends Resource
                     ->modalHeading('Referral Chain')
                     ->modalContent(function ($record): string {
                         $html = '<div class="space-y-2">';
-                        $html .= '<p><strong>Referrer:</strong> '.($record->referrer->name ?? 'N/A').'</p>';
-                        $html .= '<p><strong>Referred:</strong> '.($record->referee->name ?? 'N/A').'</p>';
-                        $html .= '<p><strong>Status:</strong> '.$record->status.'</p>';
-                        $html .= '<p><strong>Created:</strong> '.$record->created_at->format('Y-m-d H:i:s').'</p>';
+                        $html .= '<p><strong>Referrer:</strong> ' . ($record->referrer->name ?? 'N/A') . '</p>';
+                        $html .= '<p><strong>Referred:</strong> ' . ($record->referee->name ?? 'N/A') . '</p>';
+                        $html .= '<p><strong>Status:</strong> ' . $record->status . '</p>';
+                        $html .= '<p><strong>Created:</strong> ' . $record->created_at->format('Y-m-d H:i:s') . '</p>';
                         $html .= '</div>';
 
                         return $html;

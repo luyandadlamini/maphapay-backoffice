@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Models\User;
 
 // No need for manual imports - Pest.php handles TestCase and RefreshDatabase for Feature tests

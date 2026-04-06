@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Domain\FinancialInstitution\Models\FinancialInstitutionApplication;
@@ -218,7 +220,7 @@ class FinancialInstitutionApplicationResource extends Resource
                         ->searchable()
                         ->copyable()
                         ->copyMessage('Email copied'),
-                    Tables\Columns\BadgeColumn::make('status')
+                    Tables\Columns\TextColumn::make('status')
                         ->colors(
                             [
                                 'danger'  => 'rejected',

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Payment\Models\PaymentWithdrawal;
 use App\Domain\Payment\Workflow\Activities\FailWithdrawalActivity;
 use Illuminate\Support\Str;

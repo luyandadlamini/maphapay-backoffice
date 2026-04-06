@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 uses(
     Tests\DuskTestCase::class,
     // Illuminate\Foundation\Testing\DatabaseMigrations::class,

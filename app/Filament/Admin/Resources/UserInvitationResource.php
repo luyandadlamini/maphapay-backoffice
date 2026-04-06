@@ -48,7 +48,7 @@ class UserInvitationResource extends Resource
                             ->options([
                                 'private'     => 'User (Private)',
                                 'admin'       => 'Admin',
-                                'super_admin' => 'Super Admin',
+                                'super-admin' => 'Super Admin',
                             ])
                             ->default('private')
                             ->required(),
@@ -66,7 +66,7 @@ class UserInvitationResource extends Resource
                 Tables\Columns\TextColumn::make('role')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'admin', 'super_admin' => 'warning',
+                        'admin', 'super-admin' => 'warning',
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('inviter.name')
@@ -102,7 +102,7 @@ class UserInvitationResource extends Resource
                     ->options([
                         'private'     => 'User',
                         'admin'       => 'Admin',
-                        'super_admin' => 'Super Admin',
+                        'super-admin' => 'Super Admin',
                     ]),
             ])
             ->actions([
@@ -167,12 +167,12 @@ class UserInvitationResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()?->hasRole(['admin', 'super_admin']) ?? false;
+        return auth()->user()?->can('manage-invitations') ?? false;
     }
 
     public static function canCreate(): bool
     {
-        return auth()->user()?->hasRole(['admin', 'super_admin']) ?? false;
+        return auth()->user()?->can('manage-invitations') ?? false;
     }
 
     public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool

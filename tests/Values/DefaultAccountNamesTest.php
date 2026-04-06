@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Account\Values\DefaultAccountNames;
 
 it('is an enum', function () {

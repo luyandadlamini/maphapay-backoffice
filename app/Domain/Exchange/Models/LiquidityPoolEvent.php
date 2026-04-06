@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Exchange\Models;
 
 use App\Domain\Shared\EventSourcing\TenantAwareStoredEvent;

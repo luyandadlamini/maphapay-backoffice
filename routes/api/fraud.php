@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Controllers\Api\Fraud\FraudCaseController;
 use App\Http\Controllers\Api\Fraud\FraudDetectionController as FraudDetectionAPIController;
 use App\Http\Controllers\Api\Fraud\FraudRuleController;

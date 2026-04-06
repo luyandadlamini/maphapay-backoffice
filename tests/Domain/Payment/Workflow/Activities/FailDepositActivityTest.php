@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Payment\Models\PaymentDeposit;
 use App\Domain\Payment\Workflow\Activities\FailDepositActivity;
 use Illuminate\Support\Str;

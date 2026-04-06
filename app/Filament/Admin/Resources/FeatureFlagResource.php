@@ -105,7 +105,7 @@ class FeatureFlagResource extends Resource
 
                         Notification::make()
                             ->title('Feature flag updated')
-                            ->body("{$record->name} has been ".($newValue ? 'enabled' : 'disabled'))
+                            ->body("{$record->name} has been " . ($newValue ? 'enabled' : 'disabled'))
                             ->success()
                             ->send();
                     }),
@@ -134,7 +134,7 @@ class FeatureFlagResource extends Resource
     {
         return [
             'index' => Pages\ListFeatureFlags::route('/'),
-            'view' => Pages\ViewFeatureFlag::route('/{record}'),
+            'view'  => Pages\ViewFeatureFlag::route('/{record}'),
         ];
     }
 }

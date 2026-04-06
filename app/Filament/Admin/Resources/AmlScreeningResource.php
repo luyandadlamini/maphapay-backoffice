@@ -27,9 +27,7 @@ class AmlScreeningResource extends Resource
 
     public static function canAccess(): bool
     {
-        $user = auth()->user();
-
-        return $user && ($user->hasRole('super-admin') || $user->hasRole('compliance-manager'));
+        return auth()->user()?->can('view-aml-screenings') ?? false;
     }
 
     public static function table(Table $table): Table
@@ -50,22 +48,22 @@ class AmlScreeningResource extends Resource
                     ->label('Type')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'sanctions' => 'danger',
-                        'pep' => 'warning',
+                        'sanctions'     => 'danger',
+                        'pep'           => 'warning',
                         'adverse_media' => 'info',
                         'comprehensive' => 'primary',
-                        default => 'gray',
+                        default         => 'gray',
                     }),
 
                 Tables\Columns\TextColumn::make('overall_risk')
                     ->label('Risk')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'low' => 'success',
-                        'medium' => 'warning',
-                        'high' => 'danger',
+                        'low'      => 'success',
+                        'medium'   => 'warning',
+                        'high'     => 'danger',
                         'critical' => 'danger',
-                        default => 'gray',
+                        default    => 'gray',
                     }),
 
                 Tables\Columns\TextColumn::make('total_matches')
@@ -77,11 +75,11 @@ class AmlScreeningResource extends Resource
                     ->label('Status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'pending' => 'warning',
+                        'pending'     => 'warning',
                         'in_progress' => 'info',
-                        'completed' => 'success',
-                        'failed' => 'danger',
-                        default => 'gray',
+                        'completed'   => 'success',
+                        'failed'      => 'danger',
+                        default       => 'gray',
                     }),
 
                 Tables\Columns\TextColumn::make('created_at')
@@ -94,17 +92,17 @@ class AmlScreeningResource extends Resource
                     ->options(AmlScreening::SCREENING_TYPES),
                 Tables\Filters\SelectFilter::make('overall_risk')
                     ->options([
-                        'low' => 'Low',
-                        'medium' => 'Medium',
-                        'high' => 'High',
+                        'low'      => 'Low',
+                        'medium'   => 'Medium',
+                        'high'     => 'High',
                         'critical' => 'Critical',
                     ]),
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'pending' => 'Pending',
+                        'pending'     => 'Pending',
                         'in_progress' => 'In Progress',
-                        'completed' => 'Completed',
-                        'failed' => 'Failed',
+                        'completed'   => 'Completed',
+                        'failed'      => 'Failed',
                     ]),
             ])
             ->actions([
@@ -148,9 +146,9 @@ class AmlScreeningResource extends Resource
                     ->action(function ($record, array $data): void {
                         $record->update([
                             'review_decision' => AmlScreening::DECISION_CLEAR,
-                            'review_notes' => $data['reason'],
-                            'reviewed_by' => auth()->id(),
-                            'reviewed_at' => now(),
+                            'review_notes'    => $data['reason'],
+                            'reviewed_by'     => auth()->id(),
+                            'reviewed_at'     => now(),
                         ]);
 
                         Notification::make()

@@ -10,7 +10,6 @@ use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
-use Illuminate\Database\Eloquent\Builder;
 
 class PendingPayoutsWidget extends BaseWidget
 {
@@ -42,10 +41,10 @@ class PendingPayoutsWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'pending' => 'warning',
+                        'pending'    => 'warning',
                         'successful' => 'success',
-                        'failed' => 'danger',
-                        default => 'gray',
+                        'failed'     => 'danger',
+                        default      => 'gray',
                     }),
             ])
             ->actions([
@@ -63,7 +62,7 @@ class PendingPayoutsWidget extends BaseWidget
                     ->action(function (MtnMomoTransaction $record, array $data): void {
                         $record->update([
                             'status' => 'successful',
-                            'note' => $data['reason'] . ' (Approved by: ' . auth()->id() . ')',
+                            'note'   => $data['reason'] . ' (Approved by: ' . auth()->id() . ')',
                         ]);
                         Notification::make()->title('Payout Approved')->success()->send();
                     }),
@@ -94,7 +93,7 @@ class PendingPayoutsWidget extends BaseWidget
                     ->action(function (MtnMomoTransaction $record, array $data): void {
                         $record->update([
                             'status' => 'failed',
-                            'note' => 'REJECTED: ' . $data['reason'] . ' (By: ' . auth()->id() . ')',
+                            'note'   => 'REJECTED: ' . $data['reason'] . ' (By: ' . auth()->id() . ')',
                         ]);
                         Notification::make()->title('Payout Rejected')->danger()->send();
                     }),

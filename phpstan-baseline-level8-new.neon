@@ -1,0 +1,379 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Method App\\Filament\\Admin\\Pages\\BroadcastNotificationPage\:\:getRecipients\(\) return type with generic class Illuminate\\Support\\Collection does not specify its types\: TKey, TValue$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Filament/Admin/Pages/BroadcastNotificationPage.php
+
+		-
+			message: '#^Method App\\Filament\\Admin\\Pages\\BroadcastNotificationPage\:\:sendNotification\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Filament/Admin/Pages/BroadcastNotificationPage.php
+
+		-
+			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\User\>\:\:where\(\) expects array\<int\|model property of App\\Models\\User, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\User\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\User\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\User\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\User, ''is_active'' given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Filament/Admin/Pages/BroadcastNotificationPage.php
+
+		-
+			message: '#^Parameter \#1 \$column of static method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\User\>\:\:where\(\) expects array\<int\|model property of App\\Models\\User, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\User\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\User\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\User\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\User, ''is_active'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Pages/BroadcastNotificationPage.php
+
+		-
+			message: '#^Parameter \#1 \$form of method Filament\\Actions\\MountableAction\:\:form\(\) expects array\<Filament\\Forms\\Components\\Component\>\|Closure\|null, Filament\\Forms\\Form\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Pages/BroadcastNotificationPage.php
+
+		-
+			message: '#^Method App\\Filament\\Admin\\Pages\\FundManagement\\AdjustBalancePage\:\:adjustBalance\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Filament/Admin/Pages/FundManagement/AdjustBalancePage.php
+
+		-
+			message: '#^Method App\\Filament\\Admin\\Pages\\FundManagement\\AdjustBalancePage\:\:getAdjustFormSchema\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Filament/Admin/Pages/FundManagement/AdjustBalancePage.php
+
+		-
+			message: '#^Property App\\Filament\\Admin\\Pages\\FundManagement\\AdjustBalancePage\:\:\$availableAssets type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Filament/Admin/Pages/FundManagement/AdjustBalancePage.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Filament/Admin/Pages/FundManagement/AdjustBalancePage.php
+
+		-
+			message: '#^Method App\\Filament\\Admin\\Pages\\FundManagement\\FundAccountPage\:\:fundAccount\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Filament/Admin/Pages/FundManagement/FundAccountPage.php
+
+		-
+			message: '#^Method App\\Filament\\Admin\\Pages\\FundManagement\\FundAccountPage\:\:getFundFormSchema\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Filament/Admin/Pages/FundManagement/FundAccountPage.php
+
+		-
+			message: '#^Property App\\Filament\\Admin\\Pages\\FundManagement\\FundAccountPage\:\:\$availableAssets type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Filament/Admin/Pages/FundManagement/FundAccountPage.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Filament/Admin/Pages/FundManagement/FundAccountPage.php
+
+		-
+			message: '#^Method App\\Filament\\Admin\\Pages\\FundManagement\\TransferBetweenAccountsPage\:\:executeTransfer\(\) has parameter \$data with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Filament/Admin/Pages/FundManagement/TransferBetweenAccountsPage.php
+
+		-
+			message: '#^Method App\\Filament\\Admin\\Pages\\FundManagement\\TransferBetweenAccountsPage\:\:getTransferFormSchema\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Filament/Admin/Pages/FundManagement/TransferBetweenAccountsPage.php
+
+		-
+			message: '#^Property App\\Filament\\Admin\\Pages\\FundManagement\\TransferBetweenAccountsPage\:\:\$availableAssets type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Filament/Admin/Pages/FundManagement/TransferBetweenAccountsPage.php
+
+		-
+			message: '#^Parameter \#1 \$column of static method Illuminate\\Database\\Eloquent\\Builder\<App\\Domain\\Treasury\\Models\\TreasurySnapshot\>\:\:where\(\) expects array\<int\|model property of App\\Domain\\Treasury\\Models\\TreasurySnapshot, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Domain\\Treasury\\Models\\TreasurySnapshot\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Domain\\Treasury\\Models\\TreasurySnapshot\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Domain\\Treasury\\Models\\TreasurySnapshot\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Domain\\Treasury\\Models\\TreasurySnapshot, ''asset_code'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Pages/FundManagement/TreasuryPoolPage.php
+
+		-
+			message: '#^Property App\\Filament\\Admin\\Pages\\FundManagement\\TreasuryPoolPage\:\:\$treasuryBalances type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Filament/Admin/Pages/FundManagement/TreasuryPoolPage.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>balance" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Pages/FundManagement/TreasuryPoolPage.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Admin\\Pages\\MoneyMovementInspector\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Admin/Pages/MoneyMovementInspector.php
+
+		-
+			message: '#^Property App\\Filament\\Admin\\Pages\\MoneyMovementInspector\:\:\$data type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Filament/Admin/Pages/MoneyMovementInspector.php
+
+		-
+			message: '#^Property App\\Filament\\Admin\\Pages\\ProjectorHealthDashboard\:\:\$healthData type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Filament/Admin/Pages/ProjectorHealthDashboard.php
+
+		-
+			message: '#^Parameter \#1 \$label of method Filament\\Forms\\Components\\Component\:\:label\(\) expects Closure\|Illuminate\\Contracts\\Support\\Htmlable\|string\|null, Illuminate\\Support\\Stringable given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Pages/SubProducts.php
+
+		-
+			message: '#^Call to an undefined static method Spatie\\EventSourcing\\Facades\\Projectionist\:\:replayEvents\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/AccountResource/Pages/ViewAccount.php
+
+		-
+			message: '#^Cannot call method can\(\) on App\\Models\\User\|null\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Filament/Admin/Resources/AccountResource/Pages/ViewAccount.php
+
+		-
+			message: '#^Cannot call method hasRole\(\) on App\\Models\\User\|null\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Filament/Admin/Resources/AccountResource/Pages/ViewAccount.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Model\:\:update\(\) expects array\<model property of App\\Domain\\Account\\Models\\Account, mixed\>, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Resources/AccountResource/Pages/ViewAccount.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Model\:\:update\(\) expects array\<model property of App\\Domain\\Account\\Models\\Account, mixed\>, array\<string, null\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Resources/AccountResource/Pages/ViewAccount.php
+
+		-
+			message: '#^Cannot access property \$uuid on Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: app/Filament/Admin/Resources/AdjustmentRequestResource.php
+
+		-
+			message: '#^Called ''pluck'' on Laravel collection, but could have been retrieved as a query\.$#'
+			identifier: larastan.noUnnecessaryCollectionCall
+			count: 1
+			path: app/Filament/Admin/Resources/AnomalyDetectionResource.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of static method Illuminate\\Database\\Eloquent\\Builder\<App\\Domain\\Support\\Models\\SupportCase\>\:\:create\(\) expects array\<model property of App\\Domain\\Support\\Models\\SupportCase, mixed\>, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Resources/AnomalyDetectionResource.php
+
+		-
+			message: '#^Method App\\Filament\\Admin\\Resources\\AuditLogResource\:\:getHeaderActions\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Filament/Admin/Resources/AuditLogResource.php
+
+		-
+			message: '#^Parameter \#1 \$stream of function fclose expects resource, resource\|false given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Filament/Admin/Resources/AuditLogResource.php
+
+		-
+			message: '#^Parameter \#1 \$stream of function fputcsv expects resource, resource\|false given\.$#'
+			identifier: argument.type
+			count: 4
+			path: app/Filament/Admin/Resources/AuditLogResource.php
+
+		-
+			message: '#^Undefined variable\: \$this$#'
+			identifier: variable.undefined
+			count: 1
+			path: app/Filament/Admin/Resources/AuditLogResource.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/AuditLogResource.php
+
+		-
+			message: '#^Cannot access property \$name on App\\Models\\User\|null\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Filament/Admin/Resources/CardIssuanceResource.php
+
+		-
+			message: '#^Cannot call method can\(\) on App\\Models\\User\|null\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Filament/Admin/Resources/CardIssuanceResource.php
+
+		-
+			message: '#^Cannot call method can\(\) on App\\Models\\User\|null\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Filament/Admin/Resources/KycDocumentResource.php
+
+		-
+			message: '#^Cannot call method hasRole\(\) on App\\Models\\User\|null\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Filament/Admin/Resources/KycDocumentResource.php
+
+		-
+			message: '#^Method App\\Filament\\Admin\\Resources\\ReconciliationReportResource\\ReconciliationReportResource\:\:getHeaderActions\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Filament/Admin/Resources/ReconciliationReportResource.php
+
+		-
+			message: '#^Parameter \#1 \$stream of function fclose expects resource, resource\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Resources/ReconciliationReportResource.php
+
+		-
+			message: '#^Parameter \#1 \$stream of function fputcsv expects resource, resource\|false given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Filament/Admin/Resources/ReconciliationReportResource.php
+
+		-
+			message: '#^Class App\\Filament\\Admin\\Resources\\ReconciliationReportResource not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Filament/Admin/Resources/ReconciliationReportResource/Pages/ListReconciliationReports.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of static method Illuminate\\Database\\Eloquent\\Builder\<App\\Domain\\Fraud\\Models\\AnomalyDetection\>\:\:create\(\) expects array\<model property of App\\Domain\\Fraud\\Models\\AnomalyDetection, mixed\>, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Resources/ReferralResource.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Model\:\:update\(\) expects array\<model property of Illuminate\\Database\\Eloquent\\Model, mixed\>, array\<string, true\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Resources/SocialMoneyResource.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type App\\Models\\User\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/SocialMoneyResource.php
+
+		-
+			message: '#^Cannot call method hasRole\(\) on App\\Models\\User\|null\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Filament/Admin/Resources/SupportCaseResource/RelationManagers/NotesRelationManager.php
+
+		-
+			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:pluck\(\) expects Illuminate\\Contracts\\Database\\Query\\Expression\|model property of Illuminate\\Database\\Eloquent\\Model, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Resources/UserResource.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>send_money_step_up_threshold_override_updated_by" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/UserResource.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/UserResource/Pages/CreateUser.php
+
+		-
+			message: '#^Cannot access property \$send_money_step_up_threshold_override on Illuminate\\Database\\Eloquent\\Model\|int\|string\|null\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Filament/Admin/Resources/UserResource/Pages/EditUser.php
+
+		-
+			message: '#^Cannot access property \$send_money_step_up_threshold_override_reason on Illuminate\\Database\\Eloquent\\Model\|int\|string\|null\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Filament/Admin/Resources/UserResource/Pages/EditUser.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/UserResource/Pages/EditUser.php
+
+		-
+			message: '#^Call to an undefined method App\\Domain\\Asset\\Models\\Asset\|Illuminate\\Database\\Eloquent\\Collection\<int, App\\Domain\\Asset\\Models\\Asset\>\:\:getSymbol\(\)\.$#'
+			identifier: method.notFound
+			count: 4
+			path: app/Filament/Admin/Resources/UserResource/RelationManagers/AccountsRelationManager.php
+
+		-
+			message: '#^Call to an undefined method App\\Filament\\Admin\\Resources\\UserResource\\RelationManagers\\AccountsRelationManager\:\:refresh\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: app/Filament/Admin/Resources/UserResource/RelationManagers/AccountsRelationManager.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 1
+			path: app/Filament/Admin/Resources/UserResource/RelationManagers/AccountsRelationManager.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type Illuminate\\Database\\Eloquent\\Model\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Admin/Resources/UserResource/RelationManagers/AccountsRelationManager.php
+
+		-
+			message: '#^Parameter \$user of method App\\Domain\\Mobile\\Services\\PocketTransferService\:\:transferFromPocket\(\) expects App\\Models\\User, App\\Models\\User\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Resources/UserResource/RelationManagers/PocketsRelationManager.php
+
+		-
+			message: '#^Parameter \$user of method App\\Domain\\Mobile\\Services\\PocketTransferService\:\:transferToPocket\(\) expects App\\Models\\User, App\\Models\\User\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Resources/UserResource/RelationManagers/PocketsRelationManager.php
+
+		-
+			message: '#^Method App\\Filament\\Admin\\Widgets\\FailedMomoTransactionsWidget\:\:getTableQuery\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Filament/Admin/Widgets/FailedMomoTransactionsWidget.php
+
+		-
+			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Domain\\AuthorizedTransaction\\Models\\AuthorizedTransaction\>\:\:pluck\(\) expects Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Domain\\AuthorizedTransaction\\Models\\AuthorizedTransaction, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Admin/Widgets/OperationsStatsOverview.php
+
+		-
+			message: '#^Method App\\Filament\\Admin\\Widgets\\PendingAdjustmentsWidget\:\:getTableQuery\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Filament/Admin/Widgets/PendingAdjustmentsWidget.php

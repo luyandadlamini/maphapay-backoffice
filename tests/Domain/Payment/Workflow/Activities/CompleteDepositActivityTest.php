@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Payment\Models\PaymentDeposit;
 use App\Domain\Payment\Workflow\Activities\CompleteDepositActivity;
 use Illuminate\Support\Str;

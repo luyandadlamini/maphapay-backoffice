@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Domain\Account\Reactors;
 
 use App\Domain\Account\Aggregates\TransactionAggregate;

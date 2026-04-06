@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Domain\Lending\Events;
 
 use App\Domain\Lending\Events\LoanApplicationSubmitted;

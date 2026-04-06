@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Account\Repositories;
 
 use App\Domain\Account\Models\Transfer;

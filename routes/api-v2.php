@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Controllers\Api\V2\BankIntegrationController;
 use App\Http\Controllers\Api\V2\ComplianceController;
 use App\Http\Controllers\Api\V2\FinancialInstitutionController;

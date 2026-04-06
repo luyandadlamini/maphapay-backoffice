@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Models\User;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Livewire\livewire;
 
 beforeEach(function () {
-    $panel = \Filament\Facades\Filament::getPanel('admin');
+    $panel = Filament\Facades\Filament::getPanel('admin');
     if ($panel) {
-        \Filament\Facades\Filament::setCurrentPanel($panel);
-        \Filament\Facades\Filament::setServingStatus(true);
+        Filament\Facades\Filament::setCurrentPanel($panel);
+        Filament\Facades\Filament::setServingStatus(true);
         $panel->boot();
     }
 });
@@ -21,7 +23,7 @@ it('exceptions dashboard is accessible to operations-l2', function () {
     $ops->assignRole('operations-l2');
     actingAs($ops);
 
-    livewire(\App\Filament\Admin\Pages\ExceptionsDashboard::class)
+    livewire(App\Filament\Admin\Pages\ExceptionsDashboard::class)
         ->assertSuccessful();
 });
 
@@ -32,6 +34,6 @@ it('exceptions dashboard shows failed momo badge count', function () {
     $admin->assignRole('super-admin');
     actingAs($admin);
 
-    livewire(\App\Filament\Admin\Pages\ExceptionsDashboard::class)
+    livewire(App\Filament\Admin\Pages\ExceptionsDashboard::class)
         ->assertSuccessful();
 });

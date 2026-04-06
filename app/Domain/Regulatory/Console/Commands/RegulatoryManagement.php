@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Regulatory\Console\Commands;
 
 use App\Domain\Regulatory\Models\RegulatoryFilingRecord;

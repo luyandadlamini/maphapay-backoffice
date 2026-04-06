@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Batch\Services;
 
 use App\Domain\Batch\Aggregates\BatchAggregate;

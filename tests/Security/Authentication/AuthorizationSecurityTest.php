@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Security\Authentication;
 
 use App\Domain\Account\Models\Account;

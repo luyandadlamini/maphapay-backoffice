@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Account\Aggregates;
 
 use App\Domain\Account\DataObjects\Money;

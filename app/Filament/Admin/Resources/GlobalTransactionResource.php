@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
@@ -137,6 +139,7 @@ class GlobalTransactionResource extends Resource
                         if ($data['until'] ?? null) {
                             $indicators['until'] = 'Until ' . $data['until'];
                         }
+
                         return $indicators;
                     }),
             ])

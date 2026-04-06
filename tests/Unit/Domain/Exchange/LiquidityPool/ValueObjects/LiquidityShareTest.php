@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Domain\Exchange\LiquidityPool\ValueObjects;
 
 use App\Domain\Exchange\LiquidityPool\ValueObjects\LiquidityShare;

@@ -1,9 +1,11 @@
 <?php
 
-use App\Domain\CardIssuance\Models\Card;
+declare(strict_types=1);
+
 use App\Filament\Admin\Resources\CardIssuanceResource\Pages\ListCardIssuances;
 use App\Models\User;
 use Filament\Facades\Filament;
+
 use function Pest\Livewire\livewire;
 
 beforeEach(function () {

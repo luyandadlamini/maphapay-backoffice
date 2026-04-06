@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Payment\Activities\CreditAccountActivity;
 
 it('extends Activity base class', function () {

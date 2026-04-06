@@ -1,12 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Account\Models\Account;
 use App\Domain\Banking\Models\BankAccountModel;
 use App\Filament\Admin\Resources\AccountResource\Pages\ViewAccount;
 use App\Filament\Admin\Resources\AccountResource\RelationManagers\LinkedWalletsRelationManager;
 use App\Models\User;
-use function Pest\Livewire\livewire;
 use Filament\Facades\Filament;
+
+use function Pest\Livewire\livewire;
 
 function setupFilamentPanelForWallets(): void
 {
@@ -25,17 +28,17 @@ it('can display linked wallets relation manager on view account page', function 
     setupFilamentPanelForWallets();
 
     $user = User::factory()->create();
-    $account = \App\Domain\Account\Models\Account::factory()->create(['user_uuid' => $user->uuid]);
+    $account = Account::factory()->create(['user_uuid' => $user->uuid]);
 
     $wallet = BankAccountModel::factory()->create([
-        'user_uuid' => $user->uuid,
-        'status' => 'active',
+        'user_uuid'      => $user->uuid,
+        'status'         => 'active',
         'account_number' => encrypt('8001234567'),
     ]);
 
     livewire(LinkedWalletsRelationManager::class, [
         'ownerRecord' => $account,
-        'pageClass' => ViewAccount::class,
+        'pageClass'   => ViewAccount::class,
     ])
     ->assertSuccessful()
     ->assertCanSeeTableRecords([$wallet]);
@@ -51,14 +54,14 @@ it('can unlink a linked wallet with a required reason', function () {
     $account = Account::factory()->create(['user_uuid' => $user->uuid]);
 
     $wallet = BankAccountModel::factory()->create([
-        'user_uuid' => $user->uuid,
-        'status' => 'active',
+        'user_uuid'      => $user->uuid,
+        'status'         => 'active',
         'account_number' => encrypt('8001234567'),
     ]);
 
     livewire(LinkedWalletsRelationManager::class, [
         'ownerRecord' => $account,
-        'pageClass' => ViewAccount::class,
+        'pageClass'   => ViewAccount::class,
     ])
     ->callTableAction('unlink', $wallet, ['reason' => 'Customer requested unlinking due to changed number.'])
     ->assertHasNoTableActionErrors();

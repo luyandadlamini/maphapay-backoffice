@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories\Domain\FinancialInstitution\Models;
 
 use App\Domain\FinancialInstitution\Models\FinancialInstitutionApplication;

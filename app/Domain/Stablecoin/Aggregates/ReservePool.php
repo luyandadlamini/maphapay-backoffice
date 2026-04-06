@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Stablecoin\Aggregates;
 
 use App\Domain\Stablecoin\Events\CollateralizationRatioUpdated;

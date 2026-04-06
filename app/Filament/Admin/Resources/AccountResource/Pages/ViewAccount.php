@@ -20,6 +20,7 @@ use Filament\Notifications\Actions\Action as NotificationAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Spatie\EventSourcing\Facades\Projectionist;
+use Throwable;
 
 class ViewAccount extends ViewRecord
 {
@@ -54,7 +55,7 @@ class ViewAccount extends ViewRecord
                             ->body("Account {$record->uuid} has been frozen.")
                             ->warning()
                             ->send();
-                    } catch (\Throwable $e) {
+                    } catch (Throwable $e) {
                         Notification::make()
                             ->title('Failed to Freeze Wallet')
                             ->body($e->getMessage())
@@ -83,7 +84,7 @@ class ViewAccount extends ViewRecord
                             ->body("Account {$record->uuid} has been unfrozen.")
                             ->success()
                             ->send();
-                    } catch (\Throwable $e) {
+                    } catch (Throwable $e) {
                         Notification::make()
                             ->title('Failed to Unfreeze Wallet')
                             ->body($e->getMessage())
@@ -119,13 +120,13 @@ class ViewAccount extends ViewRecord
                 ])
                 ->action(function (Account $record, array $data): void {
                     AdjustmentRequest::create([
-                        'account_id' => $record->id,
-                        'requester_id' => auth()->id(),
-                        'type' => $data['type'],
-                        'amount' => $data['amount'],
-                        'reason' => $data['reason'],
+                        'account_id'      => $record->id,
+                        'requester_id'    => auth()->id(),
+                        'type'            => $data['type'],
+                        'amount'          => $data['amount'],
+                        'reason'          => $data['reason'],
                         'attachment_path' => $data['attachment'] ?? null,
-                        'status' => 'pending',
+                        'status'          => 'pending',
                     ]);
 
                     $financeLeads = User::role('finance-lead')->get();
@@ -177,7 +178,7 @@ class ViewAccount extends ViewRecord
                         foreach ($projectors as $projectorClass) {
                             try {
                                 Projectionist::replayEvents($projectorClass);
-                            } catch (\Throwable $e) {
+                            } catch (Throwable $e) {
                             }
                         }
 
@@ -186,7 +187,7 @@ class ViewAccount extends ViewRecord
                             ->body("The account projectors for {$record->account_number} will be rebuilt.")
                             ->warning()
                             ->send();
-                    } catch (\Throwable $e) {
+                    } catch (Throwable $e) {
                         Notification::make()
                             ->title('Projector replay failed')
                             ->body($e->getMessage())

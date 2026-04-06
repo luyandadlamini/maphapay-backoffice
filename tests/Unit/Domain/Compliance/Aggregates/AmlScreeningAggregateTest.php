@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Domain\Compliance\Aggregates;
 
 use App\Domain\Compliance\Aggregates\AmlScreeningAggregate;

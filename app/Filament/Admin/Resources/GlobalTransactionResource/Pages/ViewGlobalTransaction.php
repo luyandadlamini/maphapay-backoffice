@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\GlobalTransactionResource\Pages;
 
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
@@ -41,8 +43,8 @@ class ViewGlobalTransaction extends ViewRecord
                             AuthorizedTransaction::STATUS_PENDING   => 'warning',
                             AuthorizedTransaction::STATUS_FAILED,
                             AuthorizedTransaction::STATUS_CANCELLED,
-                            AuthorizedTransaction::STATUS_EXPIRED   => 'danger',
-                            default                                 => 'secondary',
+                            AuthorizedTransaction::STATUS_EXPIRED => 'danger',
+                            default                               => 'secondary',
                         }),
                     TextEntry::make('remark')
                         ->label('Transaction Type')
@@ -51,7 +53,7 @@ class ViewGlobalTransaction extends ViewRecord
                             AuthorizedTransaction::REMARK_SCHEDULED_SEND         => 'Scheduled Send',
                             AuthorizedTransaction::REMARK_REQUEST_MONEY          => 'Request Money',
                             AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED => 'Request Money Received',
-                            default                                               => ucwords(str_replace('_', ' ', $state)),
+                            default                                              => ucwords(str_replace('_', ' ', $state)),
                         }),
                 ]),
                 Grid::make(3)->schema([

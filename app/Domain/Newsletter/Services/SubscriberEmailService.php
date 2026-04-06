@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Newsletter\Services;
 
 use App\Domain\Newsletter\Mail\SubscriberNewsletter;

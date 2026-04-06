@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Domain\Governance\Models\GcuVotingProposal;
@@ -109,7 +111,7 @@ class GcuVotingProposalResource extends Resource
                     Tables\Columns\TextColumn::make('title')
                         ->searchable()
                         ->limit(50),
-                    Tables\Columns\BadgeColumn::make('status')
+                    Tables\Columns\TextColumn::make('status')
                         ->colors(
                             [
                                 'secondary' => 'draft',

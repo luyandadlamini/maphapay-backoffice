@@ -193,7 +193,8 @@ class AnomalyDetectionResource extends Resource
                         })
                         ->sortable()
                         ->toggleable(),
-                ])
+                ]
+            )
             ->defaultSort('created_at', 'desc')
             ->filters(
                 [
@@ -228,9 +229,11 @@ class AnomalyDetectionResource extends Resource
                         ->label('Assign')
                         ->icon('heroicon-o-user-plus')
                         ->color('info')
-                        ->visible(fn (AnomalyDetection $record): bool => ! $record->status->isTerminal() && $record->triage_status === 'detected')
+                        ->visible(fn (AnomalyDetection $record): bool => ! $record->status->isTerminal()
+                            && $record->triage_status === 'detected'
+                            && (auth()->user()?->can('triage-anomalies') ?? false))
                         ->form([
-                            \Filament\Forms\Components\Select::make('assigned_to')
+                            Forms\Components\Select::make('assigned_to')
                                 ->label('Assign to Analyst')
                                 ->options(
                                     \App\Models\User::role('fraud-analyst')
@@ -250,37 +253,40 @@ class AnomalyDetectionResource extends Resource
                         ->icon('heroicon-o-arrow-up-circle')
                         ->color('danger')
                         ->requiresConfirmation()
-                        ->visible(fn (AnomalyDetection $record): bool => $record->triage_status === 'under_review')
+                        ->visible(fn (AnomalyDetection $record): bool => $record->triage_status === 'under_review'
+                            && (auth()->user()?->can('triage-anomalies') ?? false))
                         ->form([
-                            \Filament\Forms\Components\Textarea::make('escalation_note')
+                            Forms\Components\Textarea::make('escalation_note')
                                 ->label('Escalation reason')
                                 ->required(),
                         ])
                         ->action(function (AnomalyDetection $record, array $data): void {
                             $record->update(['triage_status' => 'escalated']);
                             \App\Domain\Support\Models\SupportCase::create([
-                                'subject'              => 'Escalated anomaly: ' . $record->id,
-                                'description'          => $data['escalation_note'],
-                                'status'               => 'open',
-                                'priority'             => 'urgent',
+                                'subject'               => 'Escalated anomaly: ' . $record->id,
+                                'description'           => $data['escalation_note'],
+                                'status'                => 'open',
+                                'priority'              => 'urgent',
                                 'reported_by_user_uuid' => auth()->user()->uuid ?? null,
-                                'reported_by'          => auth()->id(),
+                                'reported_by'           => auth()->id(),
                             ]);
                         }),
                     Tables\Actions\Action::make('resolve')
                         ->label('Resolve')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
-                        ->visible(fn (AnomalyDetection $record): bool => in_array($record->triage_status, ['under_review', 'escalated']) && ! $record->status->isTerminal())
+                        ->visible(fn (AnomalyDetection $record): bool => in_array($record->triage_status, ['under_review', 'escalated'])
+                            && ! $record->status->isTerminal()
+                            && (auth()->user()?->can('triage-anomalies') ?? false))
                         ->form([
-                            \Filament\Forms\Components\Select::make('resolution_type')
+                            Forms\Components\Select::make('resolution_type')
                                 ->options([
                                     'fraud'          => 'Confirmed Fraud',
                                     'false_positive' => 'False Positive',
                                     'low_risk'       => 'Low Risk',
                                 ])
                                 ->required(),
-                            \Filament\Forms\Components\Textarea::make('resolution_notes')
+                            Forms\Components\Textarea::make('resolution_notes')
                                 ->label('Resolution Notes')
                                 ->required(),
                         ])
@@ -294,9 +300,9 @@ class AnomalyDetectionResource extends Resource
                                 'status'           => $data['resolution_type'] === 'false_positive'
                                     ? \App\Domain\Fraud\Enums\AnomalyStatus::FalsePositive
                                     : \App\Domain\Fraud\Enums\AnomalyStatus::Resolved,
-                                'feedback_outcome'  => $data['resolution_type'],
-                                'reviewed_at'       => now(),
-                                'reviewed_by'       => auth()->id(),
+                                'feedback_outcome' => $data['resolution_type'],
+                                'reviewed_at'      => now(),
+                                'reviewed_by'      => auth()->id(),
                             ]);
                         }),
                     Tables\Actions\Action::make('mark_false_positive')
@@ -304,7 +310,8 @@ class AnomalyDetectionResource extends Resource
                         ->icon('heroicon-o-x-circle')
                         ->color('gray')
                         ->requiresConfirmation()
-                        ->visible(fn (AnomalyDetection $record): bool => ! $record->status->isTerminal())
+                        ->visible(fn (AnomalyDetection $record): bool => ! $record->status->isTerminal()
+                            && (auth()->user()?->can('triage-anomalies') ?? false))
                         ->action(
                             fn (AnomalyDetection $record) => $record->update([
                                 'status'           => \App\Domain\Fraud\Enums\AnomalyStatus::FalsePositive,

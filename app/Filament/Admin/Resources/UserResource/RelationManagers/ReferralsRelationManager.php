@@ -26,13 +26,15 @@ class ReferralsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('referee.email')
                     ->label('Email')
                     ->toggleable(),
-                Tables\Columns\BadgeColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Status')
-                    ->colors([
-                        'warning' => 'pending',
-                        'success' => 'completed',
-                        'info'    => 'rewarded',
-                    ]),
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'pending'   => 'warning',
+                        'completed' => 'success',
+                        'rewarded'  => 'info',
+                        default     => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('referralCode.code')
                     ->label('Referral Code')
                     ->toggleable(),

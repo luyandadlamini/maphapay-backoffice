@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Payment\Aggregates\PaymentDepositAggregate;
 use App\Domain\Payment\DataObjects\StripeDeposit;
 use App\Domain\Payment\Events\DepositCompleted;

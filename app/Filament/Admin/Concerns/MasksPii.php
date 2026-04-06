@@ -11,6 +11,7 @@ trait MasksPii
         if (! $value || auth()->user()?->can('view-pii')) {
             return $value ?? '';
         }
+
         return substr($value, 0, 4) . '****' . substr($value, -3);
     }
 
@@ -23,6 +24,7 @@ trait MasksPii
             return $value; // malformed — pass through unchanged
         }
         [$local, $domain] = explode('@', $value, 2);
+
         return substr($local, 0, 2) . '***@' . $domain;
     }
 
@@ -31,6 +33,7 @@ trait MasksPii
         if (! $value || auth()->user()?->can('view-pii')) {
             return $value ?? '';
         }
+
         return '***-****-' . substr($value, -3);
     }
 }

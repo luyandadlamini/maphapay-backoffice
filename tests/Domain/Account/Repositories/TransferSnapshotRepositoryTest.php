@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Account\Repositories\TransferSnapshotRepository;
 use App\Domain\Account\Snapshots\TransferSnapshot;
 

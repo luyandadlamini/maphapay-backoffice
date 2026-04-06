@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Payment\Services;
 
 use App\Domain\Payment\Workflows\TransferWorkflow;

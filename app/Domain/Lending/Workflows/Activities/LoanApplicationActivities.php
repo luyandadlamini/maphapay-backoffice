@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Lending\Workflows\Activities;
 
 use App\Domain\Lending\Services\CreditScoringService;

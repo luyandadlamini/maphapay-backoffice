@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Key Management Service for blockchain wallet operations.
  */

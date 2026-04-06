@@ -35,13 +35,15 @@ class BankAccountsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('account_type')
                     ->label('Type')
                     ->sortable(),
-                Tables\Columns\BadgeColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Status')
-                    ->colors([
-                        'success' => 'active',
-                        'warning' => 'pending',
-                        'danger'  => 'inactive',
-                    ]),
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'active'   => 'success',
+                        'pending'  => 'warning',
+                        'inactive' => 'danger',
+                        default    => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Linked')
                     ->dateTime('M j, Y')

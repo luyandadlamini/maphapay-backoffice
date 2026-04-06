@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
@@ -39,6 +41,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-anomalies',
             'resolve-anomalies',
             'flag-fraud',
+            'triage-anomalies',      // assign / escalate / resolve triage workflow
 
             // Support
             'create-support-cases',
@@ -52,6 +55,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'resend-otp',
             'reset-user-password',
             'view-pii',
+            'manage-invitations',    // create & manage user invitations
 
             // Transactions (read-only for most roles)
             'view-transactions',
@@ -62,6 +66,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-webhooks',
             'manage-api-keys',
             'manage-feature-flags',
+            'manage-exchange-rates', // dedicated permission for exchange rate management
+
+            // Compliance surfaces
+            'view-aml-screenings',          // AmlScreeningResource access
+            'view-data-subject-requests',   // DataSubjectRequestResource access
+            'view-referrals',               // ReferralResource access (fraud flag surface)
 
             // Cards
             'manage-cards',
@@ -74,6 +84,11 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // Social
             'moderate-social',
+
+            // Missing test permissions
+            'manage-social-money',
+            'manage-filing-schedules',
+            'manage-projector-health',
         ];
 
         foreach ($permissions as $permission) {
@@ -84,11 +99,10 @@ class RolesAndPermissionsSeeder extends Seeder
         // 2. Create roles and assign permissions
         // ──────────────────────────────────────────────────────────
 
-        // Super admin — all permissions (Filament super_admin gate still applies separately)
         $superAdmin = Role::firstOrCreate(['name' => 'super-admin']);
         $superAdmin->syncPermissions(Permission::all());
 
-        // Compliance manager — KYC review, account freezes, read-only transactions
+        // Compliance manager — KYC review, account freezes, AML, GDPR, referral fraud
         $complianceManager = Role::firstOrCreate(['name' => 'compliance-manager']);
         $complianceManager->syncPermissions([
             'approve-kyc',
@@ -103,9 +117,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-transactions',
             'view-audit-logs',
             'manage-cards',
+            'moderate-social',
+            'view-aml-screenings',
+            'view-data-subject-requests',
+            'view-referrals',
         ]);
 
-        // Finance lead — maker-checker approver role; cannot initiate adjustments
+        // Finance lead — maker-checker approver; manages exchange rates; cannot initiate adjustments
         $financeLead = Role::firstOrCreate(['name' => 'finance-lead']);
         $financeLead->syncPermissions([
             'approve-adjustments',
@@ -116,9 +134,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-transactions',
             'view-transaction-payload',
             'view-audit-logs',
+            'manage-exchange-rates',
         ]);
 
-        // Operations L2 — maker role; can initiate adjustments but NOT approve
+        // Operations L2 — maker role; can initiate adjustments but NOT approve them
         $opsL2 = Role::firstOrCreate(['name' => 'operations-l2']);
         $opsL2->syncPermissions([
             'request-adjustments',
@@ -137,10 +156,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-group-savings',
         ]);
 
-        // Compliance manager additionally gets social moderation
-        $complianceManager->givePermissionTo('moderate-social');
-
-        // Support L1 — frontline; cannot see PII, payloads, or balances
+        // Support L1 — frontline read-only; cannot see PII, payloads, or balances
         $supportL1 = Role::firstOrCreate(['name' => 'support-l1']);
         $supportL1->syncPermissions([
             'view-users',
@@ -158,10 +174,21 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-anomalies',
             'resolve-anomalies',
             'flag-fraud',
+            'triage-anomalies',
             'view-transactions',
             'view-transaction-payload',
             'view-users',
             'view-accounts',
+            'view-audit-logs',
+        ]);
+
+        // Admin — manages invitations and user management
+        $admin = Role::firstOrCreate(['name' => 'admin']);
+        $admin->syncPermissions([
+            'manage-invitations',
+            'view-users',
+            'view-accounts',
+            'view-transactions',
             'view-audit-logs',
         ]);
     }

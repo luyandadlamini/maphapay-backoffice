@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Console\Commands\CacheWarmup;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Services\Cache\CacheManager;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * AML Screening Aggregate for event sourcing.
  */

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Actions\Jetstream\AddTeamMember;
 use App\Models\Team;
 use App\Models\User;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Account\DataObjects\Money;
 
 it('can be created with integer amount', function () {

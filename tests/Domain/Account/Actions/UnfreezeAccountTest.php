@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Account\Actions\UnfreezeAccount;
 use App\Domain\Account\Events\AccountUnfrozen;
 use App\Domain\Account\Models\Account;

@@ -26,9 +26,7 @@ class DataSubjectRequestResource extends Resource
 
     public static function canAccess(): bool
     {
-        $user = auth()->user();
-
-        return $user && ($user->hasRole('super-admin') || $user->hasRole('compliance-manager'));
+        return auth()->user()?->can('view-data-subject-requests') ?? false;
     }
 
     public static function table(Table $table): Table
@@ -48,29 +46,29 @@ class DataSubjectRequestResource extends Resource
                     ->label('Type')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'deletion' => 'danger',
-                        'export' => 'info',
-                        'access' => 'primary',
+                        'deletion'      => 'danger',
+                        'export'        => 'info',
+                        'access'        => 'primary',
                         'rectification' => 'warning',
-                        default => 'gray',
+                        default         => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'deletion' => 'Data Deletion',
-                        'export' => 'Data Export',
-                        'access' => 'Data Access',
+                        'deletion'      => 'Data Deletion',
+                        'export'        => 'Data Export',
+                        'access'        => 'Data Access',
                         'rectification' => 'Rectification',
-                        default => ucfirst($state),
+                        default         => ucfirst($state),
                     }),
 
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'received' => 'warning',
+                        'received'  => 'warning',
                         'in_review' => 'info',
                         'fulfilled' => 'success',
-                        'rejected' => 'danger',
-                        default => 'gray',
+                        'rejected'  => 'danger',
+                        default     => 'gray',
                     }),
 
                 Tables\Columns\TextColumn::make('created_at')
@@ -86,17 +84,17 @@ class DataSubjectRequestResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('type')
                     ->options([
-                        'deletion' => 'Data Deletion',
-                        'export' => 'Data Export',
-                        'access' => 'Data Access',
+                        'deletion'      => 'Data Deletion',
+                        'export'        => 'Data Export',
+                        'access'        => 'Data Access',
                         'rectification' => 'Rectification',
                     ]),
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'received' => 'Received',
+                        'received'  => 'Received',
                         'in_review' => 'In Review',
                         'fulfilled' => 'Fulfilled',
-                        'rejected' => 'Rejected',
+                        'rejected'  => 'Rejected',
                     ]),
             ])
             ->actions([
@@ -112,10 +110,10 @@ class DataSubjectRequestResource extends Resource
                     ->visible(fn ($record) => $record->type === DataSubjectRequest::TYPE_DELETION && $record->canFulfill())
                     ->action(function ($record): void {
                         $record->update([
-                            'status' => DataSubjectRequest::STATUS_FULFILLED,
+                            'status'       => DataSubjectRequest::STATUS_FULFILLED,
                             'fulfilled_at' => now(),
-                            'reviewed_by' => auth()->id(),
-                            'reviewed_at' => now(),
+                            'reviewed_by'  => auth()->id(),
+                            'reviewed_at'  => now(),
                             'review_notes' => 'Data deletion fulfilled',
                         ]);
 
@@ -136,10 +134,10 @@ class DataSubjectRequestResource extends Resource
                     ->visible(fn ($record) => $record->type === DataSubjectRequest::TYPE_EXPORT && $record->canFulfill())
                     ->action(function ($record): void {
                         $record->update([
-                            'status' => DataSubjectRequest::STATUS_FULFILLED,
+                            'status'       => DataSubjectRequest::STATUS_FULFILLED,
                             'fulfilled_at' => now(),
-                            'reviewed_by' => auth()->id(),
-                            'reviewed_at' => now(),
+                            'reviewed_by'  => auth()->id(),
+                            'reviewed_at'  => now(),
                             'review_notes' => 'Export generated and sent to user email',
                         ]);
 
@@ -165,9 +163,9 @@ class DataSubjectRequestResource extends Resource
                     ->visible(fn ($record) => $record->canFulfill())
                     ->action(function ($record, array $data): void {
                         $record->update([
-                            'status' => DataSubjectRequest::STATUS_REJECTED,
-                            'reviewed_by' => auth()->id(),
-                            'reviewed_at' => now(),
+                            'status'       => DataSubjectRequest::STATUS_REJECTED,
+                            'reviewed_by'  => auth()->id(),
+                            'reviewed_at'  => now(),
                             'review_notes' => $data['reason'],
                         ]);
 

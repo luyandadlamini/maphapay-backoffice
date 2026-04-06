@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Account\Events\AccountUnfrozen;
 
 it('can be instantiated with reason', function () {

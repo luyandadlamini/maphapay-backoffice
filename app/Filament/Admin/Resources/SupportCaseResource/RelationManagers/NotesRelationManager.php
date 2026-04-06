@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\SupportCaseResource\RelationManagers;
 
 use Filament\Forms;
@@ -34,7 +36,7 @@ class NotesRelationManager extends RelationManager
                     ->columnSpanFull(),
                 Forms\Components\Select::make('visibility')
                     ->options([
-                        'internal' => 'Internal Note (Staff Only)',
+                        'internal'        => 'Internal Note (Staff Only)',
                         'customer-facing' => 'Customer Facing (Visible in App)',
                     ])
                     ->default('internal')
@@ -53,9 +55,9 @@ class NotesRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('visibility')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'internal' => 'gray',
+                        'internal'        => 'gray',
                         'customer-facing' => 'warning',
-                        default => 'primary',
+                        default           => 'primary',
                     }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -72,6 +74,7 @@ class NotesRelationManager extends RelationManager
                     ->hidden(false)
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['author_id'] = auth()->id();
+
                         return $data;
                     }),
             ])

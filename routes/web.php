@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\GCUController;
 use App\Http\Controllers\StatusController;

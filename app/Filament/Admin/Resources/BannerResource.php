@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
-use App\Models\Banner;
 use App\Filament\Admin\Resources\BannerResource\Pages;
+use App\Models\Banner;
 use Exception;
-use Filament\Forms;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -57,9 +55,9 @@ class BannerResource extends Resource
                             ->url(),
                         Select::make('action_type')
                             ->options([
-                                'external' => 'External URL',
+                                'external'  => 'External URL',
                                 'deep_link' => 'Deep Link',
-                                'dismiss' => 'Dismiss only',
+                                'dismiss'   => 'Dismiss only',
                             ])
                             ->default('external')
                             ->required(),

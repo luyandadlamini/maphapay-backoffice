@@ -192,7 +192,7 @@ class PollResource extends Resource
                         ->sortable()
                         ->weight('bold'),
 
-                    Tables\Columns\BadgeColumn::make('type')
+                    Tables\Columns\TextColumn::make('type')
                         ->colors(
                             [
                                 'primary' => PollType::YES_NO->value,
@@ -203,7 +203,7 @@ class PollResource extends Resource
                             ]
                         ),
 
-                    Tables\Columns\BadgeColumn::make('status')
+                    Tables\Columns\TextColumn::make('status')
                         ->colors(
                             [
                                 'gray'    => PollStatus::DRAFT->value,

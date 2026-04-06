@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Governance\Policies;
 
 use App\Domain\Governance\Models\GcuVotingProposal;

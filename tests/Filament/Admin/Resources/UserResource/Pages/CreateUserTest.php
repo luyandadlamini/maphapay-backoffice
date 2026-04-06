@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Filament\Admin\Resources\UserResource\Pages\CreateUser;
 use Filament\Resources\Pages\CreateRecord;
 

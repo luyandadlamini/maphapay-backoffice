@@ -2,20 +2,43 @@
 
 declare(strict_types=1);
 
+use App\Filament\Admin\Resources\UserResource\Pages\ViewUser;
 use App\Models\User;
+use Filament\Facades\Filament;
 
-it('customer 360 page loads for operations-l2', function (): void {
+beforeEach(function () {
     $this->artisan('db:seed', ['--class' => 'RolesAndPermissionsSeeder']);
 
-    $ops = User::factory()->create();
-    $ops->assignRole('operations-l2');
-    $this->actingAs($ops);
+    $panel = Filament::getPanel('admin');
+    Filament::setCurrentPanel($panel);
+    Filament::setServingStatus(true);
+    $panel->boot();
 
-    $customer = User::factory()->create();
+    $this->admin = User::factory()->create();
+    $this->admin->assignRole('admin');
+    $this->admin->givePermissionTo('view-users');
 
-    $response = $this->get(
-        \App\Filament\Admin\Resources\UserResource::getUrl('view', ['record' => $customer->id])
-    );
+    $this->customer = User::factory()->create([
+        'email'  => 'customer@example.com',
+        'mobile' => '761000000',
+    ]);
+});
 
-    $response->assertSuccessful();
+it('contains tabbed relation managers for customer 360', function () {
+    Livewire\Livewire::actingAs($this->admin)
+        ->test(ViewUser::class, ['record' => $this->customer->uuid])
+        ->assertSuccessful()
+        ->assertSee('Bank Accounts')
+        ->assertSee('Referrals');
+});
+
+it('can reset 2FA for a customer if authorized', function () {
+    $this->admin->givePermissionTo('reset-user-password');
+    $this->customer->update(['two_factor_secret' => 'SECRET']);
+
+    Livewire\Livewire::actingAs($this->admin)
+        ->test(ViewUser::class, ['record' => $this->customer->uuid])
+        ->callAction('reset2fa', data: ['reason' => 'Test reset']);
+
+    $this->assertNull($this->customer->fresh()->two_factor_secret);
 });

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Payment\Projectors;
 
 use App\Domain\Payment\Events\DepositCompleted;

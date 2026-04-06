@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Account\Workflows\BatchProcessingWorkflow;
 use App\Domain\Account\Workflows\CreateBatchSummaryActivity;
 use App\Domain\Account\Workflows\ReverseBatchOperationActivity;

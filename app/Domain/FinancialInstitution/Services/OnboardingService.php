@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\FinancialInstitution\Services;
 
 use App\Domain\FinancialInstitution\Events\ApplicationApproved;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources;
 
 use App\Domain\Exchange\Projections\Order;
@@ -84,7 +86,7 @@ class OrderResource extends Resource
                         ->label('Pair')
                         ->searchable()
                         ->sortable(),
-                    Tables\Columns\BadgeColumn::make('type')
+                    Tables\Columns\TextColumn::make('type')
                         ->colors(
                             [
                                 'success' => 'buy',
@@ -103,7 +105,7 @@ class OrderResource extends Resource
                         ->label('Filled')
                         ->suffix('%')
                         ->numeric(1),
-                    Tables\Columns\BadgeColumn::make('status')
+                    Tables\Columns\TextColumn::make('status')
                         ->colors(
                             [
                                 'warning'   => 'pending',

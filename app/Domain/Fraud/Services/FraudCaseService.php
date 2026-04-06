@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Fraud\Services;
 
 use App\Domain\Account\Models\Transaction;

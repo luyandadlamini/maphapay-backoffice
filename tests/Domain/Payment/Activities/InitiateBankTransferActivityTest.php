@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Payment\Activities\InitiateBankTransferActivity;
 use App\Domain\Payment\DataObjects\BankWithdrawal;
 

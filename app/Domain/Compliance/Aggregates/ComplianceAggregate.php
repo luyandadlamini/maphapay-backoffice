@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Compliance\Aggregates;
 
 use App\Domain\Compliance\Events\GdprDataDeleted;

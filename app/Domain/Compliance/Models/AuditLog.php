@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Compliance\Models;
 
 use App\Domain\Shared\Traits\UsesTenantConnection;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Filament\Admin\Pages\Dashboard;
 use Filament\Pages\Dashboard as BaseDashboard;
 

@@ -56,9 +56,9 @@ class BroadcastNotificationPage extends Page
                                 ->label('Channel')
                                 ->options([
                                     'database' => 'In-App',
-                                    'mail' => 'Email',
-                                    'sms' => 'SMS',
-                                    'push' => 'Push Notification',
+                                    'mail'     => 'Email',
+                                    'sms'      => 'SMS',
+                                    'push'     => 'Push Notification',
                                 ])
                                 ->default('database')
                                 ->required(),
@@ -66,7 +66,7 @@ class BroadcastNotificationPage extends Page
                             Select::make('audience')
                                 ->label('Audience')
                                 ->options([
-                                    'all' => 'All Active Users',
+                                    'all'  => 'All Active Users',
                                     'role' => 'Role Group',
                                     'user' => 'Single User',
                                 ])
@@ -86,10 +86,10 @@ class BroadcastNotificationPage extends Page
                             Select::make('role')
                                 ->label('Select Role')
                                 ->options([
-                                    'operations-l2' => 'Operations L2',
-                                    'finance-lead' => 'Finance Lead',
+                                    'operations-l2'      => 'Operations L2',
+                                    'finance-lead'       => 'Finance Lead',
                                     'compliance-manager' => 'Compliance Manager',
-                                    'support-l1' => 'Support L1',
+                                    'support-l1'         => 'Support L1',
                                 ])
                                 ->visible(fn (callable $get) => $get('audience') === 'role'),
                         ])
@@ -162,8 +162,8 @@ class BroadcastNotificationPage extends Page
     private function getRecipients(string $audience, ?int $userId, ?string $role): Collection
     {
         return match ($audience) {
-            'user' => $userId ? User::where('id', $userId)->get() : collect(),
-            'role' => $role ? User::role($role)->where('is_active', true)->get() : collect(),
+            'user'  => $userId ? User::where('id', $userId)->get() : collect(),
+            'role'  => $role ? User::role($role)->where('is_active', true)->get() : collect(),
             default => User::where('is_active', true)->get(),
         };
     }

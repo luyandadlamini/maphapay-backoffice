@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Security\Cryptography;
 
 use App\Domain\Account\DataObjects\Hash;

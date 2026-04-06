@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Domain\User\Values\UserRoles;
@@ -14,7 +16,7 @@ class RolesSeeder extends Seeder
             UserRoles::BUSINESS->value,
             UserRoles::PRIVATE->value,
             UserRoles::ADMIN->value,
-            'super_admin', // Add super_admin role
+            // Note: super-admin (hyphen) is managed by RolesAndPermissionsSeeder — do not duplicate here
         ];
 
         // Seed each role into the database

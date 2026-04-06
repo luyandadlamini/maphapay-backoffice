@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Domain\MobilePayment\Models\PaymentIntent;
 use App\Domain\MobilePayment\Enums\PaymentIntentStatus;
+use App\Domain\MobilePayment\Models\PaymentIntent;
+use Exception;
+use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
 class CommerceExceptionWidget extends BaseWidget
@@ -55,13 +56,13 @@ class CommerceExceptionWidget extends BaseWidget
                             // In a real system, this would re-submit to the payment provider
                             // For this modernization, we log and notify
                             Log::info("Retrying PaymentIntent: {$record->id}");
-                            
+
                             Notification::make()
                                 ->title('Retry Requested')
                                 ->body('The payment re-submission has been queued.')
                                 ->success()
                                 ->send();
-                        } catch (\Exception $e) {
+                        } catch (Exception $e) {
                             Notification::make()
                                 ->title('Retry Failed')
                                 ->body($e->getMessage())
@@ -76,7 +77,7 @@ class CommerceExceptionWidget extends BaseWidget
                     ->requiresConfirmation()
                     ->action(function (PaymentIntent $record) {
                         $record->update([
-                            'status' => 'cancelled', // Or a 'refunded' status if added
+                            'status'        => 'cancelled', // Or a 'refunded' status if added
                             'cancel_reason' => 'Manually refunded by admin',
                         ]);
 

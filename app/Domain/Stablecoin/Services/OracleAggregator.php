@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Stablecoin\Services;
 
 use App\Domain\Stablecoin\Contracts\OracleConnector;

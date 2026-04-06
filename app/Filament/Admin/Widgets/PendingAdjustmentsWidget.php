@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Widgets;
 
 use App\Domain\Account\Models\AdjustmentRequest;
@@ -57,8 +59,8 @@ class PendingAdjustmentsWidget extends BaseWidget
                 Tables\Actions\Action::make('review')
                     ->label('Review')
                     ->icon('heroicon-o-eye')
-                    ->url(fn (AdjustmentRequest $record): string =>
-                        \App\Filament\Admin\Resources\AdjustmentRequestResource::getUrl('edit', ['record' => $record])
+                    ->url(
+                        fn (AdjustmentRequest $record): string => \App\Filament\Admin\Resources\AdjustmentRequestResource::getUrl('edit', ['record' => $record])
                     ),
             ])
             ->emptyStateIcon('heroicon-o-check-circle')
