@@ -58,17 +58,22 @@ class AuditLogResource extends Resource
         $callback = function () use ($logs) {
             $handle = fopen('php://output', 'w');
 
-            fputcsv($handle, ['ID', 'Event', 'Description', 'User', 'IP Address', 'Created At']);
+            fputcsv($handle, ['ID', 'Action', 'Subject Type', 'User UUID', 'IP Address', 'Timestamp', 'Tamper Evidence Hash']);
 
             foreach ($logs as $log) {
-                fputcsv($handle, [
+                $row = [
                     $log->id,
                     $log->action ?? '',
                     $log->auditable_type ?? '',
                     $log->user_uuid ?? '',
                     $log->ip_address ?? '',
                     $log->created_at?->toIso8601String() ?? '',
-                ]);
+                ];
+
+                // SHA-256 Hash for regulatory compliance
+                $row[] = hash('sha256', implode('|', $row));
+
+                fputcsv($handle, $row);
             }
 
             fclose($handle);
@@ -163,17 +168,19 @@ class AuditLogResource extends Resource
 
                         return response()->streamDownload(function () use ($records) {
                             $handle = fopen('php://output', 'w');
-                            fputcsv($handle, ['ID', 'Event', 'Description', 'User', 'IP Address', 'Created At']);
+                            fputcsv($handle, ['ID', 'Action', 'Subject Type', 'User UUID', 'IP Address', 'Timestamp', 'Tamper Evidence Hash']);
 
                             foreach ($records as $log) {
-                                fputcsv($handle, [
+                                $row = [
                                     $log->id,
                                     $log->action ?? '',
                                     $log->auditable_type ?? '',
                                     $log->user_uuid ?? '',
                                     $log->ip_address ?? '',
                                     $log->created_at?->toIso8601String() ?? '',
-                                ]);
+                                ];
+                                $row[] = hash('sha256', implode('|', $row));
+                                fputcsv($handle, $row);
                             }
 
                             fclose($handle);

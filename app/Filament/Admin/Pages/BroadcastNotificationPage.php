@@ -51,69 +51,74 @@ class BroadcastNotificationPage extends Page implements HasForms, HasActions
         return $user && ($user->hasRole('super-admin') || $user->hasRole('operations-l2'));
     }
 
+    public function getBroadcastFormSchema(): array
+    {
+        return [
+            Section::make('Notification Settings')
+                ->schema([
+                    Select::make('channel')
+                        ->label('Channel')
+                        ->options([
+                            'database' => 'In-App',
+                            'mail'     => 'Email',
+                            'sms'      => 'SMS',
+                            'push'     => 'Push Notification',
+                        ])
+                        ->default('database')
+                        ->required(),
+
+                    Select::make('audience')
+                        ->label('Audience')
+                        ->options([
+                            'all'  => 'All Active Users',
+                            'role' => 'Role Group',
+                            'user' => 'Single User',
+                        ])
+                        ->default('all')
+                        ->required()
+                        ->reactive(),
+
+                    Select::make('userId')
+                        ->label('Select User')
+                        ->options(function () {
+                            return User::query()
+                                ->pluck('email', 'id');
+                        })
+                        ->visible(fn (callable $get) => $get('audience') === 'user'),
+
+                    Select::make('role')
+                        ->label('Select Role')
+                        ->options([
+                            'operations-l2'      => 'Operations L2',
+                            'finance-lead'       => 'Finance Lead',
+                            'compliance-manager' => 'Compliance Manager',
+                            'support-l1'         => 'Support L1',
+                        ])
+                        ->visible(fn (callable $get) => $get('audience') === 'role'),
+                ])
+                ->columns(2),
+
+            Section::make('Message Content')
+                ->schema([
+                    TextInput::make('subject')
+                        ->label('Subject')
+                        ->required()
+                        ->maxLength(255),
+
+                    Textarea::make('body')
+                        ->label('Message')
+                        ->required()
+                        ->rows(5)
+                        ->maxLength(5000),
+                ]),
+        ];
+    }
+
     protected function getForms(): array
     {
         return [
             'form' => $this->makeForm()
-                ->schema([
-                    Section::make('Notification Settings')
-                        ->schema([
-                            Select::make('channel')
-                                ->label('Channel')
-                                ->options([
-                                    'database' => 'In-App',
-                                    'mail'     => 'Email',
-                                    'sms'      => 'SMS',
-                                    'push'     => 'Push Notification',
-                                ])
-                                ->default('database')
-                                ->required(),
-
-                            Select::make('audience')
-                                ->label('Audience')
-                                ->options([
-                                    'all'  => 'All Active Users',
-                                    'role' => 'Role Group',
-                                    'user' => 'Single User',
-                                ])
-                                ->default('all')
-                                ->required()
-                                ->reactive(),
-
-                            Select::make('userId')
-                                ->label('Select User')
-                                ->options(function () {
-                                    return User::query()
-                                        ->pluck('email', 'id');
-                                })
-                                ->visible(fn (callable $get) => $get('audience') === 'user'),
-
-                            Select::make('role')
-                                ->label('Select Role')
-                                ->options([
-                                    'operations-l2'      => 'Operations L2',
-                                    'finance-lead'       => 'Finance Lead',
-                                    'compliance-manager' => 'Compliance Manager',
-                                    'support-l1'         => 'Support L1',
-                                ])
-                                ->visible(fn (callable $get) => $get('audience') === 'role'),
-                        ])
-                        ->columns(2),
-
-                    Section::make('Message Content')
-                        ->schema([
-                            TextInput::make('subject')
-                                ->label('Subject')
-                                ->required()
-                                ->maxLength(255),
-
-                            Textarea::make('body')
-                                ->label('Message')
-                                ->required()
-                                ->rows(5)
-                                ->maxLength(5000),
-                        ]),
-                ]),
+                ->schema($this->getBroadcastFormSchema()),
         ];
     }
 
@@ -127,7 +132,7 @@ class BroadcastNotificationPage extends Page implements HasForms, HasActions
                 ->requiresConfirmation()
                 ->modalHeading('Send Broadcast Notification')
                 ->modalDescription('This will send a notification to the selected recipients.')
-                ->form($this->getForms()['form'])
+                ->form($this->getBroadcastFormSchema())
                 ->action(function (array $data): void {
                     $this->sendNotification($data);
                 }),
