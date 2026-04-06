@@ -29,7 +29,7 @@ return [
 
     'limits' => [
         'auth' => [
-            'limit'          => env('RATE_LIMIT_AUTH', 3),
+            'limit'          => env('RATE_LIMIT_AUTH', 10),
             'window'         => env('RATE_LIMIT_AUTH_WINDOW', 60),
             'block_duration' => env('RATE_LIMIT_AUTH_BLOCK', 300),
         ],

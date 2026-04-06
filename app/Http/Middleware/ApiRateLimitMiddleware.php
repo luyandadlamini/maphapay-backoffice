@@ -21,7 +21,7 @@ class ApiRateLimitMiddleware
      */
     private const RATE_LIMITS = [
         'auth' => [
-            'limit'          => 5,      // 5 requests
+            'limit'          => 10,      // 10 requests
             'window'         => 60,    // per minute
             'block_duration' => 300, // 5 minute lockout after limit exceeded
         ],
@@ -66,6 +66,13 @@ class ApiRateLimitMiddleware
         if (app()->environment('testing') && ! config('rate_limiting.force_in_tests', false)) {
             return $next($request);
         }
+
+        Log::debug('API Rate Limit check', [
+            'ip' => $request->ip(),
+            'path' => $request->path(),
+            'rate_limit_type' => $rateLimitType,
+            'user_id' => $request->user()?->id,
+        ]);
 
         // Check for BaaS partner and apply tier-based limits
         $partner = $request->attributes->get('partner');
@@ -145,11 +152,26 @@ class ApiRateLimitMiddleware
         if (Cache::has($blockKey)) {
             $blockedUntil = Cache::get($blockKey);
 
+            Log::warning('Rate limit: client currently blocked', [
+                'ip' => $request->ip(),
+                'endpoint' => $request->path(),
+                'rate_limit_type' => $rateLimitType,
+                'blocked_until' => $blockedUntil,
+            ]);
+
             return $this->rateLimitExceededResponse($request, $config, $blockedUntil);
         }
 
         // Get current request count
         $currentCount = (int) Cache::get($key, 0);
+
+        Log::debug('Rate limit check', [
+            'ip' => $request->ip(),
+            'endpoint' => $request->path(),
+            'rate_limit_type' => $rateLimitType,
+            'current_count' => $currentCount,
+            'limit' => $config['limit'],
+        ]);
 
         // Check if limit exceeded
         if ($currentCount >= $config['limit']) {
