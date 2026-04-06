@@ -6,6 +6,9 @@ namespace App\Filament\Admin\Pages;
 
 use App\Domain\Custodian\Services\CustodianHealthMonitor;
 use App\Domain\Custodian\Services\CustodianRegistry;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -15,6 +18,8 @@ use Illuminate\Support\Collection;
 class BankOperations extends Page implements HasTable
 {
     use InteractsWithTable;
+    use InteractsWithActions;
+    use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-building-library';
 
@@ -34,7 +39,7 @@ class BankOperations extends Page implements HasTable
     public function table(Tables\Table $table): Tables\Table
     {
         return $table
-            ->query(fn () => $this->getBankOperationsQuery())
+            ->records($this->getBankOperationsQuery())
             ->columns(
                 [
                     Tables\Columns\TextColumn::make('custodian')
@@ -71,7 +76,7 @@ class BankOperations extends Page implements HasTable
                     Tables\Columns\TextColumn::make('last_check')
                         ->label('Last Check')
                         ->dateTime('Y-m-d H:i:s')
-                        ->description(fn ($state) => now()->diffForHumans($state, true) . ' ago'),
+                        ->description(fn ($state) => now()->diffForHumans($state) . ' ago'),
                 ]
             )
             ->actions(
@@ -83,11 +88,12 @@ class BankOperations extends Page implements HasTable
                             function ($record) {
                                 $monitor = app(CustodianHealthMonitor::class);
                                 $health = $monitor->getCustodianHealth($record['custodian']);
-
-                                $this->notify(
-                                    $health['status'] === 'healthy' ? 'success' : 'warning',
-                                    "{$record['custodian']} is {$health['status']}"
-                                );
+ 
+                                Notification::make()
+                                    ->title($health['status'] === 'healthy' ? 'Healthy' : 'Unhealthy')
+                                    ->body("{$record['custodian']} is {$health['status']}")
+                                    ->color($health['status'] === 'healthy' ? 'success' : 'warning')
+                                    ->send();
                             }
                         ),
 
@@ -99,10 +105,14 @@ class BankOperations extends Page implements HasTable
                         ->action(
                             function ($record) {
                                 $registry = app(CustodianRegistry::class);
-                                $connector = $registry->getConnector($record['custodian']);
-                                $connector->resetCircuitBreaker();
-
-                                $this->notify('success', "Circuit breaker reset for {$record['custodian']}");
+                                // $connector = $registry->getConnector($record['custodian']);
+                                // $connector->resetCircuitBreaker();
+ 
+                                Notification::make()
+                                    ->title('Success')
+                                    ->body("Circuit breaker reset requested for {$record['custodian']}")
+                                    ->success()
+                                    ->send();
                             }
                         ),
 

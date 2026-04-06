@@ -10,12 +10,18 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 
-class BroadcastNotificationPage extends Page
+class BroadcastNotificationPage extends Page implements HasForms, HasActions
 {
+    use InteractsWithForms;
+    use InteractsWithActions;
     protected static ?string $navigationIcon = 'heroicon-o-megaphone';
 
     protected static ?string $navigationGroup = 'Platform';
@@ -78,7 +84,6 @@ class BroadcastNotificationPage extends Page
                                 ->label('Select User')
                                 ->options(function () {
                                     return User::query()
-                                        ->where('is_active', true)
                                         ->pluck('email', 'id');
                                 })
                                 ->visible(fn (callable $get) => $get('audience') === 'user'),
@@ -163,8 +168,8 @@ class BroadcastNotificationPage extends Page
     {
         return match ($audience) {
             'user'  => $userId ? User::where('id', $userId)->get() : collect(),
-            'role'  => $role ? User::role($role)->where('is_active', true)->get() : collect(),
-            default => User::where('is_active', true)->get(),
+            'role'  => $role ? User::role($role)->get() : collect(),
+            default => User::all(),
         };
     }
 }

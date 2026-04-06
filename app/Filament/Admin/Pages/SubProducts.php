@@ -7,12 +7,18 @@ namespace App\Filament\Admin\Pages;
 use App\Domain\Product\Services\SubProductService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Log;
 
-class SubProducts extends Page
+class SubProducts extends Page implements HasForms, HasActions
 {
+    use InteractsWithForms;
+    use InteractsWithActions;
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
 
     protected static string $view = 'filament.admin.pages.sub-products';

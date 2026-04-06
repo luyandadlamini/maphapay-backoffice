@@ -6,12 +6,18 @@ namespace App\Filament\Admin\Pages\FundManagement;
 
 use App\Domain\Asset\Models\Asset;
 use App\Domain\Treasury\Models\TreasurySnapshot;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
 use Filament\Pages\Page;
 use Filament\Tables;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 
-class TreasuryPoolPage extends Page
+class TreasuryPoolPage extends Page implements HasTable, HasForms
 {
+    use InteractsWithTable;
+    use InteractsWithForms;
     protected static ?string $navigationIcon = 'heroicon-o-wallet';
 
     protected static ?string $navigationLabel = 'Treasury Pool';

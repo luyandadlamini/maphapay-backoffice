@@ -41,10 +41,8 @@ class AuditLogResource extends Resource
                 ->color('primary')
                 ->requiresConfirmation()
                 ->modalHeading('Export Audit Trail')
-                ->modalDescription('This will export all audit logs as a CSV with an appended SHA-256 hash for tamper-evidence. The hash will be verified by regulators.')
-                ->action(function (): void {
-                    $this->exportWithHash();
-                }),
+                ->modalDescription('This will export all audit logs as a CSV with an appended SHA-256 hash for tamper-evidence.')
+                ->action(fn (AuditLogResource $static) => $static->exportWithHash()),
         ];
     }
 
@@ -64,9 +62,9 @@ class AuditLogResource extends Resource
             foreach ($logs as $log) {
                 fputcsv($handle, [
                     $log->id,
-                    $log->event ?? '',
-                    $log->description ?? '',
-                    $log->user_id ?? '',
+                    $log->action ?? '',
+                    $log->auditable_type ?? '',
+                    $log->user_uuid ?? '',
                     $log->ip_address ?? '',
                     $log->created_at?->toIso8601String() ?? '',
                 ]);
@@ -99,29 +97,27 @@ class AuditLogResource extends Resource
                 Tables\Columns\TextColumn::make('id')
                     ->label('ID')
                     ->sortable(),
-
-                Tables\Columns\TextColumn::make('event')
-                    ->label('Event')
+                Tables\Columns\TextColumn::make('user_uuid')
+                    ->label('User UUID')
+                    ->searchable()
+                    ->sortable()
+                    ->copyable(),
+                Tables\Columns\TextColumn::make('action')
+                    ->label('Action')
                     ->searchable()
                     ->sortable(),
-
-                Tables\Columns\TextColumn::make('description')
-                    ->label('Description')
-                    ->searchable()
-                    ->limit(50),
-
-                Tables\Columns\TextColumn::make('subject_type')
+                Tables\Columns\TextColumn::make('auditable_type')
                     ->label('Subject Type')
+                    ->searchable()
+                    ->sortable()
                     ->limit(30),
-
-                Tables\Columns\TextColumn::make('user_id')
-                    ->label('User')
+                Tables\Columns\TextColumn::make('auditable_id')
+                    ->label('Subject ID')
+                    ->searchable()
                     ->sortable(),
-
                 Tables\Columns\TextColumn::make('ip_address')
                     ->label('IP Address')
                     ->searchable(),
-
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Timestamp')
                     ->dateTime()
@@ -129,7 +125,7 @@ class AuditLogResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
-                Tables\Filters\SelectFilter::make('event')
+                Tables\Filters\SelectFilter::make('action')
                     ->options([
                         'created'  => 'Created',
                         'updated'  => 'Updated',
@@ -158,9 +154,9 @@ class AuditLogResource extends Resource
                             foreach ($records as $log) {
                                 fputcsv($handle, [
                                     $log->id,
-                                    $log->event ?? '',
-                                    $log->description ?? '',
-                                    $log->user_id ?? '',
+                                    $log->action ?? '',
+                                    $log->auditable_type ?? '',
+                                    $log->user_uuid ?? '',
                                     $log->ip_address ?? '',
                                     $log->created_at?->toIso8601String() ?? '',
                                 ]);
