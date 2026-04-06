@@ -94,6 +94,37 @@ class MtnMomoTransactionResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
+                Tables\Actions\Action::make('retry')
+                    ->label('Retry')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->visible(fn (MtnMomoTransaction $record): bool =>
+                        $record->status === MtnMomoTransaction::STATUS_FAILED &&
+                        $record->type === MtnMomoTransaction::TYPE_DISBURSEMENT &&
+                        (auth()->user()?->can('approve-adjustments') ?? false)
+                    )
+                    ->action(function (MtnMomoTransaction $record): void {
+                        $record->update(['status' => MtnMomoTransaction::STATUS_PENDING]);
+                        \Filament\Notifications\Notification::make()->title('Payout Retried')->success()->send();
+                    }),
+                Tables\Actions\Action::make('refund')
+                    ->label('Refund')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('primary')
+                    ->requiresConfirmation()
+                    ->visible(fn (MtnMomoTransaction $record): bool =>
+                        $record->status === MtnMomoTransaction::STATUS_FAILED &&
+                        $record->type === MtnMomoTransaction::TYPE_REQUEST_TO_PAY &&
+                        (auth()->user()?->can('approve-adjustments') ?? false)
+                    )
+                    ->action(function (MtnMomoTransaction $record): void {
+                        $record->update([
+                            'status' => MtnMomoTransaction::STATUS_SUCCESSFUL,
+                            'note' => trim($record->note . ' | Refunded manually by ' . auth()->id(), ' | ')
+                        ]);
+                        \Filament\Notifications\Notification::make()->title('Collection Refunded')->success()->send();
+                    }),
             ])
             ->bulkActions([])
             ->defaultSort('created_at', 'desc');
