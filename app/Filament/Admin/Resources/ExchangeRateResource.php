@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Domain\Asset\Events\ExchangeRateUpdated;
 use App\Domain\Asset\Models\ExchangeRate;
 use App\Filament\Admin\Resources\ExchangeRateResource\Pages;
 use App\Filament\Admin\Resources\ExchangeRateResource\Widgets;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -18,7 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ExchangeRateResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = ExchangeRate::class;
 
@@ -74,7 +77,7 @@ class ExchangeRateResource extends Resource
                                     ->options(
                                         [
                                             ExchangeRate::SOURCE_MANUAL => 'Manual Entry',
-                                            ExchangeRate::SOURCE_API    => 'API Feed',
+                                            ExchangeRate::SOURCE_API => 'API Feed',
                                             ExchangeRate::SOURCE_ORACLE => 'Oracle Service',
                                             ExchangeRate::SOURCE_MARKET => 'Market Data',
                                         ]
@@ -157,10 +160,10 @@ class ExchangeRateResource extends Resource
                         ->color(
                             fn (string $state): string => match ($state) {
                                 ExchangeRate::SOURCE_MANUAL => 'gray',
-                                ExchangeRate::SOURCE_API    => 'success',
+                                ExchangeRate::SOURCE_API => 'success',
                                 ExchangeRate::SOURCE_ORACLE => 'warning',
                                 ExchangeRate::SOURCE_MARKET => 'info',
-                                default                     => 'gray',
+                                default => 'gray',
                             }
                         ),
 
@@ -169,9 +172,9 @@ class ExchangeRateResource extends Resource
                         ->state(fn ($record) => self::formatAge($record->getAgeInMinutes()))
                         ->color(
                             fn ($record) => match (true) {
-                                $record->getAgeInMinutes() < 60   => 'success',
+                                $record->getAgeInMinutes() < 60 => 'success',
                                 $record->getAgeInMinutes() < 1440 => 'warning',
-                                default                           => 'danger',
+                                default => 'danger',
                             }
                         )
                         ->badge()
@@ -214,7 +217,7 @@ class ExchangeRateResource extends Resource
                         ->options(
                             [
                                 ExchangeRate::SOURCE_MANUAL => 'Manual',
-                                ExchangeRate::SOURCE_API    => 'API',
+                                ExchangeRate::SOURCE_API => 'API',
                                 ExchangeRate::SOURCE_ORACLE => 'Oracle',
                                 ExchangeRate::SOURCE_MARKET => 'Market',
                             ]
@@ -239,7 +242,49 @@ class ExchangeRateResource extends Resource
             ->actions(
                 [
                     Tables\Actions\ViewAction::make(),
-                    Tables\Actions\EditAction::make(),
+
+                    Tables\Actions\Action::make('setRate')
+                        ->label('Set New Rate')
+                        ->icon('heroicon-o-currency-dollar')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->form([
+                            Forms\Components\TextInput::make('rate')
+                                ->label('New Rate')
+                                ->numeric()
+                                ->step(0.0000000001)
+                                ->required(),
+                            Forms\Components\Textarea::make('reason')
+                                ->label('Reason')
+                                ->required()
+                                ->minLength(10),
+                        ])
+                        ->visible(fn () => auth()->user()?->can('manage-feature-flags'))
+                        ->action(function ($record, array $data): void {
+                            $oldRate = (float) $record->rate;
+                            $newRate = (float) $data['rate'];
+
+                            event(new ExchangeRateUpdated(
+                                $record->from_asset_code,
+                                $record->to_asset_code,
+                                $oldRate,
+                                $newRate,
+                                ExchangeRate::SOURCE_MANUAL,
+                                ['reason' => $data['reason'], 'updated_by' => auth()->id()]
+                            ));
+
+                            $record->update([
+                                'rate' => $newRate,
+                                'valid_at' => now(),
+                                'source' => ExchangeRate::SOURCE_MANUAL,
+                            ]);
+
+                            Notification::make()
+                                ->title('Rate updated successfully')
+                                ->success()
+                                ->send();
+                        }),
+
                     Tables\Actions\DeleteAction::make()
                         ->requiresConfirmation(),
 
@@ -320,10 +365,10 @@ class ExchangeRateResource extends Resource
                                     ->color(
                                         fn (string $state): string => match ($state) {
                                             ExchangeRate::SOURCE_MANUAL => 'gray',
-                                            ExchangeRate::SOURCE_API    => 'success',
+                                            ExchangeRate::SOURCE_API => 'success',
                                             ExchangeRate::SOURCE_ORACLE => 'warning',
                                             ExchangeRate::SOURCE_MARKET => 'info',
-                                            default                     => 'gray',
+                                            default => 'gray',
                                         }
                                     ),
                             ]
@@ -352,9 +397,9 @@ class ExchangeRateResource extends Resource
                                     ->badge()
                                     ->color(
                                         fn ($record) => match (true) {
-                                            $record->getAgeInMinutes() < 60   => 'success',
+                                            $record->getAgeInMinutes() < 60 => 'success',
                                             $record->getAgeInMinutes() < 1440 => 'warning',
-                                            default                           => 'danger',
+                                            default => 'danger',
                                         }
                                     ),
                             ]
@@ -399,16 +444,17 @@ class ExchangeRateResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListExchangeRates::route('/'),
+            'index' => Pages\ListExchangeRates::route('/'),
             'create' => Pages\CreateExchangeRate::route('/create'),
-            'view'   => Pages\ViewExchangeRate::route('/{record}'),
-            'edit'   => Pages\EditExchangeRate::route('/{record}/edit'),
+            'view' => Pages\ViewExchangeRate::route('/{record}'),
+            'edit' => Pages\EditExchangeRate::route('/{record}/edit'),
         ];
     }
 
     public static function getWidgets(): array
     {
         return [
+            Widgets\ExchangeRateFreshnessWidget::class,
             Widgets\ExchangeRateStatsWidget::class,
             Widgets\ExchangeRateChartWidget::class,
         ];
@@ -416,7 +462,7 @@ class ExchangeRateResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) (static::getModel()::valid()->count() . '/' . static::getModel()::count());
+        return (string) (static::getModel()::valid()->count().'/'.static::getModel()::count());
     }
 
     public static function getNavigationBadgeColor(): string
@@ -433,7 +479,7 @@ class ExchangeRateResource extends Resource
         return match (true) {
             $percentage >= 80 => 'success',
             $percentage >= 60 => 'warning',
-            default           => 'danger',
+            default => 'danger',
         };
     }
 
