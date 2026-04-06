@@ -13,6 +13,7 @@ use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Log;
 
 class TreasuryPoolPage extends Page implements HasTable, HasForms
 {
@@ -39,16 +40,20 @@ class TreasuryPoolPage extends Page implements HasTable, HasForms
 
     protected function loadTreasuryBalances(): void
     {
-        $assets = Asset::active()->get();
+        try {
+            $assets = Asset::active()->get();
 
-        foreach ($assets as $asset) {
-            $this->treasuryBalances[$asset->code] = [
-                'code'      => $asset->code,
-                'name'      => $asset->name,
-                'type'      => $asset->type,
-                'balance'   => $this->getTreasuryBalance($asset->code),
-                'formatted' => $asset->formatAmount($this->getTreasuryBalance($asset->code)),
-            ];
+            foreach ($assets as $asset) {
+                $this->treasuryBalances[$asset->code] = [
+                    'code'      => $asset->code,
+                    'name'      => $asset->name,
+                    'type'      => $asset->type,
+                    'balance'   => $this->getTreasuryBalance($asset->code),
+                    'formatted' => $asset->formatAmount($this->getTreasuryBalance($asset->code)),
+                ];
+            }
+        } catch (\Throwable $e) {
+            Log::warning('TreasuryPoolPage: failed to load balances', ['error' => $e->getMessage()]);
         }
     }
 

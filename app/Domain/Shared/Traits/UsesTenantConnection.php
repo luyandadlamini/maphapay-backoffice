@@ -68,6 +68,17 @@ trait UsesTenantConnection
     {
         // In testing environment, always use the default connection
         // to avoid isolation issues with separate database connections
-        return Config::get('app.env') === 'testing';
+        if (Config::get('app.env') === 'testing') {
+            return true;
+        }
+
+        // When no tenant is initialized (e.g. admin panel landlord context),
+        // fall back to the default connection to avoid querying an
+        // unconfigured tenant connection.
+        try {
+            return ! tenancy()->initialized;
+        } catch (\Throwable) {
+            return true;
+        }
     }
 }
