@@ -33,7 +33,7 @@ class SubproductPagesTest extends TestCase
             '/subproducts/treasury' => [
                 'title'       => 'FinAegis Treasury',
                 'description' => 'Multi-bank cash management',
-                'status'      => 'Coming Soon',
+                'status'      => 'Available in Sandbox',
             ],
         ];
 
@@ -100,11 +100,10 @@ class SubproductPagesTest extends TestCase
         $response = $this->get('/subproducts/treasury');
 
         $response->assertStatus(200);
-        $response->assertSee('Coming Soon');
+        $response->assertSee('Available in Sandbox');
         $response->assertSee('/gcu'); // Link to GCU page
 
-        // Treasury doesn't have an action button, just "Coming Soon"
-        // The page can mention treasury features without having a self-referencing link
+        // Treasury is now available in sandbox; the page links to dashboard instead of a self-referencing link
     }
 
 /**
