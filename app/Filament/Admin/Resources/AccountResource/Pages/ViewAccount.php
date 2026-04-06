@@ -1,13 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Admin\Resources\AccountResource\Pages;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AdjustmentRequest;
 use App\Domain\Account\Services\AccountService;
 use App\Filament\Admin\Resources\AccountResource;
+use App\Filament\Admin\Resources\AdjustmentRequestResource;
+use App\Models\User;
 use Filament\Actions;
 use Filament\Actions\Action;
+use Filament\Forms;
 use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Actions\Action as NotificationAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 
@@ -81,6 +88,66 @@ class ViewAccount extends ViewRecord
                             ->send();
                     }
                 }),
+
+            Action::make('requestAdjustment')
+                ->label('Request Adjustment')
+                ->icon('heroicon-o-banknotes')
+                ->color('warning')
+                ->requiresConfirmation(false)
+                ->form([
+                    Forms\Components\Select::make('type')
+                        ->options(['credit' => 'Credit (Add Funds)', 'debit' => 'Debit (Remove Funds)'])
+                        ->required(),
+                    Forms\Components\TextInput::make('amount')
+                        ->numeric()
+                        ->step(0.01)
+                        ->minValue(0.01)
+                        ->required(),
+                    Forms\Components\Textarea::make('reason')
+                        ->required()
+                        ->minLength(10)
+                        ->rows(3),
+                    Forms\Components\FileUpload::make('attachment')
+                        ->label('Supporting Document')
+                        ->disk('private')
+                        ->directory('adjustment-attachments')
+                        ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                        ->nullable(),
+                ])
+                ->action(function (Account $record, array $data): void {
+                    AdjustmentRequest::create([
+                        'account_id'      => $record->id,
+                        'requester_id'    => auth()->id(),
+                        'type'            => $data['type'],
+                        'amount'          => $data['amount'],
+                        'reason'          => $data['reason'],
+                        'attachment_path' => $data['attachment'] ?? null,
+                        'status'          => 'pending',
+                    ]);
+
+                    $financeLeads = User::role('finance-lead')->get();
+
+                    foreach ($financeLeads as $lead) {
+                        /** @var \App\Models\User $lead */
+                        Notification::make()
+                            ->title('New Adjustment Request Pending')
+                            ->body("A ledger adjustment for account #{$record->id} requires your approval.")
+                            ->warning()
+                            ->actions([
+                                NotificationAction::make('review')
+                                    ->label('Review')
+                                    ->url(AdjustmentRequestResource::getUrl('index')),
+                            ])
+                            ->sendToDatabase($lead);
+                    }
+
+                    Notification::make()
+                        ->title('Adjustment request submitted')
+                        ->body('Finance leads have been notified.')
+                        ->success()
+                        ->send();
+                })
+                ->visible(fn (): bool => auth()->user()?->can('request-adjustments') ?? false),
 
             Actions\EditAction::make(),
         ];
