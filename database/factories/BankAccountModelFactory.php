@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\BankAccountModel>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Domain\Banking\Models\BankAccountModel>
  */
 class BankAccountModelFactory extends Factory
 {
@@ -52,7 +52,7 @@ class BankAccountModelFactory extends Factory
                     ? fake()->randomElements($currencies, fake()->numberBetween(1, 3))
                     : null,
                 'opening_date'        => fake()->dateTimeBetween('-5 years', '-1 month')->format('Y-m-d'),
-                'last_statement_date' => fake()->optional(0.7)->dateTimeBetween('-3 months', 'now')->format('Y-m-d'),
+                'last_statement_date' => fake()->optional(0.7)->dateTimeBetween('-3 months', 'now')?->format('Y-m-d'),
                 'overdraft_limit'     => fake()->optional(0.3)->randomFloat(2, 100, 5000),
                 'holder_name'         => fake()->name(),
                 'holder_address'      => fake()->address(),

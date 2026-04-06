@@ -62,6 +62,18 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-webhooks',
             'manage-api-keys',
             'manage-feature-flags',
+
+            // Cards
+            'manage-cards',
+
+            // Growth & Content
+            'manage-banners',
+
+            // Group Savings
+            'manage-group-savings',
+
+            // Social
+            'moderate-social',
         ];
 
         foreach ($permissions as $permission) {
@@ -90,6 +102,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-pii',
             'view-transactions',
             'view-audit-logs',
+            'manage-cards',
         ]);
 
         // Finance lead — maker-checker approver role; cannot initiate adjustments
@@ -119,7 +132,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-kyc-documents',
             'create-support-cases',
             'view-support-cases',
+            'manage-cards',
+            'manage-banners',
+            'manage-group-savings',
         ]);
+
+        // Compliance manager additionally gets social moderation
+        $complianceManager->givePermissionTo('moderate-social');
 
         // Support L1 — frontline; cannot see PII, payloads, or balances
         $supportL1 = Role::firstOrCreate(['name' => 'support-l1']);

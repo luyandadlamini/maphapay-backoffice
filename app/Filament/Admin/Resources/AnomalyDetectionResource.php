@@ -174,8 +174,26 @@ class AnomalyDetectionResource extends Resource
                         ->label('User')
                         ->searchable()
                         ->toggleable(),
-                ]
-            )
+                    Tables\Columns\TextColumn::make('triage_status')
+                        ->label('Triage')
+                        ->badge()
+                        ->formatStateUsing(fn ($state) => match ($state) {
+                            'under_review'   => 'Under Review',
+                            'escalated'      => 'Escalated',
+                            'resolved'       => 'Resolved',
+                            'false_positive' => 'False Positive',
+                            default          => 'Detected',
+                        })
+                        ->color(fn ($state): string => match ((string) $state) {
+                            'under_review'   => 'warning',
+                            'escalated'      => 'danger',
+                            'resolved'       => 'success',
+                            'false_positive' => 'gray',
+                            default          => 'danger',
+                        })
+                        ->sortable()
+                        ->toggleable(),
+                ])
             ->defaultSort('created_at', 'desc')
             ->filters(
                 [
@@ -206,6 +224,81 @@ class AnomalyDetectionResource extends Resource
             ->actions(
                 [
                     Tables\Actions\ViewAction::make(),
+                    Tables\Actions\Action::make('assign')
+                        ->label('Assign')
+                        ->icon('heroicon-o-user-plus')
+                        ->color('info')
+                        ->visible(fn (AnomalyDetection $record): bool => ! $record->status->isTerminal() && $record->triage_status === 'detected')
+                        ->form([
+                            \Filament\Forms\Components\Select::make('assigned_to')
+                                ->label('Assign to Analyst')
+                                ->options(
+                                    \App\Models\User::role('fraud-analyst')
+                                        ->get()
+                                        ->pluck('name', 'id')
+                                )
+                                ->required(),
+                        ])
+                        ->action(function (AnomalyDetection $record, array $data): void {
+                            $record->update([
+                                'triage_status' => 'under_review',
+                                'assigned_to'   => $data['assigned_to'],
+                            ]);
+                        }),
+                    Tables\Actions\Action::make('escalate')
+                        ->label('Escalate')
+                        ->icon('heroicon-o-arrow-up-circle')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->visible(fn (AnomalyDetection $record): bool => $record->triage_status === 'under_review')
+                        ->form([
+                            \Filament\Forms\Components\Textarea::make('escalation_note')
+                                ->label('Escalation reason')
+                                ->required(),
+                        ])
+                        ->action(function (AnomalyDetection $record, array $data): void {
+                            $record->update(['triage_status' => 'escalated']);
+                            \App\Domain\Support\Models\SupportCase::create([
+                                'subject'              => 'Escalated anomaly: ' . $record->id,
+                                'description'          => $data['escalation_note'],
+                                'status'               => 'open',
+                                'priority'             => 'urgent',
+                                'reported_by_user_uuid' => auth()->user()->uuid ?? null,
+                                'reported_by'          => auth()->id(),
+                            ]);
+                        }),
+                    Tables\Actions\Action::make('resolve')
+                        ->label('Resolve')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->visible(fn (AnomalyDetection $record): bool => in_array($record->triage_status, ['under_review', 'escalated']) && ! $record->status->isTerminal())
+                        ->form([
+                            \Filament\Forms\Components\Select::make('resolution_type')
+                                ->options([
+                                    'fraud'          => 'Confirmed Fraud',
+                                    'false_positive' => 'False Positive',
+                                    'low_risk'       => 'Low Risk',
+                                ])
+                                ->required(),
+                            \Filament\Forms\Components\Textarea::make('resolution_notes')
+                                ->label('Resolution Notes')
+                                ->required(),
+                        ])
+                        ->action(function (AnomalyDetection $record, array $data): void {
+                            $record->update([
+                                'triage_status'    => $data['resolution_type'] === 'false_positive' ? 'false_positive' : 'resolved',
+                                'resolution_type'  => $data['resolution_type'],
+                                'resolution_notes' => $data['resolution_notes'],
+                                'resolved_by'      => auth()->id(),
+                                'resolved_at'      => now(),
+                                'status'           => $data['resolution_type'] === 'false_positive'
+                                    ? \App\Domain\Fraud\Enums\AnomalyStatus::FalsePositive
+                                    : \App\Domain\Fraud\Enums\AnomalyStatus::Resolved,
+                                'feedback_outcome'  => $data['resolution_type'],
+                                'reviewed_at'       => now(),
+                                'reviewed_by'       => auth()->id(),
+                            ]);
+                        }),
                     Tables\Actions\Action::make('mark_false_positive')
                         ->label('False Positive')
                         ->icon('heroicon-o-x-circle')
@@ -215,20 +308,10 @@ class AnomalyDetectionResource extends Resource
                         ->action(
                             fn (AnomalyDetection $record) => $record->update([
                                 'status'           => \App\Domain\Fraud\Enums\AnomalyStatus::FalsePositive,
+                                'triage_status'    => 'false_positive',
                                 'feedback_outcome' => 'false_positive',
-                                'reviewed_at'      => now(),
-                            ])
-                        ),
-                    Tables\Actions\Action::make('confirm_fraud')
-                        ->label('Confirm')
-                        ->icon('heroicon-o-exclamation-triangle')
-                        ->color('danger')
-                        ->requiresConfirmation()
-                        ->visible(fn (AnomalyDetection $record): bool => ! $record->status->isTerminal())
-                        ->action(
-                            fn (AnomalyDetection $record) => $record->update([
-                                'status'           => \App\Domain\Fraud\Enums\AnomalyStatus::Confirmed,
-                                'feedback_outcome' => 'confirmed_fraud',
+                                'resolved_at'      => now(),
+                                'resolved_by'      => auth()->id(),
                                 'reviewed_at'      => now(),
                             ])
                         ),

@@ -37,6 +37,7 @@ class ExceptionsDashboard extends Page
         return [
             \App\Filament\Admin\Widgets\FailedMomoTransactionsWidget::class,
             \App\Filament\Admin\Widgets\PendingAdjustmentsWidget::class,
+            \App\Filament\Admin\Widgets\CommerceExceptionWidget::class,
         ];
     }
 }

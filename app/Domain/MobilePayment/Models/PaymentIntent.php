@@ -14,6 +14,7 @@ use App\Domain\MobilePayment\Events\PaymentIntentFailed;
 use App\Domain\MobilePayment\Exceptions\InvalidStateTransitionException;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -49,6 +50,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class PaymentIntent extends Model
 {
+    use HasFactory;
     use HasUuids;
 
     protected $table = 'payment_intents';
@@ -251,5 +253,10 @@ class PaymentIntent extends Model
         ] : null;
 
         return $response;
+    }
+
+    protected static function newFactory(): \Database\Factories\PaymentIntentFactory
+    {
+        return \Database\Factories\PaymentIntentFactory::new();
     }
 }

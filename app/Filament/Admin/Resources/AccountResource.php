@@ -398,6 +398,7 @@ class AccountResource extends Resource
         return [
             RelationManagers\TransactionsRelationManager::class,
             RelationManagers\TurnoversRelationManager::class,
+            RelationManagers\LinkedWalletsRelationManager::class,
         ];
     }
 

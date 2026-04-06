@@ -265,6 +265,14 @@ class Account extends Model
     }
 
     /**
+     * Get linked wallets (bank accounts/mobile money) via user_uuid.
+     */
+    public function linkedWallets(): HasMany
+    {
+        return $this->hasMany(\App\Domain\Banking\Models\BankAccountModel::class, 'user_uuid', 'user_uuid');
+    }
+
+    /**
      * Get the account UUID as an AccountUuid value object.
      */
     public function getAggregateUuid(): \App\Domain\Account\DataObjects\AccountUuid

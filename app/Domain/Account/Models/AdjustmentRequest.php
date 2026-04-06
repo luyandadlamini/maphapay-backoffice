@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Account\Models;
 
 use App\Models\User;
@@ -20,6 +22,7 @@ class AdjustmentRequest extends Model
         'type', // 'credit' or 'debit'
         'amount',
         'reason',
+        'attachment_path',
         'status', // 'pending', 'approved', 'rejected'
         'reviewed_at',
     ];

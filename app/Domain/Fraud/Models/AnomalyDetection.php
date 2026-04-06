@@ -23,6 +23,12 @@ class AnomalyDetection extends Model
     use SoftDeletes;
     use UsesTenantConnection;
 
+    public const TRIAGE_STATUS_DETECTED = 'detected';
+    public const TRIAGE_STATUS_UNDER_REVIEW = 'under_review';
+    public const TRIAGE_STATUS_RESOLVED = 'resolved';
+    public const TRIAGE_STATUS_ESCALATED = 'escalated';
+    public const TRIAGE_STATUS_DISMISSED = 'dismissed';
+
     protected $fillable = [
         'entity_id',
         'entity_type',
@@ -30,6 +36,12 @@ class AnomalyDetection extends Model
         'anomaly_type',
         'detection_method',
         'status',
+        'triage_status',
+        'assigned_to',
+        'resolved_by',
+        'resolution_notes',
+        'resolution_type',
+        'resolved_at',
         'anomaly_score',
         'confidence',
         'severity',
@@ -65,6 +77,7 @@ class AnomalyDetection extends Model
         'baseline_snapshot' => 'array',
         'is_real_time'      => 'boolean',
         'reviewed_at'       => 'datetime',
+        'resolved_at'       => 'datetime',
     ];
 
     // Relationships

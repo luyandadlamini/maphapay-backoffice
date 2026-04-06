@@ -6,6 +6,7 @@ namespace App\Domain\Commerce\Models;
 
 use App\Domain\Commerce\Enums\MerchantStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -27,6 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Merchant extends Model
 {
+    use HasFactory;
     use HasUuids;
     use SoftDeletes;
 
@@ -91,5 +93,10 @@ class Merchant extends Model
             'displayName' => $this->display_name,
             'iconUrl'     => $this->icon_url,
         ];
+    }
+
+    protected static function newFactory(): \Database\Factories\MerchantFactory
+    {
+        return \Database\Factories\MerchantFactory::new();
     }
 }
