@@ -9,6 +9,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
+/**
+ * @property int $id
+ * @property int $thread_id
+ * @property int $created_by
+ * @property string $name
+ * @property string $category
+ * @property string $color
+ * @property string|null $target_amount
+ * @property string|null $current_amount
+ * @property \Illuminate\Support\Carbon|null $target_date
+ * @property bool $is_completed
+ * @property bool $is_locked
+ * @property string $status
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ *
+ * @property-read \App\Models\Thread|null $thread
+ * @property-read \App\Models\User|null $creator
+ */
 class GroupPocket extends Model
 {
     protected $fillable = [
@@ -65,7 +84,9 @@ class GroupPocket extends Model
 
     public function addFunds(string $amount): void
     {
-        $this->current_amount = bcadd((string) $this->current_amount, $amount, 2);
+        /** @var string $current */
+        $current = (string) $this->current_amount;
+        $this->current_amount = bcadd($current, $amount, 2);
 
         if (bccomp((string) $this->current_amount, (string) $this->target_amount, 2) >= 0) {
             $this->is_completed = true;
@@ -77,7 +98,9 @@ class GroupPocket extends Model
 
     public function deductFunds(string $amount): void
     {
-        $this->current_amount = bcsub((string) $this->current_amount, $amount, 2);
+        /** @var string $current */
+        $current = (string) $this->current_amount;
+        $this->current_amount = bcsub($current, $amount, 2);
         $this->is_completed = false;
 
         if ($this->status === self::STATUS_COMPLETED) {
@@ -89,6 +112,7 @@ class GroupPocket extends Model
 
     public function wouldExceedRegulatoryMax(string $amount): bool
     {
+        // @phpstan-ignore argument.type
         return bccomp(
             bcadd((string) $this->current_amount, $amount, 2),
             (string) self::REGULATORY_MAX,

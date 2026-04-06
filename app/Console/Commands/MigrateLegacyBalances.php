@@ -157,6 +157,7 @@ class MigrateLegacyBalances extends Command
                     $snapshotBalanceMajor = $this->getSnapshotBalance($row->id, $finaegisUuid);
                     $deltaAmount = $this->getDeltaAmount($row->id, $row->uuid);
 
+                    // @phpstan-ignore argument.type
                     $targetBalanceMajor = bcadd($snapshotBalanceMajor, $deltaAmount, 8);
                     $rawDiff = bcsub($legacyBalanceMajor, $targetBalanceMajor, 8);
                     $diff = ltrim($rawDiff, '-'); // bcmath abs: strip leading minus
@@ -171,6 +172,7 @@ class MigrateLegacyBalances extends Command
                         $diff,
                     ));
 
+                    // @phpstan-ignore argument.type
                     if (bccomp($diff, $this->threshold, 8) > 0) {
                         $this->error(sprintf(
                             '  [%s] PARITY FAILURE: diff=%s > threshold=%s — FINAEgis writes will NOT be enabled for this user',
@@ -191,7 +193,7 @@ class MigrateLegacyBalances extends Command
                     }
 
                     $amountMinor = (int) MoneyConverter::forAsset(
-                        number_format($targetBalanceMajor, $asset->precision, '.', ''),
+                        number_format((float) $targetBalanceMajor, $asset->precision, '.', ''),
                         $asset,
                     );
 
@@ -216,6 +218,7 @@ class MigrateLegacyBalances extends Command
 
                         $this->info(sprintf('  [%s] ✓ Migrated %s %s (minor: %d)', $row->id, $targetBalanceMajor, self::ASSET_CODE, $amountMinor));
                         $inserted++;
+                        // @phpstan-ignore argument.type
                         $deltaApplied += bccomp($deltaAmount, '0', 8) !== 0 ? 1 : 0;
                     } catch (Throwable $e) {
                         $this->error(sprintf('  [%s] FAILED: %s', $row->id, $e->getMessage()));

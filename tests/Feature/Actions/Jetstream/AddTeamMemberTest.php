@@ -24,7 +24,7 @@ it('can add a team member successfully', function () {
     Gate::define('addTeamMember', fn ($user, $team) => $user->id === $owner->id);
 
     $action = new AddTeamMember();
-    $action->add($owner, $team, $newMember->email, 'editor');
+    $action->add($owner, $team, ((string) $newMember->email), 'editor');
 
     // Check if user was added to team by querying the pivot table directly
     $membership = DB::table('team_user')
@@ -50,7 +50,7 @@ it('validates user authorization before adding member', function () {
 
     $action = new AddTeamMember();
 
-    expect(fn () => $action->add($unauthorizedUser, $team, $newMember->email, 'editor'))
+    expect(fn () => $action->add($unauthorizedUser, $team, ((string) $newMember->email), 'editor'))
         ->toThrow(Illuminate\Auth\Access\AuthorizationException::class);
 });
 
@@ -78,7 +78,7 @@ it('validates user is not already on team', function () {
 
     $action = new AddTeamMember();
 
-    expect(fn () => $action->add($owner, $team, $existingMember->email, 'editor'))
+    expect(fn () => $action->add($owner, $team, ((string) $existingMember->email), 'editor'))
         ->toThrow(ValidationException::class);
 });
 
@@ -95,7 +95,7 @@ it('validates role when roles are enabled', function () {
 
     // This would fail validation if roles are required but invalid role provided
     // For this basic test, we'll just ensure it doesn't throw when role is provided
-    $action->add($owner, $team, $newMember->email, 'editor');
+    $action->add($owner, $team, ((string) $newMember->email), 'editor');
 
     // Check if user was added to team by querying the pivot table directly
     $membership = DB::table('team_user')

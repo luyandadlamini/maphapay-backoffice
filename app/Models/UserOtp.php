@@ -44,7 +44,7 @@ class UserOtp extends Model
     }
 
     /**
-     * @phpstan-return BelongsTo<User, UserOtp>
+     * @phpstan-return BelongsTo<User, $this>
      */
     public function user(): BelongsTo
     {

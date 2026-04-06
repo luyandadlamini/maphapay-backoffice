@@ -23,6 +23,7 @@ beforeEach(function () {
 });
 
 it('can render commerce exception widget', function () {
+    // @phpstan-ignore argument.type
     PaymentIntent::factory()->create([
         'status'  => PaymentIntentStatus::FAILED,
         'user_id' => $this->user->id,

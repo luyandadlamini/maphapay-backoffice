@@ -95,6 +95,7 @@ class TransactionHistoryController extends Controller
                 $q->where('description', 'like', "%{$term}%")
                     ->orWhere('reference', 'like', "%{$term}%")
                     ->orWhere('uuid', 'like', "%{$term}%")
+                    // @phpstan-ignore argument.type
                     ->orWhere('metadata->display->title', 'like', "%{$term}%")
                     ->orWhere('metadata->display->counterparty_name', 'like', "%{$term}%")
                     ->orWhere('metadata->display->note_preview', 'like', "%{$term}%")

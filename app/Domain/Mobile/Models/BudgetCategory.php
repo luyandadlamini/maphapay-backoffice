@@ -64,11 +64,13 @@ class BudgetCategory extends Model
         self::SLUG_OTHER,
     ];
 
+    /** @return BelongsTo<\App\Models\User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(\App\Models\User::class, 'user_uuid', 'uuid');
     }
 
+    /** @return HasMany<BudgetCategoryTransaction, $this> */
     public function transactions(): HasMany
     {
         return $this->hasMany(BudgetCategoryTransaction::class, 'category_id');

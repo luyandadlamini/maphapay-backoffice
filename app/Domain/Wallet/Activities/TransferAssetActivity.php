@@ -21,6 +21,7 @@ class TransferAssetActivity extends Activity
      * This ensures that AssetTransferInitiated and AssetTransferCompleted
      * events are fired, which are required for transaction projections.
      */
+    /** @return array<string, mixed> */
     public function execute(
         AccountUuid $fromAccountUuid,
         AccountUuid $toAccountUuid,

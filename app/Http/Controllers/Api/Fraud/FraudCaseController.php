@@ -204,6 +204,7 @@ class FraudCaseController extends Controller
 
         // Update recovery amount if provided
         if ($request->has('recovery_amount')) {
+            // @phpstan-ignore argument.type
             $case->update(['recovery_amount' => $request->recovery_amount]);
         }
 

@@ -367,6 +367,8 @@ class User extends Authenticatable implements FilamentUser
 
     /**
      * Get all transaction projections for the user through their accounts.
+     *
+     * @return HasManyThrough<TransactionProjection, Account, $this>
      */
     public function transactionProjections(): HasManyThrough
     {

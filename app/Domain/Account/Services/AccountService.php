@@ -38,6 +38,8 @@ class AccountService
 
     /**
      * Create account directly without workflow (for admin use).
+     *
+     * @param  Account|array<string, mixed>  $account
      */
     public function createDirect(Account|array $account): string
     {

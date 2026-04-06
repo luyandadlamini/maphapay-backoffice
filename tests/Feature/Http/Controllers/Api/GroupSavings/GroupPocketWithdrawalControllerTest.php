@@ -40,6 +40,7 @@ class GroupPocketWithdrawalControllerTest extends TestCase
         );
     }
 
+    /** @param  array<int, User>  $members */
     private function makeGroupThread(User $admin, array $members = []): Thread
     {
         $thread = Thread::create([

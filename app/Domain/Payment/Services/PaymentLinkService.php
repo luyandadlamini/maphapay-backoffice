@@ -51,6 +51,7 @@ class PaymentLinkService
         return $moneyRequest !== null;
     }
 
+    /** @return array<string, mixed>|null */
     public function getPaymentLinkData(string $token): ?array
     {
         $moneyRequest = MoneyRequest::query()

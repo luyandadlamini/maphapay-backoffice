@@ -13,6 +13,7 @@ use App\Domain\MobilePayment\Events\PaymentIntentConfirmed;
 use App\Domain\MobilePayment\Events\PaymentIntentFailed;
 use App\Domain\MobilePayment\Exceptions\InvalidStateTransitionException;
 use App\Models\User;
+use Database\Factories\PaymentIntentFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -50,6 +51,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class PaymentIntent extends Model
 {
+    /** @use HasFactory<PaymentIntentFactory> */
     use HasFactory;
     use HasUuids;
 

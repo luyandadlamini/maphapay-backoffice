@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Asset\Models;
 
 use App\Domain\Shared\Traits\UsesTenantConnection;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 class AssetTransfer extends Model
 {
     use UsesTenantConnection;
+    /** @use HasFactory<Factory<static>> */
     use HasFactory;
 
     protected $table = 'asset_transfers';

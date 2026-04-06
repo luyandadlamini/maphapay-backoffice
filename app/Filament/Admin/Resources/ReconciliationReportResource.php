@@ -44,6 +44,7 @@ class ReconciliationReportResource extends Resource
         return 'Reconciliation Reports';
     }
 
+    /** @return array<int, mixed> */
     public static function getHeaderActions(): array
     {
         return [

@@ -173,7 +173,7 @@ class BatchProcessingController extends Controller
 
             // Queue for processing if not scheduled
             if (! isset($validated['schedule_at'])) {
-                $this->batchService->processBatch($batchJob);
+                $this->batchService->processBatch($batchJob->uuid);
             }
 
             return redirect()
@@ -322,7 +322,7 @@ class BatchProcessingController extends Controller
         );
 
         // Queue for reprocessing
-        $this->batchService->processBatch($batchJob);
+        $this->batchService->processBatch($batchJob->uuid);
 
         return back()->with('success', "Retrying {$failedItems} failed items");
     }

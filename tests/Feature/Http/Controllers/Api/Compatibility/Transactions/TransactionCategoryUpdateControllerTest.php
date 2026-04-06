@@ -42,6 +42,7 @@ class TransactionCategoryUpdateControllerTest extends ControllerTestCase
         }
     }
 
+    /** @return array{0: User, 1: Account} */
     private function createUserWithAccount(): array
     {
         $user = User::factory()->create([

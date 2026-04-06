@@ -47,7 +47,7 @@ class EmailVerificationControllerTest extends ControllerTestCase
             Carbon::now()->addMinutes(60),
             [
                 'id'   => $this->unverifiedUser->id,
-                'hash' => sha1($this->unverifiedUser->email),
+                'hash' => sha1((string) $this->unverifiedUser->email),
             ]
         );
 
@@ -98,7 +98,7 @@ class EmailVerificationControllerTest extends ControllerTestCase
             Carbon::now()->subMinutes(1), // Expired
             [
                 'id'   => $this->unverifiedUser->id,
-                'hash' => sha1($this->unverifiedUser->email),
+                'hash' => sha1((string) $this->unverifiedUser->email),
             ]
         );
 
@@ -118,7 +118,7 @@ class EmailVerificationControllerTest extends ControllerTestCase
         $response = $this->getJson(sprintf(
             '/api/auth/verify-email/%d/%s?expires=%s&signature=%s',
             $this->unverifiedUser->id,
-            sha1($this->unverifiedUser->email),
+            sha1((string) $this->unverifiedUser->email),
             Carbon::now()->addMinutes(60)->timestamp,
             'invalid-signature'
         ));
@@ -141,7 +141,7 @@ class EmailVerificationControllerTest extends ControllerTestCase
             Carbon::now()->addMinutes(60),
             [
                 'id'   => $this->verifiedUser->id,
-                'hash' => sha1($this->verifiedUser->email),
+                'hash' => sha1((string) $this->verifiedUser->email),
             ]
         );
 
@@ -223,7 +223,7 @@ class EmailVerificationControllerTest extends ControllerTestCase
             Carbon::now()->addMinutes(60),
             [
                 'id'   => $this->unverifiedUser->id,
-                'hash' => sha1($this->unverifiedUser->email),
+                'hash' => sha1((string) $this->unverifiedUser->email),
             ]
         );
 
@@ -245,7 +245,7 @@ class EmailVerificationControllerTest extends ControllerTestCase
         $response = $this->getJson(sprintf(
             '/api/auth/verify-email/%d/%s?expires=%s',
             $this->unverifiedUser->id,
-            sha1($this->unverifiedUser->email),
+            sha1((string) $this->unverifiedUser->email),
             Carbon::now()->addMinutes(60)->timestamp
         ));
 
@@ -255,7 +255,7 @@ class EmailVerificationControllerTest extends ControllerTestCase
         $response = $this->getJson(sprintf(
             '/api/auth/verify-email/%d/%s?signature=%s',
             $this->unverifiedUser->id,
-            sha1($this->unverifiedUser->email),
+            sha1((string) $this->unverifiedUser->email),
             'some-signature'
         ));
 

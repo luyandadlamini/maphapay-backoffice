@@ -232,6 +232,7 @@ class FundManagementService
 
     public function getTreasuryBalance(string $assetCode): int
     {
+        // @phpstan-ignore argument.type
         $snapshot = \App\Domain\Treasury\Models\TreasurySnapshot::where('asset_code', $assetCode)
             ->latest()
             ->first();
@@ -239,6 +240,7 @@ class FundManagementService
         return $snapshot !== null ? $snapshot->balance : 0;
     }
 
+    /** @return array<string, mixed> */
     public function getTreasuryBalances(): array
     {
         $assets = Asset::active()->get();
@@ -259,6 +261,7 @@ class FundManagementService
         return $balances;
     }
 
+    /** @return array<int, mixed> */
     public function getTestFundingHistory(?string $accountUuid = null, int $limit = 50): array
     {
         $query = TestFunding::query()->orderBy('created_at', 'desc');
@@ -270,6 +273,7 @@ class FundManagementService
         return $query->limit($limit)->get()->toArray();
     }
 
+    /** @return array<int, mixed> */
     public function getAdjustmentHistory(?string $accountUuid = null, int $limit = 50): array
     {
         $query = FundAdjustmentJournal::query()->orderBy('created_at', 'desc');

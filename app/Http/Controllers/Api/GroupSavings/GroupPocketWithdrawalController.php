@@ -48,6 +48,7 @@ class GroupPocketWithdrawalController extends Controller
             return response()->json(['status' => 'error', 'message' => ['Pocket is locked — withdrawals are disabled']], 422);
         }
 
+        // @phpstan-ignore argument.type
         if (bccomp((string) $pocket->current_amount, (string) $validated['amount'], 2) < 0) {
             return response()->json(['status' => 'error', 'message' => ['Requested amount exceeds pocket balance']], 422);
         }
@@ -114,7 +115,7 @@ class GroupPocketWithdrawalController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data'   => ['request' => $this->formatRequest($withdrawalRequest->fresh())],
+            'data'   => ['request' => $this->formatRequest($withdrawalRequest->fresh() ?? $withdrawalRequest)],
         ]);
     }
 

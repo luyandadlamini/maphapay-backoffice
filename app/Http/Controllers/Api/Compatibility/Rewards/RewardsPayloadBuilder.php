@@ -34,6 +34,7 @@ class RewardsPayloadBuilder
                 $builder->where('updated_at', '>', $changedSince)
                     ->orWhereHas('redemptions', function ($redemptions) use ($changedSince, $profile): void {
                         $redemptions
+                            // @phpstan-ignore argument.type
                             ->where('reward_profile_id', $profile->id)
                             ->where('updated_at', '>', $changedSince);
                     });

@@ -29,7 +29,8 @@ class PocketsSyncController extends Controller
             $query->where(function ($builder) use ($changedSince): void {
                 $builder->where('updated_at', '>', $changedSince)
                     ->orWhereHas('smartRule', function ($smartRuleQuery) use ($changedSince): void {
-                        $smartRuleQuery->where('updated_at', '>', $changedSince);
+                        // @phpstan-ignore argument.type
+                    $smartRuleQuery->where('updated_at', '>', $changedSince);
                     });
             });
         }

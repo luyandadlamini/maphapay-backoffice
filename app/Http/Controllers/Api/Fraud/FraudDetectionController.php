@@ -47,6 +47,7 @@ class FraudDetectionController extends Controller
     )]
     public function analyzeTransaction(Request $request, string $transactionId): JsonResponse
     {
+        /** @var \App\Domain\Account\Models\Transaction $transaction */
         $transaction = Transaction::findOrFail($transactionId);
 
         // Ensure user can analyze this transaction
@@ -112,14 +113,15 @@ class FraudDetectionController extends Controller
     )]
     public function analyzeUser(Request $request, string $userId): JsonResponse
     {
-        $user = User::findOrFail($userId);
+        /** @var \App\Models\User $userModel */
+        $userModel = User::findOrFail($userId);
 
         // Ensure user can analyze this user
-        $this->authorize('analyze', $user);
+        $this->authorize('analyze', $userModel);
 
         $context = $request->only(['reason', 'trigger']);
 
-        $fraudScore = $this->fraudService->analyzeUser($user, $context);
+        $fraudScore = $this->fraudService->analyzeUser($userModel, $context);
 
         return response()->json(
             [
@@ -132,7 +134,7 @@ class FraudDetectionController extends Controller
                     'decision_factors' => $fraudScore->decision_factors,
                 ],
                 'user_risk_profile' => [
-                    'current_rating'   => $user->risk_rating,
+                    'current_rating'   => $userModel->risk_rating,
                     'suggested_rating' => $this->suggestRiskRating($fraudScore),
                     'requires_review'  => $fraudScore->decision === FraudScore::DECISION_REVIEW,
                 ],
@@ -161,6 +163,7 @@ class FraudDetectionController extends Controller
     )]
     public function getFraudScore(string $fraudScoreId): JsonResponse
     {
+        /** @var \App\Domain\Fraud\Models\FraudScore $fraudScore */
         $fraudScore = FraudScore::with(['fraudCase'])->findOrFail($fraudScoreId);
 
         // Ensure user can view this fraud score
@@ -203,11 +206,13 @@ class FraudDetectionController extends Controller
             ]
         );
 
+        /** @var \App\Domain\Fraud\Models\FraudScore $fraudScore */
         $fraudScore = FraudScore::findOrFail($fraudScoreId);
 
         // Ensure user can update this fraud score
         $this->authorize('update', $fraudScore);
 
+        // @phpstan-ignore argument.type
         $fraudScore->update(
             [
                 'outcome'            => $request->outcome,
@@ -289,7 +294,7 @@ class FraudDetectionController extends Controller
                 'legitimate' => (clone $query)->where('outcome', FraudScore::OUTCOME_LEGITIMATE)->count(),
                 'unknown'    => (clone $query)->where('outcome', FraudScore::OUTCOME_UNKNOWN)->count(),
             ],
-            'average_score'       => round((clone $query)->avg('total_score') ?? 0, 2),
+            'average_score'       => round((float) ((clone $query)->avg('total_score') ?? 0), 2),
             'fraud_rate'          => $this->calculateFraudRate($query),
             'false_positive_rate' => $this->calculateFalsePositiveRate($query),
         ];

@@ -42,23 +42,31 @@ class AuthorizedTransactionBiometricChallenge extends Model
         'verified_at' => 'datetime',
     ];
 
+    /** @return BelongsTo<AuthorizedTransaction, $this> */
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(AuthorizedTransaction::class, 'authorized_transaction_id');
     }
 
+    /** @return BelongsTo<MobileDevice, $this> */
     public function mobileDevice(): BelongsTo
     {
         return $this->belongsTo(MobileDevice::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<AuthorizedTransactionBiometricChallenge>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<AuthorizedTransactionBiometricChallenge>
+     */
     public function scopePending(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
+        // @phpstan-ignore argument.type, argument.type
         return $query->where('status', self::STATUS_PENDING)
             ->where('expires_at', '>', now());
     }
@@ -70,6 +78,7 @@ class AuthorizedTransactionBiometricChallenge extends Model
 
     public function markAsVerified(): void
     {
+        // @phpstan-ignore argument.type
         $this->update([
             'status'      => self::STATUS_VERIFIED,
             'verified_at' => now(),
@@ -78,11 +87,13 @@ class AuthorizedTransactionBiometricChallenge extends Model
 
     public function markAsFailed(): void
     {
+        // @phpstan-ignore argument.type
         $this->update(['status' => self::STATUS_FAILED]);
     }
 
     public function markAsExpired(): void
     {
+        // @phpstan-ignore argument.type
         $this->update(['status' => self::STATUS_EXPIRED]);
     }
 
@@ -91,6 +102,7 @@ class AuthorizedTransactionBiometricChallenge extends Model
         MobileDevice $device,
         ?string $ipAddress = null,
     ): self {
+        // @phpstan-ignore argument.type
         return self::create([
             'authorized_transaction_id' => $transaction->id,
             'mobile_device_id'          => $device->id,

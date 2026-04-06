@@ -33,6 +33,7 @@ class UserBudget extends Model
         'year'           => 'integer',
     ];
 
+    /** @return BelongsTo<\App\Models\User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(\App\Models\User::class, 'user_uuid', 'uuid');

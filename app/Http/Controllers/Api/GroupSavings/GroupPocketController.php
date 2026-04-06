@@ -40,13 +40,16 @@ class GroupPocketController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data'   => ['pockets' => $pockets->map(fn ($p) => $this->formatPocket($p))->values()],
+            'data'   => ['pockets' => $pockets->map(function (GroupPocket $p) {
+                return $this->formatPocket($p);
+            })->values()],
         ]);
     }
 
     /** Group pockets for a single thread (requester must be a member). */
     public function byThread(Request $request, int $threadId): JsonResponse
     {
+        /** @var User $user */
         $user = $request->user();
         abort_unless($user instanceof User, 401);
 
@@ -70,7 +73,9 @@ class GroupPocketController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data'   => ['pockets' => $pockets->map(fn ($p) => $this->formatPocket($p))->values()],
+            'data'   => ['pockets' => $pockets->map(function (GroupPocket $p) {
+                return $this->formatPocket($p);
+            })->values()],
         ]);
     }
 
@@ -89,6 +94,7 @@ class GroupPocketController extends Controller
         $user = $request->user();
         abort_unless($user instanceof User, 401);
 
+        /** @var Thread $thread */
         $thread = Thread::findOrFail($validated['thread_id']);
 
         if (! $thread->isGroup()) {
@@ -129,7 +135,9 @@ class GroupPocketController extends Controller
         abort_unless($user instanceof User, 401);
 
         $pocket = GroupPocket::findOrFail($id);
-        $this->authorizeAdmin($request, $pocket->thread);
+        /** @var \App\Models\Thread $thread */
+        $thread = $pocket->thread;
+        $this->authorizeAdmin($request, $thread);
 
         $validated = $request->validate([
             'name'          => 'sometimes|string|max:150',
@@ -143,7 +151,7 @@ class GroupPocketController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data'   => ['pocket' => $this->formatPocket($pocket->fresh())],
+            'data'   => ['pocket' => $this->formatPocket($pocket->fresh() ?? $pocket)],
         ]);
     }
 
@@ -154,7 +162,9 @@ class GroupPocketController extends Controller
         abort_unless($user instanceof User, 401);
 
         $pocket = GroupPocket::findOrFail($id);
-        $this->authorizeAdmin($request, $pocket->thread);
+        /** @var \App\Models\Thread $thread */
+        $thread = $pocket->thread;
+        $this->authorizeAdmin($request, $thread);
 
         $this->transferService->refundAllContributions($pocket);
         $pocket->update(['status' => GroupPocket::STATUS_CLOSED]);
@@ -192,7 +202,7 @@ class GroupPocketController extends Controller
             'color'          => $pocket->color,
             'target_amount'  => number_format((float) $pocket->target_amount, 2, '.', ''),
             'current_amount' => number_format((float) $pocket->current_amount, 2, '.', ''),
-            'target_date'    => $pocket->target_date?->format('Y-m-d'),
+            'target_date'    => $pocket->target_date instanceof \Illuminate\Support\Carbon ? $pocket->target_date->format('Y-m-d') : $pocket->target_date,
             'is_completed'   => $pocket->is_completed,
             'is_locked'      => $pocket->is_locked,
             'status'         => $pocket->status,

@@ -62,11 +62,13 @@ class FundAdjustmentJournal extends Model
 
     public const STATUS_REVERSED = 'reversed';
 
+    /** @return BelongsTo<\App\Domain\Account\Models\Account, $this> */
     public function account(): BelongsTo
     {
         return $this->belongsTo(\App\Domain\Account\Models\Account::class, 'account_uuid', 'uuid');
     }
 
+    /** @return BelongsTo<\App\Models\User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(\App\Models\User::class, 'user_uuid', 'uuid');
@@ -88,13 +90,19 @@ class FundAdjustmentJournal extends Model
         return $prefix . number_format(abs($this->adjustment_amount) / 100, 2) . ' ' . $this->asset_code;
     }
 
-    /** @param  Builder<FundAdjustmentJournal>  $query */
+    /**
+     * @param  Builder<FundAdjustmentJournal>  $query
+     * @return Builder<FundAdjustmentJournal>
+     */
     public function scopeCompleted(Builder $query): Builder
     {
         return $query->where('status', self::STATUS_COMPLETED);
     }
 
-    /** @param  Builder<FundAdjustmentJournal>  $query */
+    /**
+     * @param  Builder<FundAdjustmentJournal>  $query
+     * @return Builder<FundAdjustmentJournal>
+     */
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', self::STATUS_PENDING);

@@ -46,7 +46,7 @@ class PushNotificationsReadController extends Controller
             'status' => 'success',
             'remark' => 'push_notification_read',
             'data'   => [
-                'notification' => $this->payloadBuilder->notification($notification->fresh()),
+                'notification' => $this->payloadBuilder->notification($notification->fresh() ?? $notification),
             ],
         ]);
     }

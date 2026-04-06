@@ -56,11 +56,12 @@ class PocketsUpdateRulesController extends Controller
             'status'  => 'success',
             'message' => ['Smart rules updated successfully'],
             'data'    => [
-                'pocket' => $this->formatPocket($pocket->fresh()),
+                'pocket' => $this->formatPocket($pocket->fresh() ?? $pocket),
             ],
         ]);
     }
 
+    /** @return array<string, mixed> */
     private function formatPocket(Pocket $pocket): array
     {
         $smartRule = $pocket->smartRule;

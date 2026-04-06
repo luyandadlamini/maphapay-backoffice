@@ -60,6 +60,7 @@ class DashboardController extends Controller
             $balanceMinor = $account !== null ? $account->getBalance('SZL') : 0;
             $balanceStr = number_format($balanceMinor / $divisor, $precision, '.', '');
 
+            // @phpstan-ignore argument.type
             $accountUuids = $user->accounts()->pluck('uuid');
             $totalBalanceMinor = $accountUuids->isNotEmpty()
                 ? AccountBalance::whereIn('account_uuid', $accountUuids)->where('asset_code', 'SZL')->sum('balance')

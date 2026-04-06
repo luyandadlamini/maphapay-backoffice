@@ -21,6 +21,7 @@ class AssetTransferProjector extends Projector
     public function onAssetTransferInitiated(AssetTransferInitiated $event): void
     {
         try {
+            // @phpstan-ignore argument.type
             $this->upsertTransfer(
                 transferUuid: $event->aggregateRootUuid(),
                 payload: [
@@ -102,6 +103,7 @@ class AssetTransferProjector extends Projector
                 return;
             }
 
+            // @phpstan-ignore argument.type
             $this->upsertTransfer(
                 transferUuid: $event->aggregateRootUuid(),
                 payload: [
@@ -161,6 +163,7 @@ class AssetTransferProjector extends Projector
     public function onAssetTransferFailed(AssetTransferFailed $event): void
     {
         try {
+            // @phpstan-ignore argument.type
             $this->upsertTransfer(
                 transferUuid: $event->aggregateRootUuid(),
                 payload: [

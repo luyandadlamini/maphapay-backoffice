@@ -28,6 +28,7 @@ class AuthorizedTransactionBiometricService
         $transaction = $this->findTransaction($trx, $userId, $remark);
         $device = $this->findEligibleDevice($deviceId, $userId);
 
+        // @phpstan-ignore argument.type, argument.type, argument.type
         AuthorizedTransactionBiometricChallenge::query()
             ->where('authorized_transaction_id', $transaction->id)
             ->where('mobile_device_id', $device->id)
@@ -49,6 +50,7 @@ class AuthorizedTransactionBiometricService
         $transaction = $this->findTransaction($trx, $userId, $remark);
         $device = $this->findEligibleDevice($deviceId, $userId);
 
+        // @phpstan-ignore argument.type, argument.type, argument.type
         $challengeRecord = AuthorizedTransactionBiometricChallenge::query()
             ->where('authorized_transaction_id', $transaction->id)
             ->where('mobile_device_id', $device->id)

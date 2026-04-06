@@ -26,7 +26,7 @@ class UserProfileService
 
             $profile = UserProfile::create(
                 userId: (string) $user->id,
-                email: $user->email,
+                email: $user->email ?? '',
                 firstName: $data['first_name'] ?? null,
                 lastName: $data['last_name'] ?? null,
                 phoneNumber: $data['phone_number'] ?? null,

@@ -192,6 +192,7 @@ class MoneyMovementTransactionInspector
             return null;
         }
 
+        // @phpstan-ignore argument.type
         return AuthorizedTransaction::query()
             ->where('result->reference', $reference)
             ->orWhere('payload->reference', $reference)

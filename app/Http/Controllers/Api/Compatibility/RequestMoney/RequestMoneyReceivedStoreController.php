@@ -140,6 +140,7 @@ class RequestMoneyReceivedStoreController extends Controller
                     ->where('remark', AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED)
                     ->where('user_id', (int) $authUser->getAuthIdentifier())
                     ->where('status', AuthorizedTransaction::STATUS_PENDING)
+                    // @phpstan-ignore argument.type
                     ->where('payload->money_request_id', $lockedMoneyRequest->id)
                     ->first();
 

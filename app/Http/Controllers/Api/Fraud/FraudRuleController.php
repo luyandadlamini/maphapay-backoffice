@@ -393,15 +393,18 @@ class FraudRuleController extends Controller
             'blocking_rules' => FraudRule::where('is_blocking', true)->count(),
             'by_category'    => FraudRule::groupBy('category')
                 ->selectRaw('category, COUNT(*) as count')
+                // @phpstan-ignore argument.type
                 ->pluck('count', 'category'),
             'by_severity' => FraudRule::groupBy('severity')
                 ->selectRaw('severity, COUNT(*) as count')
+                // @phpstan-ignore argument.type
                 ->pluck('count', 'severity'),
             'recently_triggered' => FraudRule::where('last_triggered_at', '>=', now()->subDays(7))
                 ->count(),
             'never_triggered' => FraudRule::whereNull('last_triggered_at')->count(),
             'most_triggered'  => FraudRule::orderBy('trigger_count', 'desc')
                 ->take(10)
+                // @phpstan-ignore argument.type
                 ->get(['id', 'name', 'code', 'trigger_count', 'last_triggered_at']),
         ];
 

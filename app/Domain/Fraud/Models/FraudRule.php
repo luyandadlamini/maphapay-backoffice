@@ -10,6 +10,32 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
+ * @property string $uuid
+ * @property string $code
+ * @property string $name
+ * @property string $description
+ * @property string $category
+ * @property string $severity
+ * @property bool $is_active
+ * @property bool $is_blocking
+ * @property array $conditions
+ * @property array|null $thresholds
+ * @property string|null $time_window
+ * @property int|null $min_occurrences
+ * @property int $base_score
+ * @property float $weight
+ * @property array $actions
+ * @property array|null $notification_channels
+ * @property int $triggers_count
+ * @property int $true_positives
+ * @property int $false_positives
+ * @property float $precision_rate
+ * @property \Illuminate\Support\Carbon|null $last_triggered_at
+ * @property bool $ml_enabled
+ * @property string|null $ml_model_id
+ * @property array|null $ml_features
+ * @property float|null $ml_confidence_threshold
+ *
  * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $operator = null, mixed $value = null, string $boolean = 'and')
  * @method static \Illuminate\Database\Eloquent\Builder whereDate(string $column, mixed $operator, string|\DateTimeInterface|null $value = null)
  * @method static \Illuminate\Database\Eloquent\Builder whereMonth(string $column, mixed $operator, string|\DateTimeInterface|null $value = null)
@@ -318,5 +344,17 @@ class FraudRule extends Model
     public function logs()
     {
         return $this->morphMany(\App\Domain\Activity\Models\Activity::class, 'subject');
+    }
+
+    public function getPerformanceMetrics(): array
+    {
+        return [
+            'triggers_count'    => $this->triggers_count,
+            'true_positives'    => $this->true_positives,
+            'false_positives'   => $this->false_positives,
+            'precision_rate'    => $this->precision_rate,
+            'last_triggered_at' => $this->last_triggered_at?->toIso8601String(),
+            'effectiveness'     => $this->getEffectiveness(),
+        ];
     }
 }

@@ -97,6 +97,10 @@ class KycFormController extends Controller
         ]);
     }
 
+    /**
+     * @param  array<string, mixed>  $stepsCompleted
+     * @return array<string, mixed>
+     */
     private function buildStepForm(User $user, string $currentStep, array $stepsCompleted): array
     {
         return match ($currentStep) {
@@ -110,6 +114,10 @@ class KycFormController extends Controller
         };
     }
 
+    /**
+     * @param  array<string, mixed>  $stepsCompleted
+     * @return array<string, mixed>
+     */
     private function buildIdentityTypeStep(array $stepsCompleted): array
     {
         return [
@@ -132,6 +140,10 @@ class KycFormController extends Controller
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $stepsCompleted
+     * @return array<string, mixed>
+     */
     private function buildIdentityDocumentStep(User $user, array $stepsCompleted): array
     {
         $identityType = $user->kyc_identity_type ?? 'national_id';
@@ -149,6 +161,7 @@ class KycFormController extends Controller
         ];
     }
 
+    /** @return array<string, mixed> */
     private function buildSelfieStep(User $user): array
     {
         return [
@@ -162,6 +175,10 @@ class KycFormController extends Controller
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $stepsCompleted
+     * @return array<string, mixed>
+     */
     private function buildAddressStep(User $user, array $stepsCompleted): array
     {
         $existingAddress = $user->kyc_data['address'] ?? [];
@@ -225,6 +242,10 @@ class KycFormController extends Controller
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $stepsCompleted
+     * @return array<string, mixed>
+     */
     private function buildAddressProofStep(array $stepsCompleted): array
     {
         return [
@@ -248,6 +269,7 @@ class KycFormController extends Controller
         ];
     }
 
+    /** @return array<string, mixed> */
     private function buildReviewStep(): array
     {
         return [
@@ -270,6 +292,7 @@ class KycFormController extends Controller
         ];
     }
 
+    /** @return array<string, mixed> */
     private function buildFileField(string $type, string $label, bool $required): array
     {
         $def = self::FIELD_DEFINITIONS[$type] ?? [

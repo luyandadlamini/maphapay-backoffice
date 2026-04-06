@@ -16,9 +16,10 @@ uses(Tests\TestCase::class);
 
 function makeService(): OperationRecordService
 {
-    /** @var App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry|Mockery\MockInterface $telemetry */
-    $telemetry = Mockery::mock(App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry::class);
-    $telemetry->shouldIgnoreMissing();
+    $telemetryMock = Mockery::mock(App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry::class);
+    $telemetryMock->shouldIgnoreMissing();
+    /** @var App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry $telemetry */
+    $telemetry = $telemetryMock;
 
     return new OperationRecordService($telemetry);
 }

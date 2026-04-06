@@ -268,6 +268,8 @@ class Account extends Model
 
     /**
      * Get linked wallets (bank accounts/mobile money) via user_uuid.
+     *
+     * @return HasMany<\App\Domain\Banking\Models\BankAccountModel, $this>
      */
     public function linkedWallets(): HasMany
     {

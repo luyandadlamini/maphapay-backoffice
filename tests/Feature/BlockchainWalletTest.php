@@ -255,7 +255,7 @@ class BlockchainWalletTest extends DomainTestCase
             backupId: $backup['backup_id'],
             encryptedData: $backup['encrypted_data'],
             backupMethod: 'encrypted_json',
-            createdBy: $this->user->email
+            createdBy: (string) $this->user->email
         );
 
         $walletAggregate->persist();

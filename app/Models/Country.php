@@ -34,7 +34,7 @@ class Country extends Model
         ];
     }
 
-    /** @return HasMany<User, Country> */
+    /** @return HasMany<User, $this> */
     public function users(): HasMany
     {
         return $this->hasMany(User::class, 'country_code', 'code');

@@ -13,7 +13,36 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
- * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $operator = null, mixed $value = null, string $boolean = 'and')
++ * @property string $uuid
++ * @property string $entity_id
++ * @property string $entity_type
++ * @property string $score_type
++ * @property float $total_score
++ * @property string $risk_level
++ * @property array|null $score_breakdown
++ * @property array|null $triggered_rules
++ * @property array|null $entity_snapshot
++ * @property array|null $behavioral_factors
++ * @property array|null $device_factors
++ * @property array|null $network_factors
++ * @property float|null $ml_score
++ * @property string|null $ml_model_version
++ * @property array|null $ml_features
++ * @property array|null $ml_explanation
++ * @property string|null $decision
++ * @property array|null $decision_factors
++ * @property \Illuminate\Support\Carbon|null $decision_at
++ * @property bool $is_override
++ * @property string|null $override_by
++ * @property string|null $override_reason
++ * @property string|null $outcome
++ * @property \Illuminate\Support\Carbon|null $outcome_confirmed_at
++ * @property string|null $confirmed_by
++ * @property string|null $outcome_notes
++ * @property array|null $analysis_results
++ * @property array|null $metadata
++ *
++ * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $operator = null, mixed $value = null, string $boolean = 'and')
  * @method static \Illuminate\Database\Eloquent\Builder whereDate(string $column, mixed $operator, string|\DateTimeInterface|null $value = null)
  * @method static \Illuminate\Database\Eloquent\Builder whereMonth(string $column, mixed $operator, string|\DateTimeInterface|null $value = null)
  * @method static \Illuminate\Database\Eloquent\Builder whereYear(string $column, mixed $value)
@@ -158,6 +187,11 @@ class FraudScore extends Model
     public function confirmedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'confirmed_by');
+    }
+
+    public function fraudCase(): \Illuminate\Database\Eloquent\Relations\MorphOne
+    {
+        return $this->morphOne(FraudCase::class, 'entity');
     }
 
     // Helper methods

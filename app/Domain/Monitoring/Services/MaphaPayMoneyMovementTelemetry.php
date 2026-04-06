@@ -21,6 +21,7 @@ class MaphaPayMoneyMovementTelemetry
 
     public const METRIC_ROLLOUT_BLOCKED_TOTAL = 'metrics:maphapay:money_movement:rollout_blocked_total';
 
+    /** @param  array<string, mixed>  $context */
     public function logEvent(
         string $event,
         array $context = [],
@@ -51,6 +52,7 @@ class MaphaPayMoneyMovementTelemetry
         ]), 'warning');
     }
 
+    /** @param  array<string, mixed>  $context */
     public function logIdempotencyReplay(Request $request, string $idempotencyKey, array $context = []): void
     {
         if (! $this->isMoneyMovementPath($request->path())) {
@@ -112,6 +114,7 @@ class MaphaPayMoneyMovementTelemetry
         ]), 'warning', true);
     }
 
+    /** @param  array<string, mixed>  $context */
     public function logMoneyRequestTransition(
         MoneyRequest $moneyRequest,
         string $fromStatus,

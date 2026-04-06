@@ -100,6 +100,7 @@ class SocialFriendshipStatusController extends Controller
         ]);
     }
 
+    /** @return array<string, mixed> */
     private function mapPeer(User $peer): array
     {
         $name = (string) ($peer->name ?? 'User');

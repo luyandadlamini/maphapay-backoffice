@@ -15,6 +15,46 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
+ * @property string $uuid
+ * @property string $case_number
+ * @property string $status
+ * @property string $severity
+ * @property string $priority Alias for severity in some contexts
+ * @property string $type
+ * @property string|null $subject_account_uuid
+ * @property array $related_transactions
+ * @property array $related_accounts
+ * @property array $related_entities
+ * @property array $related_cases
+ * @property float $amount Alias for loss_amount
+ * @property float|null $loss_amount
+ * @property float|null $recovery_amount
+ * @property float|null $recovery_percentage
+ * @property string|null $currency
+ * @property float $risk_score Alias for total_score
+ * @property float $total_score
+ * @property string|null $description
+ * @property array $detection_rules Alias for triggered_rules
+ * @property array $triggered_rules
+ * @property array $risk_factors
+ * @property array $evidence
+ * @property array $investigation_notes
+ * @property \Illuminate\Support\Carbon $detected_at
+ * @property \Illuminate\Support\Carbon|null $resolved_at
+ * @property \Illuminate\Support\Carbon|null $investigation_started_at
+ * @property \Illuminate\Support\Carbon|null $status_changed_at
+ * @property \Illuminate\Support\Carbon|null $escalated_at
+ * @property string|null $assigned_to
+ * @property bool $escalated
+ * @property string|null $escalation_reason
+ * @property array $actions_taken
+ * @property string|null $resolution
+ * @property string|null $outcome
+ * @property array|null $resolution_notes
+ * @property array|null $entity_snapshot
+ * @property string|null $initial_decision
+ * @property array|null $tags
+ *
  * @method static \Illuminate\Database\Eloquent\Builder where(string $column, mixed $operator = null, mixed $value = null, string $boolean = 'and')
  * @method static \Illuminate\Database\Eloquent\Builder whereDate(string $column, mixed $operator, string|\DateTimeInterface|null $value = null)
  * @method static \Illuminate\Database\Eloquent\Builder whereMonth(string $column, mixed $operator, string|\DateTimeInterface|null $value = null)
@@ -73,33 +113,72 @@ class FraudCase extends Model
         'case_number',
         'status',
         'severity',
+        'priority',
         'type',
         'subject_account_uuid',
         'related_transactions',
         'related_accounts',
+        'related_entities',
+        'related_cases',
         'amount',
+        'loss_amount',
+        'recovery_amount',
+        'recovery_percentage',
         'currency',
         'risk_score',
+        'total_score',
         'description',
         'detection_rules',
+        'triggered_rules',
+        'risk_factors',
         'evidence',
+        'investigation_notes',
         'detected_at',
-        'assigned_to',
         'resolved_at',
+        'investigation_started_at',
+        'status_changed_at',
+        'escalated_at',
+        'assigned_to',
+        'escalated',
+        'escalation_reason',
         'actions_taken',
+        'resolution',
+        'outcome',
         'resolution_notes',
+        'entity_snapshot',
+        'initial_decision',
+        'tags',
+        'fraud_score_id',
+        'entity_id',
+        'entity_type',
     ];
 
     protected $casts = [
-        'related_transactions' => 'array',
-        'related_accounts'     => 'array',
-        'detection_rules'      => 'array',
-        'evidence'             => 'array',
-        'actions_taken'        => 'array',
-        'amount'               => 'decimal:8',
-        'risk_score'           => 'decimal:2',
-        'detected_at'          => 'datetime',
-        'resolved_at'          => 'datetime',
+        'related_transactions'     => 'array',
+        'related_accounts'         => 'array',
+        'related_entities'         => 'array',
+        'related_cases'            => 'array',
+        'detection_rules'          => 'array',
+        'triggered_rules'          => 'array',
+        'risk_factors'             => 'array',
+        'evidence'                 => 'array',
+        'investigation_notes'      => 'array',
+        'actions_taken'            => 'array',
+        'resolution_notes'         => 'array',
+        'entity_snapshot'          => 'array',
+        'tags'                     => 'array',
+        'amount'                   => 'decimal:8',
+        'loss_amount'              => 'decimal:8',
+        'recovery_amount'          => 'decimal:8',
+        'recovery_percentage'      => 'decimal:2',
+        'risk_score'               => 'decimal:2',
+        'total_score'              => 'decimal:2',
+        'escalated'                => 'boolean',
+        'detected_at'              => 'datetime',
+        'resolved_at'              => 'datetime',
+        'investigation_started_at' => 'datetime',
+        'status_changed_at'        => 'datetime',
+        'escalated_at'             => 'datetime',
     ];
 
     public const STATUS_PENDING = 'pending';
@@ -133,6 +212,22 @@ class FraudCase extends Model
     public const TYPE_MONEY_LAUNDERING = 'money_laundering';
 
     public const TYPE_OTHER = 'other';
+
+    public const STATUS_OPEN = 'open';
+
+    public const PRIORITY_LOW = 'low';
+
+    public const PRIORITY_MEDIUM = 'medium';
+
+    public const PRIORITY_HIGH = 'high';
+
+    public const PRIORITY_CRITICAL = 'critical';
+
+    public const OUTCOME_FRAUD = 'fraud';
+
+    public const OUTCOME_LEGITIMATE = 'legitimate';
+
+    public const OUTCOME_UNKNOWN = 'unknown';
 
     public const DETECTION_METHOD_RULE_BASED = 'rule_based';
 
@@ -196,6 +291,16 @@ class FraudCase extends Model
         return $this->belongsTo(User::class, 'assigned_to', 'uuid');
     }
 
+    public function fraudScore(): BelongsTo
+    {
+        return $this->belongsTo(FraudScore::class, 'fraud_score_id');
+    }
+
+    public function entity(): \Illuminate\Database\Eloquent\Relations\MorphTo
+    {
+        return $this->morphTo();
+    }
+
     // Helper methods
     public function isPending(): bool
     {
@@ -235,7 +340,7 @@ class FraudCase extends Model
             return 0;
         }
 
-        return $this->detected_at->diffInDays($this->resolved_at);
+        return (int) $this->detected_at->diffInDays($this->resolved_at);
     }
 
     public function assign(User $investigator): void
@@ -259,6 +364,19 @@ class FraudCase extends Model
         );
 
         $this->update(['evidence' => $currentEvidence]);
+    }
+
+    public function addInvestigationNote(string $note, string $author, string $type = 'investigation'): void
+    {
+        $notes = $this->investigation_notes ?? [];
+        $notes[] = [
+            'timestamp' => now()->toIso8601String(),
+            'type'      => $type,
+            'note'      => $note,
+            'author'    => $author,
+        ];
+
+        $this->update(['investigation_notes' => $notes]);
     }
 
     public function recordAction(string $action, array $details = []): void

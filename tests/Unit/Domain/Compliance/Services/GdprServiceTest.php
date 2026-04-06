@@ -108,8 +108,8 @@ class GdprServiceTest extends ServiceTestCase
             ->first();
 
         $this->assertNotNull($auditLog);
-        $this->assertStringContainsString('gdpr', $auditLog->tags);
-        $this->assertStringContainsString('deletion', $auditLog->tags);
+        $this->assertStringContainsString('gdpr', (string) $auditLog->tags);
+        $this->assertStringContainsString('deletion', (string) $auditLog->tags);
     }
 
     #[Test]

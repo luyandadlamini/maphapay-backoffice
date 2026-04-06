@@ -176,6 +176,7 @@ class SocialFriendRequestsController extends Controller
         ]);
     }
 
+    /** @return array<string, mixed> */
     private function mapRequestRow(object $row): array
     {
         $name = (string) ($row->name ?? 'User');

@@ -33,11 +33,13 @@ class BudgetCategoryTransaction extends Model
         'transaction_date' => 'date',
     ];
 
+    /** @return BelongsTo<\App\Models\User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(\App\Models\User::class, 'user_uuid', 'uuid');
     }
 
+    /** @return BelongsTo<BudgetCategory, $this> */
     public function category(): BelongsTo
     {
         return $this->belongsTo(BudgetCategory::class, 'category_id');

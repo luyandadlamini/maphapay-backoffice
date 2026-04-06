@@ -37,7 +37,7 @@ class KycSubmitControllerTest extends ControllerTestCase
 
         $user->refresh();
         $this->assertSame('national_id', $user->kyc_identity_type);
-        $this->assertContains(KycService::STEP_IDENTITY_TYPE, $user->kyc_steps_completed ?? []);
+        $this->assertContains(KycService::STEP_IDENTITY_TYPE, (array) ($user->kyc_steps_completed ?? []));
     }
 
     #[Test]
@@ -139,7 +139,7 @@ class KycSubmitControllerTest extends ControllerTestCase
             ->assertJsonPath('data.current_step', KycService::STEP_ADDRESS_PROOF);
 
         $user->refresh();
-        $this->assertContains(KycService::STEP_ADDRESS, $user->kyc_steps_completed ?? []);
+        $this->assertContains(KycService::STEP_ADDRESS, (array) ($user->kyc_steps_completed ?? []));
         $this->assertSame('Mbabane', $user->kyc_data['address']['city'] ?? null);
     }
 }

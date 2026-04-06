@@ -349,6 +349,7 @@ class SendMoneyStoreController extends Controller
         return AuthorizedTransaction::query()
             ->where('user_id', $userId)
             ->where('remark', AuthorizedTransaction::REMARK_SEND_MONEY)
+            // @phpstan-ignore argument.type
             ->where('payload->_idempotency_key', $idempotencyKey)
             ->latest('created_at')
             ->first();

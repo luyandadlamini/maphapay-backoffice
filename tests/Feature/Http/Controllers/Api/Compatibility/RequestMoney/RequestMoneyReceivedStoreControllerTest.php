@@ -45,6 +45,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
     /**
      * @param  array<string, mixed>  $payload
+     * @return TestResponse<\Illuminate\Http\Response>
      */
     private function postReceivedStore(string $moneyRequestId, array $payload = [], ?string $idempotencyKey = null): TestResponse
     {
@@ -292,6 +293,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
             AuthorizedTransaction::query()
                 ->where('remark', AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED)
                 ->where('user_id', $this->recipient->id)
+                // @phpstan-ignore argument.type
                 ->where('payload->money_request_id', $moneyRequestId)
                 ->count(),
         );
@@ -344,6 +346,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
             AuthorizedTransaction::query()
                 ->where('remark', AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED)
                 ->where('user_id', $this->recipient->id)
+                // @phpstan-ignore argument.type
                 ->where('payload->money_request_id', $moneyRequestId)
                 ->count(),
         );
@@ -514,6 +517,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
             AuthorizedTransaction::query()
                 ->where('remark', AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED)
                 ->where('user_id', $this->recipient->id)
+                // @phpstan-ignore argument.type
                 ->where('payload->money_request_id', $moneyRequestId)
                 ->count(),
         );
@@ -564,6 +568,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
             AuthorizedTransaction::query()
                 ->where('remark', AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED)
                 ->where('user_id', $this->recipient->id)
+                // @phpstan-ignore argument.type
                 ->where('payload->money_request_id', $moneyRequestId)
                 ->count(),
         );

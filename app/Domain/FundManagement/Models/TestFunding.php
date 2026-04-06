@@ -57,11 +57,13 @@ class TestFunding extends Model
 
     public const REASON_OTHER = 'other';
 
+    /** @return BelongsTo<\App\Domain\Account\Models\Account, $this> */
     public function account(): BelongsTo
     {
         return $this->belongsTo(\App\Domain\Account\Models\Account::class, 'account_uuid', 'uuid');
     }
 
+    /** @return BelongsTo<\App\Models\User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(\App\Models\User::class, 'user_uuid', 'uuid');
@@ -82,19 +84,28 @@ class TestFunding extends Model
         return number_format($this->amount / 100, 2) . ' ' . $this->asset_code;
     }
 
-    /** @param  Builder<TestFunding>  $query */
+    /**
+     * @param  Builder<TestFunding>  $query
+     * @return Builder<TestFunding>
+     */
     public function scopeCompleted(Builder $query): Builder
     {
         return $query->where('status', self::STATUS_COMPLETED);
     }
 
-    /** @param  Builder<TestFunding>  $query */
+    /**
+     * @param  Builder<TestFunding>  $query
+     * @return Builder<TestFunding>
+     */
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', self::STATUS_PENDING);
     }
 
-    /** @param  Builder<TestFunding>  $query */
+    /**
+     * @param  Builder<TestFunding>  $query
+     * @return Builder<TestFunding>
+     */
     public function scopeFailed(Builder $query): Builder
     {
         return $query->where('status', self::STATUS_FAILED);

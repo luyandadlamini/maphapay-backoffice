@@ -256,7 +256,10 @@ class EnhancedKycService
                 // Update or create risk profile
                 $this->updateRiskProfile($verification);
 
-                event(new KycVerificationCompleted($verification));
+                event(new KycVerificationCompleted(
+                    $verification->user->uuid ?? (string) $verification->user_id,
+                    $verification->risk_level ?? 'basic'
+                ));
             }
         );
     }

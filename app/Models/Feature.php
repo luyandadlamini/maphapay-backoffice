@@ -25,6 +25,7 @@ class Feature extends Model
         return $this->value === true || $this->value === 'true' || $this->value === 1;
     }
 
+    /** @return array<string, mixed> */
     public static function getFlags(): array
     {
         return [

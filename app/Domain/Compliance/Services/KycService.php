@@ -214,6 +214,8 @@ class KycService
 
     /**
      * Submit address step - user provides address information.
+     *
+     * @param  array<string, mixed>  $addressData
      */
     public function submitAddressStep(User $user, array $addressData): void
     {
@@ -259,6 +261,11 @@ class KycService
     /**
      * Audit logging should never block KYC progression.
      */
+    /**
+     * @param  array<string, mixed>|null  $oldValues
+     * @param  array<string, mixed>|null  $newValues
+     * @param  array<string, mixed>|null  $metadata
+     */
     private function logKycAuditSafely(
         string $action,
         ?User $auditable = null,
@@ -280,6 +287,8 @@ class KycService
 
     /**
      * Submit address proof step - user uploads utility bill or bank statement.
+     *
+     * @param  array<int, array<string, mixed>>  $documents
      */
     public function submitAddressProofStep(User $user, array $documents): void
     {
@@ -351,6 +360,8 @@ class KycService
 
     /**
      * Get KYC progress for a user.
+     *
+     * @return array<string, mixed>
      */
     public function getKycProgress(User $user): array
     {
@@ -374,6 +385,7 @@ class KycService
     public function isKycComplete(User $user): bool
     {
         $stepsCompleted = $user->kyc_steps_completed ?? [];
+        $stepsCompleted = is_array($stepsCompleted) ? $stepsCompleted : [];
         $requiredSteps = [self::STEP_IDENTITY_TYPE, self::STEP_IDENTITY_DOCUMENT, self::STEP_SELFIE, self::STEP_ADDRESS, self::STEP_ADDRESS_PROOF];
 
         foreach ($requiredSteps as $step) {
