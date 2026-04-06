@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Pages;
 
+use App\Domain\User\Values\UserRoles;
 use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Section;
@@ -48,7 +49,7 @@ class BroadcastNotificationPage extends Page implements HasForms, HasActions
     {
         $user = auth()->user();
 
-        return $user && ($user->hasRole('super-admin') || $user->hasRole('operations-l2'));
+        return $user && $user->hasAnyRole([UserRoles::SUPER_ADMIN->value, UserRoles::OPERATIONS_L2->value]);
     }
 
     public function getBroadcastFormSchema(): array
@@ -89,10 +90,10 @@ class BroadcastNotificationPage extends Page implements HasForms, HasActions
                     Select::make('role')
                         ->label('Select Role')
                         ->options([
-                            'operations-l2'      => 'Operations L2',
-                            'finance-lead'       => 'Finance Lead',
-                            'compliance-manager' => 'Compliance Manager',
-                            'support-l1'         => 'Support L1',
+                            UserRoles::OPERATIONS_L2->value      => 'Operations L2',
+                            UserRoles::FINANCE_LEAD->value       => 'Finance Lead',
+                            UserRoles::COMPLIANCE_MANAGER->value => 'Compliance Manager',
+                            UserRoles::SUPPORT_L1->value         => 'Support L1',
                         ])
                         ->visible(fn (callable $get) => $get('audience') === 'role'),
                 ])

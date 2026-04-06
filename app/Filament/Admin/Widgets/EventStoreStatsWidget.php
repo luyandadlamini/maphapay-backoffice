@@ -8,6 +8,7 @@ use App\Domain\Monitoring\Services\EventStoreService;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class EventStoreStatsWidget extends BaseWidget
 {
@@ -29,16 +30,24 @@ class EventStoreStatsWidget extends BaseWidget
      */
     private function computeStats(): array
     {
-        $service = app(EventStoreService::class);
-        $allStats = $service->getAllStats();
-
-        return $allStats['summary'] ?? [
+        $defaults = [
             'total_events'     => 0,
             'total_aggregates' => 0,
             'total_snapshots'  => 0,
             'events_today'     => 0,
             'domain_count'     => 0,
         ];
+
+        try {
+            $service = app(EventStoreService::class);
+            $allStats = $service->getAllStats();
+
+            return $allStats['summary'] ?? $defaults;
+        } catch (\Throwable $e) {
+            Log::warning('EventStoreStatsWidget: failed to compute stats', ['error' => $e->getMessage()]);
+
+            return $defaults;
+        }
     }
 
     /**

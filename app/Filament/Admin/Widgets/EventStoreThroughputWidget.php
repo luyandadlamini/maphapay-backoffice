@@ -7,6 +7,7 @@ namespace App\Filament\Admin\Widgets;
 use App\Domain\Monitoring\Services\EventStoreService;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class EventStoreThroughputWidget extends ChartWidget
 {
@@ -21,9 +22,15 @@ class EventStoreThroughputWidget extends ChartWidget
     protected function getData(): array
     {
         $data = Cache::remember('event_store_throughput_widget', 10, function () {
-            $service = app(EventStoreService::class);
+            try {
+                $service = app(EventStoreService::class);
 
-            return $service->getEventThroughput('stored_events', 60);
+                return $service->getEventThroughput('stored_events', 60);
+            } catch (\Throwable $e) {
+                Log::warning('EventStoreThroughputWidget: failed to load throughput', ['error' => $e->getMessage()]);
+
+                return [];
+            }
         });
 
         $labels = array_keys($data);

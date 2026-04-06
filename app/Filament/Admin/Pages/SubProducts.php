@@ -49,9 +49,9 @@ class SubProducts extends Page implements HasForms, HasActions
         $subProducts = $this->subProductService->getAllSubProducts();
 
         foreach ($subProducts as $key => $config) {
-            $formData["{$key}_enabled"] = $config['is_enabled'];
+            $formData["{$key}_enabled"] = $config['is_enabled'] ?? false;
 
-            foreach ($config['features'] as $feature => $default) {
+            foreach ($config['features'] ?? [] as $feature => $default) {
                 $formData["{$key}_{$feature}"] = $this->subProductService->isFeatureEnabled($key, $feature);
             }
         }
@@ -67,7 +67,7 @@ class SubProducts extends Page implements HasForms, HasActions
         foreach ($subProducts as $key => $config) {
             $featureFields = [];
 
-            foreach ($config['features'] as $feature => $default) {
+            foreach ($config['features'] ?? [] as $feature => $default) {
                 $featureFields[] = Forms\Components\Toggle::make("{$key}_{$feature}")
                     ->label(str($feature)->replace('_', ' ')->title())
                     ->helperText("Enable {$feature} functionality")
@@ -142,7 +142,7 @@ class SubProducts extends Page implements HasForms, HasActions
             }
 
             // Handle features
-            foreach ($config['features'] as $feature => $default) {
+            foreach ($config['features'] ?? [] as $feature => $default) {
                 $featureEnabled = $data["{$key}_{$feature}"] ?? false;
 
                 if ($isEnabled && $featureEnabled && ! $this->subProductService->isFeatureEnabled($key, $feature)) {

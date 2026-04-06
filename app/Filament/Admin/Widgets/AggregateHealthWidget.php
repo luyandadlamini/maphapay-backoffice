@@ -8,6 +8,7 @@ use App\Domain\Monitoring\Services\EventStoreService;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class AggregateHealthWidget extends BaseWidget
 {
@@ -29,28 +30,41 @@ class AggregateHealthWidget extends BaseWidget
      */
     private function computeStats(): array
     {
-        $service = app(EventStoreService::class);
-        $domainMap = $service->getDomainTableMap();
-        $domainCounts = $service->getPerDomainEventCounts();
-
-        $domainsWithSnapshots = 0;
-        $domainsTotal = 0;
-
-        foreach ($domainMap as $domain => $tables) {
-            $domainsTotal++;
-            if ($tables['snapshot_table'] !== null) {
-                $domainsWithSnapshots++;
-            }
-        }
-
-        $topDomains = array_slice($domainCounts, 0, 5, true);
-
-        return [
-            'domains_total'          => $domainsTotal,
-            'domains_with_snapshots' => $domainsWithSnapshots,
-            'top_domains'            => $topDomains,
-            'total_domain_events'    => array_sum($domainCounts),
+        $defaults = [
+            'domains_total'          => 0,
+            'domains_with_snapshots' => 0,
+            'top_domains'            => [],
+            'total_domain_events'    => 0,
         ];
+
+        try {
+            $service = app(EventStoreService::class);
+            $domainMap = $service->getDomainTableMap();
+            $domainCounts = $service->getPerDomainEventCounts();
+
+            $domainsWithSnapshots = 0;
+            $domainsTotal = 0;
+
+            foreach ($domainMap as $domain => $tables) {
+                $domainsTotal++;
+                if ($tables['snapshot_table'] !== null) {
+                    $domainsWithSnapshots++;
+                }
+            }
+
+            $topDomains = array_slice($domainCounts, 0, 5, true);
+
+            return [
+                'domains_total'          => $domainsTotal,
+                'domains_with_snapshots' => $domainsWithSnapshots,
+                'top_domains'            => $topDomains,
+                'total_domain_events'    => array_sum($domainCounts),
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('AggregateHealthWidget: failed to compute stats', ['error' => $e->getMessage()]);
+
+            return $defaults;
+        }
     }
 
     /**
