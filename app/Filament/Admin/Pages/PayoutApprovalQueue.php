@@ -5,15 +5,19 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Pages;
 
 use App\Models\MtnMomoTransaction;
-use Filament\Pages\Dashboard;
+use Filament\Pages\Page;
 
-class PayoutApprovalQueue extends Dashboard
+class PayoutApprovalQueue extends Page
 {
+    protected static ?string $slug = 'payout-queue';
+
     protected static ?string $navigationIcon = 'heroicon-o-queue-list';
 
     protected static ?string $navigationGroup = 'Finance & Reconciliation';
 
     protected static ?string $navigationLabel = 'Payout Queue';
+
+    protected static string $view = 'filament.admin.pages.payout-approval-queue';
 
     public static function canAccess(): bool
     {
