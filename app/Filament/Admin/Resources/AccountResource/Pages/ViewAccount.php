@@ -6,6 +6,8 @@ namespace App\Filament\Admin\Resources\AccountResource\Pages;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AdjustmentRequest;
+use App\Domain\Account\Projectors\AccountProjector;
+use App\Domain\Account\Projectors\TransactionProjector;
 use App\Domain\Account\Services\AccountService;
 use App\Filament\Admin\Resources\AccountResource;
 use App\Filament\Admin\Resources\AdjustmentRequestResource;
@@ -17,6 +19,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Actions\Action as NotificationAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Spatie\EventSourcing\Facades\Projectionist;
 
 class ViewAccount extends ViewRecord
 {
@@ -103,7 +106,7 @@ class ViewAccount extends ViewRecord
                         ->step(0.01)
                         ->minValue(0.01)
                         ->required(),
-                    Forms\Components\Textarea::make('reason')
+                    Textarea::make('reason')
                         ->required()
                         ->minLength(10)
                         ->rows(3),
@@ -116,19 +119,19 @@ class ViewAccount extends ViewRecord
                 ])
                 ->action(function (Account $record, array $data): void {
                     AdjustmentRequest::create([
-                        'account_id'      => $record->id,
-                        'requester_id'    => auth()->id(),
-                        'type'            => $data['type'],
-                        'amount'          => $data['amount'],
-                        'reason'          => $data['reason'],
+                        'account_id' => $record->id,
+                        'requester_id' => auth()->id(),
+                        'type' => $data['type'],
+                        'amount' => $data['amount'],
+                        'reason' => $data['reason'],
                         'attachment_path' => $data['attachment'] ?? null,
-                        'status'          => 'pending',
+                        'status' => 'pending',
                     ]);
 
                     $financeLeads = User::role('finance-lead')->get();
 
                     foreach ($financeLeads as $lead) {
-                        /** @var \App\Models\User $lead */
+                        /** @var User $lead */
                         Notification::make()
                             ->title('New Adjustment Request Pending')
                             ->body("A ledger adjustment for account #{$record->id} requires your approval.")
@@ -148,6 +151,49 @@ class ViewAccount extends ViewRecord
                         ->send();
                 })
                 ->visible(fn (): bool => auth()->user()?->can('request-adjustments') ?? false),
+
+            Action::make('replayProjector')
+                ->label('Replay Projector')
+                ->icon('heroicon-o-arrow-path')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->modalHeading('Replay Account Projector')
+                ->modalDescription('This rebuilds this account\'s projected balance from the event stream. Use only if the balance appears incorrect.')
+                ->modalSubmitActionLabel('Yes, replay projector')
+                ->form([
+                    Textarea::make('reason')
+                        ->label('Reason for Replay')
+                        ->required()
+                        ->placeholder('Explain why the projector needs to be rebuilt'),
+                ])
+                ->visible(fn (): bool => auth()->user()?->hasRole('super-admin') ?? false)
+                ->action(function (Account $record, array $data): void {
+                    try {
+                        $projectors = [
+                            TransactionProjector::class,
+                            AccountProjector::class,
+                        ];
+
+                        foreach ($projectors as $projectorClass) {
+                            try {
+                                Projectionist::replayEvents($projectorClass);
+                            } catch (\Throwable $e) {
+                            }
+                        }
+
+                        Notification::make()
+                            ->title('Projector replay queued')
+                            ->body("The account projectors for {$record->account_number} will be rebuilt.")
+                            ->warning()
+                            ->send();
+                    } catch (\Throwable $e) {
+                        Notification::make()
+                            ->title('Projector replay failed')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+                    }
+                }),
 
             Actions\EditAction::make(),
         ];
