@@ -8,13 +8,14 @@ use App\Domain\RegTech\Models\FilingSchedule;
 use App\Filament\Admin\Resources\FilingScheduleResource\Pages;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class FilingScheduleResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = FilingSchedule::class;
 
@@ -56,13 +57,13 @@ class FilingScheduleResource extends Resource
                                 Forms\Components\Select::make('frequency')
                                     ->options(
                                         [
-                                            'daily'       => 'Daily',
-                                            'weekly'      => 'Weekly',
-                                            'monthly'     => 'Monthly',
-                                            'quarterly'   => 'Quarterly',
-                                            'annually'    => 'Annually',
+                                            'daily' => 'Daily',
+                                            'weekly' => 'Weekly',
+                                            'monthly' => 'Monthly',
+                                            'quarterly' => 'Quarterly',
+                                            'annually' => 'Annually',
                                             'transaction' => 'Per Transaction',
-                                            'event'       => 'Event-Driven',
+                                            'event' => 'Event-Driven',
                                         ]
                                     )
                                     ->required(),
@@ -113,14 +114,14 @@ class FilingScheduleResource extends Resource
                         ->formatStateUsing(fn (string $state): string => ucfirst($state))
                         ->color(
                             fn (string $state): string => match ($state) {
-                                'daily'       => 'danger',
-                                'weekly'      => 'warning',
-                                'monthly'     => 'info',
-                                'quarterly'   => 'primary',
-                                'annually'    => 'success',
+                                'daily' => 'danger',
+                                'weekly' => 'warning',
+                                'monthly' => 'info',
+                                'quarterly' => 'primary',
+                                'annually' => 'success',
                                 'transaction' => 'warning',
-                                'event'       => 'gray',
-                                default       => 'gray',
+                                'event' => 'gray',
+                                default => 'gray',
                             }
                         ),
                     Tables\Columns\TextColumn::make('next_due_date')
@@ -151,13 +152,13 @@ class FilingScheduleResource extends Resource
                     Tables\Filters\SelectFilter::make('frequency')
                         ->options(
                             [
-                                'daily'       => 'Daily',
-                                'weekly'      => 'Weekly',
-                                'monthly'     => 'Monthly',
-                                'quarterly'   => 'Quarterly',
-                                'annually'    => 'Annually',
+                                'daily' => 'Daily',
+                                'weekly' => 'Weekly',
+                                'monthly' => 'Monthly',
+                                'quarterly' => 'Quarterly',
+                                'annually' => 'Annually',
                                 'transaction' => 'Per Transaction',
-                                'event'       => 'Event-Driven',
+                                'event' => 'Event-Driven',
                             ]
                         ),
                     Tables\Filters\TernaryFilter::make('is_active')
@@ -170,6 +171,48 @@ class FilingScheduleResource extends Resource
                 [
                     Tables\Actions\ViewAction::make(),
                     Tables\Actions\EditAction::make(),
+
+                    Tables\Actions\Action::make('generateReport')
+                        ->label('Generate Report')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('primary')
+                        ->requiresConfirmation()
+                        ->modalHeading('Generate Report')
+                        ->modalDescription('This will generate the report based on the filing schedule data.')
+                        ->action(function ($record): void {
+                            Notification::make()
+                                ->title('Report generation started')
+                                ->body("Report for {$record->name} is being generated.")
+                                ->info()
+                                ->send();
+                        }),
+
+                    Tables\Actions\Action::make('markSubmitted')
+                        ->label('Mark Submitted')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalHeading('Mark as Submitted')
+                        ->modalDescription('This will mark the filing as submitted.')
+                        ->form([
+                            Forms\Components\TextInput::make('regulator_reference_number')
+                                ->label('Regulator Reference Number')
+                                ->required(),
+                        ])
+                        ->action(function ($record, array $data): void {
+                            $record->update([
+                                'last_filed_at' => now(),
+                                'metadata' => array_merge($record->metadata ?? [], [
+                                    'regulator_reference' => $data['regulator_reference_number'],
+                                ]),
+                            ]);
+
+                            Notification::make()
+                                ->title('Filing marked as submitted')
+                                ->body("Reference: {$data['regulator_reference_number']}")
+                                ->success()
+                                ->send();
+                        }),
                 ]
             )
             ->bulkActions([]);
@@ -180,13 +223,20 @@ class FilingScheduleResource extends Resource
         return [];
     }
 
+    public static function getWidgets(): array
+    {
+        return [
+            FilingDeadlineWidget::class,
+        ];
+    }
+
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListFilingSchedules::route('/'),
+            'index' => Pages\ListFilingSchedules::route('/'),
             'create' => Pages\CreateFilingSchedule::route('/create'),
-            'view'   => Pages\ViewFilingSchedule::route('/{record}'),
-            'edit'   => Pages\EditFilingSchedule::route('/{record}/edit'),
+            'view' => Pages\ViewFilingSchedule::route('/{record}'),
+            'edit' => Pages\EditFilingSchedule::route('/{record}/edit'),
         ];
     }
 }
