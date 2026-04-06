@@ -91,20 +91,26 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-projector-health',
         ];
 
+        $guards = ['web', 'sanctum'];
+
         foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
+            foreach ($guards as $guard) {
+                Permission::firstOrCreate(['name' => $permission, 'guard_name' => $guard]);
+            }
         }
 
         // ──────────────────────────────────────────────────────────
         // 2. Create roles and assign permissions
         // ──────────────────────────────────────────────────────────
 
-        $superAdmin = Role::firstOrCreate(['name' => 'super-admin']);
-        $superAdmin->syncPermissions(Permission::all());
+        foreach ($guards as $guard) {
 
-        // Compliance manager — KYC review, account freezes, AML, GDPR, referral fraud
-        $complianceManager = Role::firstOrCreate(['name' => 'compliance-manager']);
-        $complianceManager->syncPermissions([
+            $superAdmin = Role::firstOrCreate(['name' => 'super-admin', 'guard_name' => $guard]);
+            $superAdmin->syncPermissions(Permission::where('guard_name', $guard)->get());
+
+            // Compliance manager — KYC review, account freezes, AML, GDPR, referral fraud
+            $complianceManager = Role::firstOrCreate(['name' => 'compliance-manager', 'guard_name' => $guard]);
+            $complianceManager->syncPermissions([
             'approve-kyc',
             'reject-kyc',
             'view-kyc-documents',
@@ -123,9 +129,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-referrals',
         ]);
 
-        // Finance lead — maker-checker approver; manages exchange rates; cannot initiate adjustments
-        $financeLead = Role::firstOrCreate(['name' => 'finance-lead']);
-        $financeLead->syncPermissions([
+            // Finance lead — maker-checker approver; manages exchange rates; cannot initiate adjustments
+            $financeLead = Role::firstOrCreate(['name' => 'finance-lead', 'guard_name' => $guard]);
+            $financeLead->syncPermissions([
             'approve-adjustments',
             'reject-adjustments',
             'view-adjustments',
@@ -137,9 +143,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-exchange-rates',
         ]);
 
-        // Operations L2 — maker role; can initiate adjustments but NOT approve them
-        $opsL2 = Role::firstOrCreate(['name' => 'operations-l2']);
-        $opsL2->syncPermissions([
+            // Operations L2 — maker role; can initiate adjustments but NOT approve them
+            $opsL2 = Role::firstOrCreate(['name' => 'operations-l2', 'guard_name' => $guard]);
+            $opsL2->syncPermissions([
             'request-adjustments',
             'view-adjustments',
             'view-accounts',
@@ -156,9 +162,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-group-savings',
         ]);
 
-        // Support L1 — frontline read-only; cannot see PII, payloads, or balances
-        $supportL1 = Role::firstOrCreate(['name' => 'support-l1']);
-        $supportL1->syncPermissions([
+            // Support L1 — frontline read-only; cannot see PII, payloads, or balances
+            $supportL1 = Role::firstOrCreate(['name' => 'support-l1', 'guard_name' => $guard]);
+            $supportL1->syncPermissions([
             'view-users',
             'view-transactions',
             'view-accounts',
@@ -168,9 +174,9 @@ class RolesAndPermissionsSeeder extends Seeder
             // view-balances for data minimisation compliance
         ]);
 
-        // Fraud analyst — risk monitoring; read access to anomalies and full tx context
-        $fraudAnalyst = Role::firstOrCreate(['name' => 'fraud-analyst']);
-        $fraudAnalyst->syncPermissions([
+            // Fraud analyst — risk monitoring; read access to anomalies and full tx context
+            $fraudAnalyst = Role::firstOrCreate(['name' => 'fraud-analyst', 'guard_name' => $guard]);
+            $fraudAnalyst->syncPermissions([
             'view-anomalies',
             'resolve-anomalies',
             'flag-fraud',
@@ -182,14 +188,15 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-audit-logs',
         ]);
 
-        // Admin — manages invitations and user management
-        $admin = Role::firstOrCreate(['name' => 'admin']);
-        $admin->syncPermissions([
-            'manage-invitations',
-            'view-users',
-            'view-accounts',
-            'view-transactions',
-            'view-audit-logs',
-        ]);
+            // Admin — manages invitations and user management
+            $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => $guard]);
+            $admin->syncPermissions([
+                'manage-invitations',
+                'view-users',
+                'view-accounts',
+                'view-transactions',
+                'view-audit-logs',
+            ]);
+        }
     }
 }
