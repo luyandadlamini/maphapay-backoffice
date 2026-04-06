@@ -47,6 +47,19 @@ class SupportCaseResource extends Resource
                     ->relationship('transaction', 'trx')
                     ->searchable()
                     ->nullable(),
+                Select::make('linked_subject_type')
+                    ->label('Linked Subject Type')
+                    ->options([
+                        'App\\Domain\\AuthorizedTransaction\\Models\\AuthorizedTransaction' => 'Transaction',
+                        'App\\Domain\\MobilePayment\\Models\\PaymentIntent'                 => 'Payment Intent',
+                    ])
+                    ->nullable()
+                    ->live(),
+                TextInput::make('transaction_reference')
+                    ->label('Transaction Reference / Hash')
+                    ->helperText('Paste the transaction hash, reference, or payment intent ID')
+                    ->nullable()
+                    ->maxLength(255),
                 TextInput::make('subject')
                     ->required()
                     ->maxLength(255),
