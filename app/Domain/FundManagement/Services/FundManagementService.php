@@ -46,7 +46,7 @@ class FundManagementService
             'reason'           => $reason,
             'notes'            => $notes,
             'status'           => TestFunding::STATUS_PENDING,
-            'performed_by'     => $performedBy?->email ?? 'system',
+            'performed_by'     => $performedBy !== null ? $performedBy->email : 'system',
             'performed_at'     => now(),
         ]);
 
@@ -184,7 +184,7 @@ class FundManagementService
             'adjustment_type'   => $isCredit ? FundAdjustmentJournal::TYPE_CREDIT : FundAdjustmentJournal::TYPE_DEBIT,
             'reason_category'   => $reasonCategory,
             'description'       => $description,
-            'performed_by'      => $performedBy?->email ?? 'system',
+            'performed_by'      => $performedBy !== null ? $performedBy->email : 'system',
             'approved_by'       => $approvedBy?->email,
             'performed_at'      => now(),
             'approved_at'       => $approvedBy ? now() : null,
@@ -236,7 +236,7 @@ class FundManagementService
             ->latest()
             ->first();
 
-        return $snapshot?->balance ?? 0;
+        return $snapshot !== null ? $snapshot->balance : 0;
     }
 
     public function getTreasuryBalances(): array

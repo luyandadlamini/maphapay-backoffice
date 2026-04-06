@@ -367,7 +367,7 @@ class RegulatoryReportingService
             'average_processing_time_hours' => User::whereBetween('kyc_approved_at', [$startDate, $endDate])
                 ->whereNotNull('kyc_submitted_at')
                 ->get()
-                ->map(fn ($user) => $user->kyc_submitted_at->diffInHours($user->kyc_approved_at))
+                ->map(fn ($user) => $user->kyc_submitted_at?->diffInHours($user->kyc_approved_at) ?? 0)
                 ->average() ?? 0,
         ];
     }

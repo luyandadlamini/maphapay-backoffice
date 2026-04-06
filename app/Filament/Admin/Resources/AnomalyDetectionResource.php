@@ -262,13 +262,14 @@ class AnomalyDetectionResource extends Resource
                         ])
                         ->action(function (AnomalyDetection $record, array $data): void {
                             $record->update(['triage_status' => 'escalated']);
+                            /** @var \App\Models\User $admin */
+                            $admin = auth()->user();
                             \App\Domain\Support\Models\SupportCase::create([
                                 'subject'               => 'Escalated anomaly: ' . $record->id,
                                 'description'           => $data['escalation_note'],
                                 'status'                => 'open',
                                 'priority'              => 'urgent',
-                                'reported_by_user_uuid' => auth()->user()->uuid ?? null,
-                                'reported_by'           => auth()->id(),
+                                'reported_by'           => $admin->uuid,
                             ]);
                         }),
                     Tables\Actions\Action::make('resolve')

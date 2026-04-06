@@ -17,7 +17,9 @@ class SocialFriendshipStatusController extends Controller
 {
     public function __invoke(Request $request, int $userId): JsonResponse
     {
-        $authId = (int) $request->user()->getAuthIdentifier();
+        /** @var User $authUser */
+        $authUser = $request->user();
+        $authId = (int) $authUser->getAuthIdentifier();
 
         if ($authId === $userId) {
             return response()->json([

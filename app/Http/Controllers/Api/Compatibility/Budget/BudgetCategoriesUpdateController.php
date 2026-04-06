@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Compatibility\Budget;
 
+use App\Models\User;
 use App\Domain\Mobile\Models\BudgetCategory;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +21,7 @@ class BudgetCategoriesUpdateController extends Controller
             'sort_order'    => 'sometimes|integer|min:0',
         ]);
 
+        /** @var User $user */
         $user = $request->user();
 
         $category = BudgetCategory::where('id', $id)

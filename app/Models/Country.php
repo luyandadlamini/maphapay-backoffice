@@ -6,7 +6,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use ReturnTypeWillChange;
 
 /**
  * @property int $id
@@ -35,8 +34,7 @@ class Country extends Model
         ];
     }
 
-    /** @phpstan-return HasMany<User, Country> */
-    #[ReturnTypeWillChange]
+    /** @return HasMany<User, Country> */
     public function users(): HasMany
     {
         return $this->hasMany(User::class, 'country_code', 'code');

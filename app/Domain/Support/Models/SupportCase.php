@@ -36,6 +36,7 @@ class SupportCase extends Model
         'linked_subject_type',
         'linked_subject_id',
         'transaction_reference',
+        'reported_by',
     ];
 
     /** @return BelongsTo<User, $this> */

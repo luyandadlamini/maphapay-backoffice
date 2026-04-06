@@ -220,7 +220,7 @@ class AssetTransferProjector extends Projector
 
         $payload['metadata'] = array_merge($currentMetadata, $incomingMetadata);
         $payload['reference'] ??= $transferUuid;
-        $payload['transfer_id'] ??= $existing?->transfer_id ?? $transferUuid;
+        $payload['transfer_id'] ??= ($existing !== null ? $existing->transfer_id : null) ?? $transferUuid;
 
         return AssetTransfer::query()->updateOrCreate(
             ['uuid' => $transferUuid],

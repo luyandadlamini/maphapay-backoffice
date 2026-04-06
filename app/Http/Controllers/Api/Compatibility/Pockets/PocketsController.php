@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Compatibility\Pockets;
 
+use App\Models\User;
 use App\Domain\Mobile\Models\Pocket;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -12,7 +13,7 @@ class PocketsController extends Controller
 {
     public function __invoke(): JsonResponse
     {
-        $user = request()->user();
+        /** @var User $user */        $user = request()->user();
 
         $pockets = Pocket::with('smartRule')
             ->where('user_uuid', $user->uuid)

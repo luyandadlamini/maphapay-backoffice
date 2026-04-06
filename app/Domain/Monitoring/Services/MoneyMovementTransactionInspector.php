@@ -67,7 +67,7 @@ class MoneyMovementTransactionInspector
                 'event'  => 'authorization_initiated',
                 'status' => $transaction->status,
                 'trx'    => $transaction->trx,
-                'at'     => $transaction->created_at?->toIso8601String(),
+                'at'     => $transaction->created_at->toIso8601String(),
             ];
 
             $policy = is_array($transaction->payload['_verification_policy'] ?? null)
@@ -79,7 +79,7 @@ class MoneyMovementTransactionInspector
                     'verification_policy' => $policy['verification_type'] ?? null,
                     'reason'              => $policy['reason'] ?? null,
                     'risk_reason'         => $policy['risk_reason'] ?? null,
-                    'at'                  => $transaction->created_at?->toIso8601String(),
+                    'at'                  => $transaction->created_at->toIso8601String(),
                 ];
             }
 
@@ -87,7 +87,7 @@ class MoneyMovementTransactionInspector
                 $timeline[] = [
                     'event' => 'verification_succeeded',
                     'trx'   => $transaction->trx,
-                    'at'    => $transaction->updated_at?->toIso8601String(),
+                    'at'    => $transaction->updated_at->toIso8601String(),
                 ];
             } elseif ($transaction->status === AuthorizedTransaction::STATUS_FAILED) {
                 $timeline[] = [
@@ -95,7 +95,7 @@ class MoneyMovementTransactionInspector
                     'trx'                   => $transaction->trx,
                     'failure_reason'        => $transaction->failure_reason,
                     'verification_failures' => $transaction->verification_failures,
-                    'at'                    => $transaction->updated_at?->toIso8601String(),
+                    'at'                    => $transaction->updated_at->toIso8601String(),
                 ];
             } elseif ($transaction->status === AuthorizedTransaction::STATUS_EXPIRED) {
                 $timeline[] = [
@@ -103,7 +103,7 @@ class MoneyMovementTransactionInspector
                     'trx'                   => $transaction->trx,
                     'failure_reason'        => $transaction->failure_reason,
                     'verification_failures' => $transaction->verification_failures,
-                    'at'                    => $transaction->updated_at?->toIso8601String(),
+                    'at'                    => $transaction->updated_at->toIso8601String(),
                 ];
             }
         }
@@ -125,7 +125,7 @@ class MoneyMovementTransactionInspector
                 'event'            => 'money_request_state',
                 'money_request_id' => $moneyRequest->id,
                 'status'           => $moneyRequest->status,
-                'at'               => $moneyRequest->updated_at?->toIso8601String(),
+                'at'               => $moneyRequest->updated_at->toIso8601String(),
             ];
         }
 
@@ -150,8 +150,8 @@ class MoneyMovementTransactionInspector
                 'failure_reason'    => $transaction->failure_reason,
                 'payload'           => $transaction->payload,
                 'result'            => $transaction->result,
-                'created_at'        => $transaction->created_at?->toIso8601String(),
-                'updated_at'        => $transaction->updated_at?->toIso8601String(),
+                'created_at'        => $transaction->created_at->toIso8601String(),
+                'updated_at'        => $transaction->updated_at->toIso8601String(),
             ] : null,
             'asset_transfer' => $assetTransfer !== null ? [
                 'reference'         => $assetTransfer->reference,

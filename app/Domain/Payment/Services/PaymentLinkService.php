@@ -33,7 +33,7 @@ class PaymentLinkService
             'expires_at'    => $expiresAt,
         ]);
 
-        return $moneyRequest->fresh();
+        return $moneyRequest->fresh() ?? $moneyRequest;
     }
 
     public function isValidPaymentToken(?string $token): bool
@@ -67,8 +67,8 @@ class PaymentLinkService
         $requester = $moneyRequest->requester;
 
         return [
-            'display_name' => $requester?->name ?? 'Unknown',
-            'avatar_url'   => $requester?->profile_photo_url ?? null,
+            'display_name' => $requester !== null ? $requester->name : 'Unknown',
+            'avatar_url'   => $requester !== null ? $requester->profile_photo_url : null,
             'amount'       => $moneyRequest->amount,
             'note'         => $moneyRequest->note,
             'currency'     => 'SZL',
@@ -83,6 +83,6 @@ class PaymentLinkService
             'paid_at' => now(),
         ]);
 
-        return $moneyRequest->fresh();
+        return $moneyRequest->fresh() ?? $moneyRequest;
     }
 }

@@ -99,6 +99,9 @@ class AccountCreationContext extends MinkContext implements Context
     public function iPressInTheModal($button): void
     {
         $modal = $this->getSession()->getPage()->find('css', '#accountModal');
+        if ($modal === null) {
+            throw new Exception('Modal not found');
+        }
         $btn = $modal->findButton($button);
         Assert::assertNotNull($btn, "Button '$button' not found in modal");
         $btn->click();

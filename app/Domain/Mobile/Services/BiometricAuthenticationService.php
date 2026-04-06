@@ -205,7 +205,8 @@ class BiometricAuthenticationService
 
         // Wrap all database writes in a transaction for consistency
         try {
-            return DB::transaction(function () use ($device, $biometricChallenge, $ipAddress) {
+            /** @var array{token: string, expires_at: \Carbon\Carbon, session_id: string}|null $result */
+            $result = DB::transaction(function () use ($device, $biometricChallenge, $ipAddress) {
                 // Mark challenge as verified
                 $biometricChallenge->markAsVerified();
 
@@ -250,6 +251,8 @@ class BiometricAuthenticationService
                     'session_id' => $session->id,
                 ];
             });
+
+            return $result;
         } catch (BiometricBlockedException $e) {
             // Re-throw blocking exceptions
             throw $e;

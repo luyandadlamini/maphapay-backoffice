@@ -6,12 +6,14 @@ namespace App\Http\Controllers\Api\Compatibility\Budget;
 
 use App\Domain\Mobile\Models\BudgetCategory;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 
 class BudgetCategoriesController extends Controller
 {
     public function __invoke(): JsonResponse
     {
+        /** @var User $user */
         $user = request()->user();
 
         $categories = BudgetCategory::where('user_uuid', $user->uuid)

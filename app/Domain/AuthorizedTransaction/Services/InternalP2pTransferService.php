@@ -89,7 +89,10 @@ class InternalP2pTransferService
             ->where('uuid', $accountUuid)
             ->first();
 
-        return $account?->user;
+        /** @var User|null $owner */
+        $owner = $account?->user;
+
+        return $owner;
     }
 
     private function userLabel(?User $user): string

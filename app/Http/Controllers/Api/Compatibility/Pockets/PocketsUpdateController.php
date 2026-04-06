@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Compatibility\Pockets;
 
+use App\Models\User;
 use App\Domain\Mobile\Models\Pocket;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -21,6 +22,7 @@ class PocketsUpdateController extends Controller
             'color'         => 'sometimes|string|max:20',
         ]);
 
+        /** @var User $user */
         $user = $request->user();
 
         $pocket = Pocket::where('uuid', $id)

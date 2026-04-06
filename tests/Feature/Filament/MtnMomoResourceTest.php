@@ -19,7 +19,7 @@ function setupFilamentPanel(): void
     }
 }
 
-function createTransaction(User $user, string $status, string $type)
+function createTransaction(User $user, string $status, string $type): MtnMomoTransaction
 {
     $transaction = new MtnMomoTransaction();
     $transaction->id = (string) Illuminate\Support\Str::uuid();
@@ -49,7 +49,9 @@ it('displays retry action for failed disbursements to finance lead', function ()
         ->assertTableActionHidden('refund', $transaction)
         ->callTableAction('retry', $transaction);
 
-    expect($transaction->fresh()->status)->toBe(MtnMomoTransaction::STATUS_PENDING);
+    /** @var MtnMomoTransaction $refreshed */
+    $refreshed = $transaction->fresh();
+    expect($refreshed->status)->toBe(MtnMomoTransaction::STATUS_PENDING);
 });
 
 it('displays refund action for failed collections to finance lead', function () {
@@ -66,7 +68,9 @@ it('displays refund action for failed collections to finance lead', function () 
         ->assertTableActionHidden('retry', $transaction)
         ->callTableAction('refund', $transaction);
 
-    expect($transaction->fresh()->status)->toBe(MtnMomoTransaction::STATUS_SUCCESSFUL);
+    /** @var MtnMomoTransaction $refreshed */
+    $refreshed = $transaction->fresh();
+    expect($refreshed->status)->toBe(MtnMomoTransaction::STATUS_SUCCESSFUL);
 });
 
 it('hides retry and refund actions from support-l1', function () {

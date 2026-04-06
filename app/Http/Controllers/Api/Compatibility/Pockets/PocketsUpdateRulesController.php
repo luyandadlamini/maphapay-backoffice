@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Compatibility\Pockets;
 
+use App\Models\User;
 use App\Domain\Mobile\Models\Pocket;
 use App\Domain\Mobile\Models\PocketSmartRule;
 use App\Http\Controllers\Controller;
@@ -21,6 +22,7 @@ class PocketsUpdateRulesController extends Controller
             'lock_pocket'        => 'nullable|boolean',
         ]);
 
+        /** @var User $user */
         $user = $request->user();
 
         $pocket = Pocket::where('uuid', $id)

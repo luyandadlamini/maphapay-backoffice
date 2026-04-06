@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Compatibility\VirtualCard;
 
+use App\Models\User;
 use App\Domain\CardIssuance\Services\CardProvisioningService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -12,7 +13,7 @@ class VirtualCardEnsureDefaultController extends Controller
 {
     public function __invoke(): JsonResponse
     {
-        $user = request()->user();
+        /** @var User $user */        $user = request()->user();
 
         $cardService = app(CardProvisioningService::class);
 

@@ -37,7 +37,7 @@ class GroupPocketContributionsController extends Controller
             ->get()
             ->map(fn (GroupPocketContribution $c) => [
                 'user_id'   => $c->user_id,
-                'user_name' => $c->user?->name ?? 'Unknown',
+                'user_name' => $c->user !== null ? $c->user->name : 'Unknown',
                 'amount'    => number_format((float) $c->amount, 2, '.', ''),
             ]);
 

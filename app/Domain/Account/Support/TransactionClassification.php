@@ -98,7 +98,7 @@ final class TransactionClassification
     /**
      * @return array{
      *   direction: 'in'|'out'|'none',
-     *   analytics_bucket: 'income'|'expense'|'transfer'|'savings',
+     *   analytics_bucket: string,
      *   budget_eligible: bool,
      *   source_domain: string,
      *   category_slug: string,

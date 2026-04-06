@@ -16,6 +16,7 @@ it('stores mock-provider OTP without SMS and accepts spaced OTP when debug bypas
 
     $user = User::where('dial_code', '+268')->where('mobile', '76199901')->first();
     expect($user)->not->toBeNull();
+    /** @var User $user */
     expect(UserOtp::where('user_id', $user->id)->where('type', UserOtp::TYPE_LOGIN)->count())->toBe(1);
 
     config([
@@ -50,9 +51,10 @@ it('can send a new login OTP after a previous OTP was verified (user_otps unique
 
     $user = User::where('dial_code', '+268')->where('mobile', '76199904')->first();
     expect($user)->not->toBeNull();
-
+    /** @var User $user */
     $otpRow = UserOtp::where('user_id', $user->id)->where('type', UserOtp::TYPE_LOGIN)->first();
     expect($otpRow)->not->toBeNull();
+    /** @var UserOtp $otpRow */
     $otpRow->forceFill(['verified_at' => now()])->save();
 
     $this->postJson('/api/auth/mobile/login', [
@@ -81,6 +83,7 @@ it('skip_otp_send creates user without OTP row when server allows it; verify wor
 
     $user = User::where('dial_code', '+268')->where('mobile', '76199906')->first();
     expect($user)->not->toBeNull();
+    /** @var User $user */
     expect(UserOtp::where('user_id', $user->id)->where('type', UserOtp::TYPE_LOGIN)->count())->toBe(0);
 
     $this->postJson('/api/auth/mobile/verify-otp', [

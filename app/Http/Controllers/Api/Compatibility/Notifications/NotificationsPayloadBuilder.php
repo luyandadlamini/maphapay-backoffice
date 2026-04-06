@@ -21,8 +21,8 @@ class NotificationsPayloadBuilder
             'type'       => $notification->notification_type,
             'status'     => $notification->status,
             'user_read'  => $notification->read_at !== null || $notification->status === MobilePushNotification::STATUS_READ,
-            'created_at' => $notification->created_at?->toIso8601String(),
-            'updated_at' => $notification->updated_at?->toIso8601String(),
+            'created_at' => $notification->created_at->toIso8601String(),
+            'updated_at' => $notification->updated_at->toIso8601String(),
         ];
     }
 }

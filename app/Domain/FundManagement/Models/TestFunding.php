@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\FundManagement\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -81,17 +82,20 @@ class TestFunding extends Model
         return number_format($this->amount / 100, 2) . ' ' . $this->asset_code;
     }
 
-    public function scopeCompleted($query)
+    /** @param  Builder<TestFunding>  $query */
+    public function scopeCompleted(Builder $query): Builder
     {
         return $query->where('status', self::STATUS_COMPLETED);
     }
 
-    public function scopePending($query)
+    /** @param  Builder<TestFunding>  $query */
+    public function scopePending(Builder $query): Builder
     {
         return $query->where('status', self::STATUS_PENDING);
     }
 
-    public function scopeFailed($query)
+    /** @param  Builder<TestFunding>  $query */
+    public function scopeFailed(Builder $query): Builder
     {
         return $query->where('status', self::STATUS_FAILED);
     }

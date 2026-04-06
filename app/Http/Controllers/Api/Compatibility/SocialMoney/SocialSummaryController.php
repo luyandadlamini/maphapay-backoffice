@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Compatibility\SocialMoney;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,9 @@ class SocialSummaryController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
-        $userId = (int) $request->user()->getAuthIdentifier();
+        /** @var User $authUser */
+        $authUser = $request->user();
+        $userId = (int) $authUser->getAuthIdentifier();
         $friendsCount = DB::table('friendships')
             ->where('user_id', $userId)
             ->where('status', 'accepted')

@@ -10,7 +10,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table): void {
-            $table->string('national_id_number')->nullable()->after('mobile');
+            $table->string('national_id_number')->nullable();
         });
     }
 

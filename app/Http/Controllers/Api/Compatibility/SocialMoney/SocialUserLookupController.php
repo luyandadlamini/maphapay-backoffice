@@ -42,8 +42,10 @@ class SocialUserLookupController extends Controller
             $e164 = '+268' . $national;
         }
 
+        /** @var User $authUser */
+        $authUser = $request->user();
         $peer = User::query()
-            ->whereKeyNot($request->user()->getKey())
+            ->whereKeyNot($authUser->getKey())
             ->whereNull('frozen_at')
             ->where(function (Builder $q) use ($query, $raw, $digits, $national, $e164): void {
                 $q->where('username', $query)

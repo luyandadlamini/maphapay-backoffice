@@ -6,14 +6,17 @@ namespace App\Http\Controllers\Api\Compatibility\Budget;
 
 use App\Domain\Mobile\Models\BudgetCategory;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 
 class BudgetCategoriesDeleteController extends Controller
 {
     public function __invoke(string $id): JsonResponse
     {
+        /** @var User $user */
         $user = request()->user();
 
+        /** @var BudgetCategory|null $category */
         $category = BudgetCategory::where('id', $id)
             ->where('user_uuid', $user->uuid)
             ->first();

@@ -20,35 +20,35 @@ class HsmIntegrationService
     {
         $this->ensureAvailable();
 
-        return $this->provider->encrypt($data, $this->getKeyId());
+        return $this->getProvider()->encrypt($data, $this->getKeyId());
     }
 
     public function decrypt(string $encryptedData): string
     {
         $this->ensureAvailable();
 
-        return $this->provider->decrypt($encryptedData, $this->getKeyId());
+        return $this->getProvider()->decrypt($encryptedData, $this->getKeyId());
     }
 
     public function store(string $secretId, string $data): bool
     {
         $this->ensureAvailable();
 
-        return $this->provider->store($secretId, $data);
+        return $this->getProvider()->store($secretId, $data);
     }
 
     public function retrieve(string $secretId): ?string
     {
         $this->ensureAvailable();
 
-        return $this->provider->retrieve($secretId);
+        return $this->getProvider()->retrieve($secretId);
     }
 
     public function delete(string $secretId): bool
     {
         $this->ensureAvailable();
 
-        return $this->provider->delete($secretId);
+        return $this->getProvider()->delete($secretId);
     }
 
     public function isAvailable(): bool
@@ -72,7 +72,7 @@ class HsmIntegrationService
     {
         $this->ensureAvailable();
 
-        return $this->provider->sign($messageHash, $keyId ?? $this->getSigningKeyId());
+        return $this->getProvider()->sign($messageHash, $keyId ?? $this->getSigningKeyId());
     }
 
     /**
@@ -87,7 +87,7 @@ class HsmIntegrationService
     {
         $this->ensureAvailable();
 
-        return $this->provider->verify($messageHash, $signature, $publicKey);
+        return $this->getProvider()->verify($messageHash, $signature, $publicKey);
     }
 
     /**
@@ -100,7 +100,7 @@ class HsmIntegrationService
     {
         $this->ensureAvailable();
 
-        return $this->provider->getPublicKey($keyId ?? $this->getSigningKeyId());
+        return $this->getProvider()->getPublicKey($keyId ?? $this->getSigningKeyId());
     }
 
     private function resolveProvider(): HsmProviderInterface

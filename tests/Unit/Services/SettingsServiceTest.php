@@ -63,6 +63,7 @@ class SettingsServiceTest extends ServiceTestCase
         $this->assertEquals($value, $retrieved);
 
         // Verify it's stored encrypted in the database
+        /** @var Setting $setting */
         $setting = Setting::where('key', $key)->first();
         $this->assertTrue($setting->is_encrypted);
 
@@ -334,7 +335,7 @@ class SettingsServiceTest extends ServiceTestCase
     }
 
     #[Test]
-    public function it_exposes_send_money_threshold_settings_in_the_limits_group()
+    public function it_exposes_send_money_threshold_settings_in_the_limits_group(): void
     {
         $config = $this->service->getGroupConfig('limits');
 

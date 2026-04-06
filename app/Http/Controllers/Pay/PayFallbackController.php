@@ -17,8 +17,8 @@ class PayFallbackController extends Controller
         $user = User::query()->where('username', $username)->first();
 
         return view('pay.fallback', [
-            'display_name' => $user?->name ?? $username,
-            'avatar_url'   => $user?->profile_photo_url ?? null,
+            'display_name' => $user !== null ? $user->name : $username,
+            'avatar_url'   => $user !== null ? $user->profile_photo_url : null,
             'amount'       => null,
             'note'         => null,
             'deep_link'    => "https://pay.maphapay.com/u/{$username}",
@@ -49,8 +49,8 @@ class PayFallbackController extends Controller
         $requester = User::query()->find($mr->requester_user_id);
 
         return view('pay.fallback', [
-            'display_name' => $requester?->name,
-            'avatar_url'   => $requester?->profile_photo_url ?? null,
+            'display_name' => $requester !== null ? $requester->name : null,
+            'avatar_url'   => $requester !== null ? $requester->profile_photo_url : null,
             'amount'       => $mr->amount,
             'note'         => $mr->note,
             'deep_link'    => "https://pay.maphapay.com/r/{$token}",

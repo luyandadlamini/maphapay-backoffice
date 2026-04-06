@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Compatibility\SocialMoney;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +22,9 @@ class SocialFriendRequestsController extends Controller
 {
     public function incoming(Request $request): JsonResponse
     {
-        $authId = (int) $request->user()->getAuthIdentifier();
+        /** @var User $authUser */
+        $authUser = $request->user();
+        $authId = (int) $authUser->getAuthIdentifier();
         $requests = DB::table('friend_requests')
             ->join('users', 'users.id', '=', 'friend_requests.sender_id')
             ->where('friend_requests.recipient_id', $authId)
@@ -50,7 +53,9 @@ class SocialFriendRequestsController extends Controller
 
     public function outgoing(Request $request): JsonResponse
     {
-        $authId = (int) $request->user()->getAuthIdentifier();
+        /** @var User $authUser */
+        $authUser = $request->user();
+        $authId = (int) $authUser->getAuthIdentifier();
         $requests = DB::table('friend_requests')
             ->join('users', 'users.id', '=', 'friend_requests.recipient_id')
             ->where('friend_requests.sender_id', $authId)
@@ -79,7 +84,9 @@ class SocialFriendRequestsController extends Controller
 
     public function accept(Request $request, int $id): JsonResponse
     {
-        $authId = (int) $request->user()->getAuthIdentifier();
+        /** @var User $authUser */
+        $authUser = $request->user();
+        $authId = (int) $authUser->getAuthIdentifier();
         $fr = DB::table('friend_requests')
             ->where('id', $id)
             ->where('recipient_id', $authId)
@@ -127,7 +134,9 @@ class SocialFriendRequestsController extends Controller
 
     public function reject(Request $request, int $id): JsonResponse
     {
-        $authId = (int) $request->user()->getAuthIdentifier();
+        /** @var User $authUser */
+        $authUser = $request->user();
+        $authId = (int) $authUser->getAuthIdentifier();
         $updated = DB::table('friend_requests')
             ->where('id', $id)
             ->where('recipient_id', $authId)
@@ -147,7 +156,9 @@ class SocialFriendRequestsController extends Controller
 
     public function cancel(Request $request, int $id): JsonResponse
     {
-        $authId = (int) $request->user()->getAuthIdentifier();
+        /** @var User $authUser */
+        $authUser = $request->user();
+        $authId = (int) $authUser->getAuthIdentifier();
         $updated = DB::table('friend_requests')
             ->where('id', $id)
             ->where('sender_id', $authId)
