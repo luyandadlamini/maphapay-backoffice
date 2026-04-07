@@ -92,7 +92,11 @@ class WebhookProcessorService
                 $transactionId = $this->extractTransactionId($webhook->custodian_name, $payload);
 
                 // Update webhook with transaction reference
-                $webhook->update(['transaction_id' => $transactionId]);
+                $webhook->update([
+                    'transaction_id' => $transactionId,
+                    'provider_reference' => $transactionId,
+                    'finality_status' => 'succeeded',
+                ]);
 
                 // Emit event for other parts of the system
                 event(
@@ -126,7 +130,11 @@ class WebhookProcessorService
                 $reason = $payload['reason'] ?? $payload['error'] ?? 'Unknown reason';
 
                 // Update webhook with transaction reference
-                $webhook->update(['transaction_id' => $transactionId]);
+                $webhook->update([
+                    'transaction_id' => $transactionId,
+                    'provider_reference' => $transactionId,
+                    'finality_status' => 'failed',
+                ]);
 
                 // Emit event for other parts of the system
                 event(
@@ -170,7 +178,16 @@ class WebhookProcessorService
                 }
 
                 // Update webhook with account reference
-                $webhook->update(['custodian_account_id' => $custodianAccount->uuid]);
+                $webhook->update([
+                    'custodian_account_id' => $custodianAccount->uuid,
+                    'provider_reference' => $accountId,
+                    'reconciliation_reference' => sprintf(
+                        'webhook:%s:%s:%s',
+                        $webhook->custodian_name,
+                        $accountId,
+                        $webhook->normalized_event_type ?? $webhook->event_type
+                    ),
+                ]);
 
                 // Emit event for balance update
                 event(
@@ -213,7 +230,10 @@ class WebhookProcessorService
                 }
 
                 // Update webhook with account reference
-                $webhook->update(['custodian_account_id' => $custodianAccount->uuid]);
+                $webhook->update([
+                    'custodian_account_id' => $custodianAccount->uuid,
+                    'provider_reference' => $accountId,
+                ]);
 
                 // Sync account status
                 $this->accountService->syncAccountStatus($custodianAccount);

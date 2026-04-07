@@ -1,5 +1,5 @@
 <div class="space-y-6">
-    @if($report['discrepancies_found'] > 0)
+    @if(($report['discrepancies_found'] ?? 0) > 0)
         <div class="bg-red-50 border border-red-200 rounded-lg p-4">
             <h3 class="text-lg font-semibold text-red-900 mb-2">
                 {{ $report['discrepancies_found'] }} Discrepancies Found
@@ -35,6 +35,36 @@
         </div>
     </div>
     
+    @if(!empty($report['settlement_summary']))
+        <div class="mt-6">
+            <h3 class="text-lg font-semibold mb-3">Settlement Summary</h3>
+            <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+                @foreach($report['settlement_summary'] as $status => $count)
+                    <div class="rounded-lg border border-gray-200 p-3">
+                        <p class="text-xs uppercase tracking-wide text-gray-500">{{ str_replace('_', ' ', $status) }}</p>
+                        <p class="text-lg font-semibold text-gray-900">{{ $count }}</p>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    @if(!empty($report['recent_provider_callbacks']))
+        <div class="mt-6">
+            <h3 class="text-lg font-semibold mb-3">Recent Provider Callbacks</h3>
+            <div class="space-y-3">
+                @foreach($report['recent_provider_callbacks'] as $callback)
+                    <div class="rounded-lg border border-gray-200 p-4 text-sm">
+                        <p><span class="font-medium">Provider:</span> {{ $callback['custodian_name'] }}</p>
+                        <p><span class="font-medium">Event:</span> {{ $callback['event_type'] }} @if(!empty($callback['normalized_event_type']))<span class="text-gray-500">({{ $callback['normalized_event_type'] }})</span>@endif</p>
+                        <p><span class="font-medium">Provider Reference:</span> {{ $callback['provider_reference'] ?? 'n/a' }}</p>
+                        <p><span class="font-medium">Finality / Settlement / Reconciliation:</span> {{ $callback['finality_status'] ?? 'pending' }} / {{ $callback['settlement_status'] ?? 'pending' }} / {{ $callback['reconciliation_status'] ?? 'pending' }}</p>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     @if(!empty($report['discrepancies']))
         <div class="mt-6">
             <h3 class="text-lg font-semibold mb-3">Discrepancy Details</h3>
@@ -52,6 +82,12 @@
                         
                         <div class="text-sm space-y-1">
                             <p><span class="font-medium">Account:</span> {{ $discrepancy['account_uuid'] }}</p>
+                            <p><span class="font-medium">Internal Reference:</span> {{ $discrepancy['internal_reference'] ?? 'n/a' }}</p>
+                            <p><span class="font-medium">Provider Family:</span> {{ $discrepancy['provider_family'] ?? 'n/a' }}</p>
+                            <p><span class="font-medium">Provider Reference:</span> {{ $discrepancy['provider_reference'] ?? 'n/a' }}</p>
+                            <p><span class="font-medium">Reconciliation Reference:</span> {{ $discrepancy['reconciliation_reference'] ?? 'n/a' }}</p>
+                            <p><span class="font-medium">Ledger Posting Reference:</span> {{ $discrepancy['ledger_posting_reference'] ?? 'pending-ledger-core' }}</p>
+                            <p><span class="font-medium">Settlement Reference:</span> {{ $discrepancy['settlement_reference'] ?? 'n/a' }}</p>
                             
                             @if($discrepancy['type'] === 'balance_mismatch')
                                 <p><span class="font-medium">Asset:</span> {{ $discrepancy['asset_code'] }}</p>

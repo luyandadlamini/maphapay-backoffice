@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Custodian\Models\CustodianWebhook;
+use App\Domain\Custodian\Services\ProviderWebhookNormalizer;
 use App\Http\Controllers\Controller;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -172,20 +173,44 @@ class CustodianWebhookController extends Controller
         // Extract event information
         $eventType = $this->extractEventType($custodianName, $data);
         $eventId = $this->extractEventId($custodianName, $data);
+        $normalized = app(ProviderWebhookNormalizer::class)->normalize($custodianName, $data, $eventType, $eventId);
 
         // Store webhook for processing
         try {
-            $webhook = CustodianWebhook::create(
-                [
-                    'custodian_name' => $custodianName,
-                    'event_type'     => $eventType,
-                    'event_id'       => $eventId,
-                    'headers'        => $headers,
-                    'payload'        => $data,
-                    'signature'      => $signature,
-                    'status'         => 'pending',
-                ]
-            );
+            $webhook = CustodianWebhook::query()->where('dedupe_key', $normalized['dedupe_key'])->first();
+
+            if ($webhook !== null) {
+                Log::info(
+                    'Duplicate webhook received',
+                    [
+                        'custodian' => $custodianName,
+                        'event_id' => $eventId,
+                        'dedupe_key' => $normalized['dedupe_key'],
+                    ]
+                );
+
+                return response()->json(['status' => 'accepted', 'duplicate' => true], 202);
+            }
+
+            $webhook = CustodianWebhook::create([
+                'custodian_name' => $custodianName,
+                'event_type' => $eventType,
+                'normalized_event_type' => $normalized['normalized_event_type'],
+                'event_id' => $eventId,
+                'provider_reference' => $normalized['provider_reference'],
+                'headers' => $headers,
+                'payload' => $data,
+                'payload_hash' => $normalized['payload_hash'],
+                'dedupe_key' => $normalized['dedupe_key'],
+                'signature' => $signature,
+                'status' => 'pending',
+                'finality_status' => $normalized['finality_status'],
+                'settlement_status' => $normalized['settlement_status'],
+                'reconciliation_status' => $normalized['reconciliation_status'],
+                'settlement_reference' => $normalized['settlement_reference'],
+                'reconciliation_reference' => $normalized['reconciliation_reference'],
+                'ledger_posting_reference' => $normalized['ledger_posting_reference'],
+            ]);
 
             // Dispatch job to process webhook asynchronously
             dispatch(new \App\Jobs\ProcessCustodianWebhook($webhook->uuid));
@@ -200,22 +225,6 @@ class CustodianWebhookController extends Controller
             );
 
             return response()->json(['status' => 'accepted'], 202);
-        } catch (\Illuminate\Database\QueryException $e) {
-            // Check if it's a duplicate key violation
-            if ($e->getCode() === '23000') {
-                Log::info(
-                    'Duplicate webhook received',
-                    [
-                        'custodian' => $custodianName,
-                        'event_id'  => $eventId,
-                    ]
-                );
-
-                // Return success to prevent webhook provider from retrying
-                return response()->json(['status' => 'accepted', 'duplicate' => true], 202);
-            }
-
-            throw $e;
         } catch (Exception $e) {
             Log::error(
                 'Failed to store webhook',

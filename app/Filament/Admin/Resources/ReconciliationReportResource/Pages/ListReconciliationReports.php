@@ -7,6 +7,7 @@ namespace App\Filament\Admin\Resources\ReconciliationReportResource\Pages;
 use App\Domain\Custodian\Models\CustodianTransfer;
 use App\Domain\Custodian\Services\DailyReconciliationService;
 use App\Filament\Admin\Resources\ReconciliationReportResource;
+use App\Support\Reconciliation\ReconciliationReportDataLoader;
 use Exception;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
@@ -49,16 +50,7 @@ class ListReconciliationReports extends ListRecords
 
     public function getTableRecords(): Collection|LengthAwarePaginator
     {
-        // Get all reconciliation reports from file system
-        $files = glob(storage_path('app/reconciliation/reconciliation-*.json'));
-
-        $reports = collect($files)->map(
-            function ($file) {
-                $content = json_decode(file_get_contents($file), true);
-
-                return $content['summary'] ?? [];
-            }
-        )->filter()->sortByDesc('date');
+        $reports = app(ReconciliationReportDataLoader::class)->load();
 
         // Convert to paginator
         $page = request()->get('page', 1);

@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Domain\Custodian\Services;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Custodian\Models\CustodianWebhook;
 use App\Domain\Custodian\Events\ReconciliationCompleted;
 use App\Domain\Custodian\Events\ReconciliationDiscrepancyFound;
 use App\Domain\Custodian\Mail\ReconciliationReport;
+use App\Support\Reconciliation\ReconciliationReferenceBuilder;
 use Exception;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -21,7 +24,8 @@ class DailyReconciliationService
 
     public function __construct(
         private readonly BalanceSynchronizationService $syncService,
-        private readonly CustodianRegistry $custodianRegistry
+        private readonly CustodianRegistry $custodianRegistry,
+        private readonly ReconciliationReferenceBuilder $referenceBuilder,
     ) {
     }
 
@@ -130,6 +134,8 @@ class DailyReconciliationService
                     'detected_at'      => now(),
                 ];
 
+                $discrepancy = array_merge($discrepancy, $this->buildOrchestrationReferences($account, $assetCode));
+
                 $this->discrepancies[] = $discrepancy;
                 $this->reconciliationResults['discrepancies_found']++;
                 $this->reconciliationResults['total_discrepancy_amount'] += $discrepancy['difference'];
@@ -215,7 +221,7 @@ class DailyReconciliationService
                 'type'         => 'orphaned_balance',
                 'message'      => 'Account has balances but no custodian accounts',
                 'detected_at'  => now(),
-            ];
+            ] + $this->buildOrchestrationReferences($account, null);
 
             $this->reconciliationResults['discrepancies_found']++;
         }
@@ -244,7 +250,7 @@ class DailyReconciliationService
                     'message'        => 'Custodian account not synced in 24 hours',
                     'last_synced_at' => $custodianAccount->last_synced_at,
                     'detected_at'    => now(),
-                ];
+                ] + $this->buildOrchestrationReferences($account, null, $custodianAccount->custodian_account_id);
 
                 $this->reconciliationResults['discrepancies_found']++;
             }
@@ -259,6 +265,8 @@ class DailyReconciliationService
         $report = [
             'summary'         => $this->reconciliationResults,
             'discrepancies'   => $this->discrepancies,
+            'settlement_summary' => $this->buildSettlementSummary(),
+            'recent_provider_callbacks' => $this->getRecentProviderCallbacks(),
             'recommendations' => $this->generateRecommendations(),
             'generated_at'    => now(),
         ];
@@ -297,6 +305,86 @@ class DailyReconciliationService
         }
 
         return $recommendations;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildOrchestrationReferences(Account $account, ?string $assetCode, ?string $providerReference = null): array
+    {
+        $custodianAccounts = $account->custodianAccounts
+            ->sortBy('id')
+            ->values();
+
+        $primaryCustodianAccount = $custodianAccounts->first();
+        $resolvedProviderReference = $providerReference
+            ?? $primaryCustodianAccount?->custodian_account_id;
+
+        return [
+            ...$this->referenceBuilder->build(
+                $this->reconciliationResults['date'],
+                $account->uuid,
+                $assetCode,
+                $resolvedProviderReference,
+            ),
+        ];
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function buildSettlementSummary(): array
+    {
+        $rows = DB::table('settlements')
+            ->select('status', DB::raw('COUNT(*) as aggregate'))
+            ->groupBy('status')
+            ->get();
+
+        $summary = [
+            'pending' => 0,
+            'processing' => 0,
+            'completed' => 0,
+            'failed' => 0,
+        ];
+
+        foreach ($rows as $row) {
+            $summary[$row->status] = (int) $row->aggregate;
+        }
+
+        return $summary;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function getRecentProviderCallbacks(): array
+    {
+        return CustodianWebhook::query()
+            ->latest('created_at')
+            ->limit(5)
+            ->get([
+                'custodian_name',
+                'event_type',
+                'normalized_event_type',
+                'provider_reference',
+                'finality_status',
+                'settlement_status',
+                'reconciliation_status',
+                'status',
+                'processed_at',
+            ])
+            ->map(fn (CustodianWebhook $webhook): array => [
+                'custodian_name' => $webhook->custodian_name,
+                'event_type' => $webhook->event_type,
+                'normalized_event_type' => $webhook->normalized_event_type,
+                'provider_reference' => $webhook->provider_reference,
+                'finality_status' => $webhook->finality_status,
+                'settlement_status' => $webhook->settlement_status,
+                'reconciliation_status' => $webhook->reconciliation_status,
+                'status' => $webhook->status,
+                'processed_at' => $webhook->processed_at?->toDateTimeString(),
+            ])
+            ->all();
     }
 
     /**

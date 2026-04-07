@@ -72,16 +72,26 @@ class CustodianWebhook extends Model
         'uuid',
         'custodian_name',
         'event_type',
+        'normalized_event_type',
         'event_id',
+        'provider_reference',
         'headers',
         'payload',
+        'payload_hash',
+        'dedupe_key',
         'signature',
         'status',
+        'finality_status',
+        'settlement_status',
+        'reconciliation_status',
         'attempts',
         'processed_at',
         'error_message',
         'custodian_account_id',
         'transaction_id',
+        'settlement_reference',
+        'reconciliation_reference',
+        'ledger_posting_reference',
     ];
 
     /**
@@ -102,6 +112,9 @@ class CustodianWebhook extends Model
      */
     protected $attributes = [
         'attempts' => 0,
+        'finality_status' => 'pending',
+        'settlement_status' => 'pending',
+        'reconciliation_status' => 'pending',
     ];
 
     /**
