@@ -46,6 +46,37 @@ class MobileControllerTest extends TestCase
             ]);
     }
 
+    public function test_can_get_ssl_pins_without_auth(): void
+    {
+        config()->set('mobile.ssl_pins', [
+            'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+            'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=',
+        ]);
+        config()->set('mobile.ssl_pin_max_age', 172800);
+        config()->set('mobile.ssl_pin_include_subdomains', false);
+
+        $response = $this->getJson('/api/v1/mobile/ssl-pins');
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'pins' => [
+                        [
+                            'algorithm' => 'sha256',
+                            'hash' => 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+                        ],
+                        [
+                            'algorithm' => 'sha256',
+                            'hash' => 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=',
+                        ],
+                    ],
+                    'max_age' => 172800,
+                    'include_subdomains' => false,
+                ],
+            ]);
+    }
+
     public function test_can_register_mobile_device(): void
     {
         $response = $this->withToken($this->token)->postJson('/api/mobile/devices', [
