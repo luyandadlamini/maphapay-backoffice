@@ -40,6 +40,7 @@ describe('HighRiskActionTrustPolicy', function (): void {
     it('persists a degraded decision when attestation is disabled and absent', function (): void {
         Config::set('mobile.attestation.enabled', false);
 
+        /** @var BiometricJWTServiceInterface&Mockery\MockInterface $biometricJwtService */
         $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
         $policy = new HighRiskActionTrustPolicy($biometricJwtService);
 
@@ -57,6 +58,8 @@ describe('HighRiskActionTrustPolicy', function (): void {
             ->and($result['record_id'])->not->toBe('');
 
         $persisted = DB::table('mobile_attestation_records')->where('id', $result['record_id'])->first();
+        expect($persisted)->not->toBeNull();
+        assert($persisted !== null);
         expect($persisted)->not->toBeNull()
             ->and($persisted->decision)->toBe('degrade')
             ->and($persisted->action)->toBe('commerce.payment.process');
@@ -65,6 +68,7 @@ describe('HighRiskActionTrustPolicy', function (): void {
     it('persists a deny decision when attestation is enabled but missing', function (): void {
         Config::set('mobile.attestation.enabled', true);
 
+        /** @var BiometricJWTServiceInterface&Mockery\MockInterface $biometricJwtService */
         $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
         $policy = new HighRiskActionTrustPolicy($biometricJwtService);
 
@@ -82,9 +86,56 @@ describe('HighRiskActionTrustPolicy', function (): void {
             ->and($result['reason'])->toBe('attestation_required');
 
         $persisted = DB::table('mobile_attestation_records')->where('id', $result['record_id'])->first();
+        expect($persisted)->not->toBeNull();
+        assert($persisted !== null);
         expect($persisted)->not->toBeNull()
             ->and($persisted->attestation_enabled)->toBe(1)
             ->and($persisted->attestation_verified)->toBe(0)
             ->and($persisted->reason)->toBe('attestation_required');
+    });
+
+    it('persists explicit provider-error metadata when attestation collection fails under enforced policy', function (): void {
+        Config::set('mobile.attestation.enabled', true);
+
+        /** @var BiometricJWTServiceInterface&Mockery\MockInterface $biometricJwtService */
+        $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
+        $policy = new HighRiskActionTrustPolicy($biometricJwtService);
+
+        $user = new User;
+        $user->id = 1003;
+
+        $request = Request::create('/api/v1/commerce/payments', 'POST', [
+            'payment_link_token' => 'good-token',
+            'device_type' => 'ios',
+            'attestation_status' => 'error',
+            'attestation_capability_mode' => 'none',
+            'attestation_capability_reason' => 'provider_error',
+            'attestation_capability_available' => false,
+        ]);
+
+        $result = $policy->evaluate($user, $request, 'commerce.payment.process');
+
+        expect($result['decision'])->toBe('deny')
+            ->and($result['reason'])->toBe('attestation_provider_error');
+
+        $persisted = DB::table('mobile_attestation_records')->where('id', $result['record_id'])->first();
+        expect($persisted)->not->toBeNull();
+        assert($persisted !== null);
+
+        expect($persisted)->not->toBeNull()
+            ->and($persisted->reason)->toBe('attestation_provider_error');
+
+        $metadata = json_decode((string) $persisted->metadata, true, 512, JSON_THROW_ON_ERROR);
+
+        expect($metadata)
+            ->toMatchArray([
+                'attestation_present' => false,
+                'attestation_status' => 'error',
+                'attestation_capability' => [
+                    'available' => false,
+                    'mode' => 'none',
+                    'reason' => 'provider_error',
+                ],
+            ]);
     });
 });

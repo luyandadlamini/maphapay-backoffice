@@ -24,6 +24,12 @@ class HighRiskActionTrustPolicy
         $attestation = trim((string) $request->input('attestation', ''));
         $deviceType = strtolower(trim((string) ($request->input('device_type') ?? $request->header('X-Mobile-Platform', ''))));
         $deviceId = trim((string) ($request->input('device_id') ?? $request->header('X-Device-ID', '')));
+        $attestationStatus = strtolower(trim((string) $request->input('attestation_status', '')));
+        $attestationCapabilityMode = strtolower(trim((string) $request->input('attestation_capability_mode', '')));
+        $attestationCapabilityReason = trim((string) $request->input('attestation_capability_reason', ''));
+        $attestationCapabilityAvailable = $request->has('attestation_capability_available')
+            ? filter_var($request->input('attestation_capability_available'), FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE)
+            : null;
         $attestationEnabled = (bool) config('mobile.attestation.enabled', false);
 
         $mobileDevice = $this->resolveMobileDevice($user, $deviceId);
@@ -36,7 +42,9 @@ class HighRiskActionTrustPolicy
         if ($attestationEnabled) {
             if ($attestation === '') {
                 $decision = 'deny';
-                $reason = 'attestation_required';
+                $reason = $attestationStatus === 'error' && $attestationCapabilityReason === 'provider_error'
+                    ? 'attestation_provider_error'
+                    : 'attestation_required';
             } elseif (! in_array($deviceType, ['ios', 'android'], true)) {
                 $decision = 'deny';
                 $reason = 'unsupported_device_type';
@@ -71,6 +79,12 @@ class HighRiskActionTrustPolicy
             'metadata' => [
                 'device_trusted' => $deviceTrusted,
                 'attestation_present' => $attestation !== '',
+                'attestation_status' => $attestationStatus !== '' ? $attestationStatus : null,
+                'attestation_capability' => [
+                    'available' => $attestationCapabilityAvailable,
+                    'mode' => $attestationCapabilityMode !== '' ? $attestationCapabilityMode : null,
+                    'reason' => $attestationCapabilityReason !== '' ? $attestationCapabilityReason : null,
+                ],
             ],
         ]);
 

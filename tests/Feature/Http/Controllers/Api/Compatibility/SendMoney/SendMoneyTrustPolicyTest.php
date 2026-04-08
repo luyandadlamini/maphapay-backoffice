@@ -166,6 +166,42 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
     }
 
     #[Test]
+    public function test_send_money_denies_with_explicit_provider_error_reason_when_attestation_collection_fails(): void
+    {
+        config([
+            'maphapay_migration.enable_send_money' => true,
+            'mobile.attestation.enabled' => true,
+        ]);
+
+        Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
+
+        $response = $this->postJson('/api/send-money/store', [
+            'user' => $this->recipient->email,
+            'amount' => '10.00',
+            'verification_type' => 'none',
+            'device_type' => 'ios',
+            'attestation_status' => 'error',
+            'attestation_capability_mode' => 'none',
+            'attestation_capability_reason' => 'provider_error',
+            'attestation_capability_available' => false,
+        ]);
+
+        $response->assertStatus(403)
+            ->assertJson([
+                'success' => false,
+            ])
+            ->assertJsonPath('error.code', 'TRUST_POLICY_DENY')
+            ->assertJsonPath('error.trust_reason', 'attestation_provider_error');
+
+        $this->assertDatabaseHas('mobile_attestation_records', [
+            'user_id' => $this->sender->id,
+            'action' => 'send_money',
+            'decision' => 'deny',
+            'reason' => 'attestation_provider_error',
+        ]);
+    }
+
+    #[Test]
     public function test_send_money_otp_or_pin_flow_persists_allow_trust_decision_in_transaction_payload(): void
     {
         config([
