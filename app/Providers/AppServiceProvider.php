@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domain\Mobile\Contracts\AppAttestVerifierInterface;
+use App\Domain\Mobile\Services\AppAttestVerifier;
 use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderInterface;
 use App\Domain\AuthorizedTransaction\Services\DatabaseMoneyMovementRiskSignalProvider;
 use App\Models\Thread;
@@ -53,6 +55,8 @@ class AppServiceProvider extends ServiceProvider
             MoneyMovementRiskSignalProviderInterface::class,
             DatabaseMoneyMovementRiskSignalProvider::class,
         );
+
+        $this->app->bind(AppAttestVerifierInterface::class, AppAttestVerifier::class);
     }
 
     /**

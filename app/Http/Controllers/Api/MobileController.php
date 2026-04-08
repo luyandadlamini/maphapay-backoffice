@@ -8,6 +8,8 @@ use App\Domain\Mobile\Models\MobileDevice;
 use App\Domain\Mobile\Models\MobileDeviceSession;
 use App\Domain\Mobile\Models\MobileNotificationPreference;
 use App\Domain\Mobile\Models\MobilePushNotification;
+use App\Domain\Mobile\Exceptions\AppAttestException;
+use App\Domain\Mobile\Services\AppAttestService;
 use App\Domain\Mobile\Services\BiometricAuthenticationService;
 use App\Domain\Mobile\Services\MobileDeviceService;
 use App\Domain\Mobile\Services\MobileSessionService;
@@ -41,6 +43,7 @@ class MobileController extends Controller
     public function __construct(
         private readonly MobileDeviceService $deviceService,
         private readonly BiometricAuthenticationService $biometricService,
+        private readonly AppAttestService $appAttestService,
         private readonly PushNotificationService $pushService,
         private readonly MobileSessionService $sessionService,
         private readonly NotificationPreferenceService $preferenceService,
@@ -493,6 +496,114 @@ class MobileController extends Controller
             ],
             'message' => 'Authentication successful',
         ]);
+    }
+
+    public function issueAppAttestChallenge(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'device_id' => ['required', 'string'],
+            'purpose'   => ['required', 'string', 'in:enrollment,assertion'],
+            'key_id'    => ['nullable', 'string'],
+        ]);
+
+        /** @var User $user */
+        $user = $request->user();
+        $device = $this->deviceService->findByDeviceId($validated['device_id']);
+
+        if (! $device || $device->user_id !== $user->id) {
+            return response()->json([
+                'error' => [
+                    'code'    => 'DEVICE_NOT_FOUND',
+                    'message' => 'Device not found.',
+                ],
+            ], 404);
+        }
+
+        if ($device->platform !== 'ios') {
+            return response()->json([
+                'error' => [
+                    'code'    => 'APP_ATTEST_UNSUPPORTED_DEVICE',
+                    'message' => 'App Attest challenges are only available for iOS devices.',
+                ],
+            ], 422);
+        }
+
+        $issued = $this->appAttestService->issueChallenge(
+            $device,
+            $validated['purpose'],
+            $validated['key_id'] ?? null,
+        );
+
+        return response()->json([
+            'data' => [
+                'challenge_id'    => $issued->id,
+                'challenge'       => $issued->plain_challenge,
+                'device_id'       => $device->device_id,
+                'purpose'         => $issued->purpose,
+                'expires_at'      => $issued->expires_at->toIso8601String(),
+                'rollout_enabled' => (bool) config('mobile.attestation.enabled', false),
+            ],
+        ]);
+    }
+
+    public function enrollAppAttestKey(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'device_id'          => ['required', 'string'],
+            'challenge_id'       => ['required', 'string'],
+            'challenge'          => ['required', 'string'],
+            'key_id'             => ['required', 'string'],
+            'attestation_object' => ['required', 'string'],
+        ]);
+
+        /** @var User $user */
+        $user = $request->user();
+        $device = $this->deviceService->findByDeviceId($validated['device_id']);
+
+        if (! $device || $device->user_id !== $user->id) {
+            return response()->json([
+                'error' => [
+                    'code'    => 'DEVICE_NOT_FOUND',
+                    'message' => 'Device not found.',
+                ],
+            ], 404);
+        }
+
+        if ($device->platform !== 'ios') {
+            return response()->json([
+                'error' => [
+                    'code'    => 'APP_ATTEST_UNSUPPORTED_DEVICE',
+                    'message' => 'App Attest enrollment is only available for iOS devices.',
+                ],
+            ], 422);
+        }
+
+        try {
+            $key = $this->appAttestService->enrollKey(
+                $device,
+                $validated['challenge_id'],
+                $validated['challenge'],
+                $validated['key_id'],
+                $validated['attestation_object'],
+            );
+        } catch (AppAttestException $e) {
+            return response()->json([
+                'error' => [
+                    'code'    => $e->errorCode,
+                    'message' => $e->getMessage(),
+                ],
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'device_id'       => $device->device_id,
+                'key_id'          => $key->key_id,
+                'status'          => $key->status,
+                'attested_at'     => $key->attested_at?->toIso8601String(),
+                'rollout_enabled' => (bool) config('mobile.attestation.enabled', false),
+            ],
+        ], 201);
     }
 
     /**

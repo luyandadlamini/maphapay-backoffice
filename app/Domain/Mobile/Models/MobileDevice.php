@@ -165,6 +165,26 @@ class MobileDevice extends Model
     }
 
     /**
+     * Get the App Attest keys registered for this device.
+     *
+     * @return HasMany<MobileAppAttestKey, $this>
+     */
+    public function appAttestKeys(): HasMany
+    {
+        return $this->hasMany(MobileAppAttestKey::class);
+    }
+
+    /**
+     * Get the App Attest challenges for this device.
+     *
+     * @return HasMany<MobileAppAttestChallenge, $this>
+     */
+    public function appAttestChallenges(): HasMany
+    {
+        return $this->hasMany(MobileAppAttestChallenge::class);
+    }
+
+    /**
      * Scope to get only active (non-blocked) devices.
      *
      * @param \Illuminate\Database\Eloquent\Builder<static> $query

@@ -137,9 +137,10 @@ return [
 
         // Apple App Attest settings
         'apple' => [
-            'team_id'     => env('APPLE_TEAM_ID'),
-            'bundle_id'   => env('APPLE_BUNDLE_ID'),
-            'environment' => env('APPLE_ATTESTATION_ENV', 'production'),
+            'team_id'               => env('APPLE_TEAM_ID'),
+            'bundle_id'             => env('APPLE_BUNDLE_ID'),
+            'environment'           => env('APPLE_ATTESTATION_ENV', 'production'),
+            'challenge_ttl_seconds' => (int) env('APPLE_APP_ATTEST_CHALLENGE_TTL', 300),
         ],
 
         // Google Play Integrity settings

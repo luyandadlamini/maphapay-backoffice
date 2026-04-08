@@ -52,6 +52,11 @@ Route::prefix('mobile')->name('api.mobile.')->group(function () {
             Route::delete('/disable', [MobileController::class, 'disableBiometric'])->name('disable');
         });
 
+        Route::prefix('auth/attestation/app-attest')->name('auth.attestation.app-attest.')->group(function () {
+            Route::post('/challenge', [MobileController::class, 'issueAppAttestChallenge'])->name('challenge');
+            Route::post('/enroll', [MobileController::class, 'enrollAppAttestKey'])->name('enroll');
+        });
+
         // Token refresh
         Route::post('/auth/refresh', [MobileController::class, 'refreshToken'])->name('auth.refresh');
 
