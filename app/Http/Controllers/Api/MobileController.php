@@ -606,6 +606,67 @@ class MobileController extends Controller
         ], 201);
     }
 
+    public function verifyAppAttestAssertion(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'device_id'    => ['required', 'string'],
+            'challenge_id' => ['required', 'string'],
+            'challenge'    => ['required', 'string'],
+            'key_id'       => ['required', 'string'],
+            'assertion'    => ['required', 'string'],
+        ]);
+
+        /** @var User $user */
+        $user = $request->user();
+        $device = $this->deviceService->findByDeviceId($validated['device_id']);
+
+        if (! $device || $device->user_id !== $user->id) {
+            return response()->json([
+                'error' => [
+                    'code'    => 'DEVICE_NOT_FOUND',
+                    'message' => 'Device not found.',
+                ],
+            ], 404);
+        }
+
+        if ($device->platform !== 'ios') {
+            return response()->json([
+                'error' => [
+                    'code'    => 'APP_ATTEST_UNSUPPORTED_DEVICE',
+                    'message' => 'App Attest assertion verification is only available for iOS devices.',
+                ],
+            ], 422);
+        }
+
+        $result = $this->appAttestService->verifyAssertion(
+            $device,
+            $validated['challenge_id'],
+            $validated['challenge'],
+            $validated['key_id'],
+            $validated['assertion'],
+        );
+
+        if (! $result->verified) {
+            return response()->json([
+                'error' => [
+                    'code'    => 'APP_ATTEST_ASSERTION_FAILED',
+                    'message' => $result->reason,
+                ],
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'device_id'       => $device->device_id,
+                'key_id'          => $validated['key_id'],
+                'verified'        => true,
+                'reason'          => $result->reason,
+                'metadata'        => $result->metadata,
+                'rollout_enabled' => (bool) config('mobile.attestation.enabled', false),
+            ],
+        ]);
+    }
+
     /**
      * Get notification history.
      */

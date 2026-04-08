@@ -123,6 +123,63 @@ class AppAttestService
         return AppAttestVerificationResult::success([], 'assertion_prerequisites_verified');
     }
 
+    public function verifyAssertion(
+        MobileDevice $device,
+        string $challengeId,
+        string $challenge,
+        string $keyId,
+        string $assertion,
+    ): AppAttestVerificationResult {
+        $key = MobileAppAttestKey::query()
+            ->where('mobile_device_id', $device->id)
+            ->where('user_id', $device->user_id)
+            ->where('key_id', $keyId)
+            ->where('status', MobileAppAttestKey::STATUS_ACTIVE)
+            ->first();
+
+        if (! $key) {
+            return AppAttestVerificationResult::failure('app_attest_key_not_found');
+        }
+
+        try {
+            $challengeRecord = $this->resolveChallenge(
+                $device,
+                $challengeId,
+                $challenge,
+                MobileAppAttestChallenge::PURPOSE_ASSERTION,
+                $keyId,
+            );
+        } catch (AppAttestException $e) {
+            return AppAttestVerificationResult::failure($e->getMessage());
+        }
+
+        $publicKey = $key->metadata['public_key'] ?? null;
+        if (! is_string($publicKey) || $publicKey === '') {
+            return AppAttestVerificationResult::failure('app_attest_public_key_missing');
+        }
+
+        $verification = $this->verifier->verifyAssertion($assertion, $challenge, $keyId, $publicKey);
+
+        if (! $verification->verified) {
+            return $verification;
+        }
+
+        DB::transaction(function () use ($key, $challengeRecord, $verification): void {
+            $key->forceFill([
+                'last_assertion_at' => now(),
+                'metadata'          => array_merge($key->metadata ?? [], $verification->metadata),
+            ])->save();
+
+            $challengeRecord->forceFill([
+                'mobile_app_attest_key_id' => $key->id,
+                'consumed_at'              => now(),
+                'metadata'                 => array_merge($challengeRecord->metadata ?? [], $verification->metadata),
+            ])->save();
+        });
+
+        return AppAttestVerificationResult::success($verification->metadata, $verification->reason);
+    }
+
     private function resolveChallenge(
         MobileDevice $device,
         string $challengeId,

@@ -101,6 +101,64 @@ class AppAttestServiceTest extends TestCase
         $this->assertSame('app_attest_key_not_found', $result->reason);
     }
 
+    public function test_verifies_assertion_and_consumes_matching_challenge(): void
+    {
+        $user = User::factory()->create();
+        $device = MobileDevice::factory()->create([
+            'user_id'   => $user->id,
+            'device_id' => 'ios-app-attest-verify-service-device-' . Str::lower((string) Str::ulid()),
+            'platform'  => 'ios',
+        ]);
+
+        $service = new AppAttestService(new class implements AppAttestVerifierInterface
+        {
+            public function verifyAttestation(string $attestationObject, string $challenge, string $keyId): AppAttestVerificationResult
+            {
+                return AppAttestVerificationResult::success([
+                    'public_key' => 'service-test-public-key',
+                ]);
+            }
+
+            public function verifyAssertion(string $assertion, string $challenge, string $keyId, string $publicKey): AppAttestVerificationResult
+            {
+                return AppAttestVerificationResult::success([
+                    'public_key' => $publicKey,
+                ], 'assertion_verified');
+            }
+        });
+
+        $enrollmentChallenge = $service->issueChallenge($device, 'enrollment');
+        $service->enrollKey(
+            $device,
+            $enrollmentChallenge->id,
+            $enrollmentChallenge->plain_challenge,
+            'ios-key-service-verify',
+            base64_encode(str_repeat('a', 160)),
+        );
+
+        $assertionChallenge = $service->issueChallenge($device, 'assertion', 'ios-key-service-verify');
+
+        $result = $service->verifyAssertion(
+            $device,
+            $assertionChallenge->id,
+            $assertionChallenge->plain_challenge,
+            'ios-key-service-verify',
+            base64_encode('assertion-payload'),
+        );
+
+        $this->assertTrue($result->verified);
+        $this->assertSame('assertion_verified', $result->reason);
+        $this->assertSame('service-test-public-key', $result->metadata['public_key']);
+
+        $this->assertNotNull($device->appAttestKeys()
+            ->where('key_id', 'ios-key-service-verify')
+            ->value('last_assertion_at'));
+
+        $this->assertNotNull($device->appAttestChallenges()
+            ->where('id', $assertionChallenge->id)
+            ->value('consumed_at'));
+    }
+
     private function ensureAppAttestTables(): void
     {
         if (! Schema::hasTable('mobile_app_attest_keys')) {

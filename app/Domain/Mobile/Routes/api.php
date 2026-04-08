@@ -55,6 +55,7 @@ Route::prefix('mobile')->name('api.mobile.')->group(function () {
         Route::prefix('auth/attestation/app-attest')->name('auth.attestation.app-attest.')->group(function () {
             Route::post('/challenge', [MobileController::class, 'issueAppAttestChallenge'])->name('challenge');
             Route::post('/enroll', [MobileController::class, 'enrollAppAttestKey'])->name('enroll');
+            Route::post('/verify', [MobileController::class, 'verifyAppAttestAssertion'])->name('verify');
         });
 
         // Token refresh

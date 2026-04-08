@@ -205,4 +205,77 @@ class MobileAppAttestControllerTest extends TestCase
             ->assertStatus(422)
             ->assertJsonPath('error.code', 'INVALID_APP_ATTEST_CHALLENGE');
     }
+
+    public function test_can_verify_app_attest_assertion_for_enrolled_key_and_consume_challenge(): void
+    {
+        $device = MobileDevice::factory()->create([
+            'user_id'   => $this->user->id,
+            'device_id' => 'ios-app-attest-verify-device',
+            'platform'  => 'ios',
+        ]);
+
+        $this->app->instance(AppAttestVerifierInterface::class, new class implements AppAttestVerifierInterface
+        {
+            public function verifyAttestation(string $attestationObject, string $challenge, string $keyId): AppAttestVerificationResult
+            {
+                return AppAttestVerificationResult::success([
+                    'public_key' => 'test-public-key',
+                ]);
+            }
+
+            public function verifyAssertion(string $assertion, string $challenge, string $keyId, string $publicKey): AppAttestVerificationResult
+            {
+                return AppAttestVerificationResult::success([
+                    'verified_via' => 'feature-test-double',
+                    'public_key'   => $publicKey,
+                ], 'assertion_verified');
+            }
+        });
+
+        $enrollmentChallengeResponse = $this->withToken($this->token)->postJson('/api/mobile/auth/attestation/app-attest/challenge', [
+            'device_id' => $device->device_id,
+            'purpose'   => 'enrollment',
+        ]);
+
+        $this->withToken($this->token)->postJson('/api/mobile/auth/attestation/app-attest/enroll', [
+            'device_id'          => $device->device_id,
+            'challenge_id'       => (string) $enrollmentChallengeResponse->json('data.challenge_id'),
+            'challenge'          => (string) $enrollmentChallengeResponse->json('data.challenge'),
+            'key_id'             => 'ios-key-verify',
+            'attestation_object' => base64_encode(str_repeat('a', 160)),
+        ])->assertCreated();
+
+        $assertionChallengeResponse = $this->withToken($this->token)->postJson('/api/mobile/auth/attestation/app-attest/challenge', [
+            'device_id' => $device->device_id,
+            'purpose'   => 'assertion',
+            'key_id'    => 'ios-key-verify',
+        ]);
+
+        $assertionChallengeId = (string) $assertionChallengeResponse->json('data.challenge_id');
+        $assertionChallenge = (string) $assertionChallengeResponse->json('data.challenge');
+
+        $response = $this->withToken($this->token)->postJson('/api/mobile/auth/attestation/app-attest/verify', [
+            'device_id'    => $device->device_id,
+            'challenge_id' => $assertionChallengeId,
+            'challenge'    => $assertionChallenge,
+            'key_id'       => 'ios-key-verify',
+            'assertion'    => base64_encode('assertion-payload'),
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.device_id', $device->device_id)
+            ->assertJsonPath('data.key_id', 'ios-key-verify')
+            ->assertJsonPath('data.verified', true)
+            ->assertJsonPath('data.reason', 'assertion_verified')
+            ->assertJsonPath('data.rollout_enabled', false);
+
+        $this->assertNotNull(DB::table('mobile_app_attest_keys')
+            ->where('mobile_device_id', $device->id)
+            ->where('key_id', 'ios-key-verify')
+            ->value('last_assertion_at'));
+
+        $this->assertNotNull(DB::table('mobile_app_attest_challenges')
+            ->where('id', $assertionChallengeId)
+            ->value('consumed_at'));
+    }
 }
