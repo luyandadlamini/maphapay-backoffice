@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\AuthorizedTransaction\Services;
 
+use App\Console\Commands\ExecuteScheduledSends;
 use App\Domain\AuthorizedTransaction\Contracts\AuthorizedTransactionHandlerInterface;
 use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderInterface;
 use App\Domain\AuthorizedTransaction\Exceptions\InvalidTransactionPinException;
@@ -54,9 +55,9 @@ class AuthorizedTransactionManager
      * @var array<string, class-string<AuthorizedTransactionHandlerInterface>>
      */
     private const HANDLER_MAP = [
-        AuthorizedTransaction::REMARK_SEND_MONEY             => SendMoneyHandler::class,
-        AuthorizedTransaction::REMARK_SCHEDULED_SEND         => ScheduledSendHandler::class,
-        AuthorizedTransaction::REMARK_REQUEST_MONEY          => RequestMoneyHandler::class,
+        AuthorizedTransaction::REMARK_SEND_MONEY => SendMoneyHandler::class,
+        AuthorizedTransaction::REMARK_SCHEDULED_SEND => ScheduledSendHandler::class,
+        AuthorizedTransaction::REMARK_REQUEST_MONEY => RequestMoneyHandler::class,
         AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED => RequestMoneyReceivedHandler::class,
     ];
 
@@ -68,20 +69,18 @@ class AuthorizedTransactionManager
         private readonly MoneyMovementRiskSignalProviderInterface $riskSignals,
         private readonly OperationRecordService $operationRecordService,
         private readonly LedgerPostingService $ledgerPostingService,
-    ) {
-    }
+    ) {}
 
     /**
      * Step 1: Create an authorized transaction record.
      *
-     * @param array<string, mixed> $payload         Normalized operation parameters.
-     *                                              Amount MUST be a major-unit string (e.g. "25.10").
-     * @param string               $idempotencyKey  Optional idempotency key from the HTTP request.
-     *                                              When provided, finalizeAtomically() wraps handler
-     *                                              execution with a domain-level OperationRecord guard
-     *                                              that prevents duplicate execution even after the
-     *                                              HTTP-layer cache (24 h) expires.
-     * @return AuthorizedTransaction
+     * @param  array<string, mixed>  $payload  Normalized operation parameters.
+     *                                         Amount MUST be a major-unit string (e.g. "25.10").
+     * @param  string  $idempotencyKey  Optional idempotency key from the HTTP request.
+     *                                  When provided, finalizeAtomically() wraps handler
+     *                                  execution with a domain-level OperationRecord guard
+     *                                  that prevents duplicate execution even after the
+     *                                  HTTP-layer cache (24 h) expires.
      */
     public function initiate(
         int $userId,
@@ -103,13 +102,13 @@ class AuthorizedTransactionManager
         }
 
         $txn = AuthorizedTransaction::create([
-            'user_id'           => $userId,
-            'remark'            => $remark,
-            'trx'               => $trx,
-            'payload'           => $payload,
-            'status'            => AuthorizedTransaction::STATUS_PENDING,
+            'user_id' => $userId,
+            'remark' => $remark,
+            'trx' => $trx,
+            'payload' => $payload,
+            'status' => AuthorizedTransaction::STATUS_PENDING,
             'verification_type' => $verificationType,
-            'expires_at'        => now()->addMinutes(self::TXN_TTL_MINUTES),
+            'expires_at' => now()->addMinutes(self::TXN_TTL_MINUTES),
         ]);
 
         return $txn;
@@ -128,8 +127,8 @@ class AuthorizedTransactionManager
         $otp = (string) random_int(100000, 999999);
 
         $txn->update([
-            'otp_hash'       => Hash::make($otp),
-            'otp_sent_at'    => now(),
+            'otp_hash' => Hash::make($otp),
+            'otp_sent_at' => now(),
             'otp_expires_at' => now()->addMinutes(self::OTP_TTL_MINUTES),
         ]);
 
@@ -140,7 +139,8 @@ class AuthorizedTransactionManager
      * Step 2a: Verify OTP and finalize the operation.
      *
      * @return array<string, mixed> Handler result data (stored + returned to mobile).
-     * @throws RuntimeException     On OTP mismatch, expiry, or duplicate execution.
+     *
+     * @throws RuntimeException On OTP mismatch, expiry, or duplicate execution.
      */
     public function verifyOtp(string $trx, int $userId, string $otp): array
     {
@@ -172,6 +172,8 @@ class AuthorizedTransactionManager
             return $this->markScheduledSendVerified($txn);
         }
 
+        $this->assertTrustPolicyAllows($txn);
+
         return $this->finalizeAtomically($txn);
     }
 
@@ -179,9 +181,10 @@ class AuthorizedTransactionManager
      * Step 2b: Verify PIN and finalize the operation.
      *
      * @return array<string, mixed> Handler result data.
-     * @throws TransactionPinNotSetException  When the user has not set a transaction PIN.
+     *
+     * @throws TransactionPinNotSetException When the user has not set a transaction PIN.
      * @throws InvalidTransactionPinException When the submitted PIN does not match.
-     * @throws RuntimeException               On duplicate execution or expired transaction.
+     * @throws RuntimeException On duplicate execution or expired transaction.
      */
     public function verifyPin(string $trx, int $userId, string $pin): array
     {
@@ -220,6 +223,8 @@ class AuthorizedTransactionManager
             return $this->markScheduledSendVerified($txn);
         }
 
+        $this->assertTrustPolicyAllows($txn);
+
         return $this->finalizeAtomically($txn);
     }
 
@@ -247,6 +252,8 @@ class AuthorizedTransactionManager
             return $this->markScheduledSendVerified($txn);
         }
 
+        $this->assertTrustPolicyAllows($txn);
+
         return $this->finalizeAtomically($txn);
     }
 
@@ -260,6 +267,7 @@ class AuthorizedTransactionManager
     {
         $this->assertPendingAndNotExpired($txn);
         $this->assertScheduledSendExecutable($txn);
+        $this->assertTrustPolicyAllows($txn);
 
         return $this->finalizeAtomically($txn);
     }
@@ -271,6 +279,7 @@ class AuthorizedTransactionManager
      * caller succeeds even under concurrent verify requests.
      *
      * @return array<string, mixed>
+     *
      * @throws RuntimeException If the atomic claim fails (already completed/claimed).
      */
     private function finalizeAtomically(AuthorizedTransaction $txn): array
@@ -327,9 +336,9 @@ class AuthorizedTransactionManager
                 DB::table('authorized_transactions')
                     ->where('id', $txn->id)
                     ->update([
-                        'status'         => AuthorizedTransaction::STATUS_FAILED,
+                        'status' => AuthorizedTransaction::STATUS_FAILED,
                         'failure_reason' => $e->getMessage(),
-                        'updated_at'     => now(),
+                        'updated_at' => now(),
                     ]);
             }
 
@@ -348,13 +357,40 @@ class AuthorizedTransactionManager
         throw new RuntimeException((string) ($decision['reason'] ?? 'Transaction blocked by pre-execution risk checks.'));
     }
 
+    private function assertTrustPolicyAllows(AuthorizedTransaction $txn): void
+    {
+        $trustProtectedRemarks = [
+            AuthorizedTransaction::REMARK_SEND_MONEY,
+            AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+        ];
+
+        if (! in_array($txn->remark, $trustProtectedRemarks, true)) {
+            return;
+        }
+
+        $payload = is_array($txn->payload) ? $txn->payload : [];
+        $rawTrustDecision = $payload['_trust_decision'] ?? null;
+
+        if (! is_string($rawTrustDecision) || $rawTrustDecision === '') {
+            throw new RuntimeException('Transaction blocked by mobile trust policy. Missing trust decision.');
+        }
+
+        $trustDecision = $rawTrustDecision;
+
+        if ($trustDecision === 'allow') {
+            return;
+        }
+
+        throw new RuntimeException('Transaction blocked by mobile trust policy. Decision: '.$trustDecision);
+    }
+
     /**
      * Wrap the handler execution with a domain-level idempotency guard when the
      * transaction payload carries a '_idempotency_key' sentinel set by initiate().
      *
      * Without a key (legacy callers), the closure is invoked directly — no guard overhead.
      *
-     * @param  Closure(): array<string, mixed> $fn
+     * @param  Closure(): array<string, mixed>  $fn
      * @return array<string, mixed>
      */
     private function executeWithIdempotencyGuard(AuthorizedTransaction $txn, Closure $fn): array
@@ -385,7 +421,7 @@ class AuthorizedTransactionManager
 
     /**
      * Scheduled sends: OTP/PIN only records consent; wallet transfer runs from
-     * {@see \App\Console\Commands\ExecuteScheduledSends} via finalize().
+     * {@see ExecuteScheduledSends} via finalize().
      *
      * @return array<string, mixed>
      */
@@ -397,10 +433,10 @@ class AuthorizedTransactionManager
                 ->where('status', AuthorizedTransaction::STATUS_PENDING)
                 ->update([
                     'verification_confirmed_at' => now(),
-                    'otp_hash'                  => null,
-                    'otp_sent_at'               => null,
-                    'otp_expires_at'            => null,
-                    'updated_at'                => now(),
+                    'otp_hash' => null,
+                    'otp_sent_at' => null,
+                    'otp_expires_at' => null,
+                    'updated_at' => now(),
                 ]);
 
             if ($updated === 0) {
@@ -429,10 +465,10 @@ class AuthorizedTransactionManager
         $payload = $txn->payload;
 
         return [
-            'trx'          => $txn->trx,
-            'scheduled'    => true,
+            'trx' => $txn->trx,
+            'scheduled' => true,
             'scheduled_at' => $payload['scheduled_at'] ?? null,
-            'message'      => 'Scheduled send authorized. Funds move at the scheduled time.',
+            'message' => 'Scheduled send authorized. Funds move at the scheduled time.',
         ];
     }
 
@@ -495,8 +531,8 @@ class AuthorizedTransactionManager
             $nextFailures = (int) $lockedTxn->verification_failures + 1;
             $updates = [
                 'verification_failures' => $nextFailures,
-                'failure_reason'        => $failureMessage,
-                'updated_at'            => now(),
+                'failure_reason' => $failureMessage,
+                'updated_at' => now(),
             ];
 
             if ($nextFailures >= self::MAX_VERIFICATION_FAILURES) {
@@ -518,27 +554,27 @@ class AuthorizedTransactionManager
             ->whereKey($txn->id)
             ->where('status', AuthorizedTransaction::STATUS_PENDING)
             ->update([
-                'status'         => AuthorizedTransaction::STATUS_EXPIRED,
+                'status' => AuthorizedTransaction::STATUS_EXPIRED,
                 'failure_reason' => $reason,
-                'expires_at'     => now(),
-                'updated_at'     => now(),
+                'expires_at' => now(),
+                'updated_at' => now(),
             ]);
     }
 
     private function resolveHandler(string $remark): AuthorizedTransactionHandlerInterface
     {
         return match ($remark) {
-            AuthorizedTransaction::REMARK_SEND_MONEY             => $this->sendMoneyHandler,
-            AuthorizedTransaction::REMARK_SCHEDULED_SEND         => $this->scheduledSendHandler,
-            AuthorizedTransaction::REMARK_REQUEST_MONEY          => $this->requestMoneyHandler,
+            AuthorizedTransaction::REMARK_SEND_MONEY => $this->sendMoneyHandler,
+            AuthorizedTransaction::REMARK_SCHEDULED_SEND => $this->scheduledSendHandler,
+            AuthorizedTransaction::REMARK_REQUEST_MONEY => $this->requestMoneyHandler,
             AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED => $this->requestMoneyReceivedHandler,
-            default                                              => throw new InvalidArgumentException("No handler for remark: {$remark}"),
+            default => throw new InvalidArgumentException("No handler for remark: {$remark}"),
         };
     }
 
     private function generateTrx(): string
     {
         // Short alphanumeric reference returned to mobile (e.g. "TRX-A1B2C3D4").
-        return 'TRX-' . strtoupper(Str::random(8));
+        return 'TRX-'.strtoupper(Str::random(8));
     }
 }
