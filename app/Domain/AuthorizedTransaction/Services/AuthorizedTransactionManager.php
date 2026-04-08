@@ -14,6 +14,7 @@ use App\Domain\AuthorizedTransaction\Handlers\RequestMoneyReceivedHandler;
 use App\Domain\AuthorizedTransaction\Handlers\ScheduledSendHandler;
 use App\Domain\AuthorizedTransaction\Handlers\SendMoneyHandler;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
+use App\Domain\Ledger\Services\LedgerPostingService;
 use App\Domain\Shared\OperationRecord\OperationRecordService;
 use Closure;
 use Illuminate\Support\Facades\DB;
@@ -66,6 +67,7 @@ class AuthorizedTransactionManager
         private readonly RequestMoneyReceivedHandler $requestMoneyReceivedHandler,
         private readonly MoneyMovementRiskSignalProviderInterface $riskSignals,
         private readonly OperationRecordService $operationRecordService,
+        private readonly LedgerPostingService $ledgerPostingService,
     ) {
     }
 
@@ -273,10 +275,8 @@ class AuthorizedTransactionManager
      */
     private function finalizeAtomically(AuthorizedTransaction $txn): array
     {
-        $claimed = false;
-
         try {
-            return DB::transaction(function () use ($txn, &$claimed): array {
+            return DB::transaction(function () use ($txn): array {
                 // Atomic check-and-set: only one concurrent verify call can claim this.
                 $claimCount = DB::table('authorized_transactions')
                     ->where('id', $txn->id)
@@ -296,14 +296,22 @@ class AuthorizedTransactionManager
                     );
                 }
 
-                $claimed = true;
                 $handler = $this->resolveHandler($txn->remark);
 
                 $this->assertPreExecutionRiskAllows($txn);
 
                 $result = $this->executeWithIdempotencyGuard(
                     $txn,
-                    fn (): array => $handler->handle($txn),
+                    function () use ($handler, $txn): array {
+                        $result = $handler->handle($txn);
+                        $posting = $this->ledgerPostingService->createForAuthorizedTransaction($txn, $result);
+
+                        if ($posting !== null) {
+                            $result['posting'] = $posting;
+                        }
+
+                        return $result;
+                    },
                 );
 
                 $txn->update(['result' => $result]);
@@ -311,7 +319,11 @@ class AuthorizedTransactionManager
                 return $result;
             });
         } catch (Throwable $e) {
-            if ($claimed) {
+            $currentStatus = AuthorizedTransaction::query()
+                ->whereKey($txn->id)
+                ->value('status');
+
+            if ($currentStatus === AuthorizedTransaction::STATUS_COMPLETED) {
                 DB::table('authorized_transactions')
                     ->where('id', $txn->id)
                     ->update([

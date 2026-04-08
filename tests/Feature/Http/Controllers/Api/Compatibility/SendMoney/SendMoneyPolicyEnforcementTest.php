@@ -10,15 +10,18 @@ use App\Domain\Asset\Models\Asset;
 use App\Domain\Asset\Models\AssetTransfer;
 use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderInterface;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
+use App\Domain\Ledger\Services\LedgerPostingService;
 use App\Domain\Wallet\Events\Broadcast\WalletBalanceUpdated;
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use RuntimeException;
 use Tests\ControllerTestCase;
 
 class SendMoneyPolicyEnforcementTest extends ControllerTestCase
@@ -141,6 +144,26 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
             'asset_code'   => 'SZL',
             'balance'      => 1_000,
         ]);
+        $this->assertDatabaseHas('ledger_postings', [
+            'authorized_transaction_trx' => $trx,
+            'posting_type'               => 'send_money',
+            'status'                     => 'posted',
+            'asset_code'                 => 'SZL',
+            'transfer_reference'         => $reference,
+        ]);
+
+        $postingId = DB::table('ledger_postings')
+            ->where('authorized_transaction_trx', $trx)
+            ->value('id');
+
+        $this->assertNotNull($postingId);
+        $this->assertSame(2, DB::table('ledger_entries')->where('ledger_posting_id', $postingId)->count());
+        $this->assertSame(
+            0,
+            (int) DB::table('ledger_entries')
+                ->where('ledger_posting_id', $postingId)
+                ->sum('signed_amount'),
+        );
 
         $this->getJson('/api/dashboard')
             ->assertOk()
@@ -173,6 +196,14 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
         $this->assertSame('expense', $senderTransactions[0]['analytics_bucket']);
         $this->assertSame('peer_transfer', $senderTransactions[0]['category_slug']);
         $this->assertTrue($senderTransactions[0]['editable_category']);
+        $this->assertDatabaseHas('authorized_transactions', [
+            'trx' => $trx,
+        ]);
+        $result = AuthorizedTransaction::query()->where('trx', $trx)->value('result');
+        $this->assertIsArray($result);
+        $this->assertSame($reference, $result['posting']['transfer_reference'] ?? null);
+        $this->assertSame('posted', $result['posting']['status'] ?? null);
+        $this->assertSame('send_money', $result['posting']['posting_type'] ?? null);
 
         Event::assertDispatched(WalletBalanceUpdated::class, fn (WalletBalanceUpdated $event): bool => $event->userId === $this->sender->id);
         Event::assertDispatched(WalletBalanceUpdated::class, fn (WalletBalanceUpdated $event): bool => $event->userId === $this->recipient->id);
@@ -395,9 +426,72 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
         $this->assertDatabaseHas('authorized_transactions', [
             'remark'         => AuthorizedTransaction::REMARK_SEND_MONEY,
             'user_id'        => $this->sender->id,
-            'status'         => AuthorizedTransaction::STATUS_FAILED,
-            'failure_reason' => 'pre_execution_blocked',
+            'status'         => AuthorizedTransaction::STATUS_PENDING,
+            'failure_reason' => null,
         ]);
         $this->assertDatabaseCount('asset_transfers', 0);
+    }
+
+    #[Test]
+    public function it_fails_closed_when_posting_creation_fails_after_the_transfer_handler_runs(): void
+    {
+        $postingService = $this->createMock(LedgerPostingService::class);
+        $postingService->expects($this->once())
+            ->method('createForAuthorizedTransaction')
+            ->willThrowException(new RuntimeException('Simulated posting failure'));
+        $this->app->instance(LedgerPostingService::class, $postingService);
+
+        Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
+
+        $senderBefore = AccountBalance::query()
+            ->where('account_uuid', $this->senderAccount->uuid)
+            ->where('asset_code', 'SZL')
+            ->value('balance');
+        $recipientBefore = AccountBalance::query()
+            ->where('account_uuid', $this->recipientAccount->uuid)
+            ->where('asset_code', 'SZL')
+            ->value('balance');
+
+        $response = $this->withHeaders([
+            'Idempotency-Key' => '00000000-0000-0000-0000-000000009907',
+        ])->postJson('/api/send-money/store', [
+            'user'              => $this->recipient->email,
+            'amount'            => '10.00',
+            'verification_type' => 'sms',
+            'note'              => 'Posting failure boundary',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('remark', 'send_money')
+            ->assertJsonPath('message.0', 'Simulated posting failure');
+
+        $this->assertSame($senderBefore, AccountBalance::query()
+            ->where('account_uuid', $this->senderAccount->uuid)
+            ->where('asset_code', 'SZL')
+            ->value('balance'));
+        $this->assertSame($recipientBefore, AccountBalance::query()
+            ->where('account_uuid', $this->recipientAccount->uuid)
+            ->where('asset_code', 'SZL')
+            ->value('balance'));
+
+        $this->assertDatabaseHas('authorized_transactions', [
+            'remark'         => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'user_id'        => $this->sender->id,
+            'status'         => AuthorizedTransaction::STATUS_PENDING,
+            'failure_reason' => null,
+        ]);
+        $txn = AuthorizedTransaction::query()
+            ->where('remark', AuthorizedTransaction::REMARK_SEND_MONEY)
+            ->where('user_id', $this->sender->id)
+            ->latest('created_at')
+            ->firstOrFail();
+
+        $this->assertDatabaseMissing('asset_transfers', [
+            'reference' => $txn->trx,
+        ]);
+        $this->assertDatabaseMissing('ledger_postings', [
+            'authorized_transaction_trx' => $txn->trx,
+        ]);
     }
 }

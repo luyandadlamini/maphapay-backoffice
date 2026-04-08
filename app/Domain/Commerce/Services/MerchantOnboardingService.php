@@ -6,7 +6,15 @@ namespace App\Domain\Commerce\Services;
 
 use App\Domain\Commerce\Enums\MerchantStatus;
 use App\Domain\Commerce\Events\MerchantOnboarded;
+use App\Domain\Commerce\Models\Merchant;
+use App\Domain\Corporate\Models\BusinessOnboardingCaseStatusHistory;
+use App\Domain\Corporate\Models\BusinessOnboardingCase;
+use App\Domain\Corporate\Models\CorporateProfile;
+use App\Models\Team;
+use App\Models\User;
 use DateTimeImmutable;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -15,28 +23,17 @@ use RuntimeException;
 /**
  * Service for merchant onboarding and lifecycle management.
  *
- * Handles the complete merchant onboarding flow:
- * - Application submission
- * - KYB (Know Your Business) verification
- * - Risk assessment
- * - Approval/rejection
- * - Status management
+ * The onboarding authority is persisted in `business_onboarding_cases`; the
+ * `merchants` table is the product-facing projection of that lifecycle.
  */
 class MerchantOnboardingService
 {
-    /**
-     * In-memory merchant storage (in production, this would be persisted).
-     *
-     * @var array<string, array<string, mixed>>
-     */
-    private array $merchants = [];
-
     /**
      * Submit a new merchant application.
      *
      * @param array<string, mixed> $businessDetails
      *
-     * @return array{merchant_id: string, status: string}
+     * @return array{merchant_id: string, status: string, onboarding_case_id: string}
      */
     public function submitApplication(
         string $businessName,
@@ -45,49 +42,85 @@ class MerchantOnboardingService
         string $contactEmail,
         array $businessDetails = [],
     ): array {
-        $merchantId = Str::uuid()->toString();
-        $now = new DateTimeImmutable();
+        /** @var User|null $user */
+        $user = Auth::user();
+        /** @var Team|null $team */
+        $team = $user?->currentTeam;
+        $corporateProfile = $this->resolveCorporateProfile($team);
 
-        $this->merchants[$merchantId] = [
-            'merchant_id'      => $merchantId,
-            'business_name'    => $businessName,
-            'business_type'    => $businessType,
-            'country'          => $country,
-            'contact_email'    => $contactEmail,
-            'business_details' => $businessDetails,
-            'status'           => MerchantStatus::PENDING->value,
-            'created_at'       => $now->format('c'),
-            'updated_at'       => $now->format('c'),
-            'status_history'   => [
-                [
-                    'status'     => MerchantStatus::PENDING->value,
-                    'changed_at' => $now->format('c'),
-                    'reason'     => 'Application submitted',
-                ],
-            ],
-        ];
+        /** @var array{merchant_id: string, status: string, onboarding_case_id: string} $result */
+        $result = DB::transaction(function () use (
+            $businessName,
+            $businessType,
+            $country,
+            $contactEmail,
+            $businessDetails,
+            $user,
+            $team,
+            $corporateProfile,
+        ): array {
+            $merchant = Merchant::create([
+                'public_id' => 'merchant_' . Str::lower(Str::random(24)),
+                'display_name' => $businessName,
+                'icon_url' => $businessDetails['icon_url'] ?? null,
+                'accepted_assets' => $businessDetails['accepted_assets'] ?? [],
+                'accepted_networks' => $businessDetails['accepted_networks'] ?? [],
+                'status' => MerchantStatus::PENDING,
+                'terminal_id' => $businessDetails['terminal_id'] ?? null,
+                'corporate_profile_id' => $corporateProfile?->id,
+            ]);
 
-        return [
-            'merchant_id' => $merchantId,
-            'status'      => MerchantStatus::PENDING->value,
-        ];
+            $case = BusinessOnboardingCase::create([
+                'public_id' => 'onboard_' . Str::lower(Str::random(24)),
+                'team_id' => $team?->id,
+                'corporate_profile_id' => $corporateProfile?->id,
+                'merchant_id' => $merchant->id,
+                'relationship_type' => 'merchant',
+                'status' => MerchantStatus::PENDING->value,
+                'business_name' => $businessName,
+                'business_type' => $businessType,
+                'country' => $country,
+                'contact_email' => $contactEmail,
+                'requested_capabilities' => [],
+                'business_details' => $businessDetails,
+                'activation_requirements' => ['kyb_review', 'merchant_approval'],
+                'submitted_by_user_id' => $user?->id,
+            ]);
+
+            $merchant->forceFill([
+                'business_onboarding_case_id' => $case->id,
+            ])->save();
+
+            BusinessOnboardingCaseStatusHistory::query()->create([
+                'business_onboarding_case_id' => $case->id,
+                'from_status' => null,
+                'to_status' => MerchantStatus::PENDING->value,
+                'actor_user_id' => $user?->id,
+                'reason' => 'Application submitted',
+            ]);
+
+            return [
+                'merchant_id' => $merchant->public_id,
+                'status' => $merchant->status->value,
+                'onboarding_case_id' => $case->public_id,
+            ];
+        });
+
+        return $result;
     }
 
-    /**
-     * Start the review process for a merchant.
-     */
     public function startReview(string $merchantId, string $reviewerId): void
     {
-        $this->updateMerchantStatus(
+        $this->transitionMerchant(
             merchantId: $merchantId,
             newStatus: MerchantStatus::UNDER_REVIEW,
+            actorUserId: (int) $reviewerId,
             reason: "Review started by {$reviewerId}",
+            caseAttributes: ['reviewed_by_user_id' => (int) $reviewerId],
         );
     }
 
     /**
-     * Approve a merchant application.
-     *
      * @param array<string, mixed> $approvalDetails
      */
     public function approve(
@@ -95,191 +128,257 @@ class MerchantOnboardingService
         string $approverId,
         array $approvalDetails = [],
     ): void {
-        $merchant = $this->getMerchant($merchantId);
-
-        $this->updateMerchantStatus(
+        $this->transitionMerchant(
             merchantId: $merchantId,
             newStatus: MerchantStatus::APPROVED,
+            actorUserId: (int) $approverId,
             reason: "Approved by {$approverId}",
-            additionalData: ['approval_details' => $approvalDetails],
+            caseAttributes: [
+                'approved_by_user_id' => (int) $approverId,
+                'approved_at' => now(),
+                'last_decision_reason' => "Approved by {$approverId}",
+            ],
+            caseMetadata: $approvalDetails === [] ? [] : ['approval_details' => $approvalDetails],
         );
     }
 
-    /**
-     * Activate a merchant (after approval and setup completion).
-     */
     public function activate(string $merchantId): void
     {
-        $merchant = $this->getMerchant($merchantId);
+        $merchant = $this->resolveMerchant($merchantId);
 
-        $this->updateMerchantStatus(
+        $this->transitionMerchant(
             merchantId: $merchantId,
             newStatus: MerchantStatus::ACTIVE,
+            actorUserId: null,
             reason: 'Merchant setup completed',
         );
 
         Event::dispatch(new MerchantOnboarded(
-            merchantId: $merchantId,
-            merchantName: $merchant['business_name'],
+            merchantId: $merchant->public_id,
+            merchantName: $merchant->display_name,
             status: MerchantStatus::ACTIVE,
             onboardedAt: new DateTimeImmutable(),
         ));
     }
 
-    /**
-     * Suspend a merchant.
-     */
     public function suspend(string $merchantId, string $reason): void
     {
-        $this->updateMerchantStatus(
+        $actorUserId = Auth::id();
+
+        $this->transitionMerchant(
             merchantId: $merchantId,
             newStatus: MerchantStatus::SUSPENDED,
+            actorUserId: is_numeric($actorUserId) ? (int) $actorUserId : null,
             reason: $reason,
+            caseAttributes: ['last_decision_reason' => $reason],
         );
     }
 
-    /**
-     * Reactivate a suspended merchant.
-     */
     public function reactivate(string $merchantId, string $reason): void
     {
-        $this->updateMerchantStatus(
+        $actorUserId = Auth::id();
+
+        $this->transitionMerchant(
             merchantId: $merchantId,
             newStatus: MerchantStatus::ACTIVE,
+            actorUserId: is_numeric($actorUserId) ? (int) $actorUserId : null,
             reason: $reason,
         );
     }
 
-    /**
-     * Terminate a merchant relationship.
-     */
     public function terminate(string $merchantId, string $reason): void
     {
-        $this->updateMerchantStatus(
+        $actorUserId = Auth::id();
+
+        $this->transitionMerchant(
             merchantId: $merchantId,
             newStatus: MerchantStatus::TERMINATED,
+            actorUserId: is_numeric($actorUserId) ? (int) $actorUserId : null,
             reason: $reason,
+            caseAttributes: ['last_decision_reason' => $reason],
         );
     }
 
     /**
-     * Get merchant details.
-     *
      * @return array<string, mixed>
      */
     public function getMerchant(string $merchantId): array
     {
-        if (! isset($this->merchants[$merchantId])) {
-            throw new InvalidArgumentException("Merchant not found: {$merchantId}");
-        }
+        $merchant = $this->resolveMerchant($merchantId);
+        $case = $this->resolveOnboardingCase($merchant);
 
-        return $this->merchants[$merchantId];
+        return [
+            'merchant_id' => $merchant->public_id,
+            'business_name' => $case->business_name,
+            'business_type' => $case->business_type,
+            'country' => $case->country,
+            'contact_email' => $case->contact_email,
+            'business_details' => $case->business_details ?? [],
+            'status' => $merchant->status->value,
+            'created_at' => $case->created_at?->toIso8601String(),
+            'updated_at' => $case->updated_at?->toIso8601String(),
+            'status_history' => $this->getStatusHistory($merchantId),
+        ];
     }
 
-    /**
-     * Get merchant status.
-     */
     public function getMerchantStatus(string $merchantId): MerchantStatus
     {
-        $merchant = $this->getMerchant($merchantId);
-
-        return MerchantStatus::from($merchant['status']);
+        return $this->resolveMerchant($merchantId)->status;
     }
 
-    /**
-     * Check if merchant can accept payments.
-     */
     public function canAcceptPayments(string $merchantId): bool
     {
         return $this->getMerchantStatus($merchantId)->canAcceptPayments();
     }
 
     /**
-     * Get merchant status history.
-     *
      * @return array<array{status: string, changed_at: string, reason: string}>
      */
     public function getStatusHistory(string $merchantId): array
     {
-        $merchant = $this->getMerchant($merchantId);
+        $case = $this->resolveOnboardingCase($this->resolveMerchant($merchantId));
 
-        return $merchant['status_history'];
+        $history = [];
+
+        foreach ($case->statusHistory as $statusHistory) {
+            $history[] = [
+                'status' => $statusHistory->to_status,
+                'changed_at' => $statusHistory->created_at?->toIso8601String() ?? now()->toIso8601String(),
+                'reason' => $statusHistory->reason ?? '',
+            ];
+        }
+
+        return $history;
     }
 
     /**
-     * Perform risk assessment on a merchant.
-     *
      * @return array{risk_score: float, risk_factors: array<string>, recommendation: string}
      */
     public function assessRisk(string $merchantId): array
     {
-        $merchant = $this->getMerchant($merchantId);
+        $case = $this->resolveOnboardingCase($this->resolveMerchant($merchantId));
 
-        // Demo risk assessment logic
         $riskFactors = [];
         $riskScore = 0.0;
 
-        // High-risk business types
         $highRiskTypes = ['gambling', 'crypto', 'adult', 'weapons'];
-        if (in_array(strtolower($merchant['business_type']), $highRiskTypes, true)) {
+        if (in_array(strtolower((string) $case->business_type), $highRiskTypes, true)) {
             $riskFactors[] = 'High-risk business category';
             $riskScore += 0.3;
         }
 
-        // High-risk countries
         $highRiskCountries = ['AF', 'KP', 'IR', 'SY'];
-        if (in_array(strtoupper($merchant['country']), $highRiskCountries, true)) {
+        if (in_array(strtoupper((string) $case->country), $highRiskCountries, true)) {
             $riskFactors[] = 'High-risk jurisdiction';
             $riskScore += 0.4;
         }
 
-        // Determine recommendation
         $recommendation = match (true) {
             $riskScore >= 0.7 => 'reject',
             $riskScore >= 0.4 => 'enhanced_review',
-            default           => 'approve',
+            default => 'approve',
         };
 
-        return [
-            'risk_score'     => min(1.0, $riskScore),
-            'risk_factors'   => $riskFactors,
+        $assessment = [
+            'risk_score' => min(1.0, $riskScore),
+            'risk_factors' => $riskFactors,
             'recommendation' => $recommendation,
         ];
+
+        $case->forceFill([
+            'risk_assessment' => $assessment,
+        ])->save();
+
+        return $assessment;
     }
 
     /**
-     * Update merchant status.
-     *
-     * @param array<string, mixed> $additionalData
+     * @param array<string, mixed> $caseAttributes
+     * @param array<string, mixed> $caseMetadata
      */
-    private function updateMerchantStatus(
+    private function transitionMerchant(
         string $merchantId,
         MerchantStatus $newStatus,
+        ?int $actorUserId,
         string $reason,
-        array $additionalData = [],
+        array $caseAttributes = [],
+        array $caseMetadata = [],
     ): void {
-        $merchant = $this->getMerchant($merchantId);
-        $currentStatus = MerchantStatus::from($merchant['status']);
+        DB::transaction(function () use (
+            $merchantId,
+            $newStatus,
+            $actorUserId,
+            $reason,
+            $caseAttributes,
+            $caseMetadata,
+        ): void {
+            $merchant = $this->resolveMerchant($merchantId);
+            $case = $this->resolveOnboardingCase($merchant);
+            $currentStatus = $merchant->status;
 
-        if (! $currentStatus->canTransitionTo($newStatus)) {
-            throw new RuntimeException(
-                "Cannot transition from {$currentStatus->value} to {$newStatus->value}"
-            );
+            if (! $currentStatus->canTransitionTo($newStatus)) {
+                throw new RuntimeException(
+                    "Cannot transition from {$currentStatus->value} to {$newStatus->value}"
+                );
+            }
+
+            $merchant->forceFill([
+                'status' => $newStatus,
+            ])->save();
+
+            $mergedMetadata = $case->metadata ?? [];
+            if ($caseMetadata !== []) {
+                $mergedMetadata = array_merge($mergedMetadata, $caseMetadata);
+            }
+
+            $case->forceFill(array_merge($caseAttributes, [
+                'status' => $newStatus->value,
+                'metadata' => $mergedMetadata === [] ? null : $mergedMetadata,
+            ]))->save();
+
+            BusinessOnboardingCaseStatusHistory::query()->create([
+                'business_onboarding_case_id' => $case->id,
+                'from_status' => $currentStatus->value,
+                'to_status' => $newStatus->value,
+                'actor_user_id' => $actorUserId,
+                'reason' => $reason,
+                'metadata' => $caseMetadata === [] ? null : $caseMetadata,
+            ]);
+        });
+    }
+
+    private function resolveCorporateProfile(?Team $team): ?CorporateProfile
+    {
+        if (! $team?->is_business_organization) {
+            return null;
         }
 
-        $now = new DateTimeImmutable();
+        return $team->resolveCorporateProfile();
+    }
 
-        $this->merchants[$merchantId]['status'] = $newStatus->value;
-        $this->merchants[$merchantId]['updated_at'] = $now->format('c');
+    private function resolveMerchant(string $merchantId): Merchant
+    {
+        $merchant = Merchant::query()
+            ->where('id', $merchantId)
+            ->orWhere('public_id', $merchantId)
+            ->first();
 
-        $this->merchants[$merchantId]['status_history'][] = [
-            'status'     => $newStatus->value,
-            'changed_at' => $now->format('c'),
-            'reason'     => $reason,
-        ];
-
-        foreach ($additionalData as $key => $value) {
-            $this->merchants[$merchantId][$key] = $value;
+        if (! $merchant) {
+            throw new InvalidArgumentException("Merchant not found: {$merchantId}");
         }
+
+        return $merchant;
+    }
+
+    private function resolveOnboardingCase(Merchant $merchant): BusinessOnboardingCase
+    {
+        /** @var BusinessOnboardingCase|null $case */
+        $case = $merchant->businessOnboardingCase;
+
+        if (! $case) {
+            throw new InvalidArgumentException("Merchant onboarding case not found: {$merchant->id}");
+        }
+
+        return $case;
     }
 }

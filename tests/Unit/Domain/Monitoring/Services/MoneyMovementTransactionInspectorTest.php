@@ -11,6 +11,7 @@ use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Monitoring\Services\MoneyMovementTransactionInspector;
 use App\Models\MoneyRequest;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\DomainTestCase;
@@ -104,6 +105,7 @@ class MoneyMovementTransactionInspectorTest extends DomainTestCase
 
         $this->assertSame($reference, $result['lookup']['reference']);
         $this->assertSame($trx, $result['authorized_transaction']['trx']);
+        $this->assertSame([], $result['ledger_posting']);
         $this->assertSame('completed', $result['asset_transfer']['status']);
         $this->assertCount(2, $result['transaction_projections']);
         $this->assertSame($moneyRequest->id, $result['money_request']['id']);
@@ -297,10 +299,91 @@ class MoneyMovementTransactionInspectorTest extends DomainTestCase
         $this->assertSame($trx, $result['lookup']['trx']);
         $this->assertSame($reference, $result['lookup']['reference']);
         $this->assertSame(AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED, $result['authorized_transaction']['remark']);
+        $this->assertSame([], $result['ledger_posting']);
         $this->assertSame($moneyRequest->id, $result['money_request']['id']);
         $this->assertSame('transfer_completed', $result['timeline'][3]['event']);
         $this->assertSame('money_request_state', $result['timeline'][4]['event']);
         $this->assertSame([], $result['warnings']);
+    }
+
+    #[Test]
+    public function it_returns_posting_data_separately_from_workflow_and_projection_state(): void
+    {
+        Asset::firstOrCreate(
+            ['code' => 'SZL'],
+            ['name' => 'Swazi Lilangeni', 'type' => 'fiat', 'precision' => 2, 'is_active' => true],
+        );
+
+        $requester = User::factory()->create();
+        $recipient = User::factory()->create();
+        $reference = 'REF-' . Str::upper(Str::random(10));
+        $trx = 'TRX-' . Str::upper(Str::random(10));
+        $postingId = (string) Str::uuid();
+
+        AuthorizedTransaction::query()->create([
+            'user_id' => $requester->id,
+            'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'     => $trx,
+            'payload' => [],
+            'result'  => [
+                'trx'        => $trx,
+                'reference'  => $reference,
+                'amount'     => '10.00',
+                'asset_code' => 'SZL',
+                'posting'    => [
+                    'id'                 => $postingId,
+                    'posting_type'       => 'send_money',
+                    'status'             => 'posted',
+                    'transfer_reference' => $reference,
+                ],
+            ],
+            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
+            'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
+        ]);
+
+        DB::table('ledger_postings')->insert([
+            'id'                         => $postingId,
+            'authorized_transaction_trx' => $trx,
+            'posting_type'               => 'send_money',
+            'status'                     => 'posted',
+            'asset_code'                 => 'SZL',
+            'transfer_reference'         => $reference,
+            'posted_at'                  => now(),
+            'entries_hash'               => hash('sha256', $trx),
+            'metadata'                   => json_encode(['rule_version' => 1], JSON_THROW_ON_ERROR),
+            'created_at'                 => now(),
+            'updated_at'                 => now(),
+        ]);
+
+        DB::table('ledger_entries')->insert([
+            [
+                'id'                => (string) Str::uuid(),
+                'ledger_posting_id' => $postingId,
+                'account_uuid'      => (string) Str::uuid(),
+                'asset_code'        => 'SZL',
+                'signed_amount'     => -1000,
+                'entry_type'        => 'debit',
+                'created_at'        => now(),
+                'updated_at'        => now(),
+            ],
+            [
+                'id'                => (string) Str::uuid(),
+                'ledger_posting_id' => $postingId,
+                'account_uuid'      => (string) Str::uuid(),
+                'asset_code'        => 'SZL',
+                'signed_amount'     => 1000,
+                'entry_type'        => 'credit',
+                'created_at'        => now(),
+                'updated_at'        => now(),
+            ],
+        ]);
+
+        $result = app(MoneyMovementTransactionInspector::class)->inspect(trx: $trx);
+
+        $this->assertSame($postingId, $result['ledger_posting']['id']);
+        $this->assertSame('posted', $result['ledger_posting']['status']);
+        $this->assertSame('send_money', $result['ledger_posting']['posting_type']);
+        $this->assertCount(2, $result['ledger_posting']['entries']);
     }
 
     #[Test]

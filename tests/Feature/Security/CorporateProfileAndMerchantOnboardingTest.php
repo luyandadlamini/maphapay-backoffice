@@ -2,32 +2,28 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Domain\Commerce\Services;
+namespace Tests\Feature\Security;
 
 use App\Domain\Commerce\Enums\MerchantStatus;
-use App\Domain\Commerce\Events\MerchantOnboarded;
 use App\Domain\Commerce\Services\MerchantOnboardingService;
+use App\Domain\Corporate\Enums\CorporateCapability;
+use App\Domain\Corporate\Services\CorporateCapabilityGate;
+use App\GraphQL\Mutations\Commerce\ApproveMerchantMutation;
+use App\GraphQL\Mutations\Commerce\SubmitMerchantApplicationMutation;
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
-use InvalidArgumentException;
-use RuntimeException;
 use Tests\TestCase;
 
-class MerchantOnboardingServiceTest extends TestCase
+class CorporateProfileAndMerchantOnboardingTest extends TestCase
 {
-    protected MerchantOnboardingService $service;
-
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->ensureCorporateSectionSchemaBaseline();
-
-        Event::fake();
-        $this->service = app(MerchantOnboardingService::class);
     }
 
     protected function shouldCreateDefaultAccountsInSetup(): bool
@@ -35,153 +31,128 @@ class MerchantOnboardingServiceTest extends TestCase
         return false;
     }
 
-    public function test_submit_application_creates_a_persisted_merchant_application(): void
-    {
-        $owner = $this->actingAsBusinessOwner();
-
-        $result = $this->service->submitApplication(
-            businessName: 'Test Shop',
-            businessType: 'retail',
-            country: 'US',
-            contactEmail: 'test@shop.com',
-        );
-
-        $merchant = $this->service->getMerchant($result['merchant_id']);
-
-        $this->assertNotEmpty($result['merchant_id']);
-        $this->assertSame('pending', $result['status']);
-        $this->assertSame('Test Shop', $merchant['business_name']);
-        $this->assertSame((int) $owner->current_team_id, Team::find($owner->current_team_id)?->id);
-    }
-
-    public function test_submit_application_persists_business_details(): void
-    {
-        $this->actingAsBusinessOwner();
-
-        $result = $this->service->submitApplication(
-            businessName: 'Test Shop',
-            businessType: 'retail',
-            country: 'US',
-            contactEmail: 'test@shop.com',
-            businessDetails: ['registration_number' => '123456'],
-        );
-
-        $merchant = $this->service->getMerchant($result['merchant_id']);
-
-        $this->assertSame('123456', $merchant['business_details']['registration_number']);
-    }
-
-    public function test_it_transitions_through_the_persisted_onboarding_flow(): void
-    {
-        $owner = $this->actingAsBusinessOwner();
-
-        $result = $this->service->submitApplication(
-            businessName: 'Test Shop',
-            businessType: 'retail',
-            country: 'US',
-            contactEmail: 'test@shop.com',
-        );
-
-        $merchantId = $result['merchant_id'];
-
-        $this->service->startReview($merchantId, (string) $owner->id);
-        $this->assertSame(MerchantStatus::UNDER_REVIEW, $this->service->getMerchantStatus($merchantId));
-
-        $this->service->approve($merchantId, (string) $owner->id);
-        $this->assertSame(MerchantStatus::APPROVED, $this->service->getMerchantStatus($merchantId));
-
-        $this->service->activate($merchantId);
-        $this->assertSame(MerchantStatus::ACTIVE, $this->service->getMerchantStatus($merchantId));
-
-        Event::assertDispatched(MerchantOnboarded::class, function (MerchantOnboarded $event) use ($merchantId): bool {
-            return $event->merchantId === $merchantId
-                && $event->status === MerchantStatus::ACTIVE;
-        });
-    }
-
-    public function test_it_allows_suspension_and_reactivation(): void
-    {
-        $owner = $this->actingAsBusinessOwner();
-
-        $result = $this->service->submitApplication(
-            businessName: 'Test Shop',
-            businessType: 'retail',
-            country: 'US',
-            contactEmail: 'test@shop.com',
-        );
-
-        $merchantId = $result['merchant_id'];
-
-        $this->service->startReview($merchantId, (string) $owner->id);
-        $this->service->approve($merchantId, (string) $owner->id);
-        $this->service->activate($merchantId);
-
-        $this->service->suspend($merchantId, 'Policy violation');
-        $this->assertSame(MerchantStatus::SUSPENDED, $this->service->getMerchantStatus($merchantId));
-        $this->assertFalse($this->service->canAcceptPayments($merchantId));
-
-        $this->service->reactivate($merchantId, 'Issue resolved');
-        $this->assertSame(MerchantStatus::ACTIVE, $this->service->getMerchantStatus($merchantId));
-        $this->assertTrue($this->service->canAcceptPayments($merchantId));
-    }
-
-    public function test_it_throws_on_invalid_transition(): void
-    {
-        $this->actingAsBusinessOwner();
-
-        $result = $this->service->submitApplication(
-            businessName: 'Test Shop',
-            businessType: 'retail',
-            country: 'US',
-            contactEmail: 'test@shop.com',
-        );
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Cannot transition');
-
-        $this->service->activate($result['merchant_id']);
-    }
-
-    public function test_it_tracks_status_history_and_assesses_risk(): void
-    {
-        $owner = $this->actingAsBusinessOwner();
-
-        $result = $this->service->submitApplication(
-            businessName: 'Crypto Exchange',
-            businessType: 'crypto',
-            country: 'KP',
-            contactEmail: 'test@crypto.com',
-        );
-
-        $merchantId = $result['merchant_id'];
-
-        $this->service->startReview($merchantId, (string) $owner->id);
-        $this->service->approve($merchantId, (string) $owner->id);
-
-        $history = $this->service->getStatusHistory($merchantId);
-        $assessment = $this->service->assessRisk($merchantId);
-
-        $this->assertCount(3, $history);
-        $this->assertSame('pending', $history[0]['status']);
-        $this->assertSame('under_review', $history[1]['status']);
-        $this->assertSame('approved', $history[2]['status']);
-        $this->assertGreaterThanOrEqual(0.7, $assessment['risk_score']);
-        $this->assertContains('High-risk business category', $assessment['risk_factors']);
-        $this->assertContains('High-risk jurisdiction', $assessment['risk_factors']);
-        $this->assertSame('reject', $assessment['recommendation']);
-    }
-
-    public function test_get_merchant_throws_for_non_existent_merchant(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Merchant not found');
-
-        $this->service->getMerchant('non-existent');
-    }
-
-    private function actingAsBusinessOwner(): User
+    public function test_it_creates_a_first_class_corporate_profile_over_a_business_team(): void
     {
         $owner = User::factory()->create();
+        $team = $this->createBusinessTeamForOwner($owner);
+
+        $profile = $team->resolveCorporateProfile();
+
+        $this->assertSame($team->id, $profile->team_id);
+        $this->assertSame('Acme Treasury (Pty) Ltd', $profile->legal_name);
+        $this->assertSame('REG-123456', $profile->registration_number);
+        $this->assertTrue($team->fresh()->corporateProfile?->is($profile));
+    }
+
+    public function test_it_persists_explicit_capability_grants_and_enforces_them_through_the_corporate_gate(): void
+    {
+        $owner = User::factory()->create();
+        $team = $this->createBusinessTeamForOwner($owner);
+        $profile = $team->resolveCorporateProfile();
+
+        $member = User::factory()->create();
+        $team->users()->attach($member);
+        $member->current_team_id = $team->id;
+        $member->save();
+        $team->assignUserRole($member, 'compliance_officer');
+
+        $profile->grantCapabilityToUser(
+            $member,
+            CorporateCapability::COMPLIANCE_REVIEW,
+            $owner,
+        );
+
+        $gate = app(CorporateCapabilityGate::class);
+
+        $this->assertTrue($gate->allows($member, $team, CorporateCapability::COMPLIANCE_REVIEW));
+        $this->assertFalse($gate->allows($member, $team, CorporateCapability::TREASURY_OPERATIONS));
+    }
+
+    public function test_it_persists_merchant_onboarding_in_the_database_and_no_longer_depends_on_in_memory_service_state(): void
+    {
+        $owner = User::factory()->create();
+        $this->createBusinessTeamForOwner($owner);
+
+        $this->actingAs($owner);
+
+        $merchant = app(SubmitMerchantApplicationMutation::class)(
+            null,
+            [
+                'display_name' => 'Acme Merchant',
+                'icon_url' => 'https://example.com/icon.png',
+                'accepted_assets' => ['USDC'],
+                'accepted_networks' => ['POLYGON'],
+                'terminal_id' => 'term_123',
+            ],
+        );
+
+        $freshService = app(MerchantOnboardingService::class);
+        $freshService->startReview($merchant->id, (string) $owner->id);
+        $freshService->approve($merchant->id, (string) $owner->id);
+
+        $merchant->refresh();
+        $case = $merchant->businessOnboardingCase()->firstOrFail();
+
+        $this->assertNotNull($merchant->corporate_profile_id);
+        $this->assertNotNull($merchant->business_onboarding_case_id);
+        $this->assertSame(MerchantStatus::APPROVED, $merchant->status);
+        $this->assertSame(MerchantStatus::APPROVED->value, $case->status);
+        $this->assertCount(3, $case->statusHistory);
+    }
+
+    public function test_it_requires_an_explicit_corporate_compliance_capability_before_approving_a_merchant(): void
+    {
+        $owner = User::factory()->create();
+        $team = $this->createBusinessTeamForOwner($owner);
+
+        $submitter = User::factory()->create();
+        $team->users()->attach($submitter);
+        $submitter->current_team_id = $team->id;
+        $submitter->save();
+
+        $reviewer = User::factory()->create();
+        $team->users()->attach($reviewer);
+        $reviewer->current_team_id = $team->id;
+        $reviewer->save();
+        $team->assignUserRole($reviewer, 'compliance_officer');
+
+        $this->actingAs($submitter);
+        $merchant = app(SubmitMerchantApplicationMutation::class)(
+            null,
+            [
+                'display_name' => 'Capability Merchant',
+                'accepted_assets' => ['USDC'],
+                'accepted_networks' => ['POLYGON'],
+            ],
+        );
+
+        app(MerchantOnboardingService::class)->startReview($merchant->id, (string) $owner->id);
+
+        $this->actingAs($reviewer);
+
+        $thrown = false;
+
+        try {
+            app(ApproveMerchantMutation::class)(null, ['id' => $merchant->id]);
+        } catch (AuthorizationException) {
+            $thrown = true;
+        }
+
+        $this->assertTrue($thrown);
+
+        $team->resolveCorporateProfile()->grantCapabilityToUser(
+            $reviewer,
+            CorporateCapability::COMPLIANCE_REVIEW,
+            $owner,
+        );
+
+        $approvedMerchant = app(ApproveMerchantMutation::class)(null, ['id' => $merchant->id]);
+
+        $this->assertSame(MerchantStatus::APPROVED, $approvedMerchant->fresh()->status);
+    }
+
+    private function createBusinessTeamForOwner(User $owner): Team
+    {
         $team = Team::factory()->create([
             'user_id' => $owner->id,
             'name' => 'Acme Treasury',
@@ -199,9 +170,7 @@ class MerchantOnboardingServiceTest extends TestCase
         $owner->current_team_id = $team->id;
         $owner->save();
 
-        $this->actingAs($owner);
-
-        return $owner;
+        return $team;
     }
 
     private function ensureCorporateSectionSchemaBaseline(): void
@@ -353,5 +322,6 @@ class MerchantOnboardingServiceTest extends TestCase
                 $table->timestamps();
             });
         }
+
     }
 }

@@ -4,152 +4,118 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Pages;
 
+use App\Domain\Compliance\Models\AuditLog;
 use App\Domain\Custodian\Services\CustodianHealthMonitor;
 use App\Domain\Custodian\Services\CustodianRegistry;
+use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
+use App\Support\Backoffice\AdminActionGovernance;
 use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 use Illuminate\Support\Collection;
 
 class BankOperations extends Page implements HasTable
 {
+    use HasBackofficeWorkspace;
     use InteractsWithTable;
     use InteractsWithActions;
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-building-library';
+    protected static ?string $navigationIcon = 'heroicon-o-building-office-2';
 
-    protected static ?string $navigationGroup = 'Banking';
+    protected static ?string $navigationGroup = 'Finance & Reconciliation';
 
-    protected static ?int $navigationSort = 7;
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $title = 'Bank Operations Center';
 
     protected static string $view = 'filament.admin.pages.bank-operations';
 
-    public function mount(): void
+    protected static string $backofficeWorkspace = 'finance';
+
+    public static function canAccess(): bool
     {
-        // Initialize any needed data
+        $user = auth()->user();
+
+        return $user !== null && ($user->can('approve-adjustments') || $user->hasRole('super-admin'));
     }
 
-    public function table(Tables\Table $table): Tables\Table
+    public function table(Table $table): Table
     {
         return $table
             ->records($this->getBankOperationsQuery())
-            ->columns(
-                [
-                    Tables\Columns\TextColumn::make('custodian')
-                        ->label('Bank')
-                        ->searchable()
-                        ->sortable(),
+            ->columns([
+                Tables\Columns\TextColumn::make('custodian')
+                    ->label('Bank/Custodian')
+                    ->weight('bold')
+                    ->searchable(),
 
-                    Tables\Columns\TextColumn::make('status')
-                        ->label('Health Status')
-                        ->badge()
-                        ->color(
-                            fn (string $state): string => match ($state) {
-                                'healthy'   => 'success',
-                                'degraded'  => 'warning',
-                                'unhealthy' => 'danger',
-                                default     => 'gray',
-                            }
-                        ),
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Health Status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'healthy'   => 'success',
+                        'degraded'  => 'warning',
+                        'unhealthy' => 'danger',
+                        default     => 'gray',
+                    }),
 
-                    Tables\Columns\TextColumn::make('overall_failure_rate')
-                        ->label('Failure Rate')
-                        ->suffix('%')
-                        ->color(fn ($state) => $state > 50 ? 'danger' : ($state > 20 ? 'warning' : 'success')),
+                Tables\Columns\TextColumn::make('overall_failure_rate')
+                    ->label('24h Error Rate')
+                    ->formatStateUsing(fn ($state) => number_format((float) $state, 1) . '%')
+                    ->color(fn ($state) => (float) $state > 5.0 ? 'danger' : 'success'),
 
-                    Tables\Columns\ViewColumn::make('circuit_breakers')
-                        ->label('Circuit Breakers')
-                        ->view('filament.admin.tables.columns.circuit-breakers'),
+                Tables\Columns\TextColumn::make('availability_24h')
+                    ->label('Availability')
+                    ->getStateUsing(fn ($record) => $this->get24hAvailability($record['custodian'])),
 
-                    Tables\Columns\TextColumn::make('availability_24h')
-                        ->label('24h Availability')
-                        ->suffix('%')
-                        ->getStateUsing(fn ($record) => $this->get24hAvailability($record['custodian'])),
-
-                    Tables\Columns\TextColumn::make('last_check')
-                        ->label('Last Check')
-                        ->dateTime('Y-m-d H:i:s')
-                        ->description(fn ($state) => now()->diffForHumans($state) . ' ago'),
-                ]
-            )
-            ->actions(
-                [
-                    Tables\Actions\Action::make('health_check')
-                        ->label('Check Health')
-                        ->icon('heroicon-m-heart')
-                        ->action(
-                            function ($record) {
-                                $monitor = app(CustodianHealthMonitor::class);
-                                $health = $monitor->getCustodianHealth($record['custodian']);
- 
-                                Notification::make()
-                                    ->title($health['status'] === 'healthy' ? 'Healthy' : 'Unhealthy')
-                                    ->body("{$record['custodian']} is {$health['status']}")
-                                    ->color($health['status'] === 'healthy' ? 'success' : 'warning')
-                                    ->send();
-                            }
-                        ),
-
-                    Tables\Actions\Action::make('reset_circuit')
-                        ->label('Reset Circuit')
-                        ->icon('heroicon-m-arrow-path')
-                        ->color('warning')
-                        ->requiresConfirmation()
-                        ->action(
-                            function ($record) {
-                                $registry = app(CustodianRegistry::class);
-                                // $connector = $registry->getConnector($record['custodian']);
-                                // $connector->resetCircuitBreaker();
- 
-                                Notification::make()
-                                    ->title('Success')
-                                    ->body("Circuit breaker reset requested for {$record['custodian']}")
-                                    ->success()
-                                    ->send();
-                            }
-                        ),
-
-                    Tables\Actions\Action::make('view_logs')
-                        ->label('View Logs')
-                        ->icon('heroicon-m-document-text')
-                        ->url(fn ($record) => "/admin/logs?custodian={$record['custodian']}")
-                        ->openUrlInNewTab(),
-                ]
-            )
-            ->poll('10s');
+                Tables\Columns\IconColumn::make('reconciliation_status')
+                    ->label('Recon Status')
+                    ->options([
+                        'heroicon-s-check-circle' => 'synced',
+                        'heroicon-m-exclamation-triangle' => 'lagging',
+                    ])
+                    ->colors([
+                        'success' => 'synced',
+                        'danger' => 'lagging',
+                    ]),
+            ])
+            ->actions([
+                Tables\Actions\Action::make('trigger_reconciliation')
+                    ->label('Recon')
+                    ->icon('heroicon-o-arrow-path')
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Reason for manual reconciliation')
+                            ->required()
+                            ->minLength(10),
+                    ])
+                    ->action(fn ($record, array $data) => $this->runManualRecon($record['custodian'], $data['reason'])),
+                
+                Tables\Actions\Action::make('freeze_settlement')
+                    ->label('Freeze')
+                    ->icon('heroicon-o-pause')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Reason for settlement freeze request')
+                            ->required()
+                            ->minLength(10),
+                    ])
+                    ->action(fn ($record, array $data) => $this->freezeBankSettlement($record['custodian'], $data['reason'])),
+            ]);
     }
 
-    protected function getBankOperationsQuery()
+    public function getHealthMonitor(): CustodianHealthMonitor
     {
-        $monitor = app(CustodianHealthMonitor::class);
-        $healthData = $monitor->getAllCustodiansHealth();
-
-        // Convert to collection for table
-        return collect($healthData)->map(
-            function ($health, $custodian) {
-                return array_merge(
-                    $health,
-                    [
-                        'id' => $custodian, // Add ID for table
-                    ]
-                );
-            }
-        );
-    }
-
-    protected function get24hAvailability(string $custodian): float
-    {
-        $monitor = app(CustodianHealthMonitor::class);
-        $metrics = $monitor->getAvailabilityMetrics($custodian, 24);
-
-        return $metrics['availability_percentage'] ?? 0.0;
+        return app(CustodianHealthMonitor::class);
     }
 
     public function getCustodianRegistry(): CustodianRegistry
@@ -157,8 +123,82 @@ class BankOperations extends Page implements HasTable
         return app(CustodianRegistry::class);
     }
 
-    public function getHealthMonitor(): CustodianHealthMonitor
+    protected function getAdminActionGovernance(): AdminActionGovernance
     {
-        return app(CustodianHealthMonitor::class);
+        return app(AdminActionGovernance::class);
+    }
+
+    protected function getBankOperationsQuery(): Collection
+    {
+        $monitor = $this->getHealthMonitor();
+        $healthData = $monitor->getAllCustodiansHealth();
+
+        return collect($healthData);
+    }
+
+    protected function get24hAvailability(string $custodian): string
+    {
+        $monitor = $this->getHealthMonitor();
+        $metrics = $monitor->getAvailabilityMetrics($custodian, 24);
+        
+        return ($metrics['availability_percentage'] ?? 0) . '%';
+    }
+
+    public function runReconciliation(): void
+    {
+        $this->getAdminActionGovernance()->auditDirectAction(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.bank_operations.manual_reconciliation_triggered',
+            reason: 'Global reconciliation triggered from bank operations dashboard.',
+            auditable: null,
+            metadata: [
+                'custodian' => 'all',
+            ],
+            tags: 'backoffice,finance,reconciliation'
+        );
+
+        Notification::make()
+            ->title('Global reconciliation started')
+            ->success()
+            ->send();
+    }
+
+    public function runManualRecon(string $custodian, string $reason): void
+    {
+        $this->getAdminActionGovernance()->auditDirectAction(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.bank_operations.manual_reconciliation_triggered',
+            reason: $reason,
+            auditable: null,
+            metadata: [
+                'custodian' => $custodian,
+            ],
+            tags: 'backoffice,finance,reconciliation'
+        );
+
+        Notification::make()
+            ->title("Reconciliation started for {$custodian}")
+            ->success()
+            ->send();
+    }
+
+    public function freezeBankSettlement(string $custodian, string $reason): void
+    {
+        $this->getAdminActionGovernance()->submitApprovalRequest(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.bank_operations.freeze_settlement',
+            reason: $reason,
+            targetType: 'custodian',
+            targetIdentifier: $custodian,
+            payload: [
+                'custodian' => $custodian,
+                'requested_state' => 'frozen',
+            ],
+        );
+
+        Notification::make()
+            ->title("Settlement freeze request submitted for {$custodian}")
+            ->warning()
+            ->send();
     }
 }

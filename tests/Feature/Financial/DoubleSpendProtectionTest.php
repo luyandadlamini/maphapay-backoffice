@@ -13,6 +13,7 @@ use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Models\MoneyRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
@@ -201,6 +202,32 @@ class DoubleSpendProtectionTest extends ControllerTestCase
             'trx'    => $trx,
             'status' => AuthorizedTransaction::STATUS_COMPLETED,
         ]);
+        $this->assertDatabaseHas('ledger_postings', [
+            'authorized_transaction_trx' => $trx,
+            'posting_type'               => 'request_money_accept',
+            'status'                     => 'posted',
+            'transfer_reference'         => 'stub-transfer-id',
+            'asset_code'                 => 'SZL',
+        ]);
+
+        $postingId = DB::table('ledger_postings')
+            ->where('authorized_transaction_trx', $trx)
+            ->value('id');
+
+        $this->assertNotNull($postingId);
+        $this->assertSame(2, DB::table('ledger_entries')->where('ledger_posting_id', $postingId)->count());
+        $this->assertSame(
+            0,
+            (int) DB::table('ledger_entries')
+                ->where('ledger_posting_id', $postingId)
+                ->sum('signed_amount'),
+        );
+
+        $result = AuthorizedTransaction::query()->where('trx', $trx)->value('result');
+        $this->assertIsArray($result);
+        $this->assertSame('request_money_accept', $result['posting']['posting_type'] ?? null);
+        $this->assertSame('posted', $result['posting']['status'] ?? null);
+        $this->assertSame('stub-transfer-id', $result['posting']['transfer_reference'] ?? null);
     }
 
     #[Test]

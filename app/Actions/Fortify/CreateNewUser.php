@@ -91,6 +91,7 @@ class CreateNewUser implements CreatesNewUsers
 
             // Assign owner role in the team
             $team->assignUserRole($user, 'owner');
+            $team->resolveCorporateProfile();
         } else {
             $user->assignRole('customer_private');
         }

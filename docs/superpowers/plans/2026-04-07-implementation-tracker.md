@@ -70,11 +70,23 @@ Date: 2026-04-07
 | Item | Status | Notes |
 |---|---|---|
 | Audit/design/plan approved | DONE | Docs completed and review-approved. |
-| Code implementation started | TODO | |
+| Code implementation started | DONE | 2026-04-07 first execution slice completed for workspace inventory plus governed hardening of `Settings` and `BankOperations`, with `Modules` brought under explicit workspace ownership/access alignment. |
+| Workspace ownership inventory for first slice surfaces | DONE | Explicit ownership wired in code: `Settings` and `Modules` -> Platform Administration, `BankOperations` -> Finance. Navigation grouping aligned to `Platform` / `Finance & Reconciliation`. |
+| Approval-mode enforcement for first governed actions | DONE | `Settings.exportSettings` and `BankOperations.runManualRecon` now persist `direct_elevated` audit metadata; `Settings.resetToDefaults` and `BankOperations.freezeBankSettlement` now persist `request_approve` records instead of executing directly. |
+| Visibility and denied-access enforcement tests | DONE | Added page-boundary coverage proving finance users are denied `Settings` and support users are denied `BankOperations`. |
+| Governed-action audit persistence tests | DONE | Added targeted coverage for platform export audit persistence plus finance reconciliation audit persistence, and pending approval-request persistence for settings reset and settlement freeze. |
+| Relevant Section 3 test suite run | DONE | `./vendor/bin/pest tests/Feature/Backoffice/BackofficeGovernancePagesTest.php` passed: 6 tests, 22 assertions. Syntax check also passed on changed PHP files via `php -l`. |
 
 ### Notes
 
 - 2026-04-07: Documentation complete; no code changes started yet.
+- 2026-04-07: First implementation slice narrowed to page-based platform and finance controls because they already have clear page/action boundaries and minimal dependency on unrelated resource refactors.
+- 2026-04-07: Initial ownership mapping for this slice: `Settings` -> Platform Administration workspace, `Modules` -> Platform Administration workspace, `BankOperations` -> Finance workspace.
+- 2026-04-07: First approval-mode matrix for this slice: `Settings.save` = `direct_elevated`, `Settings.exportSettings` = `direct_elevated`, `Settings.resetToDefaults` = `request_approve` unless breakglass, `Modules.verifyModule` = `direct_elevated`, `Modules.enableModule`/`disableModule` = `request_approve` unless breakglass, `BankOperations.runManualRecon` = `direct_elevated`, `BankOperations.freezeBankSettlement` = `request_approve` unless breakglass.
+- 2026-04-07: Implemented shared first-slice governance primitives with explicit workspace assignment (`HasBackofficeWorkspace`), `AdminActionGovernance`, and persisted `admin_action_approval_requests`.
+- 2026-04-07: `Settings` is now platform-only, grouped under `Platform`, requires evidence on governed direct actions, audits governed exports, and converts reset-to-defaults into a pending approval request.
+- 2026-04-07: `BankOperations` is now finance-only, grouped under `Finance & Reconciliation`, audits manual reconciliation triggers, and converts settlement freezes into pending approval requests.
+- 2026-04-07: `Modules` was aligned to Platform Administration ownership and access in this slice, but module enable/disable request wiring was deferred to the next slice; the custom module grid needs dedicated evidence-capture UI to avoid widening the phase-1 execution boundary.
 
 ## Section 4: Corporate / B2B2C
 
@@ -83,11 +95,25 @@ Date: 2026-04-07
 | Item | Status | Notes |
 |---|---|---|
 | Audit/design/plan approved | DONE | Docs completed and review-approved. |
-| Code implementation started | TODO | |
+| Code implementation started | DONE | 2026-04-07 narrow first slice completed: corporate profile overlay, persisted capability grants, persistent business onboarding case, and merchant-flow canonical persistence wiring. |
+| Inventory current section 4 code paths | DONE | Confirmed business context lives on `Team` + `TeamUserRole`; merchant submit persists `merchants`, but approve/suspend still route through `MerchantOnboardingService` in-memory state. First slice boundary set to `CorporateProfile`, persisted capability grants, `BusinessOnboardingCase`, and merchant lifecycle rewiring. |
+| Implement corporate profile overlay on business teams | DONE | Added `CorporateProfile` persistence linked 1:1 to business `Team`, plus `Team::resolveCorporateProfile()` and business-owner bootstrap in `CreateNewUser`. |
+| Implement persisted capability model and enforcement hook | DONE | Added persisted `corporate_capability_grants`, `CorporateCapability` enum, and `CorporateCapabilityGate`; merchant approval/suspension in business context now requires explicit `compliance_review` capability (owner retains seeded full grants). |
+| Implement persistent business onboarding case foundation | DONE | Added durable `BusinessOnboardingCase` plus status-history persistence for merchant/business onboarding lifecycle state, evidence/risk metadata, and actor timestamps. |
+| Rewire merchant onboarding off split in-memory state | DONE | `MerchantOnboardingService` now persists submit/review/approve/activate/suspend/reactivate/terminate state to DB-backed merchant + onboarding-case records; GraphQL merchant submission/approval/suspension flows now resolve through canonical persisted state. |
+| Add/update section 4 tests | DONE | Added feature coverage for business-team/corporate-profile linkage, persisted capability grants with enforcement, DB-backed merchant onboarding persistence, and merchant approval gating; replaced outdated service tests with DB-backed onboarding lifecycle coverage. |
+| Run relevant section 4 test suite | DONE | `./vendor/bin/pest tests/Feature/Security/CorporateProfileAndMerchantOnboardingTest.php tests/Unit/Domain/Commerce/Services/MerchantOnboardingServiceTest.php` passed: 11 tests, 39 assertions. Targeted static analysis also passed on changed section 4 files via `XDEBUG_MODE=off vendor/bin/phpstan analyse ... --memory-limit=2G`. |
 
 ### Notes
 
 - 2026-04-07: Documentation complete; no code changes started yet.
+- 2026-04-07: Execution started from approved section 4 audit/design/plan docs; no redesign of sections 1 or 2 is planned for this slice.
+- 2026-04-07: Current code confirms the approved section 4 correction: `SubmitMerchantApplicationMutation` persists a `Merchant` row, while `ApproveMerchantMutation`/`SuspendMerchantMutation` still depend on `MerchantOnboardingService` in-memory state, so there is no canonical persisted onboarding identity yet.
+- 2026-04-07: First slice intentionally excludes payroll, full expense management, batch payouts, and broad admin-surface rewrites; the focus is persistence and control boundaries over existing business-team foundations.
+- 2026-04-07: Implemented first-class `CorporateProfile` persistence over business teams without replacing the existing `Team` tenant anchor.
+- 2026-04-07: Implemented a persisted capability foundation through `corporate_capability_grants`; business owners are seeded with full corporate capabilities, and merchant review actions now enforce explicit capability grants in business context.
+- 2026-04-07: Implemented durable `BusinessOnboardingCase` + status-history persistence and rewired merchant onboarding lifecycle state away from `MerchantOnboardingService` in-memory storage.
+- 2026-04-07: No section 4 spec adjustment was required; the slice executed the approved correction to move merchant onboarding toward one canonical persisted onboarding identity and DB-backed lifecycle authority.
 
 ## Section 5: Mobile Trust Boundaries
 

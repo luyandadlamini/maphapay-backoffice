@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Domain\Corporate\Enums\CorporateCapability;
+use App\Domain\Corporate\Models\CorporateProfile;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Laravel\Jetstream\Events\TeamCreated;
 use Laravel\Jetstream\Events\TeamDeleted;
 use Laravel\Jetstream\Events\TeamUpdated;
 use Laravel\Jetstream\Team as JetstreamTeam;
+use RuntimeException;
 
 class Team extends JetstreamTeam
 {
@@ -66,6 +70,47 @@ class Team extends JetstreamTeam
     public function teamUserRoles()
     {
         return $this->hasMany(TeamUserRole::class);
+    }
+
+    /**
+     * @return HasOne<CorporateProfile, $this>
+     */
+    public function corporateProfile(): HasOne
+    {
+        return $this->hasOne(CorporateProfile::class);
+    }
+
+    public function resolveCorporateProfile(): CorporateProfile
+    {
+        if (! $this->is_business_organization) {
+            throw new RuntimeException('Corporate profiles can only be resolved for business teams.');
+        }
+
+        /** @var CorporateProfile $profile */
+        $profile = CorporateProfile::query()->firstOrCreate(
+            ['team_id' => $this->id],
+            [
+                'legal_name' => (string) data_get($this->business_details, 'legal_name', $this->name),
+                'registration_number' => $this->business_registration_number,
+                'tax_id' => $this->tax_id,
+                'organization_type' => $this->organization_type,
+                'kyb_status' => 'not_started',
+                'operating_status' => 'pending',
+                'metadata' => $this->business_details,
+            ],
+        );
+
+        if ($this->user_id) {
+            $owner = User::find($this->user_id);
+
+            if ($owner) {
+                foreach (CorporateCapability::cases() as $capability) {
+                    $profile->grantCapabilityToUser($owner, $capability, $owner);
+                }
+            }
+        }
+
+        return $profile;
     }
 
     /**

@@ -117,6 +117,16 @@ class CustodianRegistry
     }
 
     /**
+     * Backoffice dashboard alias.
+     *
+     * @return array<int, string>
+     */
+    public function getAllConnectorNames(): array
+    {
+        return $this->names();
+    }
+
+    /**
      * Find custodians that support a specific asset.
      */
     public function findByAsset(string $assetCode): array

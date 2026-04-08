@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Pages;
 
+use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Models\Setting;
 use App\Services\SettingsService;
+use App\Support\Backoffice\AdminActionGovernance;
 use Exception;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -17,28 +19,47 @@ use Illuminate\Support\Facades\Log;
 
 class Settings extends Page
 {
+    use HasBackofficeWorkspace;
+
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
 
     protected static string $view = 'filament.admin.pages.settings';
 
-    protected static ?string $navigationGroup = 'System';
+    protected static ?string $navigationGroup = 'Platform';
 
     protected static ?int $navigationSort = 100;
 
     protected static ?string $title = 'Platform Settings';
 
+    protected static string $backofficeWorkspace = 'platform_administration';
+
     public ?array $data = [];
 
+    public ?string $governanceReason = null;
+
     protected ?SettingsService $settingsService = null;
+
+    protected ?AdminActionGovernance $adminActionGovernance = null;
 
     public function boot(): void
     {
         $this->settingsService = app(SettingsService::class);
+        $this->adminActionGovernance = app(AdminActionGovernance::class);
     }
 
     protected function getSettingsService(): SettingsService
     {
         return $this->settingsService ??= app(SettingsService::class);
+    }
+
+    protected function getAdminActionGovernance(): AdminActionGovernance
+    {
+        return $this->adminActionGovernance ??= app(AdminActionGovernance::class);
+    }
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasRole('super-admin') ?? false;
     }
 
     public function mount(): void
@@ -105,7 +126,14 @@ class Settings extends Page
     public function save(): void
     {
         try {
-            $data = $this->form->getState();
+            $this->validate([
+                'governanceReason' => ['required', 'string', 'min:10'],
+            ]);
+
+            $data = array_replace($this->form->getState(), $this->data ?? []);
+            $changedKeys = [];
+            $oldValues = [];
+            $newValues = [];
 
             foreach ($data as $key => $value) {
                 $config = $this->getSettingsService()->getSettingConfig($key);
@@ -126,10 +154,31 @@ class Settings extends Page
                     throw new Halt();
                 }
 
+                $existing = Setting::where('key', $key)->first();
+
+                if ($existing?->value !== $value) {
+                    $changedKeys[] = $key;
+                    $oldValues[$key] = $existing?->value;
+                    $newValues[$key] = $value;
+                }
+
                 $this->getSettingsService()->updateSetting($key, $value, auth()->user()->email ?? 'system');
             }
 
             Cache::flush();
+
+            $this->getAdminActionGovernance()->auditDirectAction(
+                workspace: static::getBackofficeWorkspace(),
+                action: 'backoffice.settings.saved',
+                reason: (string) $this->governanceReason,
+                oldValues: $oldValues,
+                newValues: $newValues,
+                metadata: [
+                    'changed_keys' => $changedKeys,
+                    'actor_email'  => auth()->user()->email ?? 'system',
+                ],
+                tags: 'backoffice,platform,settings'
+            );
 
             Notification::make()
                 ->title('Settings saved successfully')
@@ -146,38 +195,34 @@ class Settings extends Page
         } catch (Halt $exception) {
             return;
         }
+
+        $this->governanceReason = null;
     }
 
-    public function resetToDefaults(): void
+    public function requestResetToDefaults(string $reason): void
     {
-        try {
-            $this->getSettingsService()->initializeSettings();
+        $this->getAdminActionGovernance()->submitApprovalRequest(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.settings.reset_to_defaults',
+            reason: $reason,
+            targetType: 'settings_group',
+            targetIdentifier: 'all',
+            payload: [
+                'scope' => 'all_settings',
+            ],
+            metadata: [
+                'actor_email' => auth()->user()->email ?? 'system',
+            ],
+        );
 
-            Cache::flush();
-
-            $this->fillForm();
-
-            Notification::make()
-                ->title('Settings reset to defaults')
-                ->success()
-                ->send();
-
-            Log::info(
-                'Platform settings reset to defaults',
-                [
-                    'user' => auth()->user()->email ?? 'system',
-                ]
-            );
-        } catch (Exception $e) {
-            Notification::make()
-                ->title('Error resetting settings')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
+        Notification::make()
+            ->title('Reset request submitted')
+            ->body('This settings reset now requires approval before execution.')
+            ->warning()
+            ->send();
     }
 
-    public function exportSettings(): void
+    public function exportSettings(string $reason): void
     {
         $settings = $this->getSettingsService()->exportSettings();
 
@@ -188,6 +233,18 @@ class Settings extends Page
             ->body('Settings have been exported successfully.')
             ->success()
             ->send();
+
+        $this->getAdminActionGovernance()->auditDirectAction(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.settings.exported',
+            reason: $reason,
+            metadata: [
+                'filename'       => $filename,
+                'settings_count' => count($settings),
+                'actor_email'    => auth()->user()->email ?? 'system',
+            ],
+            tags: 'backoffice,platform,settings,export'
+        );
 
         // In a real implementation, this would trigger a download
         Log::info(
@@ -203,7 +260,7 @@ class Settings extends Page
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\Action::make('reset')
+            \Filament\Actions\Action::make('requestReset')
                 ->label('Reset to Defaults')
                 ->icon('heroicon-o-arrow-uturn-left')
                 ->color('warning')
@@ -211,13 +268,25 @@ class Settings extends Page
                 ->modalHeading('Reset Settings to Defaults')
                 ->modalDescription('Are you sure you want to reset all settings to their default values? This action cannot be undone.')
                 ->modalSubmitActionLabel('Yes, reset all settings')
-                ->action(fn () => $this->resetToDefaults()),
+                ->form([
+                    Forms\Components\Textarea::make('reason')
+                        ->label('Approval request reason')
+                        ->required()
+                        ->minLength(10),
+                ])
+                ->action(fn (array $data) => $this->requestResetToDefaults($data['reason'])),
 
             \Filament\Actions\Action::make('export')
                 ->label('Export Settings')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('success')
-                ->action(fn () => $this->exportSettings()),
+                ->form([
+                    Forms\Components\Textarea::make('reason')
+                        ->label('Export reason')
+                        ->required()
+                        ->minLength(10),
+                ])
+                ->action(fn (array $data) => $this->exportSettings($data['reason'])),
         ];
     }
 }

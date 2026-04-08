@@ -85,6 +85,9 @@ class RequestMoneyStoreControllerTest extends ControllerTestCase
             'status'            => MoneyRequest::STATUS_PENDING,
             'amount'            => '25.00',
         ]);
+        $this->assertDatabaseMissing('ledger_postings', [
+            'authorized_transaction_trx' => $trx,
+        ]);
     }
 
     #[Test]

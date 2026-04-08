@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Pages;
 
+use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Infrastructure\Domain\DataObjects\DomainInfo;
 use App\Infrastructure\Domain\DomainManager;
 use App\Infrastructure\Domain\Enums\DomainStatus;
@@ -16,15 +17,24 @@ use Livewire\Attributes\Url;
 
 class Modules extends Page
 {
+    use HasBackofficeWorkspace;
+
     protected static ?string $navigationIcon = 'heroicon-o-puzzle-piece';
 
-    protected static ?string $navigationGroup = 'System';
+    protected static ?string $navigationGroup = 'Platform';
 
     protected static ?int $navigationSort = 10;
 
     protected static ?string $title = 'Module Management';
 
     protected static string $view = 'filament.admin.pages.modules';
+
+    protected static string $backofficeWorkspace = 'platform_administration';
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasRole('super-admin') ?? false;
+    }
 
     #[Url]
     public string $search = '';

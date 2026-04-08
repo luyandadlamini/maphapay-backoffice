@@ -41,15 +41,9 @@ final class SubmitMerchantApplicationMutation
             ],
         );
 
-        // Create the Eloquent model for GraphQL response
-        return Merchant::create([
-            'public_id'         => $result['merchant_id'],
-            'display_name'      => $args['display_name'],
-            'icon_url'          => $args['icon_url'] ?? null,
-            'accepted_assets'   => $args['accepted_assets'] ?? null,
-            'accepted_networks' => $args['accepted_networks'] ?? null,
-            'status'            => $result['status'],
-            'terminal_id'       => $args['terminal_id'] ?? null,
-        ]);
+        /** @var Merchant */
+        return Merchant::query()
+            ->where('public_id', $result['merchant_id'])
+            ->firstOrFail();
     }
 }

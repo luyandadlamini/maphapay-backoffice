@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Domain\Commerce\Models;
 
 use App\Domain\Commerce\Enums\MerchantStatus;
+use App\Domain\Corporate\Models\BusinessOnboardingCase;
+use App\Domain\Corporate\Models\CorporateProfile;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Database\Factories\MerchantFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -44,6 +47,8 @@ class Merchant extends Model
         'accepted_networks',
         'status',
         'terminal_id',
+        'corporate_profile_id',
+        'business_onboarding_case_id',
     ];
 
     protected $casts = [
@@ -58,6 +63,22 @@ class Merchant extends Model
     public function walletAddresses(): HasMany
     {
         return $this->hasMany(MerchantWalletAddress::class);
+    }
+
+    /**
+     * @return BelongsTo<CorporateProfile, $this>
+     */
+    public function corporateProfile(): BelongsTo
+    {
+        return $this->belongsTo(CorporateProfile::class);
+    }
+
+    /**
+     * @return BelongsTo<BusinessOnboardingCase, $this>
+     */
+    public function businessOnboardingCase(): BelongsTo
+    {
+        return $this->belongsTo(BusinessOnboardingCase::class);
     }
 
     public function acceptsAsset(string $asset): bool

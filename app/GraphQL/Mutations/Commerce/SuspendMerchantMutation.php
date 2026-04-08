@@ -6,13 +6,17 @@ namespace App\GraphQL\Mutations\Commerce;
 
 use App\Domain\Commerce\Models\Merchant;
 use App\Domain\Commerce\Services\MerchantOnboardingService;
+use App\Domain\Corporate\Enums\CorporateCapability;
+use App\Domain\Corporate\Services\CorporateCapabilityGate;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
 
 final class SuspendMerchantMutation
 {
     public function __construct(
         private readonly MerchantOnboardingService $merchantOnboardingService,
+        private readonly CorporateCapabilityGate $corporateCapabilityGate,
     ) {
     }
 
@@ -28,12 +32,26 @@ final class SuspendMerchantMutation
             throw new AuthenticationException('Unauthenticated.');
         }
 
+        $merchant = Merchant::findOrFail($args['id']);
+        /** @var \App\Models\Team|null $team */
+        $team = $user->currentTeam;
+
+        if ($team?->is_business_organization) {
+            if ($merchant->corporateProfile?->team_id !== $team->id) {
+                throw new AuthorizationException('The merchant does not belong to the authenticated business context.');
+            }
+
+            $this->corporateCapabilityGate->authorize($user, $team, CorporateCapability::COMPLIANCE_REVIEW);
+        }
+
         $this->merchantOnboardingService->suspend(
             $args['id'],
             'Suspended via GraphQL',
         );
 
-        /** @var Merchant */
-        return Merchant::findOrFail($args['id']);
+        /** @var Merchant $refreshedMerchant */
+        $refreshedMerchant = $merchant->fresh();
+
+        return $refreshedMerchant;
     }
 }

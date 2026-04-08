@@ -14,7 +14,11 @@ use Illuminate\Support\Facades\Event;
 beforeEach(function () {
     $this->syncService = Mockery::mock(BalanceSynchronizationService::class);
     $this->custodianRegistry = Mockery::mock(CustodianRegistry::class);
-    $this->reconciliationService = new DailyReconciliationService($this->syncService, $this->custodianRegistry);
+    $this->reconciliationService = new DailyReconciliationService(
+        $this->syncService,
+        $this->custodianRegistry,
+        app(\App\Support\Reconciliation\ReconciliationReferenceBuilder::class),
+    );
 });
 
 it('performs daily reconciliation successfully', function () {

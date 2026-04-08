@@ -7,6 +7,8 @@ namespace App\Domain\Monitoring\Services;
 use App\Domain\Account\Models\TransactionProjection;
 use App\Domain\Asset\Models\AssetTransfer;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
+use App\Domain\Ledger\Models\LedgerEntry;
+use App\Domain\Ledger\Models\LedgerPosting;
 use App\Models\MoneyRequest;
 
 class MoneyMovementTransactionInspector
@@ -40,6 +42,8 @@ class MoneyMovementTransactionInspector
                 ->orWhere('transfer_id', $resolvedReference)
                 ->first()
             : null;
+
+        $ledgerPosting = $this->resolveLedgerPosting($transaction, $resolvedReference);
 
         $projections = $resolvedReference !== null
             ? TransactionProjection::query()
@@ -153,6 +157,27 @@ class MoneyMovementTransactionInspector
                 'created_at'        => $transaction->created_at->toIso8601String(),
                 'updated_at'        => $transaction->updated_at->toIso8601String(),
             ] : null,
+            'ledger_posting' => $ledgerPosting !== null ? [
+                'id'                         => $ledgerPosting->id,
+                'authorized_transaction_trx' => $ledgerPosting->authorized_transaction_trx,
+                'posting_type'               => $ledgerPosting->posting_type,
+                'status'                     => $ledgerPosting->status,
+                'asset_code'                 => $ledgerPosting->asset_code,
+                'transfer_reference'         => $ledgerPosting->transfer_reference,
+                'money_request_id'           => $ledgerPosting->money_request_id,
+                'rule_version'               => $ledgerPosting->rule_version,
+                'posted_at'                  => $ledgerPosting->posted_at?->toIso8601String(),
+                'entries'                    => $ledgerPosting->entries
+                    ->map(fn (LedgerEntry $entry): array => [
+                        'id'            => $entry->id,
+                        'account_uuid'  => $entry->account_uuid,
+                        'asset_code'    => $entry->asset_code,
+                        'signed_amount' => $entry->signed_amount,
+                        'entry_type'    => $entry->entry_type,
+                        'metadata'      => $entry->metadata,
+                    ])
+                    ->all(),
+            ] : [],
             'asset_transfer' => $assetTransfer !== null ? [
                 'reference'         => $assetTransfer->reference,
                 'transfer_id'       => $assetTransfer->transfer_id,
@@ -182,6 +207,25 @@ class MoneyMovementTransactionInspector
         ];
     }
 
+    private function resolveLedgerPosting(?AuthorizedTransaction $transaction, ?string $reference): ?LedgerPosting
+    {
+        $query = LedgerPosting::query()->with('entries');
+
+        if ($transaction !== null) {
+            return $query
+                ->where('authorized_transaction_trx', $transaction->trx)
+                ->first();
+        }
+
+        if ($reference === null || $reference === '') {
+            return null;
+        }
+
+        return $query
+            ->where('transfer_reference', $reference)
+            ->first();
+    }
+
     private function resolveAuthorizedTransaction(?string $trx, ?string $reference): ?AuthorizedTransaction
     {
         if ($trx !== null && $trx !== '') {
@@ -194,7 +238,9 @@ class MoneyMovementTransactionInspector
 
         // @phpstan-ignore argument.type
         return AuthorizedTransaction::query()
+            // @phpstan-ignore argument.type
             ->where('result->reference', $reference)
+            // @phpstan-ignore argument.type
             ->orWhere('payload->reference', $reference)
             ->first();
     }

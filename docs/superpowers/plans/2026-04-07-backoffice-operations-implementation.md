@@ -84,6 +84,10 @@ Done when:
   - `AuditLogResource` export actions
 - Standardize required evidence fields and requester/reviewer attribution.
 - Define persistence target per action class, not just generic metadata.
+- First execution slice note:
+  - harden `Settings` and `BankOperations` end-to-end first,
+  - keep `Modules` in the workspace-ownership/access-alignment pass for now,
+  - and defer module enable/disable request wiring to the next slice because the current custom grid needs dedicated evidence-capture UI to stay within the narrow phase-1 boundary.
 
 Done when:
 
