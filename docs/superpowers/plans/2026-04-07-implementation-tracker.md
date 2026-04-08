@@ -122,11 +122,20 @@ Date: 2026-04-07
 | Item | Status | Notes |
 |---|---|---|
 | Audit/design/plan approved | DONE | Docs completed and review-approved. |
-| Code implementation started | TODO | |
+| Code implementation started | DONE | 2026-04-08 first section-5 execution slice completed on branch `feature/mobile-trust-boundaries-phase1` with canonical payment-link authority hardening plus persisted trust-evidence and enforcement hooks for mobile commerce payments. |
+| Inventory current section 5 code paths | DONE | Confirmed SSL-pin distribution exists in `MobileController::getSslPins`, attestation verification exists in `BiometricJWTService` but is not bound to risky commerce flows, and `MobileCommerceController` still accepted legacy raw QR payload authority. |
+| Implement persisted mobile trust evidence foundation | DONE | Added persisted `mobile_attestation_records` plus `MobileAttestationRecord` model and `HighRiskActionTrustPolicy` service to store per-request action trust evidence, decision, reason, and attestation verification metadata. |
+| Implement first server trust-policy enforcement hook | DONE | `MobileCommerceController::processPayment` now evaluates `HighRiskActionTrustPolicy` for canonical token-authorized payments and enforces deny/step-up responses using persisted trust-decision records. |
+| Implement canonical QR/deep-link authority hardening slice | DONE | `MobileCommerceController::parseQr` now resolves canonical `https://pay.maphapay.com/r/{token}` links through `PaymentLinkService` and marks legacy query payload parsing as compatibility-only authority. |
+| Add/update section 5 tests | DONE | Added unit coverage for canonical payment-link QR resolution plus valid/invalid token enforcement in final commerce payment path. |
+| Run relevant section 5 test suite | DONE | `./vendor/bin/pest tests/Unit/Http/Controllers/Api/Commerce/MobileCommerceControllerTest.php tests/Unit/Domain/Mobile/Services/HighRiskActionTrustPolicyTest.php` passed: 14 tests, 54 assertions. |
 
 ### Notes
 
 - 2026-04-07: Documentation complete; no code changes started yet.
+- 2026-04-08: Section 5 execution started using approved mobile-trust audit/design/implementation docs as source of truth; first slice remains narrow and focused on persistence + enforcement boundaries.
+- 2026-04-08: First section-5 slice intentionally focused on canonical payment-link authority in commerce QR/payment flows; broader mobile attestation persistence and cross-action trust-envelope enforcement remain pending for subsequent slice.
+- 2026-04-08: Added first durable trust-evidence persistence (`mobile_attestation_records`) and a server-side trust policy service; commerce final payment authorization now records trust decisions and blocks on policy `deny`/`step_up` outcomes.
 
 ## Cross-Cutting Blockers
 

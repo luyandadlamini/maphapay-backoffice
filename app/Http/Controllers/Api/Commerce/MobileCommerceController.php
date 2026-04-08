@@ -7,7 +7,10 @@ namespace App\Http\Controllers\Api\Commerce;
 use App\Domain\Commerce\Enums\MerchantStatus;
 use App\Domain\Commerce\Models\Merchant;
 use App\Domain\Commerce\Services\MerchantOnboardingService;
+use App\Domain\Mobile\Services\HighRiskActionTrustPolicy;
+use App\Domain\Payment\Services\PaymentLinkService;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -19,8 +22,9 @@ class MobileCommerceController extends Controller
     public function __construct(
         // @phpstan-ignore-next-line
         private readonly MerchantOnboardingService $merchantService,
-    ) {
-    }
+        private readonly PaymentLinkService $paymentLinkService,
+        private readonly HighRiskActionTrustPolicy $trustPolicy,
+    ) {}
 
     /**
      * List available merchants for the user.
@@ -37,16 +41,16 @@ class MobileCommerceController extends Controller
         response: 200,
         description: 'Success',
         content: new OA\JsonContent(properties: [
-        new OA\Property(property: 'success', type: 'boolean', example: true),
-        new OA\Property(property: 'data', type: 'array', items: new OA\Items(type: 'object', properties: [
-        new OA\Property(property: 'id', type: 'string', example: 'merchant_demo_001'),
-        new OA\Property(property: 'display_name', type: 'string', example: 'Demo Coffee Shop'),
-        new OA\Property(property: 'category', type: 'string', example: 'food_beverage'),
-        new OA\Property(property: 'accepted_tokens', type: 'array', items: new OA\Items(type: 'string', example: 'USDC')),
-        new OA\Property(property: 'accepted_networks', type: 'array', items: new OA\Items(type: 'string', example: 'polygon')),
-        new OA\Property(property: 'icon_url', type: 'string', nullable: true, example: null),
-        new OA\Property(property: 'active', type: 'boolean', example: true),
-        ])),
+            new OA\Property(property: 'success', type: 'boolean', example: true),
+            new OA\Property(property: 'data', type: 'array', items: new OA\Items(type: 'object', properties: [
+                new OA\Property(property: 'id', type: 'string', example: 'merchant_demo_001'),
+                new OA\Property(property: 'display_name', type: 'string', example: 'Demo Coffee Shop'),
+                new OA\Property(property: 'category', type: 'string', example: 'food_beverage'),
+                new OA\Property(property: 'accepted_tokens', type: 'array', items: new OA\Items(type: 'string', example: 'USDC')),
+                new OA\Property(property: 'accepted_networks', type: 'array', items: new OA\Items(type: 'string', example: 'polygon')),
+                new OA\Property(property: 'icon_url', type: 'string', nullable: true, example: null),
+                new OA\Property(property: 'active', type: 'boolean', example: true),
+            ])),
         ])
     )]
     #[OA\Response(
@@ -58,7 +62,7 @@ class MobileCommerceController extends Controller
         $query = Merchant::where('status', MerchantStatus::ACTIVE);
 
         if ($search = $request->query('search')) {
-            $query->where('display_name', 'like', '%' . (string) $search . '%');
+            $query->where('display_name', 'like', '%'.(string) $search.'%');
         }
 
         $merchants = $query->orderBy('display_name')
@@ -66,20 +70,20 @@ class MobileCommerceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $merchants->map(fn (Merchant $m) => [
-                'id'                => $m->public_id,
-                'display_name'      => $m->display_name,
-                'category'          => $m->terminal_id ?? 'general',
-                'accepted_tokens'   => $m->accepted_assets ?? [],
+            'data' => $merchants->map(fn (Merchant $m) => [
+                'id' => $m->public_id,
+                'display_name' => $m->display_name,
+                'category' => $m->terminal_id ?? 'general',
+                'accepted_tokens' => $m->accepted_assets ?? [],
                 'accepted_networks' => $m->accepted_networks ?? [],
-                'icon_url'          => $m->icon_url,
-                'active'            => true,
+                'icon_url' => $m->icon_url,
+                'active' => true,
             ])->values(),
             'pagination' => [
                 'current_page' => $merchants->currentPage(),
-                'last_page'    => $merchants->lastPage(),
-                'per_page'     => $merchants->perPage(),
-                'total'        => $merchants->total(),
+                'last_page' => $merchants->lastPage(),
+                'per_page' => $merchants->perPage(),
+                'total' => $merchants->total(),
             ],
         ]);
     }
@@ -95,32 +99,32 @@ class MobileCommerceController extends Controller
         tags: ['Commerce'],
         security: [['sanctum' => []]],
         requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(required: ['qr_data'], properties: [
-        new OA\Property(property: 'qr_data', type: 'string', example: 'finaegis://pay?merchant=merchant_demo_001&amount=25.00&asset=USDC&network=polygon', description: 'The raw QR code data string'),
+            new OA\Property(property: 'qr_data', type: 'string', example: 'finaegis://pay?merchant=merchant_demo_001&amount=25.00&asset=USDC&network=polygon', description: 'The raw QR code data string'),
         ]))
     )]
     #[OA\Response(
         response: 200,
         description: 'QR code parsed successfully',
         content: new OA\JsonContent(properties: [
-        new OA\Property(property: 'success', type: 'boolean', example: true),
-        new OA\Property(property: 'data', type: 'object', properties: [
-        new OA\Property(property: 'merchant_id', type: 'string', example: 'merchant_demo_001'),
-        new OA\Property(property: 'amount', type: 'string', example: '25.00'),
-        new OA\Property(property: 'asset', type: 'string', example: 'USDC'),
-        new OA\Property(property: 'network', type: 'string', example: 'polygon'),
-        new OA\Property(property: 'metadata', type: 'object'),
-        ]),
+            new OA\Property(property: 'success', type: 'boolean', example: true),
+            new OA\Property(property: 'data', type: 'object', properties: [
+                new OA\Property(property: 'merchant_id', type: 'string', example: 'merchant_demo_001'),
+                new OA\Property(property: 'amount', type: 'string', example: '25.00'),
+                new OA\Property(property: 'asset', type: 'string', example: 'USDC'),
+                new OA\Property(property: 'network', type: 'string', example: 'polygon'),
+                new OA\Property(property: 'metadata', type: 'object'),
+            ]),
         ])
     )]
     #[OA\Response(
         response: 422,
         description: 'Invalid QR code or validation error',
         content: new OA\JsonContent(properties: [
-        new OA\Property(property: 'success', type: 'boolean', example: false),
-        new OA\Property(property: 'error', type: 'object', properties: [
-        new OA\Property(property: 'code', type: 'string', example: 'INVALID_QR'),
-        new OA\Property(property: 'message', type: 'string', example: 'Unable to parse QR code.'),
-        ]),
+            new OA\Property(property: 'success', type: 'boolean', example: false),
+            new OA\Property(property: 'error', type: 'object', properties: [
+                new OA\Property(property: 'code', type: 'string', example: 'INVALID_QR'),
+                new OA\Property(property: 'message', type: 'string', example: 'Unable to parse QR code.'),
+            ]),
         ])
     )]
     #[OA\Response(
@@ -133,7 +137,25 @@ class MobileCommerceController extends Controller
             'qr_data' => ['required', 'string'],
         ]);
 
-        $qrData = $request->input('qr_data');
+        $qrData = (string) $request->input('qr_data');
+
+        $canonical = $this->resolveCanonicalPaymentLink($qrData);
+        if ($canonical !== null) {
+            if (($canonical['invalid'] ?? false) === true) {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'INVALID_QR',
+                        'message' => 'Payment link token is invalid or expired.',
+                    ],
+                ], 422);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $canonical,
+            ]);
+        }
 
         // Parse QR code format: finaegis://pay?merchant=X&amount=Y&asset=Z&network=N
         $parsed = parse_url($qrData);
@@ -145,8 +167,8 @@ class MobileCommerceController extends Controller
         if (empty($params['merchant'])) {
             return response()->json([
                 'success' => false,
-                'error'   => [
-                    'code'    => 'INVALID_QR',
+                'error' => [
+                    'code' => 'INVALID_QR',
                     'message' => 'Unable to parse QR code.',
                 ],
             ], 422);
@@ -154,12 +176,13 @@ class MobileCommerceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
+            'data' => [
+                'authority_source' => 'legacy_qr_payload',
                 'merchant_id' => $params['merchant'],
-                'amount'      => $params['amount'] ?? null,
-                'asset'       => $params['asset'] ?? 'USDC',
-                'network'     => $params['network'] ?? 'polygon',
-                'metadata'    => $params,
+                'amount' => $params['amount'] ?? null,
+                'asset' => $params['asset'] ?? 'USDC',
+                'network' => $params['network'] ?? 'polygon',
+                'metadata' => $params,
             ],
         ]);
     }
@@ -175,34 +198,34 @@ class MobileCommerceController extends Controller
         tags: ['Commerce'],
         security: [['sanctum' => []]],
         requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(required: ['merchant_id', 'amount', 'asset', 'network'], properties: [
-        new OA\Property(property: 'merchant_id', type: 'string', example: 'merchant_demo_001', description: 'The merchant ID to create the payment request for'),
-        new OA\Property(property: 'amount', type: 'string', example: '25.00', description: 'The payment amount'),
-        new OA\Property(property: 'asset', type: 'string', enum: ['USDC', 'USDT', 'WETH', 'WBTC'], example: 'USDC', description: 'The token asset for payment'),
-        new OA\Property(property: 'network', type: 'string', example: 'polygon', description: 'The blockchain network for the transaction'),
+            new OA\Property(property: 'merchant_id', type: 'string', example: 'merchant_demo_001', description: 'The merchant ID to create the payment request for'),
+            new OA\Property(property: 'amount', type: 'string', example: '25.00', description: 'The payment amount'),
+            new OA\Property(property: 'asset', type: 'string', enum: ['USDC', 'USDT', 'WETH', 'WBTC'], example: 'USDC', description: 'The token asset for payment'),
+            new OA\Property(property: 'network', type: 'string', example: 'polygon', description: 'The blockchain network for the transaction'),
         ]))
     )]
     #[OA\Response(
         response: 201,
         description: 'Payment request created successfully',
         content: new OA\JsonContent(properties: [
-        new OA\Property(property: 'success', type: 'boolean', example: true),
-        new OA\Property(property: 'data', type: 'object', properties: [
-        new OA\Property(property: 'id', type: 'string', example: 'pr_abc123def456'),
-        new OA\Property(property: 'merchant_id', type: 'string', example: 'merchant_demo_001'),
-        new OA\Property(property: 'merchant', type: 'object', properties: [
-        new OA\Property(property: 'id', type: 'string'),
-        new OA\Property(property: 'name', type: 'string'),
-        new OA\Property(property: 'display_name', type: 'string'),
-        new OA\Property(property: 'category', type: 'string', nullable: true),
-        new OA\Property(property: 'accepted_tokens', type: 'array', items: new OA\Items(type: 'string')),
-        ]),
-        new OA\Property(property: 'amount', type: 'string', example: '25.00'),
-        new OA\Property(property: 'asset', type: 'string', example: 'USDC'),
-        new OA\Property(property: 'network', type: 'string', example: 'polygon'),
-        new OA\Property(property: 'status', type: 'string', example: 'pending'),
-        new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
-        new OA\Property(property: 'expires_at', type: 'string', format: 'date-time'),
-        ]),
+            new OA\Property(property: 'success', type: 'boolean', example: true),
+            new OA\Property(property: 'data', type: 'object', properties: [
+                new OA\Property(property: 'id', type: 'string', example: 'pr_abc123def456'),
+                new OA\Property(property: 'merchant_id', type: 'string', example: 'merchant_demo_001'),
+                new OA\Property(property: 'merchant', type: 'object', properties: [
+                    new OA\Property(property: 'id', type: 'string'),
+                    new OA\Property(property: 'name', type: 'string'),
+                    new OA\Property(property: 'display_name', type: 'string'),
+                    new OA\Property(property: 'category', type: 'string', nullable: true),
+                    new OA\Property(property: 'accepted_tokens', type: 'array', items: new OA\Items(type: 'string')),
+                ]),
+                new OA\Property(property: 'amount', type: 'string', example: '25.00'),
+                new OA\Property(property: 'asset', type: 'string', example: 'USDC'),
+                new OA\Property(property: 'network', type: 'string', example: 'polygon'),
+                new OA\Property(property: 'status', type: 'string', example: 'pending'),
+                new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+                new OA\Property(property: 'expires_at', type: 'string', format: 'date-time'),
+            ]),
         ])
     )]
     #[OA\Response(
@@ -217,9 +240,9 @@ class MobileCommerceController extends Controller
     {
         $request->validate([
             'merchant_id' => ['required', 'string'],
-            'amount'      => ['required', 'string'],
-            'asset'       => ['required', 'string', 'in:USDC,USDT,WETH,WBTC'],
-            'network'     => ['required', 'string'],
+            'amount' => ['required', 'string'],
+            'asset' => ['required', 'string', 'in:USDC,USDT,WETH,WBTC'],
+            'network' => ['required', 'string'],
         ]);
 
         $merchantId = $request->input('merchant_id');
@@ -233,34 +256,34 @@ class MobileCommerceController extends Controller
         }
 
         $merchantData = $merchant ? [
-            'id'              => $merchant->id,
-            'name'            => $merchant->public_id ?? $merchant->id,
-            'display_name'    => $merchant->display_name,
-            'category'        => $merchant->terminal_id,
+            'id' => $merchant->id,
+            'name' => $merchant->public_id ?? $merchant->id,
+            'display_name' => $merchant->display_name,
+            'category' => $merchant->terminal_id,
             'accepted_tokens' => $merchant->accepted_assets ?? [],
         ] : [
-            'id'              => $merchantId,
-            'name'            => $merchantId,
-            'display_name'    => $merchantId,
-            'category'        => null,
+            'id' => $merchantId,
+            'name' => $merchantId,
+            'display_name' => $merchantId,
+            'category' => null,
             'accepted_tokens' => ['USDC', 'USDT', 'WETH', 'WBTC'],
         ];
 
         $paymentRequest = [
-            'id'          => 'pr_' . Str::random(20),
+            'id' => 'pr_'.Str::random(20),
             'merchant_id' => $merchantId,
-            'merchant'    => $merchantData,
-            'amount'      => $request->input('amount'),
-            'asset'       => $request->input('asset'),
-            'network'     => $request->input('network'),
-            'status'      => 'pending',
-            'created_at'  => now()->toIso8601String(),
-            'expires_at'  => now()->addMinutes(15)->toIso8601String(),
+            'merchant' => $merchantData,
+            'amount' => $request->input('amount'),
+            'asset' => $request->input('asset'),
+            'network' => $request->input('network'),
+            'status' => 'pending',
+            'created_at' => now()->toIso8601String(),
+            'expires_at' => now()->addMinutes(15)->toIso8601String(),
         ];
 
         return response()->json([
             'success' => true,
-            'data'    => $paymentRequest,
+            'data' => $paymentRequest,
         ], 201);
     }
 
@@ -275,20 +298,20 @@ class MobileCommerceController extends Controller
         tags: ['Commerce'],
         security: [['sanctum' => []]],
         requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(required: ['payment_request_id'], properties: [
-        new OA\Property(property: 'payment_request_id', type: 'string', example: 'pr_abc123def456', description: 'The payment request ID to process'),
+            new OA\Property(property: 'payment_request_id', type: 'string', example: 'pr_abc123def456', description: 'The payment request ID to process'),
         ]))
     )]
     #[OA\Response(
         response: 201,
         description: 'Payment processing initiated',
         content: new OA\JsonContent(properties: [
-        new OA\Property(property: 'success', type: 'boolean', example: true),
-        new OA\Property(property: 'data', type: 'object', properties: [
-        new OA\Property(property: 'id', type: 'string', example: 'pay_abc123def456'),
-        new OA\Property(property: 'payment_request_id', type: 'string', example: 'pr_abc123def456'),
-        new OA\Property(property: 'status', type: 'string', example: 'processing'),
-        new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
-        ]),
+            new OA\Property(property: 'success', type: 'boolean', example: true),
+            new OA\Property(property: 'data', type: 'object', properties: [
+                new OA\Property(property: 'id', type: 'string', example: 'pay_abc123def456'),
+                new OA\Property(property: 'payment_request_id', type: 'string', example: 'pr_abc123def456'),
+                new OA\Property(property: 'status', type: 'string', example: 'processing'),
+                new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+            ]),
         ])
     )]
     #[OA\Response(
@@ -302,20 +325,125 @@ class MobileCommerceController extends Controller
     public function processPayment(Request $request): JsonResponse
     {
         $request->validate([
-            'payment_request_id' => ['required', 'string'],
+            'payment_request_id' => ['required_without:payment_link_token', 'string'],
+            'payment_link_token' => ['required_without:payment_request_id', 'string'],
         ]);
 
+        $paymentLinkToken = (string) $request->input('payment_link_token', '');
+        if ($paymentLinkToken !== '') {
+            if (! $this->paymentLinkService->isValidPaymentToken($paymentLinkToken)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'INVALID_PAYMENT_LINK_TOKEN',
+                        'message' => 'Payment link token is invalid or expired.',
+                    ],
+                ], 422);
+            }
+
+            /** @var User $user */
+            $user = $request->user();
+            $trust = $this->trustPolicy->evaluate($user, $request, 'commerce.payment.process');
+
+            if (($trust['decision'] ?? 'allow') === 'deny') {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'TRUST_POLICY_DENY',
+                        'message' => 'Request denied by mobile trust policy.',
+                        'trust_decision' => $trust['decision'] ?? 'deny',
+                        'trust_reason' => $trust['reason'] ?? 'policy',
+                        'trust_record_id' => $trust['record_id'] ?? null,
+                    ],
+                ], 403);
+            }
+
+            if (in_array(($trust['decision'] ?? ''), ['step_up', 'degrade'], true)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'TRUST_POLICY_STEP_UP',
+                        'message' => 'Additional verification is required by mobile trust policy.',
+                        'trust_decision' => $trust['decision'],
+                        'trust_reason' => $trust['reason'] ?? 'policy',
+                        'trust_record_id' => $trust['record_id'] ?? null,
+                    ],
+                ], 428);
+            }
+
+            $payment = [
+                'id' => 'pay_'.Str::random(20),
+                'payment_request_id' => null,
+                'payment_link_token' => $paymentLinkToken,
+                'authority_source' => 'payment_link_token',
+                'trust_decision' => $trust['decision'] ?? 'allow',
+                'trust_record_id' => $trust['record_id'] ?? null,
+                'status' => 'processing',
+                'created_at' => now()->toIso8601String(),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $payment,
+            ], 201);
+        }
+
         $payment = [
-            'id'                 => 'pay_' . Str::random(20),
-            'payment_request_id' => $request->input('payment_request_id'),
-            'status'             => 'processing',
-            'created_at'         => now()->toIso8601String(),
+            'id' => 'pay_'.Str::random(20),
+            'payment_request_id' => (string) $request->input('payment_request_id'),
+            'payment_link_token' => null,
+            'authority_source' => 'payment_request_id',
+            'status' => 'processing',
+            'created_at' => now()->toIso8601String(),
         ];
 
         return response()->json([
             'success' => true,
-            'data'    => $payment,
+            'data' => $payment,
         ], 201);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function resolveCanonicalPaymentLink(string $qrData): ?array
+    {
+        $parsed = parse_url($qrData);
+        if (! is_array($parsed)) {
+            return null;
+        }
+
+        $scheme = strtolower((string) ($parsed['scheme'] ?? ''));
+        $host = strtolower((string) ($parsed['host'] ?? ''));
+        $path = (string) ($parsed['path'] ?? '');
+
+        if ($scheme !== 'https' || $host !== 'pay.maphapay.com' || ! str_starts_with($path, '/r/')) {
+            return null;
+        }
+
+        $token = trim((string) substr($path, 3));
+        if ($token === '') {
+            return null;
+        }
+
+        $paymentLinkData = $this->paymentLinkService->getPaymentLinkData($token);
+        if ($paymentLinkData === null) {
+            return [
+                'authority_source' => 'payment_link_token',
+                'payment_link_token' => $token,
+                'invalid' => true,
+            ];
+        }
+
+        return [
+            'authority_source' => 'payment_link_token',
+            'payment_link_token' => $token,
+            'amount_binding' => 'fixed',
+            'amount' => (string) ($paymentLinkData['amount'] ?? ''),
+            'asset' => (string) ($paymentLinkData['asset_code'] ?? 'USDC'),
+            'network' => null,
+            'metadata' => $paymentLinkData,
+        ];
     }
 
     /**
@@ -329,20 +457,20 @@ class MobileCommerceController extends Controller
         tags: ['Commerce'],
         security: [['sanctum' => []]],
         requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(required: ['amount', 'asset', 'network'], properties: [
-        new OA\Property(property: 'amount', type: 'string', example: '25.00', description: 'The payment amount'),
-        new OA\Property(property: 'asset', type: 'string', enum: ['USDC', 'USDT', 'WETH', 'WBTC'], example: 'USDC', description: 'The token asset for payment'),
-        new OA\Property(property: 'network', type: 'string', example: 'polygon', description: 'The blockchain network for the transaction'),
+            new OA\Property(property: 'amount', type: 'string', example: '25.00', description: 'The payment amount'),
+            new OA\Property(property: 'asset', type: 'string', enum: ['USDC', 'USDT', 'WETH', 'WBTC'], example: 'USDC', description: 'The token asset for payment'),
+            new OA\Property(property: 'network', type: 'string', example: 'polygon', description: 'The blockchain network for the transaction'),
         ]))
     )]
     #[OA\Response(
         response: 200,
         description: 'QR code generated successfully',
         content: new OA\JsonContent(properties: [
-        new OA\Property(property: 'success', type: 'boolean', example: true),
-        new OA\Property(property: 'data', type: 'object', properties: [
-        new OA\Property(property: 'qr_data', type: 'string', example: 'finaegis://pay?to=user_1&amount=25.00&asset=USDC&network=polygon'),
-        new OA\Property(property: 'expires_at', type: 'string', format: 'date-time'),
-        ]),
+            new OA\Property(property: 'success', type: 'boolean', example: true),
+            new OA\Property(property: 'data', type: 'object', properties: [
+                new OA\Property(property: 'qr_data', type: 'string', example: 'finaegis://pay?to=user_1&amount=25.00&asset=USDC&network=polygon'),
+                new OA\Property(property: 'expires_at', type: 'string', format: 'date-time'),
+            ]),
         ])
     )]
     #[OA\Response(
@@ -356,16 +484,16 @@ class MobileCommerceController extends Controller
     public function generateQr(Request $request): JsonResponse
     {
         $request->validate([
-            'amount'  => ['required', 'string'],
-            'asset'   => ['required', 'string', 'in:USDC,USDT,WETH,WBTC'],
+            'amount' => ['required', 'string'],
+            'asset' => ['required', 'string', 'in:USDC,USDT,WETH,WBTC'],
             'network' => ['required', 'string'],
         ]);
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = $request->user();
         $qrData = sprintf(
             'finaegis://pay?to=%s&amount=%s&asset=%s&network=%s',
-            'user_' . $user->id,
+            'user_'.$user->id,
             $request->input('amount'),
             $request->input('asset'),
             $request->input('network'),
@@ -373,8 +501,8 @@ class MobileCommerceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'qr_data'    => $qrData,
+            'data' => [
+                'qr_data' => $qrData,
                 'expires_at' => now()->addMinutes(30)->toIso8601String(),
             ],
         ]);
@@ -390,15 +518,15 @@ class MobileCommerceController extends Controller
         tags: ['Commerce'],
         security: [['sanctum' => []]],
         parameters: [
-        new OA\Parameter(name: 'merchantId', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'merchantId', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
         ]
     )]
     #[OA\Response(
         response: 200,
         description: 'Merchant details',
         content: new OA\JsonContent(properties: [
-        new OA\Property(property: 'success', type: 'boolean', example: true),
-        new OA\Property(property: 'data', type: 'object'),
+            new OA\Property(property: 'success', type: 'boolean', example: true),
+            new OA\Property(property: 'data', type: 'object'),
         ])
     )]
     #[OA\Response(
@@ -412,8 +540,8 @@ class MobileCommerceController extends Controller
         if (! $merchant) {
             return response()->json([
                 'success' => false,
-                'error'   => [
-                    'code'    => 'MERCHANT_NOT_FOUND',
+                'error' => [
+                    'code' => 'MERCHANT_NOT_FOUND',
                     'message' => 'Merchant not found.',
                 ],
             ], 404);
@@ -421,15 +549,15 @@ class MobileCommerceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'id'                => $merchant->public_id,
-                'display_name'      => $merchant->display_name,
-                'category'          => $merchant->terminal_id ?? 'general',
-                'accepted_tokens'   => $merchant->accepted_assets ?? [],
+            'data' => [
+                'id' => $merchant->public_id,
+                'display_name' => $merchant->display_name,
+                'category' => $merchant->terminal_id ?? 'general',
+                'accepted_tokens' => $merchant->accepted_assets ?? [],
                 'accepted_networks' => $merchant->accepted_networks ?? [],
-                'icon_url'          => $merchant->icon_url,
-                'status'            => $merchant->status->value,
-                'active'            => $merchant->canAcceptPayments(),
+                'icon_url' => $merchant->icon_url,
+                'status' => $merchant->status->value,
+                'active' => $merchant->canAcceptPayments(),
             ],
         ]);
     }
@@ -444,15 +572,15 @@ class MobileCommerceController extends Controller
         tags: ['Commerce'],
         security: [['sanctum' => []]],
         parameters: [
-        new OA\Parameter(name: 'paymentId', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'paymentId', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
         ]
     )]
     #[OA\Response(
         response: 200,
         description: 'Payment request details',
         content: new OA\JsonContent(properties: [
-        new OA\Property(property: 'success', type: 'boolean', example: true),
-        new OA\Property(property: 'data', type: 'object'),
+            new OA\Property(property: 'success', type: 'boolean', example: true),
+            new OA\Property(property: 'data', type: 'object'),
         ])
     )]
     public function paymentRequestDetail(Request $request, string $paymentId): JsonResponse
@@ -460,15 +588,15 @@ class MobileCommerceController extends Controller
         // Demo implementation — in production, look up from database
         return response()->json([
             'success' => true,
-            'data'    => [
-                'id'          => $paymentId,
+            'data' => [
+                'id' => $paymentId,
                 'merchant_id' => 'merchant_demo_001',
-                'amount'      => '0.00',
-                'asset'       => 'USDC',
-                'network'     => 'polygon',
-                'status'      => 'pending',
-                'created_at'  => now()->toIso8601String(),
-                'expires_at'  => now()->addMinutes(15)->toIso8601String(),
+                'amount' => '0.00',
+                'asset' => 'USDC',
+                'network' => 'polygon',
+                'status' => 'pending',
+                'created_at' => now()->toIso8601String(),
+                'expires_at' => now()->addMinutes(15)->toIso8601String(),
             ],
         ]);
     }
@@ -483,18 +611,18 @@ class MobileCommerceController extends Controller
         tags: ['Commerce'],
         security: [['sanctum' => []]],
         parameters: [
-        new OA\Parameter(name: 'paymentId', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'paymentId', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
         ]
     )]
     #[OA\Response(
         response: 200,
         description: 'Payment request cancelled',
         content: new OA\JsonContent(properties: [
-        new OA\Property(property: 'success', type: 'boolean', example: true),
-        new OA\Property(property: 'data', type: 'object', properties: [
-        new OA\Property(property: 'id', type: 'string'),
-        new OA\Property(property: 'status', type: 'string', example: 'cancelled'),
-        ]),
+            new OA\Property(property: 'success', type: 'boolean', example: true),
+            new OA\Property(property: 'data', type: 'object', properties: [
+                new OA\Property(property: 'id', type: 'string'),
+                new OA\Property(property: 'status', type: 'string', example: 'cancelled'),
+            ]),
         ])
     )]
     public function cancelPaymentRequest(Request $request, string $paymentId): JsonResponse
@@ -502,9 +630,9 @@ class MobileCommerceController extends Controller
         // Demo implementation — in production, update database
         return response()->json([
             'success' => true,
-            'data'    => [
-                'id'           => $paymentId,
-                'status'       => 'cancelled',
+            'data' => [
+                'id' => $paymentId,
+                'status' => 'cancelled',
                 'cancelled_at' => now()->toIso8601String(),
             ],
         ]);
@@ -524,8 +652,8 @@ class MobileCommerceController extends Controller
         response: 200,
         description: 'Recent payments',
         content: new OA\JsonContent(properties: [
-        new OA\Property(property: 'success', type: 'boolean', example: true),
-        new OA\Property(property: 'data', type: 'array', items: new OA\Items(type: 'object')),
+            new OA\Property(property: 'success', type: 'boolean', example: true),
+            new OA\Property(property: 'data', type: 'array', items: new OA\Items(type: 'object')),
         ])
     )]
     public function recentPayments(Request $request): JsonResponse
@@ -533,7 +661,7 @@ class MobileCommerceController extends Controller
         // Demo implementation — return empty list
         return response()->json([
             'success' => true,
-            'data'    => [],
+            'data' => [],
         ]);
     }
 }
