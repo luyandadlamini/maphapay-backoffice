@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Domain\Commerce\Services\MerchantOnboardingService;
+use App\Domain\Mobile\Services\HighRiskActionTrustPolicy;
+use App\Domain\Payment\Services\PaymentLinkService;
 use App\Http\Controllers\Api\Commerce\MobileCommerceController;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -12,12 +14,16 @@ uses(UnitTestCase::class);
 
 beforeEach(function (): void {
     $this->merchantService = Mockery::mock(MerchantOnboardingService::class);
+    $this->paymentLinkService = Mockery::mock(PaymentLinkService::class);
+    $this->trustPolicy = Mockery::mock(HighRiskActionTrustPolicy::class);
 });
 
 function makeCommerceController($test): MobileCommerceController
 {
     return new MobileCommerceController(
         $test->merchantService,
+        $test->paymentLinkService,
+        $test->trustPolicy,
     );
 }
 
@@ -39,6 +45,35 @@ function commerceUserRequest(string $uri, string $method = 'GET', array $data = 
 // see Feature/Api/Commerce/MobileCommerceDetailTest for DB-backed merchant tests.
 
 describe('MobileCommerceController parseQr', function (): void {
+    it('resolves canonical payment-link token authority', function (): void {
+        $controller = makeCommerceController($this);
+
+        $this->paymentLinkService
+            ->shouldReceive('getPaymentLinkData')
+            ->once()
+            ->with('tokenabc12345')
+            ->andReturn([
+                'display_name' => 'Token Requester',
+                'amount' => '125.50',
+                'asset_code' => 'USDC',
+                'currency' => 'SZL',
+                'note' => 'Invoice payment',
+            ]);
+
+        $request = commerceUserRequest('/api/v1/commerce/parse-qr', 'POST', [
+            'qr_data' => 'https://pay.maphapay.com/r/tokenabc12345',
+        ]);
+
+        $response = $controller->parseQr($request);
+        $data = $response->getData(true);
+
+        expect($data['success'])->toBeTrue()
+            ->and($data['data']['authority_source'])->toBe('payment_link_token')
+            ->and($data['data']['payment_link_token'])->toBe('tokenabc12345')
+            ->and($data['data']['amount_binding'])->toBe('fixed')
+            ->and($data['data']['amount'])->toBe('125.50');
+    });
+
     it('parses valid QR code data', function (): void {
         $controller = makeCommerceController($this);
 
@@ -74,9 +109,9 @@ describe('MobileCommerceController createPaymentRequest', function (): void {
 
         $request = commerceUserRequest('/api/v1/commerce/payment-requests', 'POST', [
             'merchant_id' => 'merchant_001',
-            'amount'      => '25.00',
-            'asset'       => 'USDC',
-            'network'     => 'polygon',
+            'amount' => '25.00',
+            'asset' => 'USDC',
+            'network' => 'polygon',
         ]);
 
         $response = $controller->createPaymentRequest($request);
@@ -90,6 +125,92 @@ describe('MobileCommerceController createPaymentRequest', function (): void {
 });
 
 describe('MobileCommerceController processPayment', function (): void {
+    it('denies payment when trust policy returns deny', function (): void {
+        $controller = makeCommerceController($this);
+
+        $this->paymentLinkService
+            ->shouldReceive('isValidPaymentToken')
+            ->once()
+            ->with('good-token')
+            ->andReturn(true);
+
+        $this->trustPolicy
+            ->shouldReceive('evaluate')
+            ->once()
+            ->andReturn([
+                'decision' => 'deny',
+                'reason' => 'attestation_required',
+                'attestation_verified' => false,
+                'record_id' => 'record-deny-1',
+            ]);
+
+        $request = commerceUserRequest('/api/v1/commerce/payments', 'POST', [
+            'payment_link_token' => 'good-token',
+        ]);
+
+        $response = $controller->processPayment($request);
+        $data = $response->getData(true);
+
+        expect($response->getStatusCode())->toBe(403)
+            ->and($data['success'])->toBeFalse()
+            ->and($data['error']['code'])->toBe('TRUST_POLICY_DENY')
+            ->and($data['error']['trust_decision'])->toBe('deny');
+    });
+
+    it('rejects invalid payment-link token authority', function (): void {
+        $controller = makeCommerceController($this);
+
+        $this->paymentLinkService
+            ->shouldReceive('isValidPaymentToken')
+            ->once()
+            ->with('invalid-token')
+            ->andReturn(false);
+
+        $request = commerceUserRequest('/api/v1/commerce/payments', 'POST', [
+            'payment_link_token' => 'invalid-token',
+        ]);
+
+        $response = $controller->processPayment($request);
+        $data = $response->getData(true);
+
+        expect($response->getStatusCode())->toBe(422)
+            ->and($data['success'])->toBeFalse()
+            ->and($data['error']['code'])->toBe('INVALID_PAYMENT_LINK_TOKEN');
+    });
+
+    it('accepts valid payment-link token authority', function (): void {
+        $controller = makeCommerceController($this);
+
+        $this->paymentLinkService
+            ->shouldReceive('isValidPaymentToken')
+            ->once()
+            ->with('good-token')
+            ->andReturn(true);
+
+        $this->trustPolicy
+            ->shouldReceive('evaluate')
+            ->once()
+            ->andReturn([
+                'decision' => 'allow',
+                'reason' => 'attestation_disabled',
+                'attestation_verified' => false,
+                'record_id' => 'record-allow-1',
+            ]);
+
+        $request = commerceUserRequest('/api/v1/commerce/payments', 'POST', [
+            'payment_link_token' => 'good-token',
+        ]);
+
+        $response = $controller->processPayment($request);
+        $data = $response->getData(true);
+
+        expect($response->getStatusCode())->toBe(201)
+            ->and($data['success'])->toBeTrue()
+            ->and($data['data']['authority_source'])->toBe('payment_link_token')
+            ->and($data['data']['payment_link_token'])->toBe('good-token')
+            ->and($data['data']['trust_decision'])->toBe('allow');
+    });
+
     it('processes a payment', function (): void {
         $controller = makeCommerceController($this);
 
@@ -112,8 +233,8 @@ describe('MobileCommerceController generateQr', function (): void {
         $controller = makeCommerceController($this);
 
         $request = commerceUserRequest('/api/v1/commerce/generate-qr', 'POST', [
-            'amount'  => '100.00',
-            'asset'   => 'USDC',
+            'amount' => '100.00',
+            'asset' => 'USDC',
             'network' => 'polygon',
         ]);
 
