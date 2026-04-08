@@ -38,27 +38,13 @@ class PaymentLinkService
 
     public function isValidPaymentToken(?string $token): bool
     {
-        if (! $token) {
-            return false;
-        }
-
-        $moneyRequest = MoneyRequest::query()
-            ->where('payment_token', $token)
-            ->where('expires_at', '>', now())
-            ->whereNull('paid_at')
-            ->first();
-
-        return $moneyRequest !== null;
+        return $this->resolveValidMoneyRequest($token) !== null;
     }
 
     /** @return array<string, mixed>|null */
     public function getPaymentLinkData(string $token): ?array
     {
-        $moneyRequest = MoneyRequest::query()
-            ->where('payment_token', $token)
-            ->where('expires_at', '>', now())
-            ->whereNull('paid_at')
-            ->first();
+        $moneyRequest = $this->resolveValidMoneyRequest($token);
 
         if (! $moneyRequest) {
             return null;
@@ -69,7 +55,7 @@ class PaymentLinkService
 
         return [
             'display_name' => $requester !== null ? $requester->name : 'Unknown',
-            'avatar_url'   => $requester !== null ? $requester->profile_photo_url : null,
+            'avatar_url'   => $requester !== null ? $requester->getAttribute('profile_photo_url') : null,
             'amount'       => $moneyRequest->amount,
             'note'         => $moneyRequest->note,
             'currency'     => 'SZL',
@@ -85,5 +71,19 @@ class PaymentLinkService
         ]);
 
         return $moneyRequest->fresh() ?? $moneyRequest;
+    }
+
+    public function resolveValidMoneyRequest(?string $token): ?MoneyRequest
+    {
+        if (! $token) {
+            return null;
+        }
+
+        return MoneyRequest::query()
+            ->where('payment_token', $token)
+            ->where('expires_at', '>', now())
+            ->where('status', MoneyRequest::STATUS_PENDING)
+            ->whereNull('paid_at')
+            ->first();
     }
 }

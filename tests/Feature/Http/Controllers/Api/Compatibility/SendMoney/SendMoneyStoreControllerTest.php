@@ -9,6 +9,7 @@ use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\AuthorizedTransaction\Services\InternalP2pTransferService;
 use App\Domain\Shared\OperationRecord\OperationRecord;
+use App\Models\MoneyRequest;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
@@ -150,6 +151,100 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
         $txn = AuthorizedTransaction::where('trx', $trx)->firstOrFail();
 
         $this->assertSame('00000000-0000-0000-0000-000000000001', $txn->payload['_idempotency_key'] ?? null);
+    }
+
+    #[Test]
+    public function test_store_accepts_payment_link_token_as_authoritative_send_money_input(): void
+    {
+        config([
+            'maphapay_migration.enable_send_money' => true,
+        ]);
+
+        $moneyRequest = MoneyRequest::query()->create([
+            'id' => (string) Str::uuid(),
+            'requester_user_id' => $this->recipient->id,
+            'recipient_user_id' => $this->sender->id,
+            'amount' => '150.75',
+            'asset_code' => 'SZL',
+            'note' => 'Invoice 42',
+            'status' => MoneyRequest::STATUS_PENDING,
+            'payment_token' => 'LINKTOKEN123',
+            'expires_at' => now()->addDay(),
+        ]);
+
+        Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
+
+        $response = $this->postJson('/api/send-money/store', [
+            'payment_link_token' => 'LINKTOKEN123',
+            'verification_type' => 'pin',
+            'user' => 'malicious-override@example.com',
+            'amount' => '999.99',
+            'note' => 'tampered note',
+            'attestation' => 'test-attestation-token',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success');
+
+        $trx = (string) $response->json('data.trx');
+        /** @var AuthorizedTransaction $txn */
+        $txn = AuthorizedTransaction::query()->where('trx', $trx)->firstOrFail();
+
+        $this->assertSame('LINKTOKEN123', $txn->payload['payment_link_token'] ?? null);
+        $this->assertSame($moneyRequest->id, $txn->payload['money_request_id'] ?? null);
+        $this->assertSame('150.75', $txn->payload['amount'] ?? null);
+        $this->assertSame('Invoice 42', $txn->payload['note'] ?? null);
+    }
+
+    #[Test]
+    public function test_verified_payment_link_send_money_marks_money_request_paid(): void
+    {
+        config([
+            'maphapay_migration.enable_send_money' => true,
+            'maphapay_migration.enable_verification' => true,
+        ]);
+
+        $this->sender->update(['transaction_pin' => bcrypt('1234'), 'transaction_pin_enabled' => true]);
+
+        $moneyRequest = MoneyRequest::query()->create([
+            'id' => (string) Str::uuid(),
+            'requester_user_id' => $this->recipient->id,
+            'recipient_user_id' => $this->sender->id,
+            'amount' => '15.25',
+            'asset_code' => 'SZL',
+            'note' => 'Utilities',
+            'status' => MoneyRequest::STATUS_PENDING,
+            'payment_token' => 'LINKTOKEN456',
+            'expires_at' => now()->addDay(),
+        ]);
+
+        Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
+
+        $initResponse = $this->postJson('/api/send-money/store', [
+            'payment_link_token' => 'LINKTOKEN456',
+            'verification_type' => 'pin',
+            'amount' => '1.00',
+            'attestation' => 'test-attestation-token',
+        ]);
+
+        $initResponse->assertOk()
+            ->assertJsonPath('data.next_step', 'pin');
+
+        $trx = (string) $initResponse->json('data.trx');
+
+        $verifyResponse = $this->postJson('/api/verification-process/verify/pin', [
+            'trx' => $trx,
+            'pin' => '1234',
+            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
+        ]);
+
+        $verifyResponse->assertOk()
+            ->assertJsonPath('data.amount', '15.25');
+
+        $moneyRequest->refresh();
+
+        $this->assertSame(MoneyRequest::STATUS_FULFILLED, $moneyRequest->status);
+        $this->assertNotNull($moneyRequest->paid_at);
     }
 
     #[Test]

@@ -7,6 +7,8 @@ namespace App\Domain\AuthorizedTransaction\Handlers;
 use App\Domain\AuthorizedTransaction\Contracts\AuthorizedTransactionHandlerInterface;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\AuthorizedTransaction\Services\InternalP2pTransferService;
+use App\Domain\Payment\Services\PaymentLinkService;
+use App\Models\MoneyRequest;
 use InvalidArgumentException;
 
 /**
@@ -24,6 +26,7 @@ class SendMoneyHandler implements AuthorizedTransactionHandlerInterface
 {
     public function __construct(
         private readonly InternalP2pTransferService $transferService,
+        private readonly PaymentLinkService $paymentLinkService,
     ) {
     }
 
@@ -44,6 +47,7 @@ class SendMoneyHandler implements AuthorizedTransactionHandlerInterface
         $assetCode = $payload['asset_code'] ?? 'SZL';
         $reference = $payload['reference'] ?? $transaction->trx;
         $note = $payload['note'] ?? null;
+        $moneyRequestId = $payload['money_request_id'] ?? null;
 
         if (! $fromAccountUuid || ! $toAccountUuid || ! $amountStr) {
             throw new InvalidArgumentException('SendMoneyHandler: missing required payload keys.');
@@ -52,6 +56,19 @@ class SendMoneyHandler implements AuthorizedTransactionHandlerInterface
         // Guard: Prevent zero or negative amount transactions from being finalized.
         if ((float) $amountStr <= 0) {
             throw new InvalidArgumentException("SendMoneyHandler: Invalid transaction amount detected: {$amountStr}");
+        }
+
+        $moneyRequest = null;
+        if (is_string($moneyRequestId) && $moneyRequestId !== '') {
+            $moneyRequest = MoneyRequest::query()
+                ->whereKey($moneyRequestId)
+                ->where('status', MoneyRequest::STATUS_PENDING)
+                ->whereNull('paid_at')
+                ->first();
+
+            if (! $moneyRequest instanceof MoneyRequest) {
+                throw new InvalidArgumentException('SendMoneyHandler: payment link request is no longer payable.');
+            }
         }
 
         $transfer = $this->transferService->execute(
@@ -63,6 +80,10 @@ class SendMoneyHandler implements AuthorizedTransactionHandlerInterface
             operationType: 'send_money',
             note: is_string($note) ? $note : null,
         );
+
+        if ($moneyRequest instanceof MoneyRequest) {
+            $this->paymentLinkService->markAsPaid($moneyRequest);
+        }
 
         return [
             'trx'        => $transaction->trx,

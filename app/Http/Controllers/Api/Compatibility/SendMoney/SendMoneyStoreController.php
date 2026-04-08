@@ -11,8 +11,10 @@ use App\Domain\AuthorizedTransaction\Services\AuthorizedTransactionManager;
 use App\Domain\AuthorizedTransaction\Services\MoneyMovementVerificationPolicyResolver;
 use App\Domain\Mobile\Services\HighRiskActionTrustPolicy;
 use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
+use App\Domain\Payment\Services\PaymentLinkService;
 use App\Domain\Shared\Money\MoneyConverter;
 use App\Http\Controllers\Controller;
+use App\Models\MoneyRequest;
 use App\Models\User;
 use App\Rules\MajorUnitAmountString;
 use Illuminate\Http\JsonResponse;
@@ -40,13 +42,15 @@ class SendMoneyStoreController extends Controller
         private readonly MoneyMovementVerificationPolicyResolver $verificationPolicyResolver,
         private readonly MaphaPayMoneyMovementTelemetry $telemetry,
         private readonly HighRiskActionTrustPolicy $trustPolicy,
+        private readonly PaymentLinkService $paymentLinkService,
     ) {}
 
     public function __invoke(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'user' => ['required', 'string'],
-            'amount' => ['required', 'string', new MajorUnitAmountString],
+            'payment_link_token' => ['sometimes', 'nullable', 'string'],
+            'user' => ['required_without:payment_link_token', 'string'],
+            'amount' => ['required_without:payment_link_token', 'string', new MajorUnitAmountString],
             'note' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'verification_type' => ['sometimes', 'nullable', 'string', Rule::in(['sms', 'email', 'pin', 'none'])],
             'asset_code' => ['sometimes', 'string', 'exists:assets,code'],
@@ -59,10 +63,37 @@ class SendMoneyStoreController extends Controller
         $idempotencyKey = (string) $request->header('Idempotency-Key', '')
             ?: (string) $request->header('X-Idempotency-Key', '');
 
-        $recipient = $this->resolvePayeeUser((string) $validated['user']);
+        $paymentLinkToken = isset($validated['payment_link_token'])
+            ? trim((string) $validated['payment_link_token'])
+            : '';
+        $moneyRequest = null;
+
+        if ($paymentLinkToken !== '') {
+            $moneyRequest = $this->paymentLinkService->resolveValidMoneyRequest($paymentLinkToken);
+            if (! $moneyRequest instanceof MoneyRequest) {
+                return $this->errorResponse($request, 'Payment link token is invalid or expired.', 422, [
+                    'event' => 'send_money_initiation_failed',
+                ]);
+            }
+
+            if ((int) $moneyRequest->recipient_user_id !== (int) $authUser->id) {
+                return $this->errorResponse($request, 'This payment link is not available for the authenticated user.', 403, [
+                    'event' => 'send_money_initiation_failed',
+                    'money_request_id' => $moneyRequest->id,
+                ]);
+            }
+
+            /** @var User|null $resolvedRecipient */
+            $resolvedRecipient = User::query()->find($moneyRequest->requester_user_id);
+            $recipient = $resolvedRecipient;
+        } else {
+            $recipient = $this->resolvePayeeUser((string) $validated['user']);
+        }
+
         if (! $recipient) {
             return $this->errorResponse($request, 'Recipient not found.', 422, [
                 'event' => 'send_money_initiation_failed',
+                'payment_link_token' => $paymentLinkToken !== '' ? $paymentLinkToken : null,
             ]);
         }
 
@@ -97,7 +128,9 @@ class SendMoneyStoreController extends Controller
             ]);
         }
 
-        $assetCode = $validated['asset_code'] ?? 'SZL';
+        $assetCode = $moneyRequest instanceof MoneyRequest
+            ? $moneyRequest->asset_code
+            : ($validated['asset_code'] ?? 'SZL');
         $asset = Asset::query()->where('code', $assetCode)->first();
         if (! $asset) {
             return $this->errorResponse($request, "Unknown asset: {$assetCode}", 422, [
@@ -107,7 +140,10 @@ class SendMoneyStoreController extends Controller
         }
 
         try {
-            $normalizedAmount = MoneyConverter::normalise($validated['amount'], $asset->precision);
+            $requestedAmount = $moneyRequest instanceof MoneyRequest
+                ? $moneyRequest->amount
+                : $validated['amount'];
+            $normalizedAmount = MoneyConverter::normalise($requestedAmount, $asset->precision);
             if ((float) $normalizedAmount <= 0) {
                 return $this->errorResponse($request, 'Amount must be greater than zero.', 422, [
                     'event' => 'send_money_initiation_failed',
@@ -139,9 +175,15 @@ class SendMoneyStoreController extends Controller
             'to_account_uuid' => $toAccount->uuid,
             'amount' => $normalizedAmount,
             'asset_code' => $asset->code,
-            'note' => $validated['note'] ?? '',
+            'note' => $moneyRequest instanceof MoneyRequest
+                ? ($moneyRequest->note ?? '')
+                : ($validated['note'] ?? ''),
             '_verification_policy' => $policy,
         ];
+        if ($moneyRequest instanceof MoneyRequest) {
+            $payload['money_request_id'] = (string) $moneyRequest->id;
+            $payload['payment_link_token'] = $paymentLinkToken;
+        }
 
         $replayedTxn = $this->findExistingInitiationReplay(
             userId: (int) $authUser->getAuthIdentifier(),
