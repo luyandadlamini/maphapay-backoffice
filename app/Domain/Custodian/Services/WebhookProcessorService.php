@@ -98,6 +98,9 @@ class WebhookProcessorService
                     'finality_status' => 'succeeded',
                 ]);
 
+                $webhook->refresh();
+                app(ProviderOperationService::class)->syncFromWebhook($webhook);
+
                 // Emit event for other parts of the system
                 event(
                     new TransactionStatusUpdated(
@@ -135,6 +138,9 @@ class WebhookProcessorService
                     'provider_reference' => $transactionId,
                     'finality_status' => 'failed',
                 ]);
+
+                $webhook->refresh();
+                app(ProviderOperationService::class)->syncFromWebhook($webhook);
 
                 // Emit event for other parts of the system
                 event(
@@ -189,6 +195,9 @@ class WebhookProcessorService
                     ),
                 ]);
 
+                $webhook->refresh();
+                app(ProviderOperationService::class)->syncFromWebhook($webhook);
+
                 // Emit event for balance update
                 event(
                     new AccountBalanceUpdated(
@@ -234,6 +243,9 @@ class WebhookProcessorService
                     'custodian_account_id' => $custodianAccount->uuid,
                     'provider_reference' => $accountId,
                 ]);
+
+                $webhook->refresh();
+                app(ProviderOperationService::class)->syncFromWebhook($webhook);
 
                 // Sync account status
                 $this->accountService->syncAccountStatus($custodianAccount);

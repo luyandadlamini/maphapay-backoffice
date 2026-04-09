@@ -92,6 +92,7 @@ class CustodianWebhook extends Model
         'settlement_reference',
         'reconciliation_reference',
         'ledger_posting_reference',
+        'provider_operation_id',
     ];
 
     /**
@@ -123,6 +124,12 @@ class CustodianWebhook extends Model
     public function custodianAccount(): BelongsTo
     {
         return $this->belongsTo(CustodianAccount::class, 'custodian_account_id', 'uuid');
+    }
+
+    /** @return BelongsTo<ProviderOperation, $this> */
+    public function providerOperation(): BelongsTo
+    {
+        return $this->belongsTo(ProviderOperation::class, 'provider_operation_id');
     }
 
     /**
