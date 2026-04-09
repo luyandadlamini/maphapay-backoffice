@@ -8,6 +8,7 @@ use App\Domain\Custodian\Models\CustodianTransfer;
 use App\Domain\Custodian\Services\DailyReconciliationService;
 use App\Filament\Admin\Resources\ReconciliationReportResource;
 use App\Support\Reconciliation\ReconciliationReportDataLoader;
+use App\Support\Reconciliation\ReconciliationReportRecord;
 use Exception;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
@@ -51,15 +52,18 @@ class ListReconciliationReports extends ListRecords
     public function getTableRecords(): Collection|LengthAwarePaginator
     {
         $reports = app(ReconciliationReportDataLoader::class)->load();
+        $records = $reports
+            ->map(fn (array $report): ReconciliationReportRecord => ReconciliationReportRecord::fromArray($report))
+            ->values();
 
         // Convert to paginator
         $page = request()->get('page', 1);
         $perPage = 10;
-        $slice = $reports->slice(($page - 1) * $perPage, $perPage);
+        $slice = $records->slice(($page - 1) * $perPage, $perPage);
 
         return new LengthAwarePaginator(
             $slice,
-            $reports->count(),
+            $records->count(),
             $perPage,
             $page,
             ['path' => request()->url()]

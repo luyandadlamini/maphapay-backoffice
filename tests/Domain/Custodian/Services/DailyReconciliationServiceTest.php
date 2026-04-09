@@ -6,6 +6,7 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Custodian\Events\ReconciliationCompleted;
 use App\Domain\Custodian\Events\ReconciliationDiscrepancyFound;
 use App\Domain\Custodian\Models\CustodianAccount;
+use App\Domain\Custodian\Models\ProviderOperation;
 use App\Domain\Custodian\Services\BalanceSynchronizationService;
 use App\Domain\Custodian\Services\CustodianRegistry;
 use App\Domain\Custodian\Services\DailyReconciliationService;
@@ -262,6 +263,117 @@ it('attaches latest ledger posting context to balance discrepancies when posted 
             'transfer_reference' => 'transfer-original',
             'related_posting_id' => '11111111-1111-1111-1111-111111111111',
         ]);
+});
+
+it('marks matching provider operations as reconciliation exceptions and exposes canonical state in discrepancies', function () {
+    Event::fake();
+
+    $this->syncService->shouldReceive('synchronizeAllBalances')
+        ->once()
+        ->andReturn(['synchronized' => 10, 'failed' => 0, 'skipped' => 0]);
+
+    $account = Account::factory()->create();
+    $account->balances()->create([
+        'asset_code' => 'USD',
+        'balance' => 100000,
+    ]);
+
+    CustodianAccount::factory()->create([
+        'account_uuid' => $account->uuid,
+        'custodian_name' => 'test_bank',
+        'custodian_account_id' => '123',
+        'status' => 'active',
+    ]);
+
+    $mockConnector = Mockery::mock(App\Domain\Custodian\Contracts\ICustodianConnector::class);
+    $mockConnector->shouldReceive('isAvailable')->andReturn(true);
+    $mockConnector->shouldReceive('getAccountInfo')->andReturn(
+        new App\Domain\Custodian\ValueObjects\AccountInfo(
+            accountId: '123',
+            name: 'Test Account',
+            status: 'active',
+            balances: ['USD' => 95000],
+            currency: 'USD',
+            type: 'checking',
+            createdAt: now()
+        )
+    );
+
+    $this->custodianRegistry->shouldReceive('getConnector')
+        ->with('test_bank')
+        ->andReturn($mockConnector);
+
+    DB::table('ledger_postings')->insert([
+        'id' => '55555555-5555-5555-5555-555555555555',
+        'authorized_transaction_id' => null,
+        'authorized_transaction_trx' => 'TRXRECON0000000000000000000003',
+        'posting_type' => 'send_money',
+        'status' => 'posted',
+        'asset_code' => 'USD',
+        'transfer_reference' => 'provider-transfer-001',
+        'money_request_id' => null,
+        'rule_version' => 1,
+        'entries_hash' => str_repeat('c', 64),
+        'metadata' => json_encode([], JSON_THROW_ON_ERROR),
+        'posted_at' => now()->subMinute(),
+        'created_at' => now()->subMinute(),
+        'updated_at' => now()->subMinute(),
+    ]);
+
+    DB::table('ledger_entries')->insert([
+        'id' => '66666666-6666-6666-6666-666666666666',
+        'ledger_posting_id' => '55555555-5555-5555-5555-555555555555',
+        'account_uuid' => $account->uuid,
+        'asset_code' => 'USD',
+        'signed_amount' => -100000,
+        'entry_type' => 'debit',
+        'metadata' => json_encode(['role' => 'sender'], JSON_THROW_ON_ERROR),
+        'created_at' => now()->subMinute(),
+        'updated_at' => now()->subMinute(),
+    ]);
+
+    ProviderOperation::query()->create([
+        'provider_family' => 'custodian',
+        'provider_name' => 'test_bank',
+        'operation_type' => 'transfer',
+        'operation_key' => 'custodian:test_bank:transfer:provider-transfer-001',
+        'normalized_event_type' => 'payment_succeeded',
+        'provider_reference' => 'provider-transfer-001',
+        'internal_reference' => $account->uuid,
+        'finality_status' => 'succeeded',
+        'settlement_status' => 'completed',
+        'reconciliation_status' => 'pending',
+        'settlement_reference' => 'NET_SETTLEMENT_001',
+        'reconciliation_reference' => null,
+        'ledger_posting_reference' => null,
+        'metadata' => [
+            'source' => 'test',
+        ],
+    ]);
+
+    $result = $this->reconciliationService->performDailyReconciliation();
+
+    $discrepancy = collect($result['discrepancies'])
+        ->firstWhere('account_uuid', $account->uuid);
+
+    expect($discrepancy)->not->toBeNull()
+        ->and($discrepancy['provider_operation'])->toMatchArray([
+            'provider_name' => 'test_bank',
+            'provider_reference' => 'provider-transfer-001',
+            'finality_status' => 'succeeded',
+            'settlement_status' => 'completed',
+            'reconciliation_status' => 'exception',
+            'settlement_reference' => 'NET_SETTLEMENT_001',
+            'ledger_posting_reference' => '55555555-5555-5555-5555-555555555555',
+        ]);
+
+    $this->assertDatabaseHas('provider_operations', [
+        'provider_name' => 'test_bank',
+        'provider_reference' => 'provider-transfer-001',
+        'reconciliation_status' => 'exception',
+        'reconciliation_reference' => $discrepancy['reconciliation_reference'],
+        'ledger_posting_reference' => '55555555-5555-5555-5555-555555555555',
+    ]);
 });
 
 it('detects orphaned balances', function () {

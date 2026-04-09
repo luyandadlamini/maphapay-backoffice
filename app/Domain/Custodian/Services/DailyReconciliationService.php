@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Domain\Custodian\Services;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Custodian\Enums\ProviderReconciliationStatus;
 use App\Domain\Custodian\Models\CustodianWebhook;
+use App\Domain\Custodian\Models\ProviderOperation;
 use App\Domain\Custodian\Events\ReconciliationCompleted;
 use App\Domain\Custodian\Events\ReconciliationDiscrepancyFound;
 use App\Domain\Custodian\Mail\ReconciliationReport;
@@ -136,6 +138,7 @@ class DailyReconciliationService
                 ];
 
                 $discrepancy = array_merge($discrepancy, $this->buildOrchestrationReferences($account, $assetCode));
+                $discrepancy = $this->markProviderOperationAsException($discrepancy);
 
                 $this->discrepancies[] = $discrepancy;
                 $this->reconciliationResults['discrepancies_found']++;
@@ -145,6 +148,8 @@ class DailyReconciliationService
                 event(new ReconciliationDiscrepancyFound($discrepancy));
 
                 Log::warning('Reconciliation discrepancy found', $discrepancy);
+            } else {
+                $this->markProviderOperationAsMatched($account, $assetCode);
             }
         }
     }
@@ -217,12 +222,14 @@ class DailyReconciliationService
     {
         // Check for balances without corresponding custodian accounts
         if ($account->balances->isNotEmpty() && $account->custodianAccounts->isEmpty()) {
-            $this->discrepancies[] = [
+            $discrepancy = [
                 'account_uuid' => $account->uuid,
                 'type'         => 'orphaned_balance',
                 'message'      => 'Account has balances but no custodian accounts',
                 'detected_at'  => now(),
             ] + $this->buildOrchestrationReferences($account, null);
+
+            $this->discrepancies[] = $this->markProviderOperationAsException($discrepancy);
 
             $this->reconciliationResults['discrepancies_found']++;
         }
@@ -244,7 +251,7 @@ class DailyReconciliationService
                 $custodianAccount->last_synced_at &&
                 $custodianAccount->last_synced_at->isBefore($staleCutoff)
             ) {
-                $this->discrepancies[] = [
+                $discrepancy = [
                     'account_uuid'   => $account->uuid,
                     'custodian_id'   => $custodianAccount->custodian_name,
                     'type'           => 'stale_data',
@@ -252,6 +259,8 @@ class DailyReconciliationService
                     'last_synced_at' => $custodianAccount->last_synced_at,
                     'detected_at'    => now(),
                 ] + $this->buildOrchestrationReferences($account, null, $custodianAccount->custodian_account_id);
+
+                $this->discrepancies[] = $this->markProviderOperationAsException($discrepancy);
 
                 $this->reconciliationResults['discrepancies_found']++;
             }
@@ -323,15 +332,35 @@ class DailyReconciliationService
         $ledgerPostingContext = $assetCode !== null
             ? $this->resolveLatestLedgerPostingContext($account, $assetCode)
             : null;
+        $references = $this->referenceBuilder->build(
+            $this->reconciliationResults['date'],
+            $account->uuid,
+            $assetCode,
+            $resolvedProviderReference,
+            $ledgerPostingContext,
+        );
+        $providerOperation = $this->resolveProviderOperationContext(
+            providerReference: $resolvedProviderReference,
+            internalReference: $account->uuid,
+            ledgerPostingContext: $ledgerPostingContext,
+            reconciliationReference: is_string($references['reconciliation_reference'] ?? null)
+                ? $references['reconciliation_reference']
+                : null,
+            settlementReference: is_string($references['settlement_reference'] ?? null)
+                ? $references['settlement_reference']
+                : null,
+        );
+
+        if ($providerOperation === null) {
+            return $references;
+        }
 
         return [
-            ...$this->referenceBuilder->build(
-                $this->reconciliationResults['date'],
-                $account->uuid,
-                $assetCode,
-                $resolvedProviderReference,
-                $ledgerPostingContext,
-            ),
+            ...$references,
+            'provider_operation' => $providerOperation,
+            'provider_reference' => $references['provider_reference'] ?? $providerOperation['provider_reference'] ?? null,
+            'settlement_reference' => $references['settlement_reference'] ?? $providerOperation['settlement_reference'] ?? null,
+            'ledger_posting_reference' => $references['ledger_posting_reference'] ?? $providerOperation['ledger_posting_reference'] ?? null,
         ];
     }
 
@@ -408,19 +437,204 @@ class DailyReconciliationService
                 'reconciliation_status',
                 'status',
                 'processed_at',
+                'provider_operation_id',
             ])
-            ->map(fn (CustodianWebhook $webhook): array => [
-                'custodian_name' => $webhook->custodian_name,
-                'event_type' => $webhook->event_type,
-                'normalized_event_type' => $webhook->normalized_event_type,
-                'provider_reference' => $webhook->provider_reference,
-                'finality_status' => $webhook->finality_status,
-                'settlement_status' => $webhook->settlement_status,
-                'reconciliation_status' => $webhook->reconciliation_status,
-                'status' => $webhook->status,
-                'processed_at' => $webhook->processed_at?->toDateTimeString(),
-            ])
+            ->map(function (CustodianWebhook $webhook): array {
+                $providerOperation = $this->resolveProviderOperationContext(
+                    providerReference: $webhook->provider_reference,
+                    internalReference: null,
+                    ledgerPostingContext: null,
+                    reconciliationReference: null,
+                    settlementReference: $webhook->settlement_reference,
+                    providerOperationId: $webhook->provider_operation_id,
+                );
+
+                return array_filter([
+                    'custodian_name' => $webhook->custodian_name,
+                    'event_type' => $webhook->event_type,
+                    'normalized_event_type' => $webhook->normalized_event_type,
+                    'provider_reference' => $webhook->provider_reference,
+                    'finality_status' => $webhook->finality_status,
+                    'settlement_status' => $webhook->settlement_status,
+                    'reconciliation_status' => $webhook->reconciliation_status,
+                    'status' => $webhook->status,
+                    'processed_at' => $webhook->processed_at?->toDateTimeString(),
+                    'provider_operation' => $providerOperation,
+                ], static fn (mixed $value): bool => $value !== null);
+            })
             ->all();
+    }
+
+    private function markProviderOperationAsMatched(Account $account, string $assetCode): void
+    {
+        $references = $this->buildOrchestrationReferences($account, $assetCode);
+        $providerOperation = $references['provider_operation'] ?? null;
+
+        if (! is_array($providerOperation) || ! is_string($providerOperation['id'] ?? null)) {
+            return;
+        }
+
+        $this->updateProviderOperationReconciliationState(
+            $providerOperation['id'],
+            ProviderReconciliationStatus::MATCHED,
+            is_string($references['reconciliation_reference'] ?? null) ? $references['reconciliation_reference'] : null,
+            is_string($references['ledger_posting_reference'] ?? null) ? $references['ledger_posting_reference'] : null,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $discrepancy
+     * @return array<string, mixed>
+     */
+    private function markProviderOperationAsException(array $discrepancy): array
+    {
+        $providerOperation = $discrepancy['provider_operation'] ?? null;
+
+        if (! is_array($providerOperation) || ! is_string($providerOperation['id'] ?? null)) {
+            return $discrepancy;
+        }
+
+        $updatedProviderOperation = $this->updateProviderOperationReconciliationState(
+            $providerOperation['id'],
+            ProviderReconciliationStatus::EXCEPTION,
+            is_string($discrepancy['reconciliation_reference'] ?? null) ? $discrepancy['reconciliation_reference'] : null,
+            is_string($discrepancy['ledger_posting_reference'] ?? null) ? $discrepancy['ledger_posting_reference'] : null,
+        );
+
+        if ($updatedProviderOperation !== null) {
+            $discrepancy['provider_operation'] = $updatedProviderOperation;
+            $discrepancy['settlement_reference'] = $discrepancy['settlement_reference'] ?? $updatedProviderOperation['settlement_reference'] ?? null;
+            $discrepancy['ledger_posting_reference'] = $discrepancy['ledger_posting_reference'] ?? $updatedProviderOperation['ledger_posting_reference'] ?? null;
+        }
+
+        return $discrepancy;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function updateProviderOperationReconciliationState(
+        string $providerOperationId,
+        ProviderReconciliationStatus $status,
+        ?string $reconciliationReference,
+        ?string $ledgerPostingReference,
+    ): ?array {
+        /** @var ProviderOperation|null $providerOperation */
+        $providerOperation = ProviderOperation::query()->find($providerOperationId);
+
+        if ($providerOperation === null) {
+            return null;
+        }
+
+        $providerOperation->reconciliation_status = $status;
+        $providerOperation->reconciliation_reference = $reconciliationReference ?? $providerOperation->reconciliation_reference;
+        $providerOperation->ledger_posting_reference = $ledgerPostingReference ?? $providerOperation->ledger_posting_reference;
+        $providerOperation->save();
+
+        return $this->formatProviderOperationSnapshot($providerOperation->fresh());
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $ledgerPostingContext
+     * @return array<string, mixed>|null
+     */
+    private function resolveProviderOperationContext(
+        ?string $providerReference,
+        ?string $internalReference,
+        ?array $ledgerPostingContext,
+        ?string $reconciliationReference,
+        ?string $settlementReference,
+        ?string $providerOperationId = null,
+    ): ?array {
+        $query = ProviderOperation::query()
+            ->where('provider_family', 'custodian');
+
+        if ($providerOperationId !== null && $providerOperationId !== '') {
+            /** @var ProviderOperation|null $providerOperation */
+            $providerOperation = $query->whereKey($providerOperationId)->first();
+
+            return $this->formatProviderOperationSnapshot($providerOperation);
+        }
+
+        $candidateProviderReferences = array_values(array_unique(array_filter([
+            $providerReference,
+            is_string($ledgerPostingContext['transfer_reference'] ?? null) ? $ledgerPostingContext['transfer_reference'] : null,
+        ], static fn (?string $value): bool => $value !== null && $value !== '')));
+
+        $ledgerPostingReference = is_string($ledgerPostingContext['id'] ?? null)
+            ? $ledgerPostingContext['id']
+            : null;
+
+        if (
+            $candidateProviderReferences === []
+            && $internalReference === null
+            && $reconciliationReference === null
+            && $settlementReference === null
+            && $ledgerPostingReference === null
+        ) {
+            return null;
+        }
+
+        /** @var ProviderOperation|null $providerOperation */
+        $providerOperation = $query
+            ->where(function ($builder) use (
+                $candidateProviderReferences,
+                $internalReference,
+                $reconciliationReference,
+                $settlementReference,
+                $ledgerPostingReference,
+            ): void {
+                if ($candidateProviderReferences !== []) {
+                    $builder->orWhereIn('provider_reference', $candidateProviderReferences);
+                }
+
+                if ($internalReference !== null && $internalReference !== '') {
+                    $builder->orWhere('internal_reference', $internalReference);
+                }
+
+                if ($reconciliationReference !== null && $reconciliationReference !== '') {
+                    $builder->orWhere('reconciliation_reference', $reconciliationReference);
+                }
+
+                if ($settlementReference !== null && $settlementReference !== '') {
+                    $builder->orWhere('settlement_reference', $settlementReference);
+                }
+
+                if ($ledgerPostingReference !== null && $ledgerPostingReference !== '') {
+                    $builder->orWhere('ledger_posting_reference', $ledgerPostingReference);
+                }
+            })
+            ->orderByDesc('updated_at')
+            ->orderByDesc('created_at')
+            ->first();
+
+        return $this->formatProviderOperationSnapshot($providerOperation);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function formatProviderOperationSnapshot(?ProviderOperation $providerOperation): ?array
+    {
+        if ($providerOperation === null) {
+            return null;
+        }
+
+        return array_filter([
+            'id' => $providerOperation->id,
+            'provider_family' => $providerOperation->provider_family,
+            'provider_name' => $providerOperation->provider_name,
+            'operation_type' => $providerOperation->operation_type->value,
+            'normalized_event_type' => $providerOperation->normalized_event_type,
+            'provider_reference' => $providerOperation->provider_reference,
+            'internal_reference' => $providerOperation->internal_reference,
+            'finality_status' => $providerOperation->finality_status->value,
+            'settlement_status' => $providerOperation->settlement_status->value,
+            'reconciliation_status' => $providerOperation->reconciliation_status->value,
+            'settlement_reference' => $providerOperation->settlement_reference,
+            'reconciliation_reference' => $providerOperation->reconciliation_reference,
+            'ledger_posting_reference' => $providerOperation->ledger_posting_reference,
+        ], static fn (mixed $value): bool => $value !== null && $value !== '');
     }
 
     /**

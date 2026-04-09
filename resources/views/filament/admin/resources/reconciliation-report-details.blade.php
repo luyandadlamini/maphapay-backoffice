@@ -59,6 +59,16 @@
                         <p><span class="font-medium">Event:</span> {{ $callback['event_type'] }} @if(!empty($callback['normalized_event_type']))<span class="text-gray-500">({{ $callback['normalized_event_type'] }})</span>@endif</p>
                         <p><span class="font-medium">Provider Reference:</span> {{ $callback['provider_reference'] ?? 'n/a' }}</p>
                         <p><span class="font-medium">Finality / Settlement / Reconciliation:</span> {{ $callback['finality_status'] ?? 'pending' }} / {{ $callback['settlement_status'] ?? 'pending' }} / {{ $callback['reconciliation_status'] ?? 'pending' }}</p>
+                        @if(!empty($callback['provider_operation']))
+                            <div class="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3">
+                                <p class="font-semibold text-blue-900">Canonical Provider Operation</p>
+                                <p><span class="font-medium">Provider:</span> {{ $callback['provider_operation']['provider_name'] ?? 'n/a' }}</p>
+                                <p><span class="font-medium">Reference:</span> {{ $callback['provider_operation']['provider_reference'] ?? 'n/a' }}</p>
+                                <p><span class="font-medium">Finality / Settlement / Reconciliation:</span> {{ $callback['provider_operation']['finality_status'] ?? 'pending' }} / {{ $callback['provider_operation']['settlement_status'] ?? 'pending' }} / {{ $callback['provider_operation']['reconciliation_status'] ?? 'pending' }}</p>
+                                <p><span class="font-medium">Settlement Reference:</span> {{ $callback['provider_operation']['settlement_reference'] ?? 'n/a' }}</p>
+                                <p><span class="font-medium">Ledger Posting Reference:</span> {{ $callback['provider_operation']['ledger_posting_reference'] ?? 'n/a' }}</p>
+                            </div>
+                        @endif
                     </div>
                 @endforeach
             </div>
@@ -88,6 +98,16 @@
                             <p><span class="font-medium">Reconciliation Reference:</span> {{ $discrepancy['reconciliation_reference'] ?? 'n/a' }}</p>
                             <p><span class="font-medium">Ledger Posting Reference:</span> {{ $discrepancy['ledger_posting_reference'] ?? 'pending-ledger-core' }}</p>
                             <p><span class="font-medium">Settlement Reference:</span> {{ $discrepancy['settlement_reference'] ?? 'n/a' }}</p>
+                            @if(!empty($discrepancy['provider_operation']))
+                                <div class="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3">
+                                    <p class="font-semibold text-blue-900">Canonical Provider Operation</p>
+                                    <p><span class="font-medium">Provider:</span> {{ $discrepancy['provider_operation']['provider_name'] ?? 'n/a' }}</p>
+                                    <p><span class="font-medium">Reference:</span> {{ $discrepancy['provider_operation']['provider_reference'] ?? 'n/a' }}</p>
+                                    <p><span class="font-medium">Finality / Settlement / Reconciliation:</span> {{ $discrepancy['provider_operation']['finality_status'] ?? 'pending' }} / {{ $discrepancy['provider_operation']['settlement_status'] ?? 'pending' }} / {{ $discrepancy['provider_operation']['reconciliation_status'] ?? 'pending' }}</p>
+                                    <p><span class="font-medium">Settlement Reference:</span> {{ $discrepancy['provider_operation']['settlement_reference'] ?? 'n/a' }}</p>
+                                    <p><span class="font-medium">Ledger Posting Reference:</span> {{ $discrepancy['provider_operation']['ledger_posting_reference'] ?? 'n/a' }}</p>
+                                </div>
+                            @endif
                             
                             @if($discrepancy['type'] === 'balance_mismatch')
                                 <p><span class="font-medium">Asset:</span> {{ $discrepancy['asset_code'] }}</p>
