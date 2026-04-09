@@ -24,6 +24,9 @@ class HighRiskActionTrustPolicy
         $attestation = trim((string) $request->input('attestation', ''));
         $deviceType = strtolower(trim((string) ($request->input('device_type') ?? $request->header('X-Mobile-Platform', ''))));
         $deviceId = trim((string) ($request->input('device_id') ?? $request->header('X-Device-ID', '')));
+        $devicePostureSource = strtolower(trim((string) $request->input('device_posture_source', '')));
+        $devicePostureStatus = strtolower(trim((string) $request->input('device_posture_status', '')));
+        $devicePostureReason = trim((string) $request->input('device_posture_reason', ''));
         $attestationStatus = strtolower(trim((string) $request->input('attestation_status', '')));
         $attestationCapabilityMode = strtolower(trim((string) $request->input('attestation_capability_mode', '')));
         $attestationCapabilityReason = trim((string) $request->input('attestation_capability_reason', ''));
@@ -61,7 +64,9 @@ class HighRiskActionTrustPolicy
             }
         } elseif ($attestation === '' && ! $deviceTrusted) {
             $decision = 'degrade';
-            $reason = 'attestation_disabled_device_untrusted';
+            $reason = $devicePostureStatus === 'simulator_or_emulator'
+                ? 'device_posture_untrusted'
+                : 'attestation_disabled_device_untrusted';
         }
 
         $record = MobileAttestationRecord::query()->create([
@@ -78,6 +83,11 @@ class HighRiskActionTrustPolicy
             'request_path' => $request->path(),
             'metadata' => [
                 'device_trusted' => $deviceTrusted,
+                'device_posture' => [
+                    'source' => $devicePostureSource !== '' ? $devicePostureSource : null,
+                    'status' => $devicePostureStatus !== '' ? $devicePostureStatus : null,
+                    'reason' => $devicePostureReason !== '' ? $devicePostureReason : null,
+                ],
                 'attestation_present' => $attestation !== '',
                 'attestation_status' => $attestationStatus !== '' ? $attestationStatus : null,
                 'attestation_capability' => [

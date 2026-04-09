@@ -127,6 +127,52 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
     }
 
     #[Test]
+    public function test_send_money_returns_a_posture_specific_degrade_reason_for_simulator_runtime_posture(): void
+    {
+        config([
+            'maphapay_migration.enable_send_money' => true,
+            'mobile.attestation.enabled' => false,
+        ]);
+
+        Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
+
+        $response = $this->postJson('/api/send-money/store', [
+            'user' => $this->recipient->email,
+            'amount' => '10.00',
+            'verification_type' => 'none',
+            'device_type' => 'ios',
+            'device_posture_source' => 'runtime-observed',
+            'device_posture_status' => 'simulator_or_emulator',
+            'device_posture_reason' => 'non_physical_device',
+        ]);
+
+        $response->assertStatus(428)
+            ->assertJson([
+                'success' => false,
+            ])
+            ->assertJsonPath('error.code', 'TRUST_POLICY_STEP_UP')
+            ->assertJsonPath('error.trust_reason', 'device_posture_untrusted');
+
+        $recordId = DB::table('mobile_attestation_records')
+            ->where('user_id', $this->sender->id)
+            ->where('action', 'send_money')
+            ->value('id');
+
+        $this->assertNotNull($recordId);
+
+        $metadata = DB::table('mobile_attestation_records')
+            ->where('id', $recordId)
+            ->value('metadata');
+
+        $this->assertIsString($metadata);
+        $decoded = json_decode($metadata, true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertSame('runtime-observed', $decoded['device_posture']['source'] ?? null);
+        $this->assertSame('simulator_or_emulator', $decoded['device_posture']['status'] ?? null);
+        $this->assertSame('non_physical_device', $decoded['device_posture']['reason'] ?? null);
+    }
+
+    #[Test]
     public function test_send_money_verification_none_denies_when_attestation_enabled_but_missing_and_does_not_create_authorization(): void
     {
         config([

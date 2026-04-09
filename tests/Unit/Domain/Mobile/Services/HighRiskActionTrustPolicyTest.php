@@ -65,6 +65,45 @@ describe('HighRiskActionTrustPolicy', function (): void {
             ->and($persisted->action)->toBe('commerce.payment.process');
     });
 
+    it('persists explicit device-posture metadata and a posture-specific degraded reason for simulator fallback', function (): void {
+        Config::set('mobile.attestation.enabled', false);
+
+        /** @var BiometricJWTServiceInterface&Mockery\MockInterface $biometricJwtService */
+        $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
+        $policy = new HighRiskActionTrustPolicy($biometricJwtService);
+
+        $user = new User;
+        $user->id = 1004;
+
+        $request = Request::create('/api/v1/commerce/payments', 'POST', [
+            'payment_link_token' => 'good-token',
+            'device_type' => 'ios',
+            'device_posture_source' => 'runtime-observed',
+            'device_posture_status' => 'simulator_or_emulator',
+            'device_posture_reason' => 'non_physical_device',
+        ]);
+
+        $result = $policy->evaluate($user, $request, 'commerce.payment.process');
+
+        expect($result['decision'])->toBe('degrade')
+            ->and($result['reason'])->toBe('device_posture_untrusted');
+
+        $persisted = DB::table('mobile_attestation_records')->where('id', $result['record_id'])->first();
+        expect($persisted)->not->toBeNull();
+        assert($persisted !== null);
+
+        $metadata = json_decode((string) $persisted->metadata, true, 512, JSON_THROW_ON_ERROR);
+
+        expect($metadata)
+            ->toMatchArray([
+                'device_posture' => [
+                    'source' => 'runtime-observed',
+                    'status' => 'simulator_or_emulator',
+                    'reason' => 'non_physical_device',
+                ],
+            ]);
+    });
+
     it('persists a deny decision when attestation is enabled but missing', function (): void {
         Config::set('mobile.attestation.enabled', true);
 
