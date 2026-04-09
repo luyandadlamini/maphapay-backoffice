@@ -451,4 +451,86 @@ class MoneyMovementTransactionInspectorTest extends DomainTestCase
             $result['warnings'],
         );
     }
+
+    #[Test]
+    public function it_surfaces_projection_level_posting_linkage_when_present(): void
+    {
+        Asset::firstOrCreate(
+            ['code' => 'SZL'],
+            ['name' => 'Swazi Lilangeni', 'type' => 'fiat', 'precision' => 2, 'is_active' => true],
+        );
+
+        $user = User::factory()->create();
+        $reference = 'REF-' . Str::upper(Str::random(10));
+        $trx = 'TRX-' . Str::upper(Str::random(10));
+        $postingId = (string) Str::uuid();
+
+        AuthorizedTransaction::query()->create([
+            'user_id' => $user->id,
+            'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'     => $trx,
+            'payload' => [],
+            'result'  => [
+                'trx'        => $trx,
+                'reference'  => $reference,
+                'amount'     => '10.00',
+                'asset_code' => 'SZL',
+            ],
+            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
+            'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
+        ]);
+
+        AssetTransfer::query()->create([
+            'uuid'              => $reference,
+            'reference'         => $reference,
+            'transfer_id'       => $reference,
+            'from_account_uuid' => (string) Str::uuid(),
+            'to_account_uuid'   => (string) Str::uuid(),
+            'from_asset_code'   => 'SZL',
+            'to_asset_code'     => 'SZL',
+            'from_amount'       => 1000,
+            'to_amount'         => 1000,
+            'status'            => 'completed',
+        ]);
+
+        DB::table('ledger_postings')->insert([
+            'id'                         => $postingId,
+            'authorized_transaction_trx' => $trx,
+            'posting_type'               => 'send_money',
+            'status'                     => 'posted',
+            'asset_code'                 => 'SZL',
+            'transfer_reference'         => $reference,
+            'posted_at'                  => now(),
+            'entries_hash'               => hash('sha256', $reference),
+            'metadata'                   => json_encode(['rule_version' => 1], JSON_THROW_ON_ERROR),
+            'created_at'                 => now(),
+            'updated_at'                 => now(),
+        ]);
+
+        TransactionProjection::query()->create([
+            'uuid'         => (string) Str::uuid(),
+            'account_uuid' => (string) Str::uuid(),
+            'asset_code'   => 'SZL',
+            'amount'       => 1000,
+            'type'         => 'transfer_out',
+            'subtype'      => 'send_money',
+            'description'  => 'Transfer out',
+            'reference'    => $reference,
+            'hash'         => hash('sha256', 'linked-one'),
+            'status'       => 'completed',
+            'metadata'     => [
+                'ledger_posting_id'         => $postingId,
+                'ledger_posting_status'     => 'posted',
+                'ledger_transfer_reference' => $reference,
+                'projection_anchor'         => 'ledger_posting',
+            ],
+        ]);
+
+        $result = app(MoneyMovementTransactionInspector::class)->inspect(trx: $trx);
+
+        $this->assertSame($postingId, $result['transaction_projections'][0]['ledger_posting_id']);
+        $this->assertSame('posted', $result['transaction_projections'][0]['ledger_posting_status']);
+        $this->assertSame($reference, $result['transaction_projections'][0]['ledger_transfer_reference']);
+        $this->assertSame('ledger_posting', $result['transaction_projections'][0]['projection_anchor']);
+    }
 }

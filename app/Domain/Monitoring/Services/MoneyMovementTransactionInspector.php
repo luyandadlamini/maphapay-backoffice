@@ -51,16 +51,20 @@ class MoneyMovementTransactionInspector
                 ->orderBy('created_at')
                 ->get()
                 ->map(fn (TransactionProjection $projection): array => [
-                    'uuid'         => $projection->uuid,
-                    'account_uuid' => $projection->account_uuid,
-                    'type'         => $projection->type,
-                    'subtype'      => $projection->subtype,
-                    'status'       => $projection->status,
-                    'amount'       => $projection->formatted_amount,
-                    'asset_code'   => $projection->asset_code,
-                    'description'  => $projection->description,
-                    'reference'    => $projection->reference,
-                    'created_at'   => $projection->created_at?->toIso8601String(),
+                    'uuid'                     => $projection->uuid,
+                    'account_uuid'             => $projection->account_uuid,
+                    'type'                     => $projection->type,
+                    'subtype'                  => $projection->subtype,
+                    'status'                   => $projection->status,
+                    'amount'                   => $projection->formatted_amount,
+                    'asset_code'               => $projection->asset_code,
+                    'description'              => $projection->description,
+                    'reference'                => $projection->reference,
+                    'ledger_posting_id'        => $projection->metadata['ledger_posting_id'] ?? null,
+                    'ledger_posting_status'    => $projection->metadata['ledger_posting_status'] ?? null,
+                    'ledger_transfer_reference' => $projection->metadata['ledger_transfer_reference'] ?? null,
+                    'projection_anchor'        => $projection->metadata['projection_anchor'] ?? null,
+                    'created_at'               => $projection->created_at?->toIso8601String(),
                 ])
                 ->all()
             : [];

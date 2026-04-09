@@ -9,6 +9,7 @@ use App\Domain\Account\Support\TransactionClassification;
 use App\Domain\Account\Support\TransactionDisplay;
 use App\Domain\Asset\Events\AssetTransactionCreated;
 use App\Domain\Asset\Events\AssetTransferCompleted;
+use App\Domain\Ledger\Models\LedgerPosting;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -96,6 +97,31 @@ class TransactionProjector extends Projector
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    private function postingMetadataForTransfer(?string $transferReference): array
+    {
+        if ($transferReference === null || $transferReference === '') {
+            return [];
+        }
+
+        $posting = LedgerPosting::query()
+            ->where('transfer_reference', $transferReference)
+            ->first();
+
+        if ($posting === null) {
+            return [];
+        }
+
+        return [
+            'ledger_posting_id'         => $posting->id,
+            'ledger_posting_status'     => $posting->status,
+            'ledger_transfer_reference' => $posting->transfer_reference,
+            'projection_anchor'         => 'ledger_posting',
+        ];
+    }
+
+    /**
      * Handle asset transaction created event.
      */
     public function onAssetTransactionCreated(AssetTransactionCreated $event): void
@@ -152,8 +178,10 @@ class TransactionProjector extends Projector
     {
         try {
             $subtype = $this->subtypeForAssetTransferCompleted($event);
+            $postingMetadata = $this->postingMetadataForTransfer($event->transferId);
             $baseMetadata = array_merge(
                 $event->metadata ?? [],
+                $postingMetadata,
                 [
                     'event_type' => 'AssetTransferCompleted',
                     'event_uuid' => $event->aggregateRootUuid(),
