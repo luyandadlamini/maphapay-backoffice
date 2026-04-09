@@ -9,6 +9,7 @@ use App\Domain\Custodian\Models\CustodianAccount;
 use App\Domain\Custodian\Services\BalanceSynchronizationService;
 use App\Domain\Custodian\Services\CustodianRegistry;
 use App\Domain\Custodian\Services\DailyReconciliationService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function () {
@@ -132,6 +133,135 @@ it('detects balance discrepancies', function () {
 
     Event::assertDispatched(ReconciliationDiscrepancyFound::class);
     Event::assertDispatched(ReconciliationCompleted::class);
+});
+
+it('attaches latest ledger posting context to balance discrepancies when posted movements exist', function () {
+    Event::fake();
+
+    $this->syncService->shouldReceive('synchronizeAllBalances')
+        ->once()
+        ->andReturn(['synchronized' => 10, 'failed' => 0, 'skipped' => 0]);
+
+    $account = Account::factory()->create();
+    $account->balances()->create([
+        'asset_code' => 'USD',
+        'balance' => 100000,
+    ]);
+
+    CustodianAccount::factory()->create([
+        'account_uuid' => $account->uuid,
+        'custodian_name' => 'test_bank',
+        'custodian_account_id' => '123',
+        'status' => 'active',
+    ]);
+
+    $mockConnector = Mockery::mock(App\Domain\Custodian\Contracts\ICustodianConnector::class);
+    $mockConnector->shouldReceive('isAvailable')->andReturn(true);
+    $mockConnector->shouldReceive('getAccountInfo')->andReturn(
+        new App\Domain\Custodian\ValueObjects\AccountInfo(
+            accountId: '123',
+            name: 'Test Account',
+            status: 'active',
+            balances: ['USD' => 95000],
+            currency: 'USD',
+            type: 'checking',
+            createdAt: now()
+        )
+    );
+
+    $this->custodianRegistry->shouldReceive('getConnector')
+        ->with('test_bank')
+        ->andReturn($mockConnector);
+
+    DB::table('ledger_postings')->insert([
+        [
+            'id' => '11111111-1111-1111-1111-111111111111',
+            'authorized_transaction_id' => null,
+            'authorized_transaction_trx' => 'TRXORIGINAL000000000000000000001',
+            'posting_type' => 'send_money',
+            'status' => 'adjusted',
+            'asset_code' => 'USD',
+            'transfer_reference' => 'transfer-original',
+            'money_request_id' => null,
+            'rule_version' => 1,
+            'entries_hash' => str_repeat('a', 64),
+            'metadata' => json_encode([], JSON_THROW_ON_ERROR),
+            'posted_at' => now()->subMinutes(5),
+            'created_at' => now()->subMinutes(5),
+            'updated_at' => now()->subMinutes(5),
+        ],
+        [
+            'id' => '22222222-2222-2222-2222-222222222222',
+            'authorized_transaction_id' => null,
+            'authorized_transaction_trx' => 'TRXADJUST0000000000000000000002',
+            'posting_type' => 'reconciliation_adjustment',
+            'status' => 'posted',
+            'asset_code' => 'USD',
+            'transfer_reference' => 'transfer-original',
+            'money_request_id' => null,
+            'rule_version' => 1,
+            'entries_hash' => str_repeat('b', 64),
+            'metadata' => json_encode([
+                'related_posting_id' => '11111111-1111-1111-1111-111111111111',
+                'adjustment_reason' => 'daily_reconciliation_delta',
+            ], JSON_THROW_ON_ERROR),
+            'posted_at' => now()->subMinute(),
+            'created_at' => now()->subMinute(),
+            'updated_at' => now()->subMinute(),
+        ],
+    ]);
+
+    DB::table('ledger_entries')->insert([
+        [
+            'id' => '33333333-3333-3333-3333-333333333333',
+            'ledger_posting_id' => '11111111-1111-1111-1111-111111111111',
+            'account_uuid' => $account->uuid,
+            'asset_code' => 'USD',
+            'signed_amount' => -100000,
+            'entry_type' => 'debit',
+            'metadata' => json_encode(['role' => 'sender'], JSON_THROW_ON_ERROR),
+            'created_at' => now()->subMinutes(5),
+            'updated_at' => now()->subMinutes(5),
+        ],
+        [
+            'id' => '44444444-4444-4444-4444-444444444444',
+            'ledger_posting_id' => '22222222-2222-2222-2222-222222222222',
+            'account_uuid' => $account->uuid,
+            'asset_code' => 'USD',
+            'signed_amount' => 5000,
+            'entry_type' => 'credit',
+            'metadata' => json_encode(['role' => 'adjusted_account'], JSON_THROW_ON_ERROR),
+            'created_at' => now()->subMinute(),
+            'updated_at' => now()->subMinute(),
+        ],
+    ]);
+
+    $result = $this->reconciliationService->performDailyReconciliation();
+
+    $discrepancy = null;
+
+    foreach ($result['discrepancies'] as $candidate) {
+        if (($candidate['account_uuid'] ?? null) !== $account->uuid) {
+            continue;
+        }
+
+        if (($candidate['type'] ?? null) !== 'balance_mismatch') {
+            continue;
+        }
+
+        $discrepancy = $candidate;
+        break;
+    }
+
+    expect($discrepancy)->not->toBeNull()
+        ->and($discrepancy['ledger_posting_reference'])->toBe('22222222-2222-2222-2222-222222222222')
+        ->and($discrepancy['ledger_posting'])->toMatchArray([
+            'id' => '22222222-2222-2222-2222-222222222222',
+            'posting_type' => 'reconciliation_adjustment',
+            'status' => 'posted',
+            'transfer_reference' => 'transfer-original',
+            'related_posting_id' => '11111111-1111-1111-1111-111111111111',
+        ]);
 });
 
 it('detects orphaned balances', function () {

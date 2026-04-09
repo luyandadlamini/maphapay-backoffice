@@ -9,6 +9,7 @@ use App\Domain\Custodian\Models\CustodianWebhook;
 use App\Domain\Custodian\Events\ReconciliationCompleted;
 use App\Domain\Custodian\Events\ReconciliationDiscrepancyFound;
 use App\Domain\Custodian\Mail\ReconciliationReport;
+use App\Domain\Ledger\Models\LedgerPosting;
 use App\Support\Reconciliation\ReconciliationReferenceBuilder;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -319,6 +320,9 @@ class DailyReconciliationService
         $primaryCustodianAccount = $custodianAccounts->first();
         $resolvedProviderReference = $providerReference
             ?? $primaryCustodianAccount?->custodian_account_id;
+        $ledgerPostingContext = $assetCode !== null
+            ? $this->resolveLatestLedgerPostingContext($account, $assetCode)
+            : null;
 
         return [
             ...$this->referenceBuilder->build(
@@ -326,8 +330,40 @@ class DailyReconciliationService
                 $account->uuid,
                 $assetCode,
                 $resolvedProviderReference,
+                $ledgerPostingContext,
             ),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function resolveLatestLedgerPostingContext(Account $account, string $assetCode): ?array
+    {
+        /** @var LedgerPosting|null $posting */
+        $posting = LedgerPosting::query()
+            ->select('ledger_postings.*')
+            ->join('ledger_entries', 'ledger_entries.ledger_posting_id', '=', 'ledger_postings.id')
+            ->where('ledger_entries.account_uuid', $account->uuid)
+            ->where('ledger_entries.asset_code', $assetCode)
+            ->orderByDesc('ledger_postings.posted_at')
+            ->orderByDesc('ledger_postings.created_at')
+            ->first();
+
+        if ($posting === null) {
+            return null;
+        }
+
+        $metadata = is_array($posting->metadata) ? $posting->metadata : [];
+
+        return array_filter([
+            'id' => $posting->id,
+            'posting_type' => $posting->posting_type,
+            'status' => $posting->status,
+            'transfer_reference' => $posting->transfer_reference,
+            'related_posting_id' => $metadata['related_posting_id'] ?? null,
+            'money_request_id' => $posting->money_request_id,
+        ], static fn (mixed $value): bool => $value !== null && $value !== '');
     }
 
     /**

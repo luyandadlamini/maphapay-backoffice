@@ -7,9 +7,16 @@ namespace App\Support\Reconciliation;
 final class ReconciliationReferenceBuilder
 {
     /**
+     * @param  array<string, mixed>|null  $ledgerPosting
      * @return array<string, mixed>
      */
-    public function build(string $date, string $accountUuid, ?string $assetCode, ?string $providerReference): array
+    public function build(
+        string $date,
+        string $accountUuid,
+        ?string $assetCode,
+        ?string $providerReference,
+        ?array $ledgerPosting = null,
+    ): array
     {
         return [
             'provider_family' => 'custodian',
@@ -21,7 +28,8 @@ final class ReconciliationReferenceBuilder
                 $accountUuid,
                 $assetCode ?? 'n-a'
             ),
-            'ledger_posting_reference' => null,
+            'ledger_posting_reference' => $ledgerPosting['id'] ?? null,
+            'ledger_posting' => $ledgerPosting,
             'settlement_reference' => null,
         ];
     }
