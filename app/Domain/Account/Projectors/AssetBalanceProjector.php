@@ -19,6 +19,14 @@ use Spatie\EventSourcing\EventHandlers\Projectors\Projector;
 class AssetBalanceProjector extends Projector
 {
     /**
+     * @param  array<string, mixed>|null  $metadata
+     */
+    private function shouldProjectFromLedgerPosting(?array $metadata): bool
+    {
+        return ($metadata['money_state_anchor'] ?? null) === 'ledger_posting';
+    }
+
+    /**
      * Handle asset balance addition events.
      */
     public function onAssetBalanceAdded(AssetBalanceAdded $event): void
@@ -49,6 +57,10 @@ class AssetBalanceProjector extends Projector
      */
     public function onAssetTransferCompleted(AssetTransferCompleted $event): void
     {
+        if ($this->shouldProjectFromLedgerPosting($event->metadata)) {
+            return;
+        }
+
         // 1. Debit from source account
         $fromBalance = AccountBalance::firstOrCreate(
             [

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\Ledger\Services;
 
+use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountBalance;
+use App\Domain\Account\Services\Cache\CacheManager;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Ledger\Enums\LedgerPostingStatus;
@@ -11,7 +14,9 @@ use App\Domain\Ledger\Enums\LedgerPostingType;
 use App\Domain\Ledger\Models\LedgerEntry;
 use App\Domain\Ledger\Models\LedgerPosting;
 use App\Domain\Shared\Money\MoneyConverter;
+use App\Domain\Wallet\Events\Broadcast\WalletBalanceUpdated;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -107,6 +112,8 @@ class LedgerPostingService
             ]);
         }
 
+        $this->applyAccountBalanceReadModels($entries);
+
         $posting->load('entries');
 
         return $this->serializePosting($posting);
@@ -128,6 +135,49 @@ class LedgerPostingService
             if ($balance !== 0) {
                 throw new RuntimeException(sprintf('Posting entries do not balance for asset [%s].', $assetCode));
             }
+        }
+    }
+
+    /**
+     * @param  list<array{account_uuid: string, asset_code: string, signed_amount: int, entry_type: string, metadata: array<string, mixed>}>  $entries
+     */
+    private function applyAccountBalanceReadModels(array $entries): void
+    {
+        $touchedAccounts = [];
+
+        foreach ($entries as $entry) {
+            $balance = AccountBalance::query()->firstOrCreate(
+                [
+                    'account_uuid' => $entry['account_uuid'],
+                    'asset_code' => $entry['asset_code'],
+                ],
+                ['balance' => 0],
+            );
+
+            $balance->balance += $entry['signed_amount'];
+            $balance->save();
+
+            $touchedAccounts[$entry['account_uuid']] = true;
+        }
+
+        foreach (array_keys($touchedAccounts) as $accountUuid) {
+            $account = Account::query()->where('uuid', $accountUuid)->first();
+
+            if ($account === null) {
+                continue;
+            }
+
+            $this->refreshAccountReadModels($account);
+        }
+    }
+
+    private function refreshAccountReadModels(Account $account): void
+    {
+        app(CacheManager::class)->onAccountUpdated($account);
+
+        if ($account->user !== null) {
+            Cache::forget("maphapay.dashboard.balance.{$account->user->id}");
+            WalletBalanceUpdated::dispatch($account->user->id);
         }
     }
 

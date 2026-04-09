@@ -40,6 +40,7 @@ class InternalP2pTransferService
         $metadata = array_filter([
             'source'         => 'p2p',
             'operation_type' => $operationType,
+            'money_state_anchor' => 'ledger_posting',
             'note'           => $note,
             'p2p_display'    => [
                 'sender_label'    => $this->userLabel($sender),
