@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Custodian\Models\ProviderOperation;
 use App\Domain\Custodian\Models\CustodianAccount;
 use App\Domain\Custodian\Services\CustodianRegistry;
 use App\Domain\Custodian\Services\SettlementService;
@@ -205,6 +206,72 @@ it('can process batch settlements', function () {
         'net_amount'     => 60000,
         'transfer_count' => 2,
         'status'         => 'completed',
+    ]);
+});
+
+it('normalizes provider operation settlement state from settlement execution results', function () {
+    Config::set('custodians.settlement.type', 'batch');
+
+    $this->service = app()->make(SettlementService::class);
+
+    ProviderOperation::query()->create([
+        'provider_family' => 'custodian',
+        'provider_name' => 'paysera',
+        'operation_type' => 'transfer',
+        'operation_key' => 'custodian:paysera:transfer:txn-settle-001',
+        'normalized_event_type' => 'payment_succeeded',
+        'provider_reference' => 'txn-settle-001',
+        'internal_reference' => 'txn-settle-001',
+        'finality_status' => 'succeeded',
+        'settlement_status' => 'pending',
+        'reconciliation_status' => 'pending',
+        'metadata' => [
+            'source' => 'test',
+        ],
+    ]);
+
+    DB::table('custodian_transfers')->insert([
+        [
+            'id'                        => 'BATCH_SETTLE_1',
+            'from_account_uuid'         => $this->account1->uuid,
+            'to_account_uuid'           => $this->account2->uuid,
+            'from_custodian_account_id' => $this->payseraAccount1->id,
+            'to_custodian_account_id'   => $this->deutscheBankAccount1->id,
+            'amount'                    => 25000,
+            'asset_code'                => 'USD',
+            'transfer_type'             => 'external',
+            'status'                    => 'completed',
+            'reference'                 => 'txn-settle-001',
+            'completed_at'              => now()->subHours(2),
+            'created_at'                => now()->subHours(2),
+            'updated_at'                => now(),
+        ],
+    ]);
+
+    $this->mockPayseraConnector->shouldReceive('initiateTransfer')
+        ->once()
+        ->andReturn(new TransactionReceipt(
+            id: 'SETTLEMENT_EXECUTION_001',
+            status: 'completed',
+            amount: 25000,
+            assetCode: 'USD',
+            reference: 'BATCH_',
+            createdAt: now()
+        ));
+
+    $this->service->processPendingSettlements();
+
+    $settlement = DB::table('settlements')->where('external_reference', 'SETTLEMENT_EXECUTION_001')->first();
+
+    expect($settlement)->not->toBeNull();
+    assert($settlement !== null);
+
+    $this->assertDatabaseHas('provider_operations', [
+        'provider_family' => 'custodian',
+        'provider_name' => 'paysera',
+        'provider_reference' => 'txn-settle-001',
+        'settlement_status' => 'completed',
+        'settlement_reference' => $settlement->id,
     ]);
 });
 

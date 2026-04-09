@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Domain\Custodian\Services;
 
 use App\Domain\Account\DataObjects\Money;
+use App\Domain\Custodian\Enums\ProviderOperationType;
+use App\Domain\Custodian\Enums\ProviderSettlementStatus;
+use App\Domain\Custodian\Models\ProviderOperation;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -440,6 +443,7 @@ class SettlementService
                         'processed_at' => now(),
                     ]
                 );
+            $this->syncProviderOperationsForSettlement($settlementId, ProviderSettlementStatus::PROCESSING);
 
             // Get custodian connectors
             $fromConnector = $this->registry->getConnector($settlement->from_custodian);
@@ -472,6 +476,7 @@ class SettlementService
                         'external_reference' => $receipt->id,
                     ]
                 );
+            $this->syncProviderOperationsForSettlement($settlementId, ProviderSettlementStatus::COMPLETED);
 
             Log::info(
                 'Settlement executed successfully',
@@ -501,9 +506,55 @@ class SettlementService
                         'failed_at'      => now(),
                     ]
                 );
+            $this->syncProviderOperationsForSettlement($settlementId, ProviderSettlementStatus::FAILED);
 
             return false;
         }
+    }
+
+    private function syncProviderOperationsForSettlement(
+        string $settlementId,
+        ProviderSettlementStatus $settlementStatus,
+    ): void {
+        /** @var object{metadata: string|null}|null $settlement */
+        $settlement = DB::table('settlements')
+            ->select('metadata')
+            ->where('id', $settlementId)
+            ->first();
+
+        if ($settlement === null) {
+            return;
+        }
+
+        /** @var array<string, mixed> $metadata */
+        $metadata = json_decode($settlement->metadata ?? '[]', true) ?: [];
+        $transferIds = array_values(array_filter($metadata['transfer_ids'] ?? [], static fn (mixed $id): bool => is_string($id) && $id !== ''));
+
+        if ($transferIds === []) {
+            return;
+        }
+
+        $references = DB::table('custodian_transfers')
+            ->whereIn('id', $transferIds)
+            ->whereNotNull('reference')
+            ->pluck('reference')
+            ->filter(static fn (mixed $reference): bool => is_string($reference) && $reference !== '')
+            ->unique()
+            ->values();
+
+        if ($references->isEmpty()) {
+            return;
+        }
+
+        ProviderOperation::query()
+            ->where('provider_family', 'custodian')
+            ->where('operation_type', ProviderOperationType::TRANSFER->value)
+            ->whereIn('provider_reference', $references->all())
+            ->update([
+                'settlement_status' => $settlementStatus->value,
+                'settlement_reference' => $settlementId,
+                'updated_at' => now(),
+            ]);
     }
 
     /**
