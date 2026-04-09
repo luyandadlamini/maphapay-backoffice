@@ -9,7 +9,9 @@ use App\Domain\Asset\Models\AssetTransfer;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Ledger\Models\LedgerEntry;
 use App\Domain\Ledger\Models\LedgerPosting;
+use App\Support\Reconciliation\ReconciliationReportDataLoader;
 use App\Models\MoneyRequest;
+use Illuminate\Support\Collection;
 
 class MoneyMovementTransactionInspector
 {
@@ -75,6 +77,13 @@ class MoneyMovementTransactionInspector
             assetTransfer: $assetTransfer,
             projectionCount: count($projections),
         );
+        $relatedLedgerPostings = $this->resolveRelatedLedgerPostings($ledgerPosting);
+        $postingChainIds = array_values(collect([$ledgerPosting?->id])
+            ->merge(collect($relatedLedgerPostings)->pluck('id'))
+            ->filter(static fn (?string $id): bool => is_string($id) && $id !== '')
+            ->values()
+            ->all());
+        $reconciliationExceptions = $this->resolveReconciliationExceptions($postingChainIds);
 
         $timeline = [];
         if ($transaction !== null) {
@@ -157,6 +166,14 @@ class MoneyMovementTransactionInspector
             $warnings[] = 'Transaction projections exist without a ledger posting. Treat this movement as legacy pre-cutover unless a posting backfill is explicitly documented.';
         }
 
+        if ($relatedLedgerPostings !== []) {
+            $warnings[] = 'Ledger posting has linked reversal or adjustment postings that must be reviewed together.';
+        }
+
+        if ($reconciliationExceptions !== []) {
+            $warnings[] = 'Reconciliation exceptions reference this ledger posting chain.';
+        }
+
         return [
             'lookup' => array_filter([
                 'trx'       => $trx,
@@ -184,6 +201,11 @@ class MoneyMovementTransactionInspector
                 'money_request_id'           => $ledgerPosting->money_request_id,
                 'rule_version'               => $ledgerPosting->rule_version,
                 'posted_at'                  => $ledgerPosting->posted_at?->toIso8601String(),
+                'related_posting_id'         => $ledgerPosting->metadata['related_posting_id'] ?? null,
+                'adjusted_by_posting_id'     => $ledgerPosting->metadata['adjusted_by_posting_id'] ?? null,
+                'reversed_by_posting_id'     => $ledgerPosting->metadata['reversed_by_posting_id'] ?? null,
+                'adjustment_reason'          => $ledgerPosting->metadata['adjustment_reason'] ?? null,
+                'reversal_reason'            => $ledgerPosting->metadata['reversal_reason'] ?? null,
                 'entries'                    => $ledgerPosting->entries
                     ->map(fn (LedgerEntry $entry): array => [
                         'id'            => $entry->id,
@@ -195,6 +217,7 @@ class MoneyMovementTransactionInspector
                     ])
                     ->all(),
             ] : [],
+            'related_ledger_postings'  => $relatedLedgerPostings,
             'asset_transfer' => $assetTransfer !== null ? [
                 'reference'         => $assetTransfer->reference,
                 'transfer_id'       => $assetTransfer->transfer_id,
@@ -208,6 +231,7 @@ class MoneyMovementTransactionInspector
                 'failure_reason'    => $assetTransfer->failure_reason,
             ] : null,
             'projection_state'        => $projectionState,
+            'reconciliation_exceptions' => $reconciliationExceptions,
             'transaction_projections' => $projections,
             'money_request'           => $moneyRequest !== null ? [
                 'id'                => $moneyRequest->id,
@@ -318,5 +342,77 @@ class MoneyMovementTransactionInspector
             // @phpstan-ignore argument.type
             ->orWhere('payload->reference', $reference)
             ->first();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function resolveRelatedLedgerPostings(?LedgerPosting $ledgerPosting): array
+    {
+        if ($ledgerPosting === null || $ledgerPosting->transfer_reference === null || $ledgerPosting->transfer_reference === '') {
+            return [];
+        }
+
+        return array_values(LedgerPosting::query()
+            ->where('transfer_reference', $ledgerPosting->transfer_reference)
+            ->where('id', '!=', $ledgerPosting->id)
+            ->orderBy('posted_at')
+            ->orderBy('created_at')
+            ->get()
+            ->map(fn (LedgerPosting $posting): array => [
+                'id' => $posting->id,
+                'posting_type' => $posting->posting_type,
+                'status' => $posting->status,
+                'transfer_reference' => $posting->transfer_reference,
+                'related_posting_id' => $posting->metadata['related_posting_id'] ?? null,
+                'adjustment_reason' => $posting->metadata['adjustment_reason'] ?? null,
+                'reversal_reason' => $posting->metadata['reversal_reason'] ?? null,
+                'posted_at' => $posting->posted_at?->toIso8601String(),
+            ])
+            ->all());
+    }
+
+    /**
+     * @param  list<string>  $postingChainIds
+     * @return list<array<string, mixed>>
+     */
+    private function resolveReconciliationExceptions(array $postingChainIds): array
+    {
+        if ($postingChainIds === []) {
+            return [];
+        }
+
+        /** @var Collection<int, array<string, mixed>> $reports */
+        $reports = app(ReconciliationReportDataLoader::class)->load();
+
+        return array_values($reports
+            ->flatMap(function (array $report) use ($postingChainIds): array {
+                $discrepancies = $report['discrepancies'] ?? [];
+                if (! is_array($discrepancies)) {
+                    return [];
+                }
+
+                $reportDate = is_string($report['date'] ?? null) ? $report['date'] : null;
+
+                return collect($discrepancies)
+                    ->filter(function (mixed $discrepancy) use ($postingChainIds): bool {
+                        if (! is_array($discrepancy)) {
+                            return false;
+                        }
+
+                        $reference = $discrepancy['ledger_posting_reference'] ?? null;
+
+                        return is_string($reference) && in_array($reference, $postingChainIds, true);
+                    })
+                    ->map(function (array $discrepancy) use ($reportDate): array {
+                        return array_merge($discrepancy, [
+                            'report_date' => $reportDate,
+                        ]);
+                    })
+                    ->values()
+                    ->all();
+            })
+            ->values()
+            ->all());
     }
 }

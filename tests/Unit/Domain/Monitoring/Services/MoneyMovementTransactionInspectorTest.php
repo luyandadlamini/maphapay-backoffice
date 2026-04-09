@@ -9,6 +9,7 @@ use App\Domain\Asset\Models\Asset;
 use App\Domain\Asset\Models\AssetTransfer;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Monitoring\Services\MoneyMovementTransactionInspector;
+use App\Support\Reconciliation\ReconciliationReportDataLoader;
 use App\Models\MoneyRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -532,5 +533,227 @@ class MoneyMovementTransactionInspectorTest extends DomainTestCase
         $this->assertSame('posted', $result['transaction_projections'][0]['ledger_posting_status']);
         $this->assertSame($reference, $result['transaction_projections'][0]['ledger_transfer_reference']);
         $this->assertSame('ledger_posting', $result['transaction_projections'][0]['projection_anchor']);
+    }
+
+    #[Test]
+    public function it_surfaces_related_reversal_and_adjustment_postings_for_operator_diagnostics(): void
+    {
+        Asset::firstOrCreate(
+            ['code' => 'SZL'],
+            ['name' => 'Swazi Lilangeni', 'type' => 'fiat', 'precision' => 2, 'is_active' => true],
+        );
+
+        $user = User::factory()->create();
+        $reference = 'REF-' . Str::upper(Str::random(10));
+        $trx = 'TRX-' . Str::upper(Str::random(10));
+        $postingId = (string) Str::uuid();
+        $adjustmentPostingId = (string) Str::uuid();
+
+        AuthorizedTransaction::query()->create([
+            'user_id' => $user->id,
+            'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'     => $trx,
+            'payload' => [],
+            'result'  => [
+                'trx'        => $trx,
+                'reference'  => $reference,
+                'amount'     => '10.00',
+                'asset_code' => 'SZL',
+            ],
+            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
+            'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
+        ]);
+
+        DB::table('ledger_postings')->insert([
+            [
+                'id'                         => $postingId,
+                'authorized_transaction_trx' => $trx,
+                'posting_type'               => 'send_money',
+                'status'                     => 'adjusted',
+                'asset_code'                 => 'SZL',
+                'transfer_reference'         => $reference,
+                'posted_at'                  => now()->subMinutes(5),
+                'entries_hash'               => hash('sha256', $trx),
+                'metadata'                   => json_encode([
+                    'adjusted_by_posting_id' => $adjustmentPostingId,
+                    'adjustment_reason' => 'daily_reconciliation_delta',
+                ], JSON_THROW_ON_ERROR),
+                'created_at'                 => now()->subMinutes(5),
+                'updated_at'                 => now()->subMinutes(5),
+            ],
+            [
+                'id'                         => $adjustmentPostingId,
+                'authorized_transaction_trx' => 'ADJ' . Str::upper(Str::random(29)),
+                'posting_type'               => 'reconciliation_adjustment',
+                'status'                     => 'posted',
+                'asset_code'                 => 'SZL',
+                'transfer_reference'         => $reference,
+                'posted_at'                  => now()->subMinute(),
+                'entries_hash'               => hash('sha256', $reference),
+                'metadata'                   => json_encode([
+                    'related_posting_id' => $postingId,
+                    'adjustment_reason' => 'daily_reconciliation_delta',
+                ], JSON_THROW_ON_ERROR),
+                'created_at'                 => now()->subMinute(),
+                'updated_at'                 => now()->subMinute(),
+            ],
+        ]);
+
+        DB::table('ledger_entries')->insert([
+            [
+                'id'                => (string) Str::uuid(),
+                'ledger_posting_id' => $postingId,
+                'account_uuid'      => (string) Str::uuid(),
+                'asset_code'        => 'SZL',
+                'signed_amount'     => -1000,
+                'entry_type'        => 'debit',
+                'created_at'        => now(),
+                'updated_at'        => now(),
+            ],
+            [
+                'id'                => (string) Str::uuid(),
+                'ledger_posting_id' => $postingId,
+                'account_uuid'      => (string) Str::uuid(),
+                'asset_code'        => 'SZL',
+                'signed_amount'     => 1000,
+                'entry_type'        => 'credit',
+                'created_at'        => now(),
+                'updated_at'        => now(),
+            ],
+            [
+                'id'                => (string) Str::uuid(),
+                'ledger_posting_id' => $adjustmentPostingId,
+                'account_uuid'      => (string) Str::uuid(),
+                'asset_code'        => 'SZL',
+                'signed_amount'     => -100,
+                'entry_type'        => 'debit',
+                'created_at'        => now(),
+                'updated_at'        => now(),
+            ],
+            [
+                'id'                => (string) Str::uuid(),
+                'ledger_posting_id' => $adjustmentPostingId,
+                'account_uuid'      => (string) Str::uuid(),
+                'asset_code'        => 'SZL',
+                'signed_amount'     => 100,
+                'entry_type'        => 'credit',
+                'created_at'        => now(),
+                'updated_at'        => now(),
+            ],
+        ]);
+
+        $result = app(MoneyMovementTransactionInspector::class)->inspect(trx: $trx);
+
+        $this->assertSame('adjusted', $result['ledger_posting']['status']);
+        $this->assertCount(1, $result['related_ledger_postings']);
+        $this->assertSame($adjustmentPostingId, $result['related_ledger_postings'][0]['id']);
+        $this->assertSame('reconciliation_adjustment', $result['related_ledger_postings'][0]['posting_type']);
+        $this->assertSame($postingId, $result['related_ledger_postings'][0]['related_posting_id']);
+        $this->assertContains(
+            'Ledger posting has linked reversal or adjustment postings that must be reviewed together.',
+            $result['warnings'],
+        );
+    }
+
+    #[Test]
+    public function it_surfaces_reconciliation_exceptions_linked_to_the_posting_chain(): void
+    {
+        Asset::firstOrCreate(
+            ['code' => 'SZL'],
+            ['name' => 'Swazi Lilangeni', 'type' => 'fiat', 'precision' => 2, 'is_active' => true],
+        );
+
+        $user = User::factory()->create();
+        $reference = 'REF-' . Str::upper(Str::random(10));
+        $trx = 'TRX-' . Str::upper(Str::random(10));
+        $postingId = (string) Str::uuid();
+
+        AuthorizedTransaction::query()->create([
+            'user_id' => $user->id,
+            'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'     => $trx,
+            'payload' => [],
+            'result'  => [
+                'trx'        => $trx,
+                'reference'  => $reference,
+                'amount'     => '10.00',
+                'asset_code' => 'SZL',
+            ],
+            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
+            'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
+        ]);
+
+        DB::table('ledger_postings')->insert([
+            'id'                         => $postingId,
+            'authorized_transaction_trx' => $trx,
+            'posting_type'               => 'send_money',
+            'status'                     => 'posted',
+            'asset_code'                 => 'SZL',
+            'transfer_reference'         => $reference,
+            'posted_at'                  => now()->subMinutes(5),
+            'entries_hash'               => hash('sha256', $trx),
+            'metadata'                   => json_encode(['rule_version' => 1], JSON_THROW_ON_ERROR),
+            'created_at'                 => now()->subMinutes(5),
+            'updated_at'                 => now()->subMinutes(5),
+        ]);
+
+        DB::table('ledger_entries')->insert([
+            [
+                'id'                => (string) Str::uuid(),
+                'ledger_posting_id' => $postingId,
+                'account_uuid'      => (string) Str::uuid(),
+                'asset_code'        => 'SZL',
+                'signed_amount'     => -1000,
+                'entry_type'        => 'debit',
+                'created_at'        => now(),
+                'updated_at'        => now(),
+            ],
+            [
+                'id'                => (string) Str::uuid(),
+                'ledger_posting_id' => $postingId,
+                'account_uuid'      => (string) Str::uuid(),
+                'asset_code'        => 'SZL',
+                'signed_amount'     => 1000,
+                'entry_type'        => 'credit',
+                'created_at'        => now(),
+                'updated_at'        => now(),
+            ],
+        ]);
+
+        $directory = sys_get_temp_dir() . '/maphapay-inspector-reconciliation-' . uniqid('', true);
+        mkdir($directory, 0777, true);
+
+        file_put_contents(
+            $directory . '/reconciliation-2026-04-09.json',
+            json_encode([
+                'summary' => [
+                    'date' => '2026-04-09',
+                    'status' => 'completed',
+                ],
+                'discrepancies' => [
+                    [
+                        'type' => 'balance_mismatch',
+                        'ledger_posting_reference' => $postingId,
+                        'reconciliation_reference' => 'reconciliation:2026-04-09:acc-123:SZL',
+                        'difference' => 250,
+                    ],
+                ],
+            ], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR),
+        );
+
+        app()->instance(ReconciliationReportDataLoader::class, new ReconciliationReportDataLoader($directory));
+
+        $result = app(MoneyMovementTransactionInspector::class)->inspect(trx: $trx);
+
+        @unlink($directory . '/reconciliation-2026-04-09.json');
+        @rmdir($directory);
+
+        $this->assertCount(1, $result['reconciliation_exceptions']);
+        $this->assertSame($postingId, $result['reconciliation_exceptions'][0]['ledger_posting_reference']);
+        $this->assertSame('balance_mismatch', $result['reconciliation_exceptions'][0]['type']);
+        $this->assertContains(
+            'Reconciliation exceptions reference this ledger posting chain.',
+            $result['warnings'],
+        );
     }
 }
