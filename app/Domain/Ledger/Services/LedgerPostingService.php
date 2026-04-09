@@ -19,6 +19,7 @@ use App\Domain\Wallet\Events\Broadcast\WalletBalanceUpdated;
 use App\Models\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -84,35 +85,21 @@ class LedgerPostingService
 
         $this->assertEntriesBalanced($entries);
 
-        $posting = LedgerPosting::query()->create([
-            'authorized_transaction_id'  => $transaction->id,
-            'authorized_transaction_trx' => $transaction->trx,
-            'posting_type'               => $postingType->value,
-            'status'                     => LedgerPostingStatus::POSTED->value,
-            'asset_code'                 => $assetCode,
-            'transfer_reference'         => $reference,
-            'money_request_id'           => is_string($payload['money_request_id'] ?? null) ? $payload['money_request_id'] : null,
-            'rule_version'               => 1,
-            'entries_hash'               => hash('sha256', json_encode($entries, JSON_THROW_ON_ERROR)),
-            'metadata'                   => [
+        $posting = $this->createPostingRecord(
+            postingType: $postingType,
+            assetCode: $assetCode,
+            entries: $entries,
+            authorizedTransactionId: $transaction->id,
+            authorizedTransactionTrx: $transaction->trx,
+            transferReference: $reference,
+            moneyRequestId: is_string($payload['money_request_id'] ?? null) ? $payload['money_request_id'] : null,
+            metadata: [
                 'remark'  => $transaction->remark,
                 'payload' => [
                     'money_request_id' => $payload['money_request_id'] ?? null,
                 ],
             ],
-            'posted_at' => now(),
-        ]);
-
-        foreach ($entries as $entry) {
-            LedgerEntry::query()->create([
-                'ledger_posting_id' => $posting->id,
-                'account_uuid'      => $entry['account_uuid'],
-                'asset_code'        => $entry['asset_code'],
-                'signed_amount'     => $entry['signed_amount'],
-                'entry_type'        => $entry['entry_type'],
-                'metadata'          => $entry['metadata'],
-            ]);
-        }
+        );
 
         $this->applyAccountBalanceReadModels($entries);
         $this->applyTransactionProjectionReadModels($posting, $transaction, $entries);
@@ -120,6 +107,123 @@ class LedgerPostingService
         $posting->load('entries');
 
         return $this->serializePosting($posting);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function createCompensatingReversal(
+        LedgerPosting $posting,
+        string $reason,
+        ?string $authorizedBy = null,
+    ): array {
+        $posting->loadMissing('entries');
+
+        if ($posting->status !== LedgerPostingStatus::POSTED->value) {
+            throw new InvalidArgumentException('Only posted ledger postings can be compensatingly reversed.');
+        }
+
+        $entries = array_values($posting->entries
+            ->map(function (LedgerEntry $entry): array {
+                if (! is_string($entry->account_uuid) || $entry->account_uuid === '') {
+                    throw new RuntimeException('Compensating reversal requires non-null account UUIDs on original ledger entries.');
+                }
+
+                return [
+                    'account_uuid' => $entry->account_uuid,
+                    'asset_code' => $entry->asset_code,
+                    'signed_amount' => $entry->signed_amount * -1,
+                    'entry_type' => $entry->signed_amount > 0 ? 'debit' : 'credit',
+                    'metadata' => array_merge($entry->metadata ?? [], [
+                        'reversal_of_entry_id' => $entry->id,
+                    ]),
+                ];
+            })
+            ->all());
+
+        $this->assertEntriesBalanced($entries);
+
+        $reversalPosting = $this->createPostingRecord(
+            postingType: LedgerPostingType::COMPENSATING_REVERSAL,
+            assetCode: $posting->asset_code,
+            entries: $entries,
+            authorizedTransactionId: null,
+            authorizedTransactionTrx: $this->syntheticPostingTrx('REV'),
+            transferReference: $posting->transfer_reference,
+            moneyRequestId: $posting->money_request_id,
+            metadata: array_filter([
+                'posting_class' => LedgerPostingType::COMPENSATING_REVERSAL->value,
+                'related_posting_id' => $posting->id,
+                'original_posting_type' => $posting->posting_type,
+                'reversal_reason' => trim($reason),
+                'authorized_by' => $authorizedBy !== null ? trim($authorizedBy) : null,
+            ], static fn (mixed $value): bool => $value !== null && $value !== ''),
+        );
+
+        $this->applyAccountBalanceReadModels($entries);
+
+        $posting->update([
+            'status' => LedgerPostingStatus::REVERSED->value,
+            'metadata' => array_merge($posting->metadata ?? [], array_filter([
+                'reversed_by_posting_id' => $reversalPosting->id,
+                'reversal_reason' => trim($reason),
+                'reversed_by' => $authorizedBy !== null ? trim($authorizedBy) : null,
+            ], static fn (mixed $value): bool => $value !== null && $value !== '')),
+        ]);
+
+        $reversalPosting->load('entries');
+
+        return $this->serializePosting($reversalPosting);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function createManualAdjustment(
+        string $accountUuid,
+        string $contraAccountUuid,
+        string $assetCode,
+        string $amount,
+        string $direction,
+        string $reason,
+        ?string $authorizedBy = null,
+    ): array {
+        return $this->createAdjustmentPosting(
+            postingType: LedgerPostingType::MANUAL_ADJUSTMENT,
+            relatedPosting: null,
+            accountUuid: $accountUuid,
+            contraAccountUuid: $contraAccountUuid,
+            assetCode: $assetCode,
+            amount: $amount,
+            direction: $direction,
+            reason: $reason,
+            authorizedBy: $authorizedBy,
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function createReconciliationAdjustment(
+        LedgerPosting $posting,
+        string $accountUuid,
+        string $contraAccountUuid,
+        string $amount,
+        string $direction,
+        string $reason,
+        ?string $authorizedBy = null,
+    ): array {
+        return $this->createAdjustmentPosting(
+            postingType: LedgerPostingType::RECONCILIATION_ADJUSTMENT,
+            relatedPosting: $posting,
+            accountUuid: $accountUuid,
+            contraAccountUuid: $contraAccountUuid,
+            assetCode: $posting->asset_code,
+            amount: $amount,
+            direction: $direction,
+            reason: $reason,
+            authorizedBy: $authorizedBy,
+        );
     }
 
     /**
@@ -203,6 +307,148 @@ class LedgerPostingService
                 throw new RuntimeException(sprintf('Posting entries do not balance for asset [%s].', $assetCode));
             }
         }
+    }
+
+    /**
+     * @param  list<array{account_uuid: string|null, asset_code: string, signed_amount: int, entry_type: string, metadata: array<string, mixed>}>  $entries
+     * @param  array<string, mixed>  $metadata
+     */
+    private function createPostingRecord(
+        LedgerPostingType $postingType,
+        string $assetCode,
+        array $entries,
+        ?string $authorizedTransactionId,
+        string $authorizedTransactionTrx,
+        ?string $transferReference,
+        ?string $moneyRequestId,
+        array $metadata,
+    ): LedgerPosting {
+        $posting = LedgerPosting::query()->create([
+            'authorized_transaction_id'  => $authorizedTransactionId,
+            'authorized_transaction_trx' => $authorizedTransactionTrx,
+            'posting_type'               => $postingType->value,
+            'status'                     => LedgerPostingStatus::POSTED->value,
+            'asset_code'                 => $assetCode,
+            'transfer_reference'         => $transferReference,
+            'money_request_id'           => $moneyRequestId,
+            'rule_version'               => 1,
+            'entries_hash'               => hash('sha256', json_encode($entries, JSON_THROW_ON_ERROR)),
+            'metadata'                   => $metadata,
+            'posted_at'                  => now(),
+        ]);
+
+        foreach ($entries as $entry) {
+            LedgerEntry::query()->create([
+                'ledger_posting_id' => $posting->id,
+                'account_uuid'      => $entry['account_uuid'],
+                'asset_code'        => $entry['asset_code'],
+                'signed_amount'     => $entry['signed_amount'],
+                'entry_type'        => $entry['entry_type'],
+                'metadata'          => $entry['metadata'],
+            ]);
+        }
+
+        return $posting;
+    }
+
+    private function syntheticPostingTrx(string $prefix): string
+    {
+        return substr($prefix . '-' . Str::upper(Str::random(40)), 0, 32);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function createAdjustmentPosting(
+        LedgerPostingType $postingType,
+        ?LedgerPosting $relatedPosting,
+        string $accountUuid,
+        string $contraAccountUuid,
+        string $assetCode,
+        string $amount,
+        string $direction,
+        string $reason,
+        ?string $authorizedBy = null,
+    ): array {
+        $direction = trim($direction);
+        if (! in_array($direction, ['credit', 'debit'], true)) {
+            throw new InvalidArgumentException('Adjustment direction must be credit or debit.');
+        }
+
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw new InvalidArgumentException('Adjustment reason is required.');
+        }
+
+        $asset = Asset::query()->where('code', $assetCode)->first();
+        if ($asset === null) {
+            throw new RuntimeException(sprintf('Posting asset [%s] could not be resolved.', $assetCode));
+        }
+
+        $amountMinor = (int) MoneyConverter::forAsset($amount, $asset);
+        if ($amountMinor <= 0) {
+            throw new InvalidArgumentException('Adjustment amount must be greater than zero.');
+        }
+
+        $targetSignedAmount = $direction === 'credit' ? $amountMinor : -$amountMinor;
+        $contraSignedAmount = $targetSignedAmount * -1;
+
+        $entries = [
+            [
+                'account_uuid' => $accountUuid,
+                'asset_code' => $assetCode,
+                'signed_amount' => $targetSignedAmount,
+                'entry_type' => $targetSignedAmount > 0 ? 'credit' : 'debit',
+                'metadata' => [
+                    'role' => 'adjusted_account',
+                ],
+            ],
+            [
+                'account_uuid' => $contraAccountUuid,
+                'asset_code' => $assetCode,
+                'signed_amount' => $contraSignedAmount,
+                'entry_type' => $contraSignedAmount > 0 ? 'credit' : 'debit',
+                'metadata' => [
+                    'role' => 'contra_account',
+                ],
+            ],
+        ];
+
+        $this->assertEntriesBalanced($entries);
+
+        $adjustmentPosting = $this->createPostingRecord(
+            postingType: $postingType,
+            assetCode: $assetCode,
+            entries: $entries,
+            authorizedTransactionId: null,
+            authorizedTransactionTrx: $this->syntheticPostingTrx('ADJ'),
+            transferReference: $relatedPosting?->transfer_reference,
+            moneyRequestId: $relatedPosting?->money_request_id,
+            metadata: array_filter([
+                'posting_class' => $postingType->value,
+                'related_posting_id' => $relatedPosting?->id,
+                'adjustment_reason' => $reason,
+                'adjustment_direction' => $direction,
+                'authorized_by' => $authorizedBy !== null ? trim($authorizedBy) : null,
+            ], static fn (mixed $value): bool => $value !== null && $value !== ''),
+        );
+
+        $this->applyAccountBalanceReadModels($entries);
+
+        if ($relatedPosting !== null) {
+            $relatedPosting->update([
+                'status' => LedgerPostingStatus::ADJUSTED->value,
+                'metadata' => array_merge($relatedPosting->metadata ?? [], array_filter([
+                    'adjusted_by_posting_id' => $adjustmentPosting->id,
+                    'adjustment_reason' => $reason,
+                    'adjusted_by' => $authorizedBy !== null ? trim($authorizedBy) : null,
+                ], static fn (mixed $value): bool => $value !== null && $value !== '')),
+            ]);
+        }
+
+        $adjustmentPosting->load('entries');
+
+        return $this->serializePosting($adjustmentPosting);
     }
 
     /**

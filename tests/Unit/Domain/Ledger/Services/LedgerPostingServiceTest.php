@@ -9,6 +9,7 @@ use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Account\Models\TransactionProjection;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
+use App\Domain\Ledger\Models\LedgerPosting;
 use App\Domain\Ledger\Services\LedgerPostingService;
 use App\Models\User;
 use Illuminate\Support\Str;
@@ -17,6 +18,161 @@ use Tests\DomainTestCase;
 
 class LedgerPostingServiceTest extends DomainTestCase
 {
+    #[Test]
+    public function it_creates_a_compensating_reversal_linked_to_the_original_posting(): void
+    {
+        Asset::firstOrCreate(
+            ['code' => 'SZL'],
+            ['name' => 'Swazi Lilangeni', 'type' => 'fiat', 'precision' => 2, 'is_active' => true],
+        );
+
+        $sender = User::factory()->create();
+        $recipient = User::factory()->create();
+
+        $fromAccount = Account::factory()->forUser($sender)->create(['uuid' => (string) Str::uuid()]);
+        $toAccount = Account::factory()->forUser($recipient)->create(['uuid' => (string) Str::uuid()]);
+        $reference = 'REF-' . Str::upper(Str::random(10));
+
+        $transaction = AuthorizedTransaction::query()->create([
+            'user_id' => $sender->id,
+            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx' => 'TRX-' . Str::upper(Str::random(10)),
+            'payload' => [
+                'from_account_uuid' => $fromAccount->uuid,
+                'to_account_uuid' => $toAccount->uuid,
+                'amount' => '10.00',
+                'asset_code' => 'SZL',
+                'reference' => $reference,
+            ],
+            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
+        ]);
+
+        app(LedgerPostingService::class)->createForAuthorizedTransaction($transaction, [
+            'amount' => '10.00',
+            'asset_code' => 'SZL',
+            'reference' => $reference,
+        ]);
+
+        $originalPosting = LedgerPosting::query()->where('transfer_reference', $reference)->firstOrFail();
+
+        app(LedgerPostingService::class)->createCompensatingReversal(
+            $originalPosting,
+            'customer_dispute',
+            'ops.manager@example.com',
+        );
+
+        $originalPosting->refresh();
+        $reversalPosting = LedgerPosting::query()
+            ->where('posting_type', 'compensating_reversal')
+            ->latest('created_at')
+            ->first();
+
+        $this->assertNotNull($reversalPosting);
+        $this->assertSame('reversed', $originalPosting->status);
+        $this->assertSame($originalPosting->id, $reversalPosting->metadata['related_posting_id'] ?? null);
+        $this->assertSame('customer_dispute', $reversalPosting->metadata['reversal_reason'] ?? null);
+        $this->assertSame('ops.manager@example.com', $reversalPosting->metadata['authorized_by'] ?? null);
+    }
+
+    #[Test]
+    public function it_creates_a_manual_adjustment_with_explicit_audit_metadata(): void
+    {
+        Asset::firstOrCreate(
+            ['code' => 'SZL'],
+            ['name' => 'Swazi Lilangeni', 'type' => 'fiat', 'precision' => 2, 'is_active' => true],
+        );
+
+        $operator = User::factory()->create();
+        $customer = User::factory()->create();
+
+        $operatorAccount = Account::factory()->forUser($operator)->create(['uuid' => (string) Str::uuid()]);
+        $customerAccount = Account::factory()->forUser($customer)->create(['uuid' => (string) Str::uuid()]);
+
+        app(LedgerPostingService::class)->createManualAdjustment(
+            accountUuid: $customerAccount->uuid,
+            contraAccountUuid: $operatorAccount->uuid,
+            assetCode: 'SZL',
+            amount: '5.00',
+            direction: 'credit',
+            reason: 'operator_correction',
+            authorizedBy: 'ops.manager@example.com',
+        );
+
+        $adjustmentPosting = LedgerPosting::query()
+            ->where('posting_type', 'manual_adjustment')
+            ->latest('created_at')
+            ->first();
+
+        $this->assertNotNull($adjustmentPosting);
+        $this->assertSame('posted', $adjustmentPosting->status);
+        $this->assertSame('operator_correction', $adjustmentPosting->metadata['adjustment_reason'] ?? null);
+        $this->assertSame('ops.manager@example.com', $adjustmentPosting->metadata['authorized_by'] ?? null);
+        $this->assertSame('credit', $adjustmentPosting->metadata['adjustment_direction'] ?? null);
+    }
+
+    #[Test]
+    public function it_creates_a_reconciliation_adjustment_linked_to_the_original_posting(): void
+    {
+        Asset::firstOrCreate(
+            ['code' => 'SZL'],
+            ['name' => 'Swazi Lilangeni', 'type' => 'fiat', 'precision' => 2, 'is_active' => true],
+        );
+
+        $sender = User::factory()->create();
+        $recipient = User::factory()->create();
+
+        $fromAccount = Account::factory()->forUser($sender)->create(['uuid' => (string) Str::uuid()]);
+        $toAccount = Account::factory()->forUser($recipient)->create(['uuid' => (string) Str::uuid()]);
+        $reference = 'REF-' . Str::upper(Str::random(10));
+
+        $transaction = AuthorizedTransaction::query()->create([
+            'user_id' => $sender->id,
+            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx' => 'TRX-' . Str::upper(Str::random(10)),
+            'payload' => [
+                'from_account_uuid' => $fromAccount->uuid,
+                'to_account_uuid' => $toAccount->uuid,
+                'amount' => '10.00',
+                'asset_code' => 'SZL',
+                'reference' => $reference,
+            ],
+            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
+        ]);
+
+        app(LedgerPostingService::class)->createForAuthorizedTransaction($transaction, [
+            'amount' => '10.00',
+            'asset_code' => 'SZL',
+            'reference' => $reference,
+        ]);
+
+        $originalPosting = LedgerPosting::query()->where('transfer_reference', $reference)->firstOrFail();
+
+        app(LedgerPostingService::class)->createReconciliationAdjustment(
+            posting: $originalPosting,
+            accountUuid: $toAccount->uuid,
+            contraAccountUuid: $fromAccount->uuid,
+            amount: '1.00',
+            direction: 'debit',
+            reason: 'daily_reconciliation_delta',
+            authorizedBy: 'recon.bot',
+        );
+
+        $originalPosting->refresh();
+        $adjustmentPosting = LedgerPosting::query()
+            ->where('posting_type', 'reconciliation_adjustment')
+            ->latest('created_at')
+            ->first();
+
+        $this->assertNotNull($adjustmentPosting);
+        $this->assertSame('adjusted', $originalPosting->status);
+        $this->assertSame($originalPosting->id, $adjustmentPosting->metadata['related_posting_id'] ?? null);
+        $this->assertSame('daily_reconciliation_delta', $adjustmentPosting->metadata['adjustment_reason'] ?? null);
+        $this->assertSame('recon.bot', $adjustmentPosting->metadata['authorized_by'] ?? null);
+        $this->assertSame('debit', $adjustmentPosting->metadata['adjustment_direction'] ?? null);
+    }
+
     #[Test]
     public function it_applies_account_balance_read_models_from_posted_entries_for_send_money(): void
     {
