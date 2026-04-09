@@ -65,6 +65,13 @@ class MoneyMovementTransactionInspector
                 ->all()
             : [];
 
+        $projectionState = $this->buildProjectionState(
+            transaction: $transaction,
+            ledgerPosting: $ledgerPosting,
+            assetTransfer: $assetTransfer,
+            projectionCount: count($projections),
+        );
+
         $timeline = [];
         if ($transaction !== null) {
             $timeline[] = [
@@ -134,10 +141,16 @@ class MoneyMovementTransactionInspector
         }
 
         $warnings = [];
-        if ($assetTransfer !== null && count($projections) === 0) {
+        if ($ledgerPosting !== null && count($projections) === 0) {
+            $warnings[] = 'Ledger posting exists but no matching transaction_projections were found for this post-cutover movement.';
+        } elseif ($assetTransfer !== null && count($projections) === 0) {
             $warnings[] = 'Transfer exists in asset_transfers but no matching transaction_projections were found.';
         } elseif ($assetTransfer !== null && count($projections) !== 2) {
             $warnings[] = 'Transfer projection count mismatch: expected 2 account-facing transaction_projections rows for an internal P2P transfer.';
+        }
+
+        if ($ledgerPosting === null && count($projections) > 0 && $this->isInspectableInternalMovement($transaction, $assetTransfer)) {
+            $warnings[] = 'Transaction projections exist without a ledger posting. Treat this movement as legacy pre-cutover unless a posting backfill is explicitly documented.';
         }
 
         return [
@@ -190,6 +203,7 @@ class MoneyMovementTransactionInspector
                 'to_amount'         => $assetTransfer->to_amount,
                 'failure_reason'    => $assetTransfer->failure_reason,
             ] : null,
+            'projection_state'        => $projectionState,
             'transaction_projections' => $projections,
             'money_request'           => $moneyRequest !== null ? [
                 'id'                => $moneyRequest->id,
@@ -205,6 +219,63 @@ class MoneyMovementTransactionInspector
             'timeline'  => $timeline,
             'warnings'  => $warnings,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildProjectionState(
+        ?AuthorizedTransaction $transaction,
+        ?LedgerPosting $ledgerPosting,
+        ?AssetTransfer $assetTransfer,
+        int $projectionCount,
+    ): array {
+        $expectedCount = $this->isInspectableInternalMovement($transaction, $assetTransfer) ? 2 : null;
+
+        if ($ledgerPosting !== null) {
+            return [
+                'status'            => $projectionCount === 0 ? 'lagging' : 'projected',
+                'anchor'            => 'ledger_posting',
+                'count'             => $projectionCount,
+                'expected_count'    => $expectedCount,
+                'ledger_posting_id' => $ledgerPosting->id,
+                'transfer_reference' => $ledgerPosting->transfer_reference,
+            ];
+        }
+
+        if ($projectionCount > 0) {
+            return [
+                'status'            => 'legacy_projection_only',
+                'anchor'            => 'projection_only',
+                'count'             => $projectionCount,
+                'expected_count'    => $expectedCount,
+                'ledger_posting_id' => null,
+                'transfer_reference' => $assetTransfer?->reference,
+            ];
+        }
+
+        return [
+            'status'            => 'not_projected',
+            'anchor'            => 'none',
+            'count'             => $projectionCount,
+            'expected_count'    => $expectedCount,
+            'ledger_posting_id' => null,
+            'transfer_reference' => $assetTransfer?->reference,
+        ];
+    }
+
+    private function isInspectableInternalMovement(?AuthorizedTransaction $transaction, ?AssetTransfer $assetTransfer): bool
+    {
+        if ($transaction !== null && in_array($transaction->remark, [
+            AuthorizedTransaction::REMARK_SEND_MONEY,
+            AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+        ], true)) {
+            return true;
+        }
+
+        return $assetTransfer !== null
+            && $assetTransfer->from_account_uuid !== null
+            && $assetTransfer->to_account_uuid !== null;
     }
 
     private function resolveLedgerPosting(?AuthorizedTransaction $transaction, ?string $reference): ?LedgerPosting

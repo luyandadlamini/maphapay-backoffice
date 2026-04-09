@@ -109,7 +109,12 @@ class MoneyMovementTransactionInspectorTest extends DomainTestCase
         $this->assertSame('completed', $result['asset_transfer']['status']);
         $this->assertCount(2, $result['transaction_projections']);
         $this->assertSame($moneyRequest->id, $result['money_request']['id']);
-        $this->assertSame([], $result['warnings']);
+        $this->assertSame('legacy_projection_only', $result['projection_state']['status']);
+        $this->assertSame(2, $result['projection_state']['count']);
+        $this->assertContains(
+            'Transaction projections exist without a ledger posting. Treat this movement as legacy pre-cutover unless a posting backfill is explicitly documented.',
+            $result['warnings'],
+        );
         $this->assertSame('challenge_decision', $result['timeline'][1]['event']);
     }
 
@@ -303,7 +308,12 @@ class MoneyMovementTransactionInspectorTest extends DomainTestCase
         $this->assertSame($moneyRequest->id, $result['money_request']['id']);
         $this->assertSame('transfer_completed', $result['timeline'][3]['event']);
         $this->assertSame('money_request_state', $result['timeline'][4]['event']);
-        $this->assertSame([], $result['warnings']);
+        $this->assertSame('legacy_projection_only', $result['projection_state']['status']);
+        $this->assertSame(2, $result['projection_state']['count']);
+        $this->assertContains(
+            'Transaction projections exist without a ledger posting. Treat this movement as legacy pre-cutover unless a posting backfill is explicitly documented.',
+            $result['warnings'],
+        );
     }
 
     #[Test]
@@ -384,6 +394,13 @@ class MoneyMovementTransactionInspectorTest extends DomainTestCase
         $this->assertSame('posted', $result['ledger_posting']['status']);
         $this->assertSame('send_money', $result['ledger_posting']['posting_type']);
         $this->assertCount(2, $result['ledger_posting']['entries']);
+        $this->assertSame('lagging', $result['projection_state']['status']);
+        $this->assertSame(0, $result['projection_state']['count']);
+        $this->assertSame($postingId, $result['projection_state']['ledger_posting_id']);
+        $this->assertContains(
+            'Ledger posting exists but no matching transaction_projections were found for this post-cutover movement.',
+            $result['warnings'],
+        );
     }
 
     #[Test]
