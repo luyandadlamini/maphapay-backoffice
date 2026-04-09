@@ -6,6 +6,7 @@ namespace App\Domain\Ledger\Services;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
+use App\Domain\Account\Support\InternalTransferProjectionWriter;
 use App\Domain\Account\Services\Cache\CacheManager;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
@@ -15,6 +16,7 @@ use App\Domain\Ledger\Models\LedgerEntry;
 use App\Domain\Ledger\Models\LedgerPosting;
 use App\Domain\Shared\Money\MoneyConverter;
 use App\Domain\Wallet\Events\Broadcast\WalletBalanceUpdated;
+use App\Models\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
@@ -113,10 +115,75 @@ class LedgerPostingService
         }
 
         $this->applyAccountBalanceReadModels($entries);
+        $this->applyTransactionProjectionReadModels($posting, $transaction, $entries);
 
         $posting->load('entries');
 
         return $this->serializePosting($posting);
+    }
+
+    /**
+     * @param  list<array{account_uuid: string, asset_code: string, signed_amount: int, entry_type: string, metadata: array<string, mixed>}>  $entries
+     */
+    private function applyTransactionProjectionReadModels(
+        LedgerPosting $posting,
+        AuthorizedTransaction $transaction,
+        array $entries,
+    ): void {
+        if (count($entries) !== 2) {
+            return;
+        }
+
+        $subtype = match ($transaction->remark) {
+            AuthorizedTransaction::REMARK_SEND_MONEY => 'send_money',
+            AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED => 'request_money_accept',
+            default => null,
+        };
+
+        if ($subtype === null) {
+            return;
+        }
+
+        $debitEntry = collect($entries)->firstWhere('entry_type', 'debit');
+        $creditEntry = collect($entries)->firstWhere('entry_type', 'credit');
+
+        if (! is_array($debitEntry) || ! is_array($creditEntry)) {
+            return;
+        }
+
+        $payload = is_array($transaction->payload) ? $transaction->payload : [];
+        $note = is_string($payload['note'] ?? null) ? trim((string) $payload['note']) : null;
+        $note = $note === '' ? null : $note;
+
+        app(InternalTransferProjectionWriter::class)->create(
+            fromAccountUuid: $debitEntry['account_uuid'],
+            toAccountUuid: $creditEntry['account_uuid'],
+            fromAssetCode: $debitEntry['asset_code'],
+            toAssetCode: $creditEntry['asset_code'],
+            fromAmount: abs($debitEntry['signed_amount']),
+            toAmount: abs($creditEntry['signed_amount']),
+            subtype: $subtype,
+            description: null,
+            reference: $posting->transfer_reference,
+            metadata: array_filter([
+                'event_type' => 'LedgerPostingCreated',
+                'event_uuid' => $posting->id,
+                'source' => 'p2p',
+                'operation_type' => $subtype,
+                'money_state_anchor' => 'ledger_posting',
+                'note' => $note,
+                'money_request_id' => $posting->money_request_id,
+                'p2p_display' => [
+                    'sender_label' => $this->accountOwnerLabel($debitEntry['account_uuid']),
+                    'recipient_label' => $this->accountOwnerLabel($creditEntry['account_uuid']),
+                    'note_preview' => $note,
+                ],
+                'ledger_posting_id' => $posting->id,
+                'ledger_posting_status' => $posting->status,
+                'ledger_transfer_reference' => $posting->transfer_reference,
+                'projection_anchor' => 'ledger_posting',
+            ], static fn (mixed $value): bool => $value !== null && $value !== ''),
+        );
     }
 
     /**
@@ -179,6 +246,42 @@ class LedgerPostingService
             Cache::forget("maphapay.dashboard.balance.{$account->user->id}");
             WalletBalanceUpdated::dispatch($account->user->id);
         }
+    }
+
+    private function accountOwnerLabel(string $accountUuid): string
+    {
+        /** @var User|null $user */
+        $user = Account::query()
+            ->with('user')
+            ->where('uuid', $accountUuid)
+            ->first()
+            ?->user;
+
+        return $this->userLabel($user);
+    }
+
+    private function userLabel(?User $user): string
+    {
+        if ($user === null) {
+            return 'contact';
+        }
+
+        $name = trim((string) ($user->name ?? ''));
+        if ($name !== '') {
+            return $name;
+        }
+
+        $username = trim((string) ($user->username ?? ''));
+        if ($username !== '') {
+            return $username;
+        }
+
+        $mobile = trim((string) ($user->mobile ?? ''));
+        if ($mobile !== '') {
+            return $mobile;
+        }
+
+        return 'contact';
     }
 
     /**

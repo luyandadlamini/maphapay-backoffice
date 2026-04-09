@@ -18,6 +18,32 @@ use Tests\DomainTestCase;
 class TransactionProjectorTest extends DomainTestCase
 {
     #[Test]
+    public function it_skips_posting_anchored_internal_transfer_events_so_postings_own_new_projection_writes(): void
+    {
+        $reference = 'REF-' . Str::upper(Str::random(10));
+
+        $event = new AssetTransferCompleted(
+            fromAccountUuid: AccountUuid::fromString((string) Str::uuid()),
+            toAccountUuid: AccountUuid::fromString((string) Str::uuid()),
+            fromAssetCode: 'SZL',
+            toAssetCode: 'SZL',
+            fromAmount: new Money(1000),
+            toAmount: new Money(1000),
+            hash: Hash::fromData('posting-owned-transfer'),
+            description: 'Send money',
+            transferId: $reference,
+            metadata: [
+                'operation_type' => 'send_money',
+                'money_state_anchor' => 'ledger_posting',
+            ],
+        );
+
+        app(TransactionProjector::class)->onAssetTransferCompleted($event);
+
+        $this->assertSame(0, TransactionProjection::query()->where('reference', $reference)->count());
+    }
+
+    #[Test]
     public function it_stamps_new_internal_transfer_projections_with_resolved_ledger_posting_linkage(): void
     {
         $reference = 'REF-' . Str::upper(Str::random(10));

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Account\Projectors;
 
 use App\Domain\Account\Models\TransactionProjection;
+use App\Domain\Account\Support\InternalTransferProjectionWriter;
 use App\Domain\Account\Support\TransactionClassification;
 use App\Domain\Account\Support\TransactionDisplay;
 use App\Domain\Asset\Events\AssetTransactionCreated;
@@ -176,6 +177,10 @@ class TransactionProjector extends Projector
      */
     public function onAssetTransferCompleted(AssetTransferCompleted $event): void
     {
+        if (($event->metadata['money_state_anchor'] ?? null) === 'ledger_posting') {
+            return;
+        }
+
         try {
             $subtype = $this->subtypeForAssetTransferCompleted($event);
             $postingMetadata = $this->postingMetadataForTransfer($event->transferId);
@@ -188,36 +193,17 @@ class TransactionProjector extends Projector
                 ],
             );
 
-            // Create debit transaction for sender
-            TransactionProjection::create(
-                $this->buildProjectionAttributes(
-                    accountUuid: (string) $event->fromAccountUuid,
-                    type: 'transfer_out',
-                    subtype: $subtype,
-                    assetCode: $event->fromAssetCode,
-                    amount: $event->fromAmount->getAmount(),
-                    description: $event->description ?? 'Transfer to ' . substr((string) $event->toAccountUuid, 0, 8),
-                    reference: $event->transferId ?? null,
-                    metadata: array_merge($baseMetadata, [
-                        'to_account' => (string) $event->toAccountUuid,
-                    ]),
-                )
-            );
-
-            // Create credit transaction for receiver
-            TransactionProjection::create(
-                $this->buildProjectionAttributes(
-                    accountUuid: (string) $event->toAccountUuid,
-                    type: 'transfer_in',
-                    subtype: $subtype,
-                    assetCode: $event->toAssetCode,
-                    amount: $event->toAmount->getAmount(),
-                    description: $event->description ?? 'Transfer from ' . substr((string) $event->fromAccountUuid, 0, 8),
-                    reference: $event->transferId ?? null,
-                    metadata: array_merge($baseMetadata, [
-                        'from_account' => (string) $event->fromAccountUuid,
-                    ]),
-                )
+            app(InternalTransferProjectionWriter::class)->create(
+                fromAccountUuid: (string) $event->fromAccountUuid,
+                toAccountUuid: (string) $event->toAccountUuid,
+                fromAssetCode: $event->fromAssetCode,
+                toAssetCode: $event->toAssetCode,
+                fromAmount: $event->fromAmount->getAmount(),
+                toAmount: $event->toAmount->getAmount(),
+                subtype: $subtype,
+                description: $event->description,
+                reference: $event->transferId ?? null,
+                metadata: $baseMetadata,
             );
 
             Log::info(
