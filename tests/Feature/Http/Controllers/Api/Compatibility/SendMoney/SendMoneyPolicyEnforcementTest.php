@@ -11,6 +11,7 @@ use App\Domain\Asset\Models\AssetTransfer;
 use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderInterface;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Ledger\Services\LedgerPostingService;
+use App\Domain\Mobile\Models\MobileDevice;
 use App\Domain\Wallet\Events\Broadcast\WalletBalanceUpdated;
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
@@ -33,6 +35,8 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
     private Account $senderAccount;
 
     private Account $recipientAccount;
+
+    private string $trustedDeviceId;
 
     protected function setUp(): void
     {
@@ -78,6 +82,16 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
             'frozen'    => false,
         ]);
 
+        $this->trustedDeviceId = 'send-money-policy-device-'.$this->sender->id;
+
+        MobileDevice::factory()
+            ->trusted()
+            ->ios()
+            ->create([
+                'user_id' => $this->sender->id,
+                'device_id' => $this->trustedDeviceId,
+            ]);
+
         AccountBalance::query()->updateOrCreate(
             ['account_uuid' => $this->senderAccount->uuid, 'asset_code' => 'SZL'],
             ['balance' => 500_000],
@@ -86,6 +100,19 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
             ['account_uuid' => $this->recipientAccount->uuid, 'asset_code' => 'SZL'],
             ['balance' => 0],
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, string>  $headers
+     * @return TestResponse<\Illuminate\Http\Response>
+     */
+    private function postTrustedSendMoney(array $payload, array $headers = []): TestResponse
+    {
+        return $this->withHeaders($headers)->postJson('/api/send-money/store', array_merge([
+            'device_type' => 'ios',
+            'device_id' => $this->trustedDeviceId,
+        ], $payload));
     }
 
     #[Test]
@@ -106,13 +133,13 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
-        $response = $this->withHeaders([
-            'Idempotency-Key' => '00000000-0000-0000-0000-000000009901',
-        ])->postJson('/api/send-money/store', [
+        $response = $this->postTrustedSendMoney([
             'user'              => $this->recipient->email,
             'amount'            => '10.00',
             'verification_type' => 'sms',
             'note'              => 'Lunch split',
+        ], [
+            'Idempotency-Key' => '00000000-0000-0000-0000-000000009901',
         ]);
 
         $response->assertOk()
@@ -214,12 +241,12 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
     {
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
-        $response = $this->withHeaders([
-            'Idempotency-Key' => '00000000-0000-0000-0000-000000009902',
-        ])->postJson('/api/send-money/store', [
+        $response = $this->postTrustedSendMoney([
             'user'              => $this->recipient->email,
             'amount'            => '1000.00',
             'verification_type' => 'none',
+        ], [
+            'Idempotency-Key' => '00000000-0000-0000-0000-000000009902',
         ]);
 
         $response->assertOk()
@@ -243,7 +270,7 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
-        $response = $this->postJson('/api/send-money/store', [
+        $response = $this->postTrustedSendMoney([
             'user'              => $this->recipient->email,
             'amount'            => '25.00',
             'verification_type' => 'none',
@@ -261,12 +288,12 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
-        $response = $this->withHeaders([
-            'Idempotency-Key' => '00000000-0000-0000-0000-000000009905',
-        ])->postJson('/api/send-money/store', [
+        $response = $this->postTrustedSendMoney([
             'user'              => $this->recipient->email,
             'amount'            => '25.00',
             'verification_type' => 'pin',
+        ], [
+            'Idempotency-Key' => '00000000-0000-0000-0000-000000009905',
         ]);
 
         $response->assertOk()
@@ -281,12 +308,12 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
-        $response = $this->withHeaders([
-            'Idempotency-Key' => '00000000-0000-0000-0000-000000009906',
-        ])->postJson('/api/send-money/store', [
+        $response = $this->postTrustedSendMoney([
             'user'              => $this->recipient->email,
             'amount'            => '1000.00',
             'verification_type' => 'none',
+        ], [
+            'Idempotency-Key' => '00000000-0000-0000-0000-000000009906',
         ]);
 
         $response->assertOk()
@@ -306,9 +333,9 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
             'note'              => 'Cache-loss replay',
         ];
 
-        $first = $this->withHeaders([
+        $first = $this->postTrustedSendMoney($payload, [
             'Idempotency-Key' => $idempotencyKey,
-        ])->postJson('/api/send-money/store', $payload);
+        ]);
 
         $first->assertOk()
             ->assertJsonPath('status', 'success')
@@ -316,9 +343,9 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
 
         Cache::flush();
 
-        $second = $this->withHeaders([
+        $second = $this->postTrustedSendMoney($payload, [
             'Idempotency-Key' => $idempotencyKey,
-        ])->postJson('/api/send-money/store', $payload);
+        ]);
 
         $second->assertOk()
             ->assertJsonPath('status', 'success')
@@ -358,13 +385,13 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
 
         $idempotencyKey = '00000000-0000-0000-0000-000000009904';
 
-        $first = $this->withHeaders([
-            'Idempotency-Key' => $idempotencyKey,
-        ])->postJson('/api/send-money/store', [
+        $first = $this->postTrustedSendMoney([
             'user'              => $this->recipient->email,
             'amount'            => '10.00',
             'verification_type' => 'sms',
             'note'              => 'Hint drift replay',
+        ], [
+            'Idempotency-Key' => $idempotencyKey,
         ]);
 
         $first->assertOk()
@@ -373,13 +400,13 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
 
         Cache::flush();
 
-        $second = $this->withHeaders([
-            'Idempotency-Key' => $idempotencyKey,
-        ])->postJson('/api/send-money/store', [
+        $second = $this->postTrustedSendMoney([
             'user'              => $this->recipient->email,
             'amount'            => '10.00',
             'verification_type' => 'none',
             'note'              => 'Hint drift replay',
+        ], [
+            'Idempotency-Key' => $idempotencyKey,
         ]);
 
         $second->assertOk()
@@ -409,13 +436,13 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
-        $response = $this->withHeaders([
-            'Idempotency-Key' => '00000000-0000-0000-0000-000000009905',
-        ])->postJson('/api/send-money/store', [
+        $response = $this->postTrustedSendMoney([
             'user'              => $this->recipient->email,
             'amount'            => '10.00',
             'verification_type' => 'none',
             'note'              => 'Pre-execution hard block',
+        ], [
+            'Idempotency-Key' => '00000000-0000-0000-0000-000000009905',
         ]);
 
         $response->assertStatus(422)
@@ -452,13 +479,13 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
             ->where('asset_code', 'SZL')
             ->value('balance');
 
-        $response = $this->withHeaders([
-            'Idempotency-Key' => '00000000-0000-0000-0000-000000009907',
-        ])->postJson('/api/send-money/store', [
+        $response = $this->postTrustedSendMoney([
             'user'              => $this->recipient->email,
             'amount'            => '10.00',
             'verification_type' => 'sms',
             'note'              => 'Posting failure boundary',
+        ], [
+            'Idempotency-Key' => '00000000-0000-0000-0000-000000009907',
         ]);
 
         $response->assertStatus(422)

@@ -9,6 +9,7 @@ use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\AuthorizedTransaction\Services\InternalP2pTransferService;
+use App\Domain\Mobile\Models\MobileDevice;
 use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Models\MoneyRequest;
 use App\Models\User;
@@ -43,6 +44,8 @@ class DoubleSpendProtectionTest extends ControllerTestCase
 
     private Account $recipientAccount;
 
+    private string $recipientTrustedDeviceId;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -67,6 +70,15 @@ class DoubleSpendProtectionTest extends ControllerTestCase
         ]);
         $this->requesterAccount = $this->createAccount($this->requester);
         $this->recipientAccount = $this->createAccount($this->recipient);
+        $this->recipientTrustedDeviceId = 'request-money-double-spend-device-'.$this->recipient->id;
+
+        MobileDevice::factory()
+            ->trusted()
+            ->ios()
+            ->create([
+                'user_id' => $this->recipient->id,
+                'device_id' => $this->recipientTrustedDeviceId,
+            ]);
     }
 
     /**
@@ -80,7 +92,10 @@ class DoubleSpendProtectionTest extends ControllerTestCase
         ];
 
         return $this->withHeaders($headers)
-            ->postJson("/api/request-money/received-store/{$moneyRequestId}", $payload);
+            ->postJson("/api/request-money/received-store/{$moneyRequestId}", array_merge([
+                'device_type' => 'ios',
+                'device_id' => $this->recipientTrustedDeviceId,
+            ], $payload));
     }
 
     #[Test]
@@ -306,18 +321,18 @@ class DoubleSpendProtectionTest extends ControllerTestCase
         $idem = (string) Str::uuid();
         $body = ['verification_type' => 'sms'];
 
-        $first = $this->postJson(
-            "/api/request-money/received-store/{$moneyRequestId}",
+        $first = $this->postReceivedStore(
+            $moneyRequestId,
             $body,
-            ['X-Idempotency-Key' => $idem],
+            $idem,
         );
         $first->assertOk();
         $trx = (string) $first->json('data.trx');
 
-        $second = $this->postJson(
-            "/api/request-money/received-store/{$moneyRequestId}",
+        $second = $this->postReceivedStore(
+            $moneyRequestId,
             $body,
-            ['X-Idempotency-Key' => $idem],
+            $idem,
         );
         $second->assertOk();
         $this->assertSame($trx, (string) $second->json('data.trx'));
