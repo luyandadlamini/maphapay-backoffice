@@ -27,7 +27,10 @@ Date: 2026-04-07
 | Wire approved posting ownership point for first slice | DONE | LedgerPostingService is invoked from AuthorizedTransactionManager::finalizeAtomically() after handler execution and before authorized_transaction result persistence. |
 | Add/update tests for first-slice invariants | DONE | Added posting assertions for send-money/request-money acceptance, request-money creation non-posting coverage, posting-failure rollback coverage, and inspector workflow-vs-posting coverage. |
 | Run relevant test suite | DONE | `./vendor/bin/pest tests/Feature/Http/Controllers/Api/Compatibility/SendMoney/SendMoneyPolicyEnforcementTest.php tests/Feature/Http/Controllers/Api/Compatibility/RequestMoney/RequestMoneyStoreControllerTest.php tests/Feature/Financial/DoubleSpendProtectionTest.php tests/Unit/Domain/Monitoring/Services/MoneyMovementTransactionInspectorTest.php` passed: 35 tests, 223 assertions. |
-| Run relevant test suite | TODO | |
+| Re-anchor projections to posted state for post-cutover internal movements | TODO | Phase 4 from the approved implementation plan remains untracked in execution. Current tracker only proves posting creation plus inspector visibility for the first slice; it does not yet prove `AccountBalance` / `TransactionProjection` are derived from posted state for new-cutover traffic or that projection-lag health checks exist. |
+| Implement posting-aware reversal and adjustment classes | TODO | Phase 5 from the approved plan remains untracked in execution. There is no tracker evidence yet that send-money/request-money postings have governed reversal classes, compensating reversals, reconciliation adjustments, or operator manual-adjustment posting semantics. |
+| Integrate ledger posting references into reconciliation outputs and operator diagnostics end to end | TODO | Phases 6 and 7 remain incomplete in tracker coverage. Current first slice added inspector workflow-vs-posting visibility, but there is no tracker evidence yet for posting-aware discrepancy reporting, posted-without-projection / projection-without-posting warnings, or legacy pre-cutover operator diagnostics. |
+| Run relevant ledger-core follow-up verification for post-slice phases | TODO | Execute only after the remaining ledger-core phases above land; first-slice verification is complete, but end-to-end section completion is not yet proven. |
 
 ### Notes
 
@@ -35,6 +38,7 @@ Date: 2026-04-07
 - 2026-04-07: Implementation started after confirming approved design already exists in ledger-core audit/design/plan docs; no new design work required for this slice.
 - 2026-04-07: Static analysis passed for changed ledger-core classes via `XDEBUG_MODE=off vendor/bin/phpstan analyse app/Domain/AuthorizedTransaction/Services/AuthorizedTransactionManager.php app/Domain/Ledger/Services/LedgerPostingService.php app/Domain/Ledger/Models/LedgerPosting.php app/Domain/Ledger/Models/LedgerEntry.php app/Domain/Monitoring/Services/MoneyMovementTransactionInspector.php --memory-limit=2G`.
 - 2026-04-07: No ledger-core spec correction was required; one existing failure-path test was aligned to observed code reality that failed request-money acceptance leaves the authorization pending while no posting or money-state change is committed.
+- 2026-04-09: Tracker reconciliation for a second end-to-end pass confirms Section 1 is not fully complete. The approved implementation plan still has unexecuted phases for projection re-anchoring, posting-aware reversal/adjustment modeling, reconciliation integration, and richer operator diagnostics beyond the first-slice posting foundation.
 
 ## Section 2: Provider Orchestration, Settlement, And Reconciliation
 
@@ -51,6 +55,10 @@ Date: 2026-04-07
 | Implement first operator/admin surface updates | DONE | Enriched file-backed reconciliation report loading and modal details with settlement summary, recent provider callbacks, and incremental reference fields. |
 | Add/update tests for provider invariants | DONE | Added targeted coverage for normalized webhook persistence/dedupe, reconciliation reference construction, and full report payload loading. |
 | Run relevant test suite | DONE | `./vendor/bin/pest tests/Feature/Api/CustodianWebhookControllerTest.php tests/Unit/Support/ReconciliationReferenceBuilderTest.php tests/Unit/Support/ReconciliationReportDataLoaderTest.php` passed: 4 tests, 33 assertions. |
+| Introduce normalized provider-operation records and status enums | TODO | Phases 1 and 2 are not fully executed yet. Current code/tracker prove normalized callback metadata on `custodian_webhooks`, but there is still no tracked execution of a canonical `ProviderOperation` record or explicit provider finality/settlement/reconciliation status model across in-scope providers. |
+| Normalize settlement state independently from callback metadata | TODO | Phase 4 remains incomplete in tracker coverage. Current slice surfaces settlement summary metadata, but there is no recorded end-to-end execution proving normalized settlement states separate provider-success from settlement-complete semantics on one canonical internal record. |
+| Extend reconciliation and operator surfaces to normalized orchestration state end to end | TODO | Phases 5 and 6 remain incomplete. Reconciliation references were enriched incrementally, but the tracker does not yet prove operators can inspect provider-mediated movement state through one normalized orchestration record spanning provider references, settlement state, reconciliation state, and nullable ledger posting linkage. |
+| Run relevant provider-orchestration follow-up verification for later phases | TODO | Execute after remaining orchestration phases land; current verification only proves the first narrow slice. |
 
 ### Notes
 
@@ -62,6 +70,7 @@ Date: 2026-04-07
 - 2026-04-07: First slice implemented by extending `custodian_webhooks` and existing reconciliation report loading rather than introducing parallel orchestration inbox/reporting systems.
 - 2026-04-07: Ledger linkage remains on the approved interim posture for this slice: reconciliation references now carry nullable `ledger_posting_reference`, with no attempt to redesign or block on ledger-core internals.
 - 2026-04-07: No provider-orchestration spec correction was required; implementation stayed within the approved custodian/bank-first incremental slice.
+- 2026-04-09: Tracker reconciliation for a second end-to-end pass confirms Section 2 is not fully complete. The approved plan still has unexecuted later phases for canonical provider-operation records, normalized settlement/finality/reconciliation statuses, and operator surfaces centered on one normalized orchestration state instead of incremental webhook/report enrichment alone.
 
 ## Section 3: Backoffice Operations
 
@@ -76,6 +85,11 @@ Date: 2026-04-07
 | Visibility and denied-access enforcement tests | DONE | Added page-boundary coverage proving finance users are denied `Settings` and support users are denied `BankOperations`. |
 | Governed-action audit persistence tests | DONE | Added targeted coverage for platform export audit persistence plus finance reconciliation audit persistence, and pending approval-request persistence for settings reset and settlement freeze. |
 | Relevant Section 3 test suite run | DONE | `./vendor/bin/pest tests/Feature/Backoffice/BackofficeGovernancePagesTest.php` passed: 6 tests, 22 assertions. Syntax check also passed on changed PHP files via `php -l`. |
+| Complete full workspace inventory and navigation/visibility alignment for all in-scope admin surfaces | TODO | Phases 1 and 2 are not complete end to end. Current tracker only proves first-slice ownership/access alignment for `Settings`, `Modules`, and `BankOperations`; the approved plan still requires full workspace mapping plus visibility enforcement across all in-scope Filament pages/resources/actions. |
+| Complete deferred `Modules` approval-request wiring and evidence capture | TODO | Explicitly deferred in the first-slice notes. `Modules.enableModule` / `disableModule` still need the dedicated evidence-capture UI and `request_approve` wiring promised in the approved plan. |
+| Apply standardized approval policy across remaining high-risk admin action classes | TODO | Phase 3 remains largely unexecuted beyond the first governed surfaces. The approved plan still calls for explicit policy mode, evidence, and persistence targets across resources/pages including API keys, feature flags, accounts, exchange rates, assets, users, webhooks, invitations, AML, reconciliation exports, fund-accounting, projector rebuilds, data-subject requests, and audit-log export actions. |
+| Harden finance, compliance, and support workspaces beyond the first slice | TODO | Phases 4, 5, and 6 remain incomplete. Current tracker does not yet prove consistent finance approval semantics across fund-management pages, coherent compliance workspace controls, or support-safe triage boundaries that route destructive actions through escalation/request flows. |
+| Run relevant backoffice-operations follow-up verification for full workspace/action coverage | TODO | Execute after the remaining workspace and approval-policy phases land; current verification only proves the first governed slice. |
 
 ### Notes
 
@@ -87,6 +101,7 @@ Date: 2026-04-07
 - 2026-04-07: `Settings` is now platform-only, grouped under `Platform`, requires evidence on governed direct actions, audits governed exports, and converts reset-to-defaults into a pending approval request.
 - 2026-04-07: `BankOperations` is now finance-only, grouped under `Finance & Reconciliation`, audits manual reconciliation triggers, and converts settlement freezes into pending approval requests.
 - 2026-04-07: `Modules` was aligned to Platform Administration ownership and access in this slice, but module enable/disable request wiring was deferred to the next slice; the custom module grid needs dedicated evidence-capture UI to avoid widening the phase-1 execution boundary.
+- 2026-04-09: Tracker reconciliation for a second end-to-end pass confirms Section 3 is not fully complete. The approved plan still has substantial remaining work for full workspace inventory/visibility alignment, the explicitly deferred `Modules` request wiring, broad approval-policy standardization across many high-risk admin surfaces, and deeper finance/compliance/support workspace hardening.
 
 ## Section 4: Corporate / B2B2C
 
@@ -103,6 +118,11 @@ Date: 2026-04-07
 | Rewire merchant onboarding off split in-memory state | DONE | `MerchantOnboardingService` now persists submit/review/approve/activate/suspend/reactivate/terminate state to DB-backed merchant + onboarding-case records; GraphQL merchant submission/approval/suspension flows now resolve through canonical persisted state. |
 | Add/update section 4 tests | DONE | Added feature coverage for business-team/corporate-profile linkage, persisted capability grants with enforcement, DB-backed merchant onboarding persistence, and merchant approval gating; replaced outdated service tests with DB-backed onboarding lifecycle coverage. |
 | Run relevant section 4 test suite | DONE | `./vendor/bin/pest tests/Feature/Security/CorporateProfileAndMerchantOnboardingTest.php tests/Unit/Domain/Commerce/Services/MerchantOnboardingServiceTest.php` passed: 11 tests, 39 assertions. Targeted static analysis also passed on changed section 4 files via `XDEBUG_MODE=off vendor/bin/phpstan analyse ... --memory-limit=2G`. |
+| Expand corporate capability model beyond merchant compliance review and migrate broader business authorization to it | TODO | Phase 3 is only partially executed. Current tracker proves persisted capability grants plus `compliance_review` enforcement for merchant review actions, but the approved plan still requires explicit capability coverage for treasury, payouts, member administration, and API control in business context. |
+| Implement shared approval-policy resolver for governed corporate actions | TODO | Phase 5 remains unexecuted in tracker coverage. The approved plan still calls for one corporate approval-policy model spanning treasury-affecting actions, membership/capability changes, and API key/webhook ownership changes, with consistent persisted approval metadata. |
+| Define and enforce corporate treasury vs spend-account boundaries | TODO | Phase 6 remains untracked in execution. Current tracker does not yet prove team-scoped spending controls resolve through an explicit corporate account topology or that later expense/card/payroll work can rely on a hardened treasury/spend boundary. |
+| Add `CorporatePayoutBatch` foundation and governed batch-payout lifecycle | TODO | Phase 7 remains unexecuted. There is no tracker evidence yet for a canonical batch-payout object, line-item lifecycle, duplicate/cut-off validation, or approval gating for business payroll/mass-payout foundations. |
+| Run relevant corporate-domain follow-up verification for later phases | TODO | Execute after the remaining corporate-domain phases land; current verification only proves the first persistence/control-boundary slice. |
 
 ### Notes
 
@@ -114,6 +134,7 @@ Date: 2026-04-07
 - 2026-04-07: Implemented a persisted capability foundation through `corporate_capability_grants`; business owners are seeded with full corporate capabilities, and merchant review actions now enforce explicit capability grants in business context.
 - 2026-04-07: Implemented durable `BusinessOnboardingCase` + status-history persistence and rewired merchant onboarding lifecycle state away from `MerchantOnboardingService` in-memory storage.
 - 2026-04-07: No section 4 spec adjustment was required; the slice executed the approved correction to move merchant onboarding toward one canonical persisted onboarding identity and DB-backed lifecycle authority.
+- 2026-04-09: Tracker reconciliation for a second end-to-end pass confirms Section 4 is not fully complete. The approved plan still has remaining phases for broader capability enforcement, a shared corporate approval-policy resolver, explicit treasury/spend-boundary hardening, and the `CorporatePayoutBatch` foundation that was intentionally excluded from the first slice.
 
 ## Section 5: Mobile Trust Boundaries
 
@@ -180,6 +201,9 @@ Date: 2026-04-07
 | Prevent runtime-posture fallback from counting as real attestation proof | DONE | 2026-04-09 follow-up slice completed in backoffice only: `HighRiskActionTrustPolicy` now treats `attestation_capability_mode=runtime-posture` and `none` as non-proof on the disabled-enforcement path, so fallback payloads preserve posture metadata/auditability but no longer bypass the degraded trust decision for untrusted devices. |
 | Add/update runtime-posture vs real-attestation policy tests | DONE | Added backend unit coverage proving runtime-posture fallback still degrades while real `app-attest` payloads continue to improve trust semantics, plus send-money feature coverage proving runtime-posture payloads no longer bypass `TRUST_POLICY_STEP_UP` when attestation enforcement is off. |
 | Run relevant runtime-posture policy verification | DONE | Red phase confirmed first via `./vendor/bin/pest tests/Unit/Domain/Mobile/Services/HighRiskActionTrustPolicyTest.php tests/Feature/Http/Controllers/Api/Compatibility/SendMoney/SendMoneyTrustPolicyTest.php` failing on 2026-04-09 (2 failures: unit policy decision `allow` vs expected `degrade`, send-money response `200` vs expected `428`). Green verification then passed on 2026-04-09: `./vendor/bin/pest tests/Unit/Domain/Mobile/Services/HighRiskActionTrustPolicyTest.php tests/Feature/Http/Controllers/Api/Compatibility/SendMoney/SendMoneyTrustPolicyTest.php tests/Feature/Http/Controllers/Api/Compatibility/RequestMoney/RequestMoneyReceivedTrustPolicyTest.php tests/Unit/Http/Controllers/Api/Commerce/MobileCommerceControllerTest.php` => 28 tests, 135 assertions. `XDEBUG_MODE=off vendor/bin/phpstan analyse app/Domain/Mobile/Services/HighRiskActionTrustPolicy.php tests/Unit/Domain/Mobile/Services/HighRiskActionTrustPolicyTest.php tests/Feature/Http/Controllers/Api/Compatibility/SendMoney/SendMoneyTrustPolicyTest.php --memory-limit=2G` passed with no errors. |
+| Extend trust-policy enforcement to compat virtual-card cancellation | IN PROGRESS | 2026-04-09 next dependency-safe slice selected after repo reconciliation: RN `useCancelVirtualCard()` still posts to `/api/virtual-card/cancel/{id}` without trust-envelope data, and backend `VirtualCardCancelController` still cancels immediately with no `HighRiskActionTrustPolicy` check. Slice goal is to harden this existing sensitive card-cancellation path without enabling attestation by default or touching the documented iOS native blocker. |
+| Add/update compat virtual-card cancellation trust tests | TODO | |
+| Run relevant compat virtual-card cancellation verification | TODO | |
 
 ### Notes
 
@@ -246,6 +270,7 @@ Date: 2026-04-07
 - 2026-04-09: Next dependency-safe slice selected is a backend trust-policy correction, not more native rollout. Current RN `runtime-posture` fallback already reports explicit capability metadata, but backend `HighRiskActionTrustPolicy` still treats any non-empty `attestation` string as trust-improving when enforcement is off. This slice will preserve degraded-mode metadata while preventing runtime-posture fallback from being interpreted as real attestation proof.
 - 2026-04-09: Completed the runtime-posture trust-proof correction without spec changes. The backend now only lets non-empty attestation payloads improve disabled-mode trust semantics when the capability mode is something stronger than `runtime-posture` / `none`, so runtime-observed posture remains auditable metadata rather than pseudo-attestation.
 - 2026-04-09: Verification stays intentionally narrow for this slice. No RN code changed, no rollout flags changed, no native iOS blocker changed, and no attempt was made to claim full end-to-end App Attest verification on this host.
+- 2026-04-09: Reconciled tracker against both repos before starting the next slice. Completed Section 5 rows remain accurate, both worktrees were clean, and the next dependency-safe gap is compat virtual-card cancellation: the RN hook still calls `/api/virtual-card/cancel/{id}` with no trust envelope while backend compatibility cancellation still bypasses `HighRiskActionTrustPolicy`.
 
 ## Cross-Cutting Blockers
 
