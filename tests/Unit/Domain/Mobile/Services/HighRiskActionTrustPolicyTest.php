@@ -104,6 +104,80 @@ describe('HighRiskActionTrustPolicy', function (): void {
             ]);
     });
 
+    it('does not treat runtime-posture fallback payloads as real attestation proof when enforcement is disabled', function (): void {
+        Config::set('mobile.attestation.enabled', false);
+
+        /** @var BiometricJWTServiceInterface&Mockery\MockInterface $biometricJwtService */
+        $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
+        $policy = new HighRiskActionTrustPolicy($biometricJwtService);
+
+        $user = new User;
+        $user->id = 1005;
+
+        $request = Request::create('/api/v1/commerce/payments', 'POST', [
+            'payment_link_token' => 'good-token',
+            'device_type' => 'ios',
+            'attestation' => 'expo-runtime-attestation:{"mode":"runtime-posture"}',
+            'attestation_status' => 'collected',
+            'attestation_capability_mode' => 'runtime-posture',
+            'attestation_capability_reason' => 'ios_app_attest_native_collection_unimplemented',
+            'attestation_capability_available' => false,
+            'device_posture_source' => 'runtime-observed',
+            'device_posture_status' => 'physical_device',
+            'device_posture_reason' => 'physical_device_confirmed',
+        ]);
+
+        $result = $policy->evaluate($user, $request, 'commerce.payment.process');
+
+        expect($result['decision'])->toBe('degrade')
+            ->and($result['reason'])->toBe('attestation_disabled_device_untrusted');
+
+        $persisted = DB::table('mobile_attestation_records')->where('id', $result['record_id'])->first();
+        expect($persisted)->not->toBeNull();
+        assert($persisted !== null);
+
+        $metadata = json_decode((string) $persisted->metadata, true, 512, JSON_THROW_ON_ERROR);
+
+        expect($metadata)
+            ->toMatchArray([
+                'attestation_present' => true,
+                'attestation_status' => 'collected',
+                'attestation_capability' => [
+                    'available' => false,
+                    'mode' => 'runtime-posture',
+                    'reason' => 'ios_app_attest_native_collection_unimplemented',
+                ],
+            ]);
+    });
+
+    it('still allows real attestation payloads to improve trust semantics when enforcement is disabled', function (): void {
+        Config::set('mobile.attestation.enabled', false);
+
+        /** @var BiometricJWTServiceInterface&Mockery\MockInterface $biometricJwtService */
+        $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
+        $policy = new HighRiskActionTrustPolicy($biometricJwtService);
+
+        $user = new User;
+        $user->id = 1006;
+
+        $request = Request::create('/api/v1/commerce/payments', 'POST', [
+            'payment_link_token' => 'good-token',
+            'device_type' => 'ios',
+            'attestation' => 'ios-app-attest:verified-payload',
+            'attestation_status' => 'collected',
+            'attestation_capability_mode' => 'app-attest',
+            'attestation_capability_available' => true,
+            'device_posture_source' => 'runtime-observed',
+            'device_posture_status' => 'physical_device',
+            'device_posture_reason' => 'physical_device_confirmed',
+        ]);
+
+        $result = $policy->evaluate($user, $request, 'commerce.payment.process');
+
+        expect($result['decision'])->toBe('allow')
+            ->and($result['reason'])->toBe('attestation_disabled');
+    });
+
     it('persists a deny decision when attestation is enabled but missing', function (): void {
         Config::set('mobile.attestation.enabled', true);
 

@@ -34,6 +34,7 @@ class HighRiskActionTrustPolicy
             ? filter_var($request->input('attestation_capability_available'), FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE)
             : null;
         $attestationEnabled = (bool) config('mobile.attestation.enabled', false);
+        $attestationCountsAsTrustProof = $this->attestationCountsAsTrustProof($attestation, $attestationCapabilityMode);
 
         $mobileDevice = $this->resolveMobileDevice($user, $deviceId);
         $deviceTrusted = $mobileDevice?->is_trusted === true;
@@ -62,7 +63,7 @@ class HighRiskActionTrustPolicy
                     $reason = 'attestation_verified';
                 }
             }
-        } elseif ($attestation === '' && ! $deviceTrusted) {
+        } elseif (! $attestationCountsAsTrustProof && ! $deviceTrusted) {
             $decision = 'degrade';
             $reason = $devicePostureStatus === 'simulator_or_emulator'
                 ? 'device_posture_untrusted'
@@ -116,5 +117,14 @@ class HighRiskActionTrustPolicy
             ->where('user_id', $user->id)
             ->where('device_id', $deviceId)
             ->first();
+    }
+
+    private function attestationCountsAsTrustProof(string $attestation, string $attestationCapabilityMode): bool
+    {
+        if ($attestation === '') {
+            return false;
+        }
+
+        return ! in_array($attestationCapabilityMode, ['none', 'runtime-posture'], true);
     }
 }

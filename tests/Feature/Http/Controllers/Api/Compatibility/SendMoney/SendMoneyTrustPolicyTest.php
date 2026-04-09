@@ -173,6 +173,54 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
     }
 
     #[Test]
+    public function test_send_money_runtime_posture_fallback_does_not_bypass_step_up_when_attestation_enforcement_is_disabled(): void
+    {
+        config([
+            'maphapay_migration.enable_send_money' => true,
+            'mobile.attestation.enabled' => false,
+        ]);
+
+        Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
+
+        $response = $this->postJson('/api/send-money/store', [
+            'user' => $this->recipient->email,
+            'amount' => '10.00',
+            'verification_type' => 'none',
+            'device_type' => 'ios',
+            'attestation' => 'expo-runtime-attestation:{"mode":"runtime-posture"}',
+            'attestation_status' => 'collected',
+            'attestation_capability_mode' => 'runtime-posture',
+            'attestation_capability_reason' => 'ios_app_attest_native_collection_unimplemented',
+            'attestation_capability_available' => false,
+            'device_posture_source' => 'runtime-observed',
+            'device_posture_status' => 'physical_device',
+            'device_posture_reason' => 'physical_device_confirmed',
+        ]);
+
+        $response->assertStatus(428)
+            ->assertJson([
+                'success' => false,
+            ])
+            ->assertJsonPath('error.code', 'TRUST_POLICY_STEP_UP')
+            ->assertJsonPath('error.trust_reason', 'attestation_disabled_device_untrusted');
+
+        $this->assertDatabaseHas('mobile_attestation_records', [
+            'user_id' => $this->sender->id,
+            'action' => 'send_money',
+            'decision' => 'degrade',
+            'reason' => 'attestation_disabled_device_untrusted',
+        ]);
+
+        $this->assertSame(
+            0,
+            AuthorizedTransaction::query()
+                ->where('user_id', $this->sender->id)
+                ->where('remark', AuthorizedTransaction::REMARK_SEND_MONEY)
+                ->count(),
+        );
+    }
+
+    #[Test]
     public function test_send_money_verification_none_denies_when_attestation_enabled_but_missing_and_does_not_create_authorization(): void
     {
         config([
