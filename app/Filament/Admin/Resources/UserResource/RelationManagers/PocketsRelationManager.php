@@ -54,7 +54,7 @@ class PocketsRelationManager extends RelationManager
                     ->label('Category')
                     ->sortable()
                     ->badge(),
-                Tables\Columns\ViewColumn::make('progress')
+                Tables\Columns\ViewColumn::make('progress_percentage')
                     ->label('Progress')
                     ->view('filament.tables.columns.pocket-progress'),
                 Tables\Columns\TextColumn::make('current_amount')
