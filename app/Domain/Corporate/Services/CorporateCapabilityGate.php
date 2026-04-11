@@ -21,7 +21,9 @@ class CorporateCapabilityGate
             return false;
         }
 
-        $profile = $team->corporateProfile;
+        // Use a fresh query to avoid stale relation caches (e.g. when the profile
+        // is created after the team object was first loaded in the same request).
+        $profile = $team->corporateProfile()->first();
 
         if (! $profile) {
             return false;
