@@ -371,7 +371,11 @@ class AccountResource extends Resource
                             function (Account $record): void {
                                 $oldValues = ['frozen' => true];
 
-                                app(AccountService::class)->unfreeze($record->uuid);
+                                app(AccountService::class)->unfreeze(
+                                    $record->uuid,
+                                    reason: 'account_resource_unfreeze',
+                                    authorizedBy: auth()->user()?->email,
+                                );
 
                                 static::adminActionGovernance()->auditDirectAction(
                                     workspace: static::getBackofficeWorkspace(),
@@ -452,7 +456,11 @@ class AccountResource extends Resource
 
         $oldValues = ['frozen' => false];
 
-        app(AccountService::class)->freeze($record->uuid);
+        app(AccountService::class)->freeze(
+            $record->uuid,
+            reason: $reason,
+            authorizedBy: auth()->user()?->email,
+        );
 
         static::adminActionGovernance()->auditDirectAction(
             workspace: static::getBackofficeWorkspace(),

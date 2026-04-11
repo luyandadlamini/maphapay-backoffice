@@ -43,7 +43,11 @@ class ViewAccount extends ViewRecord
                     try {
                         $oldValues = ['frozen' => false];
 
-                        app(AccountService::class)->freeze($record->uuid);
+                        app(AccountService::class)->freeze(
+                            $record->uuid,
+                            reason: $data['reason'],
+                            authorizedBy: auth()->user()?->email,
+                        );
 
                         static::adminActionGovernance()->auditDirectAction(
                             workspace: 'finance',
@@ -96,7 +100,11 @@ class ViewAccount extends ViewRecord
                     try {
                         $oldValues = ['frozen' => true];
 
-                        app(AccountService::class)->unfreeze($record->uuid);
+                        app(AccountService::class)->unfreeze(
+                            $record->uuid,
+                            reason: $data['reason'],
+                            authorizedBy: auth()->user()?->email,
+                        );
 
                         static::adminActionGovernance()->auditDirectAction(
                             workspace: 'finance',

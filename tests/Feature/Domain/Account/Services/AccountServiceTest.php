@@ -6,6 +6,11 @@ namespace Tests\Feature\Domain\Account\Services;
 
 use App\Domain\Account\DataObjects\Account as AccountDataObject;
 use App\Domain\Account\DataObjects\AccountUuid;
+use App\Domain\Account\Events\AccountFrozen;
+use App\Domain\Account\Events\AccountUnfrozen;
+use App\Domain\Account\Models\Account as AccountModel;
+use App\Domain\Account\Models\Ledger;
+use App\Domain\Account\Projectors\AccountProjector;
 use App\Domain\Account\Services\AccountService;
 use App\Models\User;
 use PHPUnit\Framework\Attributes\Test;
@@ -111,5 +116,109 @@ class AccountServiceTest extends ServiceTestCase
 
         $this->assertCount(1, $parameters);
         $this->assertEquals('account', $parameters[0]->getName());
+    }
+
+    #[Test]
+    public function test_freeze_persists_account_frozen_event_and_updates_projection(): void
+    {
+        $account = AccountModel::factory()->create([
+            'frozen' => false,
+        ]);
+
+        $this->accountService->freeze(
+            $account->uuid,
+            reason: 'admin_freeze',
+            authorizedBy: 'ops@example.test',
+        );
+
+        $storedEvent = Ledger::query()
+            ->where('aggregate_uuid', $account->uuid)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertInstanceOf(AccountFrozen::class, $storedEvent->event);
+        $this->assertSame($account->uuid, $storedEvent->aggregate_uuid);
+
+        $this->assertTrue((bool) $account->fresh()?->frozen);
+    }
+
+    #[Test]
+    public function test_freeze_events_can_replay_frozen_projection_state(): void
+    {
+        $account = AccountModel::factory()->create([
+            'frozen' => false,
+        ]);
+
+        $this->accountService->freeze(
+            $account->uuid,
+            reason: 'admin_freeze',
+            authorizedBy: 'ops@example.test',
+        );
+
+        $account->forceFill(['frozen' => false])->save();
+
+        $storedEvent = Ledger::query()
+            ->where('aggregate_uuid', $account->uuid)
+            ->get()
+            ->reverse()
+            ->first(fn (Ledger $ledger): bool => $ledger->event instanceof AccountFrozen);
+
+        $this->assertNotNull($storedEvent);
+
+        app(AccountProjector::class)->onAccountFrozen($storedEvent->event);
+
+        $this->assertTrue((bool) $account->fresh()?->frozen);
+    }
+
+    #[Test]
+    public function test_unfreeze_persists_account_unfrozen_event_and_updates_projection(): void
+    {
+        $account = AccountModel::factory()->create([
+            'frozen' => true,
+        ]);
+
+        $this->accountService->unfreeze(
+            $account->uuid,
+            reason: 'admin_unfreeze',
+            authorizedBy: 'ops@example.test',
+        );
+
+        $storedEvent = Ledger::query()
+            ->where('aggregate_uuid', $account->uuid)
+            ->latest('id')
+            ->firstOrFail();
+
+        $this->assertInstanceOf(AccountUnfrozen::class, $storedEvent->event);
+        $this->assertSame($account->uuid, $storedEvent->aggregate_uuid);
+
+        $this->assertFalse((bool) $account->fresh()?->frozen);
+    }
+
+    #[Test]
+    public function test_unfreeze_events_can_replay_unfrozen_projection_state(): void
+    {
+        $account = AccountModel::factory()->create([
+            'frozen' => true,
+        ]);
+
+        $this->accountService->unfreeze(
+            $account->uuid,
+            reason: 'admin_unfreeze',
+            authorizedBy: 'ops@example.test',
+        );
+
+        $account->forceFill(['frozen' => true])->save();
+
+        $storedEvent = Ledger::query()
+            ->where('aggregate_uuid', $account->uuid)
+            ->get()
+            ->reverse()
+            ->first(fn (Ledger $ledger): bool => $ledger->event instanceof AccountUnfrozen);
+
+        $this->assertNotNull($storedEvent);
+
+        app(AccountProjector::class)->onAccountUnfrozen($storedEvent->event);
+
+        $this->assertFalse((bool) $account->fresh()?->frozen);
     }
 }

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Tests\Feature\Corporate;
 
 use App\Domain\Corporate\Models\CorporateActionApprovalRequest;
-use App\Domain\Corporate\Models\CorporateProfile;
 use App\Domain\Corporate\Services\CorporateActionPolicy;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use InvalidArgumentException;
 use Tests\TestCase;
 
 class CorporateActionPolicyTest extends TestCase
@@ -125,6 +125,44 @@ class CorporateActionPolicyTest extends TestCase
         $this->assertNull($fresh->reviewer_id);
     }
 
+    public function test_it_rejects_unknown_action_types_when_submitting_approval_requests(): void
+    {
+        $owner = User::factory()->create();
+        $team = $this->createBusinessTeamForOwner($owner);
+
+        $policy = app(CorporateActionPolicy::class);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Action type 'unknown_action' is not a governed corporate action type.");
+
+        $policy->submitApprovalRequest(
+            requester: $owner,
+            team: $team,
+            actionType: 'unknown_action',
+            targetType: 'treasury_account',
+            targetIdentifier: 'acct-uuid-blocked',
+        );
+    }
+
+    public function test_it_allows_membership_change_approval_requests(): void
+    {
+        $owner = User::factory()->create();
+        $team = $this->createBusinessTeamForOwner($owner);
+
+        $policy = app(CorporateActionPolicy::class);
+
+        $request = $policy->submitApprovalRequest(
+            requester: $owner,
+            team: $team,
+            actionType: 'membership_change',
+            targetType: 'team_member',
+            targetIdentifier: 'user-123',
+        );
+
+        $this->assertSame('membership_change', $request->action_type);
+        $this->assertSame('pending', $request->action_status);
+    }
+
     public function test_it_approves_request_and_records_reviewer(): void
     {
         $owner = User::factory()->create();
@@ -161,7 +199,7 @@ class CorporateActionPolicyTest extends TestCase
             targetIdentifier: 'acct-uuid-0002',
         );
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $policy->approve($request2, $owner, 'I approve my own request');
     }
 
@@ -198,14 +236,14 @@ class CorporateActionPolicyTest extends TestCase
     private function createBusinessTeamForOwner(User $owner): Team
     {
         $team = Team::factory()->create([
-            'user_id'                     => $owner->id,
-            'name'                        => 'Policy Test Corp',
-            'personal_team'               => false,
-            'is_business_organization'    => true,
-            'organization_type'           => 'business',
+            'user_id'                      => $owner->id,
+            'name'                         => 'Policy Test Corp',
+            'personal_team'                => false,
+            'is_business_organization'     => true,
+            'organization_type'            => 'business',
             'business_registration_number' => 'REG-POL-001',
-            'tax_id'                      => 'TAX-POL-001',
-            'business_details'            => [
+            'tax_id'                       => 'TAX-POL-001',
+            'business_details'             => [
                 'legal_name' => 'Policy Test Corp (Pty) Ltd',
                 'country'    => 'SZ',
             ],

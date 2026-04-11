@@ -12,8 +12,8 @@ use InvalidArgumentException;
 class CorporateActionPolicy
 {
     private const GOVERNED_ACTION_TYPES = [
-        'treasury_affecting' => 'request_approve',
-        'membership_change'  => 'request_approve',
+        'treasury_affecting'   => 'request_approve',
+        'membership_change'    => 'request_approve',
         'api_ownership_change' => 'direct_elevated',
     ];
 
@@ -40,6 +40,14 @@ class CorporateActionPolicy
         string $targetIdentifier,
         array $evidence = [],
     ): CorporateActionApprovalRequest {
+        $classification = $this->classify($actionType, $requester, $team);
+
+        if ($classification === 'blocked') {
+            throw new InvalidArgumentException(
+                "Action type '{$actionType}' is not a governed corporate action type."
+            );
+        }
+
         $profile = $team->resolveCorporateProfile();
 
         /** @var CorporateActionApprovalRequest $request */

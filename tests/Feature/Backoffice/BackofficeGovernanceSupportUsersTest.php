@@ -8,6 +8,7 @@ use App\Filament\Admin\Resources\UserResource\Pages\ListUsers;
 use App\Filament\Admin\Resources\UserResource\Pages\ViewUser;
 use App\Models\AdminActionApprovalRequest;
 use App\Models\User;
+use App\Support\Backoffice\BackofficeWorkspaceAccess;
 use Filament\Facades\Filament;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Notification;
@@ -21,6 +22,33 @@ beforeEach(function (): void {
     Filament::setCurrentPanel($panel);
     Filament::setServingStatus(true);
     $panel->boot();
+});
+
+it('grants support workspace access to users with view-users permission', function (): void {
+    $user = User::factory()->create();
+    $user->givePermissionTo('view-users');
+
+    expect(app(BackofficeWorkspaceAccess::class)->canAccess('support', $user))->toBeTrue();
+});
+
+it('grants support workspace access to super admins', function (): void {
+    $user = User::factory()->create();
+    $user->assignRole('super-admin');
+
+    expect(app(BackofficeWorkspaceAccess::class)->canAccess('support', $user))->toBeTrue();
+});
+
+it('denies support workspace access without the required permission', function (): void {
+    $user = User::factory()->create();
+
+    expect(app(BackofficeWorkspaceAccess::class)->canAccess('support', $user))->toBeFalse();
+});
+
+it('does not treat freeze-users alone as support workspace access', function (): void {
+    $user = User::factory()->create();
+    $user->givePermissionTo('freeze-users');
+
+    expect(app(BackofficeWorkspaceAccess::class)->canAccess('support', $user))->toBeFalse();
 });
 
 it('limits user-admin visibility to support-oriented roles', function (): void {
@@ -79,10 +107,10 @@ it('records governed audit metadata when resetting 2fa from the user view', func
     $this->actingAs($operations);
 
     $customer = User::factory()->create([
-        'email' => 'two-factor@example.test',
-        'two_factor_secret' => encrypt('secret'),
+        'email'                     => 'two-factor@example.test',
+        'two_factor_secret'         => encrypt('secret'),
         'two_factor_recovery_codes' => encrypt(json_encode(['code-1'])),
-        'two_factor_confirmed_at' => now(),
+        'two_factor_confirmed_at'   => now(),
     ]);
 
     livewire(ViewUser::class, ['record' => $customer->uuid])

@@ -164,26 +164,26 @@ class AccountService
 
     /**
      * Freeze a wallet account, preventing all transactions.
-     * TODO (Task 3.1): Emit AccountFrozen domain event via LedgerAggregate for full audit trail.
      */
-    public function freeze(mixed $uuid): void
+    public function freeze(mixed $uuid, string $reason = 'backoffice_action', ?string $authorizedBy = null): void
     {
-        $accountUuid = __account_uuid($uuid);
+        $accountUuid = (string) __account_uuid($uuid);
 
-        \App\Domain\Account\Models\Account::where('uuid', $accountUuid)
-            ->update(['frozen' => true]);
+        LedgerAggregate::retrieve($accountUuid)
+            ->freezeAccount(reason: $reason, authorizedBy: $authorizedBy)
+            ->persist();
     }
 
     /**
      * Unfreeze a wallet account, restoring transaction capability.
-     * TODO (Task 3.1): Emit AccountUnfrozen domain event via LedgerAggregate for full audit trail.
      */
-    public function unfreeze(mixed $uuid): void
+    public function unfreeze(mixed $uuid, string $reason = 'backoffice_action', ?string $authorizedBy = null): void
     {
-        $accountUuid = __account_uuid($uuid);
+        $accountUuid = (string) __account_uuid($uuid);
 
-        \App\Domain\Account\Models\Account::where('uuid', $accountUuid)
-            ->update(['frozen' => false]);
+        LedgerAggregate::retrieve($accountUuid)
+            ->unfreezeAccount(reason: $reason, authorizedBy: $authorizedBy)
+            ->persist();
     }
 
     public function createForUser(string $userUuid, string $accountName): string

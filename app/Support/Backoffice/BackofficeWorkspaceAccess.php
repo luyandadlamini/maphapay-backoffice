@@ -19,10 +19,12 @@ class BackofficeWorkspaceAccess
 
         return match ($workspace) {
             'platform_administration' => method_exists($user, 'hasRole') && $user->hasRole('super-admin'),
-            'finance' => (method_exists($user, 'hasRole') && $user->hasRole('super-admin'))
+            'finance'                 => (method_exists($user, 'hasRole') && $user->hasRole('super-admin'))
                 || (method_exists($user, 'can') && $user->can('approve-adjustments')),
             'compliance' => (method_exists($user, 'hasRole') && $user->hasRole('super-admin'))
                 || (method_exists($user, 'hasRole') && $user->hasRole('compliance-manager')),
+            'support' => (method_exists($user, 'hasRole') && $user->hasRole('super-admin'))
+                || (method_exists($user, 'can') && $user->can('view-users')),
             default => false,
         };
     }

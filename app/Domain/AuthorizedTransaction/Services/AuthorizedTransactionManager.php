@@ -55,9 +55,9 @@ class AuthorizedTransactionManager
      * @var array<string, class-string<AuthorizedTransactionHandlerInterface>>
      */
     private const HANDLER_MAP = [
-        AuthorizedTransaction::REMARK_SEND_MONEY => SendMoneyHandler::class,
-        AuthorizedTransaction::REMARK_SCHEDULED_SEND => ScheduledSendHandler::class,
-        AuthorizedTransaction::REMARK_REQUEST_MONEY => RequestMoneyHandler::class,
+        AuthorizedTransaction::REMARK_SEND_MONEY             => SendMoneyHandler::class,
+        AuthorizedTransaction::REMARK_SCHEDULED_SEND         => ScheduledSendHandler::class,
+        AuthorizedTransaction::REMARK_REQUEST_MONEY          => RequestMoneyHandler::class,
         AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED => RequestMoneyReceivedHandler::class,
     ];
 
@@ -69,7 +69,8 @@ class AuthorizedTransactionManager
         private readonly MoneyMovementRiskSignalProviderInterface $riskSignals,
         private readonly OperationRecordService $operationRecordService,
         private readonly LedgerPostingService $ledgerPostingService,
-    ) {}
+    ) {
+    }
 
     /**
      * Step 1: Create an authorized transaction record.
@@ -102,13 +103,13 @@ class AuthorizedTransactionManager
         }
 
         $txn = AuthorizedTransaction::create([
-            'user_id' => $userId,
-            'remark' => $remark,
-            'trx' => $trx,
-            'payload' => $payload,
-            'status' => AuthorizedTransaction::STATUS_PENDING,
+            'user_id'           => $userId,
+            'remark'            => $remark,
+            'trx'               => $trx,
+            'payload'           => $payload,
+            'status'            => AuthorizedTransaction::STATUS_PENDING,
             'verification_type' => $verificationType,
-            'expires_at' => now()->addMinutes(self::TXN_TTL_MINUTES),
+            'expires_at'        => now()->addMinutes(self::TXN_TTL_MINUTES),
         ]);
 
         return $txn;
@@ -127,8 +128,8 @@ class AuthorizedTransactionManager
         $otp = (string) random_int(100000, 999999);
 
         $txn->update([
-            'otp_hash' => Hash::make($otp),
-            'otp_sent_at' => now(),
+            'otp_hash'       => Hash::make($otp),
+            'otp_sent_at'    => now(),
             'otp_expires_at' => now()->addMinutes(self::OTP_TTL_MINUTES),
         ]);
 
@@ -328,20 +329,6 @@ class AuthorizedTransactionManager
                 return $result;
             });
         } catch (Throwable $e) {
-            $currentStatus = AuthorizedTransaction::query()
-                ->whereKey($txn->id)
-                ->value('status');
-
-            if ($currentStatus === AuthorizedTransaction::STATUS_COMPLETED) {
-                DB::table('authorized_transactions')
-                    ->where('id', $txn->id)
-                    ->update([
-                        'status' => AuthorizedTransaction::STATUS_FAILED,
-                        'failure_reason' => $e->getMessage(),
-                        'updated_at' => now(),
-                    ]);
-            }
-
             throw $e;
         }
     }
@@ -381,7 +368,7 @@ class AuthorizedTransactionManager
             return;
         }
 
-        throw new RuntimeException('Transaction blocked by mobile trust policy. Decision: '.$trustDecision);
+        throw new RuntimeException('Transaction blocked by mobile trust policy. Decision: ' . $trustDecision);
     }
 
     /**
@@ -433,10 +420,10 @@ class AuthorizedTransactionManager
                 ->where('status', AuthorizedTransaction::STATUS_PENDING)
                 ->update([
                     'verification_confirmed_at' => now(),
-                    'otp_hash' => null,
-                    'otp_sent_at' => null,
-                    'otp_expires_at' => null,
-                    'updated_at' => now(),
+                    'otp_hash'                  => null,
+                    'otp_sent_at'               => null,
+                    'otp_expires_at'            => null,
+                    'updated_at'                => now(),
                 ]);
 
             if ($updated === 0) {
@@ -465,10 +452,10 @@ class AuthorizedTransactionManager
         $payload = $txn->payload;
 
         return [
-            'trx' => $txn->trx,
-            'scheduled' => true,
+            'trx'          => $txn->trx,
+            'scheduled'    => true,
             'scheduled_at' => $payload['scheduled_at'] ?? null,
-            'message' => 'Scheduled send authorized. Funds move at the scheduled time.',
+            'message'      => 'Scheduled send authorized. Funds move at the scheduled time.',
         ];
     }
 
@@ -531,8 +518,8 @@ class AuthorizedTransactionManager
             $nextFailures = (int) $lockedTxn->verification_failures + 1;
             $updates = [
                 'verification_failures' => $nextFailures,
-                'failure_reason' => $failureMessage,
-                'updated_at' => now(),
+                'failure_reason'        => $failureMessage,
+                'updated_at'            => now(),
             ];
 
             if ($nextFailures >= self::MAX_VERIFICATION_FAILURES) {
@@ -554,27 +541,27 @@ class AuthorizedTransactionManager
             ->whereKey($txn->id)
             ->where('status', AuthorizedTransaction::STATUS_PENDING)
             ->update([
-                'status' => AuthorizedTransaction::STATUS_EXPIRED,
+                'status'         => AuthorizedTransaction::STATUS_EXPIRED,
                 'failure_reason' => $reason,
-                'expires_at' => now(),
-                'updated_at' => now(),
+                'expires_at'     => now(),
+                'updated_at'     => now(),
             ]);
     }
 
     private function resolveHandler(string $remark): AuthorizedTransactionHandlerInterface
     {
         return match ($remark) {
-            AuthorizedTransaction::REMARK_SEND_MONEY => $this->sendMoneyHandler,
-            AuthorizedTransaction::REMARK_SCHEDULED_SEND => $this->scheduledSendHandler,
-            AuthorizedTransaction::REMARK_REQUEST_MONEY => $this->requestMoneyHandler,
+            AuthorizedTransaction::REMARK_SEND_MONEY             => $this->sendMoneyHandler,
+            AuthorizedTransaction::REMARK_SCHEDULED_SEND         => $this->scheduledSendHandler,
+            AuthorizedTransaction::REMARK_REQUEST_MONEY          => $this->requestMoneyHandler,
             AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED => $this->requestMoneyReceivedHandler,
-            default => throw new InvalidArgumentException("No handler for remark: {$remark}"),
+            default                                              => throw new InvalidArgumentException("No handler for remark: {$remark}"),
         };
     }
 
     private function generateTrx(): string
     {
         // Short alphanumeric reference returned to mobile (e.g. "TRX-A1B2C3D4").
-        return 'TRX-'.strtoupper(Str::random(8));
+        return 'TRX-' . strtoupper(Str::random(8));
     }
 }
