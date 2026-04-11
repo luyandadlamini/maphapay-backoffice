@@ -8,12 +8,17 @@ use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Infrastructure\Domain\DataObjects\DomainInfo;
 use App\Infrastructure\Domain\DomainManager;
 use App\Infrastructure\Domain\Enums\DomainStatus;
+use App\Support\Backoffice\AdminActionGovernance;
+use App\Support\Backoffice\BackofficeWorkspaceAccess;
 use Exception;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Url;
+use RuntimeException;
 
 class Modules extends Page
 {
@@ -33,7 +38,7 @@ class Modules extends Page
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasRole('super-admin') ?? false;
+        return app(BackofficeWorkspaceAccess::class)->canAccess(static::getBackofficeWorkspace());
     }
 
     #[Url]
@@ -54,6 +59,16 @@ class Modules extends Page
         }
 
         return $this->domainManager;
+    }
+
+    protected function getAdminActionGovernance(): AdminActionGovernance
+    {
+        return app(AdminActionGovernance::class);
+    }
+
+    protected function authorizePlatformWorkspace(): void
+    {
+        app(BackofficeWorkspaceAccess::class)->authorize(static::getBackofficeWorkspace());
     }
 
     /**
@@ -128,92 +143,98 @@ class Modules extends Page
     /**
      * Enable a disabled domain.
      */
-    public function enableModule(string $domain): void
+    public function enableModule(string $domain, string $reason): void
     {
-        try {
-            $result = $this->getDomainManager()->enable($domain);
+        $this->authorizePlatformWorkspace();
+        $this->validateGovernanceReason($reason);
 
-            if ($result->success) {
-                Notification::make()
-                    ->title('Module Enabled')
-                    ->body("Successfully enabled {$domain}.")
-                    ->success()
-                    ->send();
+        $module = $this->findModule($domain);
 
-                Log::info('Module enabled via admin panel', [
-                    'domain'   => $domain,
-                    'user'     => auth()->user()->email ?? 'system',
-                    'warnings' => $result->warnings,
-                ]);
-            } else {
-                Notification::make()
-                    ->title('Enable Failed')
-                    ->body(implode('. ', $result->errors))
-                    ->danger()
-                    ->send();
-            }
-        } catch (Exception $e) {
-            Notification::make()
-                ->title('Error')
-                ->body("Failed to enable module: {$e->getMessage()}")
-                ->danger()
-                ->send();
+        $this->getAdminActionGovernance()->submitApprovalRequest(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.modules.enable',
+            reason: $reason,
+            targetType: 'domain_module',
+            targetIdentifier: $domain,
+            payload: [
+                'module' => $domain,
+                'requested_state' => 'enabled',
+                'current_status' => $module->status->value,
+            ],
+            metadata: [
+                'dependencies' => $module->dependencies,
+                'actor_email' => auth()->user()->email ?? 'system',
+            ],
+        );
 
-            Log::error('Module enable failed', [
-                'domain' => $domain,
-                'error'  => $e->getMessage(),
-            ]);
-        }
+        Notification::make()
+            ->title('Enable request submitted')
+            ->body("{$domain} now requires approval before it can be enabled.")
+            ->warning()
+            ->send();
     }
 
     /**
      * Disable an active domain.
      */
-    public function disableModule(string $domain): void
+    public function disableModule(string $domain, string $reason): void
     {
-        try {
-            $result = $this->getDomainManager()->disable($domain);
+        $this->authorizePlatformWorkspace();
+        $this->validateGovernanceReason($reason);
 
-            if ($result->success) {
-                Notification::make()
-                    ->title('Module Disabled')
-                    ->body("Successfully disabled {$domain}. Migrations are preserved.")
-                    ->success()
-                    ->send();
+        $module = $this->findModule($domain);
 
-                Log::info('Module disabled via admin panel', [
-                    'domain'   => $domain,
-                    'user'     => auth()->user()->email ?? 'system',
-                    'warnings' => $result->warnings,
-                ]);
-            } else {
-                Notification::make()
-                    ->title('Disable Failed')
-                    ->body(implode('. ', $result->errors))
-                    ->danger()
-                    ->send();
-            }
-        } catch (Exception $e) {
-            Notification::make()
-                ->title('Error')
-                ->body("Failed to disable module: {$e->getMessage()}")
-                ->danger()
-                ->send();
+        $this->getAdminActionGovernance()->submitApprovalRequest(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.modules.disable',
+            reason: $reason,
+            targetType: 'domain_module',
+            targetIdentifier: $domain,
+            payload: [
+                'module' => $domain,
+                'requested_state' => 'disabled',
+                'current_status' => $module->status->value,
+            ],
+            metadata: [
+                'dependents' => $module->dependents,
+                'actor_email' => auth()->user()->email ?? 'system',
+            ],
+        );
 
-            Log::error('Module disable failed', [
-                'domain' => $domain,
-                'error'  => $e->getMessage(),
-            ]);
-        }
+        Notification::make()
+            ->title('Disable request submitted')
+            ->body("{$domain} now requires approval before it can be disabled.")
+            ->warning()
+            ->send();
     }
 
     /**
      * Verify a domain's health and configuration.
      */
-    public function verifyModule(string $domain): void
+    public function verifyModule(string $domain, string $reason): void
     {
+        $this->authorizePlatformWorkspace();
+        $this->validateGovernanceReason($reason);
+
         try {
             $result = $this->getDomainManager()->verify($domain);
+
+            $this->getAdminActionGovernance()->auditDirectAction(
+                workspace: static::getBackofficeWorkspace(),
+                action: 'backoffice.modules.verified',
+                reason: $reason,
+                metadata: [
+                    'module' => $domain,
+                    'valid' => $result->valid,
+                    'checks' => Arr::sort($result->checks),
+                    'errors' => $result->errors,
+                    'warnings' => $result->warnings,
+                    'passed_checks' => $result->getPassedCount(),
+                    'failed_checks' => $result->getFailedCount(),
+                    'actor_email' => auth()->user()->email ?? 'system',
+                ],
+                tags: 'backoffice,platform,module-verification'
+            );
 
             if ($result->valid) {
                 $totalChecks = count($result->checks);
@@ -299,5 +320,27 @@ class Modules extends Page
                 ->color('gray')
                 ->action(fn () => $this->refreshModules()),
         ];
+    }
+
+    private function validateGovernanceReason(string $reason): void
+    {
+        Validator::make(
+            ['reason' => $reason],
+            ['reason' => ['required', 'string', 'min:10']]
+        )->validate();
+    }
+
+    private function findModule(string $domain): DomainInfo
+    {
+        /** @var DomainInfo|null $module */
+        $module = $this->getDomainManager()
+            ->getAvailableDomains()
+            ->first(fn (DomainInfo $info): bool => $info->name === $domain);
+
+        if ($module === null) {
+            throw new RuntimeException("Module {$domain} is not available in the current inventory.");
+        }
+
+        return $module;
     }
 }

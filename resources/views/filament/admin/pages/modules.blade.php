@@ -208,7 +208,12 @@
                                     <div class="flex items-center justify-end gap-1">
                                         {{-- Verify Button --}}
                                         <x-filament::button
-                                            wire:click="verifyModule('{{ $module->name }}')"
+                                            x-on:click.prevent="
+                                                const reason = prompt('Reason for module verification');
+                                                if (reason) {
+                                                    $wire.verifyModule('{{ $module->name }}', reason);
+                                                }
+                                            "
                                             color="gray"
                                             size="xs"
                                             icon="heroicon-m-shield-check"
@@ -220,8 +225,12 @@
                                         @if ($module->status === \App\Infrastructure\Domain\Enums\DomainStatus::DISABLED)
                                             {{-- Enable Button --}}
                                             <x-filament::button
-                                                wire:click="enableModule('{{ $module->name }}')"
-                                                wire:confirm="Are you sure you want to enable this module?"
+                                                x-on:click.prevent="
+                                                    const reason = prompt('Reason for enabling this module');
+                                                    if (reason && confirm('Submit module enable request for approval?')) {
+                                                        $wire.enableModule('{{ $module->name }}', reason);
+                                                    }
+                                                "
                                                 color="success"
                                                 size="xs"
                                                 icon="heroicon-m-play"
@@ -232,8 +241,12 @@
                                         @elseif ($module->status === \App\Infrastructure\Domain\Enums\DomainStatus::INSTALLED && !$module->type->isRequired())
                                             {{-- Disable Button (not for core domains) --}}
                                             <x-filament::button
-                                                wire:click="disableModule('{{ $module->name }}')"
-                                                wire:confirm="Are you sure you want to disable this module? Migrations will be preserved."
+                                                x-on:click.prevent="
+                                                    const reason = prompt('Reason for disabling this module');
+                                                    if (reason && confirm('Submit module disable request for approval? Migrations will be preserved.')) {
+                                                        $wire.disableModule('{{ $module->name }}', reason);
+                                                    }
+                                                "
                                                 color="warning"
                                                 size="xs"
                                                 icon="heroicon-m-pause"

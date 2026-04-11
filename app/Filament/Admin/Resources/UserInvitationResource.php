@@ -6,31 +6,38 @@ namespace App\Filament\Admin\Resources;
 
 use App\Domain\User\Models\UserInvitation;
 use App\Domain\User\Services\UserInvitationService;
+use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Filament\Admin\Resources\UserInvitationResource\Pages;
 use App\Filament\Admin\Traits\RespectsModuleVisibility;
+use App\Support\Backoffice\AdminActionGovernance;
+use App\Support\Backoffice\BackofficeWorkspaceAccess;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 
 class UserInvitationResource extends Resource
 {
     use RespectsModuleVisibility;
+    use HasBackofficeWorkspace;
 
     protected static ?string $model = UserInvitation::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-envelope';
 
-    protected static ?string $navigationGroup = 'System';
+    protected static ?string $navigationGroup = 'Platform';
 
     protected static ?int $navigationSort = 2;
 
     protected static ?string $navigationLabel = 'Invitations';
 
     protected static ?string $modelLabel = 'Invitation';
+
+    protected static string $backofficeWorkspace = 'platform_administration';
 
     public static function form(Form $form): Form
     {
@@ -52,6 +59,10 @@ class UserInvitationResource extends Resource
                             ])
                             ->default('private')
                             ->required(),
+                        Forms\Components\Textarea::make('reason')
+                            ->required()
+                            ->minLength(10)
+                            ->columnSpanFull(),
                     ])->columns(2),
             ]);
     }
@@ -111,12 +122,44 @@ class UserInvitationResource extends Resource
                     ->icon('heroicon-o-arrow-path')
                     ->color('info')
                     ->requiresConfirmation()
+                    ->form([
+                        Forms\Components\Textarea::make('reason')
+                            ->required()
+                            ->minLength(10),
+                    ])
                     ->visible(fn (UserInvitation $record): bool => $record->isPending() || $record->isExpired())
-                    ->action(function (UserInvitation $record): void {
+                    ->action(function (UserInvitation $record, array $data): void {
                         try {
+                            static::authorizeWorkspace();
+
                             /** @var \App\Models\User $inviter */
                             $inviter = auth()->user();
+                            $oldValues = [
+                                'token' => $record->token,
+                                'expires_at' => $record->expires_at->toIso8601String(),
+                            ];
                             app(UserInvitationService::class)->resend($record->id, $inviter);
+
+                            $record->refresh();
+
+                            static::adminActionGovernance()->auditDirectAction(
+                                workspace: static::getBackofficeWorkspace(),
+                                action: 'backoffice.user_invitations.resent',
+                                reason: (string) $data['reason'],
+                                auditable: $record,
+                                oldValues: $oldValues,
+                                newValues: [
+                                    'token' => $record->token,
+                                    'expires_at' => $record->expires_at->toIso8601String(),
+                                ],
+                                metadata: [
+                                    'email' => $record->email,
+                                    'role' => $record->role,
+                                    'actor_email' => $inviter->email,
+                                ],
+                                tags: 'backoffice,platform,user-invitations'
+                            );
+
                             Notification::make()->title('Invitation resent')->success()->send();
                         } catch (RuntimeException $e) {
                             Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
@@ -127,10 +170,42 @@ class UserInvitationResource extends Resource
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->requiresConfirmation()
+                    ->form([
+                        Forms\Components\Textarea::make('reason')
+                            ->required()
+                            ->minLength(10),
+                    ])
                     ->visible(fn (UserInvitation $record): bool => $record->isPending())
-                    ->action(function (UserInvitation $record): void {
+                    ->action(function (UserInvitation $record, array $data): void {
                         try {
+                            /** @var \App\Models\User|null $actor */
+                            $actor = auth()->user();
+                            static::authorizeWorkspace();
+
+                            $oldValues = [
+                                'expires_at' => $record->expires_at->toIso8601String(),
+                            ];
                             app(UserInvitationService::class)->revoke($record->id);
+
+                            $record->refresh();
+
+                            static::adminActionGovernance()->auditDirectAction(
+                                workspace: static::getBackofficeWorkspace(),
+                                action: 'backoffice.user_invitations.revoked',
+                                reason: (string) $data['reason'],
+                                auditable: $record,
+                                oldValues: $oldValues,
+                                newValues: [
+                                    'expires_at' => $record->expires_at->toIso8601String(),
+                                ],
+                                metadata: [
+                                    'email' => $record->email,
+                                    'role' => $record->role,
+                                    'actor_email' => $actor instanceof \App\Models\User ? $actor->email : 'system',
+                                ],
+                                tags: 'backoffice,platform,user-invitations'
+                            );
+
                             Notification::make()->title('Invitation revoked')->success()->send();
                         } catch (RuntimeException $e) {
                             Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
@@ -139,9 +214,33 @@ class UserInvitationResource extends Resource
                 Tables\Actions\Action::make('copyLink')
                     ->label('Copy Link')
                     ->icon('heroicon-o-clipboard')
+                    ->form([
+                        Forms\Components\Textarea::make('reason')
+                            ->required()
+                            ->minLength(10),
+                    ])
                     ->visible(fn (UserInvitation $record): bool => $record->isPending())
-                    ->action(function (UserInvitation $record): void {
+                    ->action(function (UserInvitation $record, array $data): void {
+                        /** @var \App\Models\User|null $actor */
+                        $actor = auth()->user();
+                        static::authorizeWorkspace();
+
                         $url = config('app.url') . '/invitation/accept?token=' . $record->token;
+
+                        static::adminActionGovernance()->auditDirectAction(
+                            workspace: static::getBackofficeWorkspace(),
+                            action: 'backoffice.user_invitations.link_copied',
+                            reason: (string) $data['reason'],
+                            auditable: $record,
+                            metadata: [
+                                'email' => $record->email,
+                                'role' => $record->role,
+                                'invitation_url' => $url,
+                                'actor_email' => $actor instanceof \App\Models\User ? $actor->email : 'system',
+                            ],
+                            tags: 'backoffice,platform,user-invitations'
+                        );
+
                         Notification::make()
                             ->title('Invitation link')
                             ->body($url)
@@ -167,16 +266,31 @@ class UserInvitationResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()?->can('manage-invitations') ?? false;
+        return app(BackofficeWorkspaceAccess::class)->canAccess(static::getBackofficeWorkspace());
     }
 
     public static function canCreate(): bool
     {
-        return auth()->user()?->can('manage-invitations') ?? false;
+        return static::canViewAny();
     }
 
-    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    public static function canEdit(Model $record): bool
     {
         return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function adminActionGovernance(): AdminActionGovernance
+    {
+        return app(AdminActionGovernance::class);
+    }
+
+    public static function authorizeWorkspace(): void
+    {
+        app(BackofficeWorkspaceAccess::class)->authorize(static::getBackofficeWorkspace());
     }
 }

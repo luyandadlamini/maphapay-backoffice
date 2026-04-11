@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources;
 
 use App\Domain\Webhook\Models\Webhook;
+use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Filament\Admin\Resources\WebhookResource\Pages;
 use App\Filament\Admin\Resources\WebhookResource\RelationManagers;
+use App\Support\Backoffice\AdminActionGovernance;
+use App\Support\Backoffice\BackofficeWorkspaceAccess;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -14,10 +17,12 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class WebhookResource extends Resource
 {
     use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use HasBackofficeWorkspace;
 
     protected static ?string $model = Webhook::class;
 
@@ -26,6 +31,33 @@ class WebhookResource extends Resource
     protected static ?string $navigationGroup = 'Platform';
 
     protected static ?int $navigationSort = 3;
+
+    protected static string $backofficeWorkspace = 'platform_administration';
+
+    public static function canViewAny(): bool
+    {
+        return app(BackofficeWorkspaceAccess::class)->canAccess(static::getBackofficeWorkspace());
+    }
+
+    public static function canCreate(): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return static::canViewAny();
+    }
 
     public static function form(Form $form): Form
     {
@@ -151,9 +183,17 @@ class WebhookResource extends Resource
                         ->label('Test')
                         ->icon('heroicon-o-play')
                         ->color('gray')
+                        ->form([
+                            Forms\Components\Textarea::make('reason')
+                                ->required()
+                                ->minLength(10),
+                        ])
                         ->action(
-                            function (Webhook $record) {
-                                // Trigger a test webhook
+                            function (Webhook $record, array $data): void {
+                                static::authorizeWorkspace();
+                                /** @var \App\Models\User|null $actor */
+                                $actor = auth()->user();
+
                                 $record->deliveries()->create(
                                     [
                                         'event_type' => 'test.webhook',
@@ -165,6 +205,19 @@ class WebhookResource extends Resource
                                         'status' => 'pending',
                                     ]
                                 );
+
+                            static::adminActionGovernance()->auditDirectAction(
+                                workspace: static::getBackofficeWorkspace(),
+                                action: 'backoffice.webhooks.tested',
+                                reason: (string) $data['reason'],
+                                auditable: $record,
+                                metadata: [
+                                        'webhook' => $record->name,
+                                        'url' => $record->url,
+                                        'actor_email' => $actor instanceof \App\Models\User ? $actor->email : 'system',
+                                ],
+                                tags: 'backoffice,platform,webhooks'
+                            );
 
                                 Notification::make()
                                     ->title('Test webhook created')
@@ -178,33 +231,182 @@ class WebhookResource extends Resource
                         ->icon('heroicon-o-arrow-path')
                         ->color('warning')
                         ->visible(fn ($record) => $record->consecutive_failures > 0)
+                        ->form([
+                            Forms\Components\Textarea::make('reason')
+                                ->required()
+                                ->minLength(10),
+                        ])
                         ->requiresConfirmation()
-                        ->action(
-                            fn (Webhook $record) => $record->update(
+                        ->action(function (Webhook $record, array $data): void {
+                            static::authorizeWorkspace();
+                            /** @var \App\Models\User|null $actor */
+                            $actor = auth()->user();
+
+                            $oldValues = [
+                                'consecutive_failures' => $record->consecutive_failures,
+                                'is_active' => $record->is_active,
+                            ];
+
+                            $record->update(
                                 [
                                     'consecutive_failures' => 0,
-                                    'is_active'            => true,
+                                    'is_active' => true,
                                 ]
-                            )
-                        ),
+                            );
+
+                            static::adminActionGovernance()->auditDirectAction(
+                                workspace: static::getBackofficeWorkspace(),
+                                action: 'backoffice.webhooks.failures_reset',
+                                reason: (string) $data['reason'],
+                                auditable: $record,
+                                oldValues: $oldValues,
+                                newValues: [
+                                    'consecutive_failures' => $record->fresh()?->consecutive_failures,
+                                    'is_active' => $record->fresh()?->is_active,
+                                ],
+                                metadata: [
+                                    'webhook' => $record->name,
+                                    'actor_email' => $actor instanceof \App\Models\User ? $actor->email : 'system',
+                                ],
+                                tags: 'backoffice,platform,webhooks'
+                            );
+                        }),
+                    Tables\Actions\Action::make('activate')
+                        ->label('Activate')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->visible(fn (Webhook $record): bool => ! $record->is_active)
+                        ->form([
+                            Forms\Components\Textarea::make('reason')
+                                ->required()
+                                ->minLength(10),
+                        ])
+                        ->requiresConfirmation()
+                        ->action(function (Webhook $record, array $data): void {
+                            static::submitStateApprovalRequest(
+                                record: $record,
+                                requestedState: 'active',
+                                action: 'backoffice.webhooks.activate',
+                                reason: (string) $data['reason'],
+                            );
+                        }),
+                    Tables\Actions\Action::make('deactivate')
+                        ->label('Deactivate')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('danger')
+                        ->visible(fn (Webhook $record): bool => $record->is_active)
+                        ->form([
+                            Forms\Components\Textarea::make('reason')
+                                ->required()
+                                ->minLength(10),
+                        ])
+                        ->requiresConfirmation()
+                        ->action(function (Webhook $record, array $data): void {
+                            static::submitStateApprovalRequest(
+                                record: $record,
+                                requestedState: 'inactive',
+                                action: 'backoffice.webhooks.deactivate',
+                                reason: (string) $data['reason'],
+                            );
+                        }),
+                    Tables\Actions\Action::make('delete')
+                        ->label('Delete')
+                        ->icon('heroicon-o-trash')
+                        ->color('danger')
+                        ->form([
+                            Forms\Components\Textarea::make('reason')
+                                ->required()
+                                ->minLength(10),
+                        ])
+                        ->requiresConfirmation()
+                        ->action(function (Webhook $record, array $data): void {
+                            static::submitDeletionApprovalRequest(
+                                record: $record,
+                                reason: (string) $data['reason'],
+                            );
+                        }),
                 ]
             )
             ->bulkActions(
                 [
                     Tables\Actions\BulkActionGroup::make(
                         [
-                            Tables\Actions\DeleteBulkAction::make(),
+                            Tables\Actions\BulkAction::make('delete')
+                                ->label('Delete')
+                                ->icon('heroicon-o-trash')
+                                ->color('danger')
+                                ->form([
+                                    Forms\Components\Textarea::make('reason')
+                                        ->required()
+                                        ->minLength(10),
+                                ])
+                                ->requiresConfirmation()
+                                ->action(function ($records, array $data): void {
+                                    static::authorizeWorkspace();
+
+                                    static::adminActionGovernance()->submitApprovalRequest(
+                                        workspace: static::getBackofficeWorkspace(),
+                                        action: 'backoffice.webhooks.delete.bulk',
+                                        reason: (string) $data['reason'],
+                                        payload: [
+                                            'webhook_ids' => $records->map(fn (Webhook $record) => (string) $record->getKey())->values()->all(),
+                                        ],
+                                        metadata: [
+                                            'count' => $records->count(),
+                                        ],
+                                    );
+                                }),
                             Tables\Actions\BulkAction::make('activate')
                                 ->label('Activate')
                                 ->icon('heroicon-o-check-circle')
                                 ->color('success')
-                                ->action(fn ($records) => $records->each->update(['is_active' => true]))
+                                ->form([
+                                    Forms\Components\Textarea::make('reason')
+                                        ->required()
+                                        ->minLength(10),
+                                ])
+                                ->action(function ($records, array $data): void {
+                                    static::authorizeWorkspace();
+
+                                    static::adminActionGovernance()->submitApprovalRequest(
+                                        workspace: static::getBackofficeWorkspace(),
+                                        action: 'backoffice.webhooks.activate.bulk',
+                                        reason: (string) $data['reason'],
+                                        payload: [
+                                            'webhook_ids' => $records->map(fn (Webhook $record) => (string) $record->getKey())->values()->all(),
+                                            'requested_state' => 'active',
+                                        ],
+                                        metadata: [
+                                            'count' => $records->count(),
+                                        ],
+                                    );
+                                })
                                 ->requiresConfirmation(),
                             Tables\Actions\BulkAction::make('deactivate')
                                 ->label('Deactivate')
                                 ->icon('heroicon-o-x-circle')
                                 ->color('danger')
-                                ->action(fn ($records) => $records->each->update(['is_active' => false]))
+                                ->form([
+                                    Forms\Components\Textarea::make('reason')
+                                        ->required()
+                                        ->minLength(10),
+                                ])
+                                ->action(function ($records, array $data): void {
+                                    static::authorizeWorkspace();
+
+                                    static::adminActionGovernance()->submitApprovalRequest(
+                                        workspace: static::getBackofficeWorkspace(),
+                                        action: 'backoffice.webhooks.deactivate.bulk',
+                                        reason: (string) $data['reason'],
+                                        payload: [
+                                            'webhook_ids' => $records->map(fn (Webhook $record) => (string) $record->getKey())->values()->all(),
+                                            'requested_state' => 'inactive',
+                                        ],
+                                        metadata: [
+                                            'count' => $records->count(),
+                                        ],
+                                    );
+                                })
                                 ->requiresConfirmation(),
                         ]
                     ),
@@ -237,5 +439,66 @@ class WebhookResource extends Resource
                     $query->where('status', 'failed');
                 }]
             );
+    }
+
+    protected static function adminActionGovernance(): AdminActionGovernance
+    {
+        return app(AdminActionGovernance::class);
+    }
+
+    public static function authorizeWorkspace(): void
+    {
+        app(BackofficeWorkspaceAccess::class)->authorize(static::getBackofficeWorkspace());
+    }
+
+    protected static function submitStateApprovalRequest(Webhook $record, string $requestedState, string $action, string $reason): void
+    {
+        static::authorizeWorkspace();
+
+        static::adminActionGovernance()->submitApprovalRequest(
+            workspace: static::getBackofficeWorkspace(),
+            action: $action,
+            reason: $reason,
+            targetType: Webhook::class,
+            targetIdentifier: (string) $record->getKey(),
+            payload: [
+                'webhook_uuid' => (string) $record->getKey(),
+                'requested_state' => $requestedState,
+            ],
+            metadata: [
+                'webhook' => $record->name,
+                'url' => $record->url,
+            ],
+        );
+
+        Notification::make()
+            ->title('Webhook change submitted for approval')
+            ->success()
+            ->send();
+    }
+
+    protected static function submitDeletionApprovalRequest(Webhook $record, string $reason): void
+    {
+        static::authorizeWorkspace();
+
+        static::adminActionGovernance()->submitApprovalRequest(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.webhooks.delete',
+            reason: $reason,
+            targetType: Webhook::class,
+            targetIdentifier: (string) $record->getKey(),
+            payload: [
+                'webhook_uuid' => (string) $record->getKey(),
+            ],
+            metadata: [
+                'webhook' => $record->name,
+                'url' => $record->url,
+            ],
+        );
+
+        Notification::make()
+            ->title('Webhook deletion submitted for approval')
+            ->success()
+            ->send();
     }
 }

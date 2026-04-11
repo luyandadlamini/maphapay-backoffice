@@ -4,17 +4,23 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Filament\Admin\Resources\FeatureFlagResource\Pages;
 use App\Models\Feature;
+use App\Support\Backoffice\AdminActionGovernance;
+use App\Support\Backoffice\BackofficeWorkspaceAccess;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class FeatureFlagResource extends Resource
 {
+    use HasBackofficeWorkspace;
+
     protected static ?string $model = Feature::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-flag';
@@ -25,11 +31,26 @@ class FeatureFlagResource extends Resource
 
     protected static ?string $navigationLabel = 'Feature Flags';
 
-    public static function canAccess(): bool
-    {
-        $user = auth()->user();
+    protected static string $backofficeWorkspace = 'platform_administration';
 
-        return $user && ($user->hasRole('super-admin') || $user->can('manage-feature-flags'));
+    public static function canViewAny(): bool
+    {
+        return app(BackofficeWorkspaceAccess::class)->canAccess(static::getBackofficeWorkspace());
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return static::canViewAny();
     }
 
     public static function form(Form $form): Form
@@ -100,8 +121,26 @@ class FeatureFlagResource extends Resource
                             ->minLength(10),
                     ])
                     ->action(function ($record, array $data): void {
+                        static::authorizeWorkspace();
+
+                        $oldValue = $record->value;
                         $newValue = ! $record->isActive();
                         $record->update(['value' => $newValue]);
+
+                        static::adminActionGovernance()->auditDirectAction(
+                            workspace: static::getBackofficeWorkspace(),
+                            action: 'backoffice.feature_flags.toggled',
+                            reason: (string) $data['reason'],
+                            auditable: $record,
+                            oldValues: ['value' => $oldValue],
+                            newValues: ['value' => $newValue],
+                            metadata: [
+                                'flag' => $record->name,
+                                'scope' => $record->scope,
+                                'actor_email' => auth()->user()->email ?? 'system',
+                            ],
+                            tags: 'backoffice,platform,feature-flags'
+                        );
 
                         Notification::make()
                             ->title('Feature flag updated')
@@ -136,5 +175,15 @@ class FeatureFlagResource extends Resource
             'index' => Pages\ListFeatureFlags::route('/'),
             'view'  => Pages\ViewFeatureFlag::route('/{record}'),
         ];
+    }
+
+    protected static function adminActionGovernance(): AdminActionGovernance
+    {
+        return app(AdminActionGovernance::class);
+    }
+
+    protected static function authorizeWorkspace(): void
+    {
+        app(BackofficeWorkspaceAccess::class)->authorize(static::getBackofficeWorkspace());
     }
 }

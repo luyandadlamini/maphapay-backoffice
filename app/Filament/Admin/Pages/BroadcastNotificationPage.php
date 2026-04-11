@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Pages;
 
 use App\Domain\User\Values\UserRoles;
+use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Models\User;
+use App\Support\Backoffice\AdminActionGovernance;
+use App\Support\Backoffice\BackofficeWorkspaceAccess;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -18,11 +21,14 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Validator;
 
 class BroadcastNotificationPage extends Page implements HasForms, HasActions
 {
+    use HasBackofficeWorkspace;
     use InteractsWithForms;
     use InteractsWithActions;
+
     protected static ?string $navigationIcon = 'heroicon-o-megaphone';
 
     protected static ?string $navigationGroup = 'Platform';
@@ -32,6 +38,8 @@ class BroadcastNotificationPage extends Page implements HasForms, HasActions
     protected static ?string $navigationLabel = 'Broadcast Notifications';
 
     protected static string $view = 'filament.admin.pages.broadcast-notification-page';
+
+    protected static string $backofficeWorkspace = 'platform_administration';
 
     public string $channel = 'database';
 
@@ -47,11 +55,12 @@ class BroadcastNotificationPage extends Page implements HasForms, HasActions
 
     public static function canAccess(): bool
     {
-        $user = auth()->user();
-
-        return $user && $user->hasAnyRole([UserRoles::SUPER_ADMIN->value, UserRoles::OPERATIONS_L2->value]);
+        return app(BackofficeWorkspaceAccess::class)->canAccess(static::getBackofficeWorkspace());
     }
 
+    /**
+     * @return array<int, \Filament\Forms\Components\Component>
+     */
     public function getBroadcastFormSchema(): array
     {
         return [
@@ -133,15 +142,37 @@ class BroadcastNotificationPage extends Page implements HasForms, HasActions
                 ->requiresConfirmation()
                 ->modalHeading('Send Broadcast Notification')
                 ->modalDescription('This will send a notification to the selected recipients.')
-                ->form($this->getBroadcastFormSchema())
+                ->form([
+                    ...$this->getBroadcastFormSchema(),
+                    Textarea::make('reason')
+                        ->label('Reason for broadcast')
+                        ->required()
+                        ->minLength(10)
+                        ->rows(3),
+                ])
                 ->action(function (array $data): void {
-                    $this->sendNotification($data);
+                    $this->dispatchBroadcast($data);
                 }),
         ];
     }
 
-    private function sendNotification(array $data): void
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function dispatchBroadcast(array $data): void
     {
+        app(BackofficeWorkspaceAccess::class)->authorize(static::getBackofficeWorkspace());
+
+        Validator::make($data, [
+            'channel' => ['required', 'string'],
+            'audience' => ['required', 'string'],
+            'subject' => ['required', 'string', 'max:255'],
+            'body' => ['required', 'string', 'max:5000'],
+            'reason' => ['required', 'string', 'min:10'],
+            'userId' => ['nullable', 'integer'],
+            'role' => ['nullable', 'string'],
+        ])->validate();
+
         $recipients = $this->getRecipients($data['audience'], $data['userId'] ?? null, $data['role'] ?? null);
 
         if ($recipients->isEmpty()) {
@@ -162,6 +193,22 @@ class BroadcastNotificationPage extends Page implements HasForms, HasActions
 
             $count++;
         }
+
+        app(AdminActionGovernance::class)->auditDirectAction(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.broadcast_notifications.sent',
+            reason: (string) $data['reason'],
+            metadata: [
+                'channel' => $data['channel'],
+                'audience' => $data['audience'],
+                'user_id' => $data['userId'] ?? null,
+                'role' => $data['role'] ?? null,
+                'recipient_count' => $count,
+                'subject' => $data['subject'],
+                'actor_email' => auth()->user()->email ?? 'system',
+            ],
+            tags: 'backoffice,platform,broadcast-notifications'
+        );
 
         Notification::make()
             ->title('Notification sent')

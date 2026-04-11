@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\AssetResource\RelationManagers;
 
 use App\Domain\Asset\Models\ExchangeRate;
+use App\Filament\Admin\Resources\AssetResource;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -161,25 +162,49 @@ class ExchangeRatesRelationManager extends RelationManager
             )
             ->headerActions(
                 [
-                    Tables\Actions\CreateAction::make()
-                        ->label('Add Rate'),
                 ]
             )
             ->actions(
                 [
-                    Tables\Actions\EditAction::make(),
-                    Tables\Actions\DeleteAction::make()
+                    Tables\Actions\Action::make('delete')
+                        ->label('Delete')
+                        ->icon('heroicon-m-trash')
+                        ->color('danger')
+                        ->form(AssetResource::reasonSchema())
+                        ->action(function (ExchangeRate $record, array $data): void {
+                            AssetResource::requestExchangeRateDeletionApprovalFromAsset(
+                                record: $record,
+                                reason: (string) $data['reason'],
+                            );
+                        })
                         ->requiresConfirmation(),
+
+                    Tables\Actions\Action::make('deactivate')
+                        ->label('Deactivate')
+                        ->icon('heroicon-m-x-circle')
+                        ->color('danger')
+                        ->form(AssetResource::reasonSchema())
+                        ->action(function (ExchangeRate $record, array $data): void {
+                            AssetResource::requestExchangeRateStatusApprovalFromAsset(
+                                record: $record,
+                                requestedState: 'inactive',
+                                reason: (string) $data['reason'],
+                            );
+                        })
+                        ->requiresConfirmation()
+                        ->visible(fn (ExchangeRate $record): bool => $record->is_active),
 
                     Tables\Actions\Action::make('refresh')
                         ->label('Refresh Rate')
                         ->icon('heroicon-m-arrow-path')
                         ->color('warning')
+                        ->form(AssetResource::reasonSchema())
                         ->action(
-                            function ($record) {
-                                // Here you would implement rate refreshing logic
-                                // For now, just update the valid_at timestamp
-                                $record->update(['valid_at' => now()]);
+                            function (ExchangeRate $record, array $data): void {
+                                AssetResource::refreshExchangeRateFromAsset(
+                                    record: $record,
+                                    reason: (string) $data['reason'],
+                                );
                             }
                         )
                         ->requiresConfirmation()
@@ -190,21 +215,32 @@ class ExchangeRatesRelationManager extends RelationManager
                 [
                     Tables\Actions\BulkActionGroup::make(
                         [
-                            Tables\Actions\DeleteBulkAction::make()
-                                ->requiresConfirmation(),
-
                             Tables\Actions\BulkAction::make('activate')
                                 ->label('Activate')
                                 ->icon('heroicon-m-check-circle')
                                 ->color('success')
-                                ->action(fn ($records) => $records->each->update(['is_active' => true]))
+                                ->form(AssetResource::reasonSchema())
+                                ->action(function ($records, array $data): void {
+                                    AssetResource::requestBulkExchangeRateStatusApprovalFromAsset(
+                                        records: $records,
+                                        requestedState: 'active',
+                                        reason: (string) $data['reason'],
+                                    );
+                                })
                                 ->deselectRecordsAfterCompletion(),
 
                             Tables\Actions\BulkAction::make('deactivate')
                                 ->label('Deactivate')
                                 ->icon('heroicon-m-x-circle')
                                 ->color('danger')
-                                ->action(fn ($records) => $records->each->update(['is_active' => false]))
+                                ->form(AssetResource::reasonSchema())
+                                ->action(function ($records, array $data): void {
+                                    AssetResource::requestBulkExchangeRateStatusApprovalFromAsset(
+                                        records: $records,
+                                        requestedState: 'inactive',
+                                        reason: (string) $data['reason'],
+                                    );
+                                })
                                 ->requiresConfirmation()
                                 ->deselectRecordsAfterCompletion(),
                         ]

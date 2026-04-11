@@ -15,25 +15,39 @@ class ViewAsset extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\EditAction::make()
+            Actions\Action::make('requestEdit')
                 ->label('Edit Asset')
-                ->icon('heroicon-m-pencil-square'),
+                ->icon('heroicon-m-pencil-square')
+                ->fillForm(function (): array {
+                    /** @var \App\Domain\Asset\Models\Asset $record */
+                    $record = $this->getRecord();
+
+                    return AssetResource::assetFormData($record);
+                })
+                ->form(AssetResource::assetChangeRequestSchema())
+                ->action(function (array $data): void {
+                    /** @var \App\Domain\Asset\Models\Asset $record */
+                    $record = $this->getRecord();
+
+                    AssetResource::requestAssetEditApproval($record, $data);
+                    $this->dispatch('$refresh');
+                }),
 
             Actions\Action::make('toggle_status')
                 ->label(fn () => $this->getRecord()->is_active ? 'Deactivate' : 'Activate')
                 ->icon(fn () => $this->getRecord()->is_active ? 'heroicon-m-x-circle' : 'heroicon-m-check-circle')
                 ->color(fn () => $this->getRecord()->is_active ? 'danger' : 'success')
-                ->action(
-                    function () {
-                        $record = $this->getRecord();
-                        $record->update(['is_active' => ! $record->is_active]);
+                ->form(AssetResource::reasonSchema())
+                ->action(function (array $data): void {
+                    /** @var \App\Domain\Asset\Models\Asset $record */
+                    $record = $this->getRecord();
 
-                        $this->dispatch('$refresh');
-
-                        $status = $record->is_active ? 'activated' : 'deactivated';
-                        $this->getSuccessNotification("Asset has been {$status}.");
-                    }
-                )
+                    AssetResource::requestAssetStatusApproval(
+                        record: $record,
+                        requestedState: $record->is_active ? 'inactive' : 'active',
+                        reason: (string) $data['reason'],
+                    );
+                })
                 ->requiresConfirmation(fn () => $this->getRecord()->is_active)
                 ->modalDescription(
                     fn () => $this->getRecord()->is_active
@@ -41,9 +55,20 @@ class ViewAsset extends ViewRecord
                     : null
                 ),
 
-            Actions\DeleteAction::make()
+            Actions\Action::make('delete')
                 ->label('Delete Asset')
                 ->icon('heroicon-m-trash')
+                ->color('danger')
+                ->form(AssetResource::reasonSchema())
+                ->action(function (array $data): void {
+                    /** @var \App\Domain\Asset\Models\Asset $record */
+                    $record = $this->getRecord();
+
+                    AssetResource::requestAssetDeletionApproval(
+                        record: $record,
+                        reason: (string) $data['reason'],
+                    );
+                })
                 ->requiresConfirmation()
                 ->modalDescription('Are you sure you want to delete this asset? This action cannot be undone and may affect existing balances.'),
         ];

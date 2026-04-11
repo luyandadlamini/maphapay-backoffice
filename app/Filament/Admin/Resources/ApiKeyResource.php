@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Filament\Admin\Resources\ApiKeyResource\Pages;
 use App\Models\ApiKey;
+use App\Support\Backoffice\AdminActionGovernance;
+use App\Support\Backoffice\BackofficeWorkspaceAccess;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class ApiKeyResource extends Resource
 {
     use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use HasBackofficeWorkspace;
 
     protected static ?string $model = ApiKey::class;
 
@@ -25,6 +30,8 @@ class ApiKeyResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    protected static string $backofficeWorkspace = 'platform_administration';
+
     public static function getNavigationLabel(): string
     {
         return 'API Keys';
@@ -32,7 +39,29 @@ class ApiKeyResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::where('is_active', true)->count() ?: null;
+        $count = static::getModel()::where('is_active', true)->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function canViewAny(): bool
+    {
+        return app(BackofficeWorkspaceAccess::class)->canAccess(static::getBackofficeWorkspace());
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return static::canViewAny();
     }
 
     public static function form(Form $form): Form
@@ -146,7 +175,33 @@ class ApiKeyResource extends Resource
                     Tables\Actions\ViewAction::make(),
                     Tables\Actions\EditAction::make(),
                     Tables\Actions\Action::make('revoke')
-                        ->action(fn (ApiKey $record) => $record->revoke())
+                        ->form([
+                            Forms\Components\Textarea::make('reason')
+                                ->required()
+                                ->minLength(10),
+                        ])
+                        ->action(function (ApiKey $record, array $data): void {
+                            static::authorizeWorkspace();
+
+                            $oldValues = ['is_active' => $record->is_active];
+
+                            $record->revoke();
+
+                            static::adminActionGovernance()->auditDirectAction(
+                                workspace: static::getBackofficeWorkspace(),
+                                action: 'backoffice.api_keys.revoked',
+                                reason: (string) $data['reason'],
+                                auditable: $record,
+                                oldValues: $oldValues,
+                                newValues: ['is_active' => $record->fresh()?->is_active],
+                                metadata: [
+                                    'api_key_name' => $record->name,
+                                    'key_prefix' => $record->key_prefix,
+                                    'actor_email' => auth()->user()->email ?? 'system',
+                                ],
+                                tags: 'backoffice,platform,api-keys'
+                            );
+                        })
                         ->requiresConfirmation()
                         ->color('danger')
                         ->icon('heroicon-m-x-circle')
@@ -183,5 +238,15 @@ class ApiKeyResource extends Resource
             'view'  => Pages\ViewApiKey::route('/{record}'),
             'edit'  => Pages\EditApiKey::route('/{record}/edit'),
         ];
+    }
+
+    protected static function adminActionGovernance(): AdminActionGovernance
+    {
+        return app(AdminActionGovernance::class);
+    }
+
+    protected static function authorizeWorkspace(): void
+    {
+        app(BackofficeWorkspaceAccess::class)->authorize(static::getBackofficeWorkspace());
     }
 }

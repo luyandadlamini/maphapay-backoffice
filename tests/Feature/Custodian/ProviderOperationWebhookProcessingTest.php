@@ -58,8 +58,9 @@ final class ProviderOperationWebhookProcessingTest extends TestCase
             });
         }
 
-        \DB::table('provider_operations')->truncate();
-        \DB::table('custodian_webhooks')->truncate();
+        // These tables reference each other via nullable FKs, so truncate breaks on MySQL.
+        \DB::table('provider_operations')->delete();
+        \DB::table('custodian_webhooks')->delete();
     }
 
     public function test_it_creates_a_canonical_provider_operation_from_a_processed_payment_webhook(): void

@@ -91,28 +91,10 @@ class AccountBalancesRelationManager extends RelationManager
                 ]
             )
             ->headerActions(
-                [
-                    Tables\Actions\CreateAction::make()
-                        ->label('Add Balance'),
-                ]
+                []
             )
-            ->actions(
-                [
-                    Tables\Actions\EditAction::make(),
-                    Tables\Actions\DeleteAction::make()
-                        ->requiresConfirmation(),
-                ]
-            )
-            ->bulkActions(
-                [
-                    Tables\Actions\BulkActionGroup::make(
-                        [
-                            Tables\Actions\DeleteBulkAction::make()
-                                ->requiresConfirmation(),
-                        ]
-                    ),
-                ]
-            )
+            ->actions([])
+            ->bulkActions([])
             ->defaultSort('balance', 'desc');
     }
 }

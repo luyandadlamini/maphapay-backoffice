@@ -57,7 +57,10 @@ final class CustodianWebhookControllerTest extends TestCase
             });
         }
 
-        \DB::table('custodian_webhooks')->truncate();
+        // Fresh schema now links provider_operations.latest_webhook_id -> custodian_webhooks.id.
+        // Use delete instead of truncate so FK cleanup stays valid on the reusable MySQL harness.
+        \DB::table('provider_operations')->delete();
+        \DB::table('custodian_webhooks')->delete();
     }
 
     public function test_it_persists_normalized_webhook_identity_metadata_for_paysera_callbacks(): void

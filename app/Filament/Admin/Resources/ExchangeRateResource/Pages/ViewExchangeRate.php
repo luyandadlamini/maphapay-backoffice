@@ -15,20 +15,26 @@ class ViewExchangeRate extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\EditAction::make()
-                ->label('Edit Rate')
-                ->icon('heroicon-m-pencil-square'),
-
             Actions\Action::make('refresh')
                 ->label('Refresh Rate')
                 ->icon('heroicon-m-arrow-path')
                 ->color('warning')
-                ->action(
-                    function () {
-                        $this->getRecord()->update(['valid_at' => now()]);
-                        $this->dispatch('$refresh');
-                    }
-                )
+                ->form([
+                    \Filament\Forms\Components\Textarea::make('reason')
+                        ->label('Reason')
+                        ->required()
+                        ->minLength(10),
+                ])
+                ->action(function (array $data): void {
+                    /** @var \App\Domain\Asset\Models\ExchangeRate $record */
+                    $record = $this->getRecord();
+
+                    ExchangeRateResource::refreshExchangeRate(
+                        record: $record,
+                        reason: (string) $data['reason'],
+                    );
+                    $this->dispatch('$refresh');
+                })
                 ->requiresConfirmation()
                 ->visible(fn () => $this->getRecord()->source !== 'manual'),
 
@@ -36,18 +42,43 @@ class ViewExchangeRate extends ViewRecord
                 ->label(fn () => $this->getRecord()->is_active ? 'Deactivate' : 'Activate')
                 ->icon(fn () => $this->getRecord()->is_active ? 'heroicon-m-x-circle' : 'heroicon-m-check-circle')
                 ->color(fn () => $this->getRecord()->is_active ? 'danger' : 'success')
-                ->action(
-                    function () {
-                        $record = $this->getRecord();
-                        $record->update(['is_active' => ! $record->is_active]);
-                        $this->dispatch('$refresh');
-                    }
-                )
+                ->form([
+                    \Filament\Forms\Components\Textarea::make('reason')
+                        ->label('Reason')
+                        ->required()
+                        ->minLength(10),
+                ])
+                ->action(function (array $data): void {
+                    /** @var \App\Domain\Asset\Models\ExchangeRate $record */
+                    $record = $this->getRecord();
+
+                    ExchangeRateResource::requestExchangeRateStatusApproval(
+                        record: $record,
+                        requestedState: $record->is_active ? 'inactive' : 'active',
+                        reason: (string) $data['reason'],
+                    );
+                })
                 ->requiresConfirmation(fn () => $this->getRecord()->is_active),
 
-            Actions\DeleteAction::make()
+            Actions\Action::make('delete')
                 ->label('Delete Rate')
                 ->icon('heroicon-m-trash')
+                ->color('danger')
+                ->form([
+                    \Filament\Forms\Components\Textarea::make('reason')
+                        ->label('Reason')
+                        ->required()
+                        ->minLength(10),
+                ])
+                ->action(function (array $data): void {
+                    /** @var \App\Domain\Asset\Models\ExchangeRate $record */
+                    $record = $this->getRecord();
+
+                    ExchangeRateResource::requestExchangeRateDeletionApproval(
+                        record: $record,
+                        reason: (string) $data['reason'],
+                    );
+                })
                 ->requiresConfirmation(),
         ];
     }

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
-use App\Domain\Asset\Events\ExchangeRateUpdated;
 use App\Domain\Asset\Models\ExchangeRate;
+use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Filament\Admin\Resources\ExchangeRateResource\Pages;
 use App\Filament\Admin\Resources\ExchangeRateResource\Widgets;
 use App\Filament\Admin\Traits\RespectsModuleVisibility;
+use App\Support\Backoffice\AdminActionGovernance;
+use App\Support\Backoffice\BackofficeWorkspaceAccess;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists;
@@ -18,20 +20,50 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 
 class ExchangeRateResource extends Resource
 {
+    use HasBackofficeWorkspace;
     use RespectsModuleVisibility;
 
     protected static ?string $model = ExchangeRate::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path';
 
-    protected static ?string $navigationGroup = 'Asset Management';
+    protected static ?string $navigationGroup = 'Finance & Reconciliation';
 
     protected static ?int $navigationSort = 2;
 
     protected static ?string $navigationLabel = 'Exchange Rates';
+
+    protected static string $backofficeWorkspace = 'finance';
+
+    public static function canViewAny(): bool
+    {
+        return app(BackofficeWorkspaceAccess::class)->canAccess(static::getBackofficeWorkspace());
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return static::canViewAny();
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return false;
+    }
 
     public static function form(Form $form): Form
     {
@@ -259,44 +291,59 @@ class ExchangeRateResource extends Resource
                                 ->required()
                                 ->minLength(10),
                         ])
-                        ->visible(fn () => auth()->user()?->can('manage-exchange-rates'))
-                        ->action(function ($record, array $data): void {
-                            $oldRate = (float) $record->rate;
-                            $newRate = (float) $data['rate'];
-
-                            event(new ExchangeRateUpdated(
-                                $record->from_asset_code,
-                                $record->to_asset_code,
-                                $oldRate,
-                                $newRate,
-                                ExchangeRate::SOURCE_MANUAL,
-                                ['reason' => $data['reason'], 'updated_by' => auth()->id()]
-                            ));
-
-                            $record->update([
-                                'rate'     => $newRate,
-                                'valid_at' => now(),
-                                'source'   => ExchangeRate::SOURCE_MANUAL,
-                            ]);
+                        ->visible(fn (): bool => static::canViewAny())
+                        ->action(function (ExchangeRate $record, array $data): void {
+                            static::requestExchangeRateChangeApproval(
+                                record: $record,
+                                requestedRate: (string) $data['rate'],
+                                reason: (string) $data['reason'],
+                            );
 
                             Notification::make()
-                                ->title('Rate updated successfully')
-                                ->success()
+                                ->title('Exchange rate update request submitted')
+                                ->warning()
                                 ->send();
                         }),
 
-                    Tables\Actions\DeleteAction::make()
-                        ->requiresConfirmation(),
+                    Tables\Actions\Action::make('delete')
+                        ->label('Delete')
+                        ->icon('heroicon-m-trash')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->form([
+                            Forms\Components\Textarea::make('reason')
+                                ->label('Reason')
+                                ->required()
+                                ->minLength(10),
+                        ])
+                        ->action(function (ExchangeRate $record, array $data): void {
+                            static::requestExchangeRateDeletionApproval(
+                                record: $record,
+                                reason: (string) $data['reason'],
+                            );
+
+                            Notification::make()
+                                ->title('Exchange rate deletion request submitted')
+                                ->warning()
+                                ->send();
+                        }),
 
                     Tables\Actions\Action::make('refresh')
                         ->label('Refresh')
                         ->icon('heroicon-m-arrow-path')
                         ->color('warning')
-                        ->action(
-                            function ($record) {
-                                $record->update(['valid_at' => now()]);
-                            }
-                        )
+                        ->form([
+                            Forms\Components\Textarea::make('reason')
+                                ->label('Reason')
+                                ->required()
+                                ->minLength(10),
+                        ])
+                        ->action(function (ExchangeRate $record, array $data): void {
+                            static::refreshExchangeRate(
+                                record: $record,
+                                reason: (string) $data['reason'],
+                            );
+                        })
                         ->requiresConfirmation()
                         ->visible(fn ($record) => $record->source !== ExchangeRate::SOURCE_MANUAL),
                 ]
@@ -305,21 +352,42 @@ class ExchangeRateResource extends Resource
                 [
                     Tables\Actions\BulkActionGroup::make(
                         [
-                            Tables\Actions\DeleteBulkAction::make()
-                                ->requiresConfirmation(),
-
                             Tables\Actions\BulkAction::make('activate')
                                 ->label('Activate')
                                 ->icon('heroicon-m-check-circle')
                                 ->color('success')
-                                ->action(fn ($records) => $records->each->update(['is_active' => true]))
+                                ->form([
+                                    Forms\Components\Textarea::make('reason')
+                                        ->label('Reason')
+                                        ->required()
+                                        ->minLength(10),
+                                ])
+                                ->action(function (Collection $records, array $data): void {
+                                    static::requestBulkStatusChangeApproval(
+                                        records: $records,
+                                        requestedState: 'active',
+                                        reason: (string) $data['reason'],
+                                    );
+                                })
                                 ->deselectRecordsAfterCompletion(),
 
                             Tables\Actions\BulkAction::make('deactivate')
                                 ->label('Deactivate')
                                 ->icon('heroicon-m-x-circle')
                                 ->color('danger')
-                                ->action(fn ($records) => $records->each->update(['is_active' => false]))
+                                ->form([
+                                    Forms\Components\Textarea::make('reason')
+                                        ->label('Reason')
+                                        ->required()
+                                        ->minLength(10),
+                                ])
+                                ->action(function (Collection $records, array $data): void {
+                                    static::requestBulkStatusChangeApproval(
+                                        records: $records,
+                                        requestedState: 'inactive',
+                                        reason: (string) $data['reason'],
+                                    );
+                                })
                                 ->requiresConfirmation()
                                 ->deselectRecordsAfterCompletion(),
 
@@ -327,7 +395,18 @@ class ExchangeRateResource extends Resource
                                 ->label('Refresh Rates')
                                 ->icon('heroicon-m-arrow-path')
                                 ->color('warning')
-                                ->action(fn ($records) => $records->each->update(['valid_at' => now()]))
+                                ->form([
+                                    Forms\Components\Textarea::make('reason')
+                                        ->label('Reason')
+                                        ->required()
+                                        ->minLength(10),
+                                ])
+                                ->action(function (Collection $records, array $data): void {
+                                    static::refreshExchangeRates(
+                                        records: $records,
+                                        reason: (string) $data['reason'],
+                                    );
+                                })
                                 ->requiresConfirmation()
                                 ->deselectRecordsAfterCompletion(),
                         ]
@@ -496,5 +575,173 @@ class ExchangeRateResource extends Resource
 
             return "{$days}d";
         }
+    }
+
+    public static function requestExchangeRateChangeApproval(ExchangeRate $record, string $requestedRate, string $reason): void
+    {
+        static::authorizeWorkspace();
+
+        static::adminActionGovernance()->submitApprovalRequest(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.exchange_rates.set_rate',
+            reason: $reason,
+            targetType: ExchangeRate::class,
+            targetIdentifier: (string) $record->getKey(),
+            payload: [
+                'pair' => static::exchangeRatePair($record),
+                'source' => $record->source,
+                'old_rate' => static::formatRateValue($record->rate),
+                'requested_rate' => static::formatRateValue($requestedRate),
+            ],
+            metadata: [
+                'from_asset_code' => $record->from_asset_code,
+                'to_asset_code' => $record->to_asset_code,
+            ],
+        );
+    }
+
+    public static function requestExchangeRateDeletionApproval(ExchangeRate $record, string $reason): void
+    {
+        static::authorizeWorkspace();
+
+        static::adminActionGovernance()->submitApprovalRequest(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.exchange_rates.delete',
+            reason: $reason,
+            targetType: ExchangeRate::class,
+            targetIdentifier: (string) $record->getKey(),
+            payload: [
+                'pair' => static::exchangeRatePair($record),
+                'source' => $record->source,
+                'rate' => static::formatRateValue($record->rate),
+                'requested_state' => 'deleted',
+            ],
+        );
+    }
+
+    public static function requestExchangeRateStatusApproval(ExchangeRate $record, string $requestedState, string $reason): void
+    {
+        static::authorizeWorkspace();
+
+        static::adminActionGovernance()->submitApprovalRequest(
+            workspace: static::getBackofficeWorkspace(),
+            action: sprintf('backoffice.exchange_rates.%s', $requestedState === 'active' ? 'activate' : 'deactivate'),
+            reason: $reason,
+            targetType: ExchangeRate::class,
+            targetIdentifier: (string) $record->getKey(),
+            payload: [
+                'pair' => static::exchangeRatePair($record),
+                'source' => $record->source,
+                'current_state' => $record->is_active ? 'active' : 'inactive',
+                'requested_state' => $requestedState,
+            ],
+        );
+    }
+
+    /**
+     * @param  Collection<int, ExchangeRate>  $records
+     */
+    public static function requestBulkStatusChangeApproval(Collection $records, string $requestedState, string $reason): void
+    {
+        static::authorizeWorkspace();
+
+        static::adminActionGovernance()->submitApprovalRequest(
+            workspace: static::getBackofficeWorkspace(),
+            action: sprintf('backoffice.exchange_rates.bulk_%s', $requestedState === 'active' ? 'activate' : 'deactivate'),
+            reason: $reason,
+            payload: [
+                'requested_state' => $requestedState,
+                'record_count' => $records->count(),
+                'pairs' => $records
+                    ->map(fn (Model $record): string => static::exchangeRatePair($record))
+                    ->values()
+                    ->all(),
+                'exchange_rate_ids' => $records
+                    ->map(fn (Model $record): string => (string) $record->getKey())
+                    ->values()
+                    ->all(),
+            ],
+        );
+    }
+
+    public static function refreshExchangeRate(ExchangeRate $record, string $reason): void
+    {
+        static::authorizeWorkspace();
+
+        $previousValidAt = $record->valid_at->toIso8601String();
+        $record->update(['valid_at' => now()]);
+        $record->refresh();
+
+        static::adminActionGovernance()->auditDirectAction(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.exchange_rates.refreshed',
+            reason: $reason,
+            auditable: $record,
+            oldValues: ['valid_at' => $previousValidAt],
+            newValues: ['valid_at' => $record->valid_at->toIso8601String()],
+            metadata: [
+                'pair' => static::exchangeRatePair($record),
+                'source' => $record->source,
+            ],
+            tags: 'backoffice,finance,exchange-rates'
+        );
+
+        Notification::make()
+            ->title('Exchange rate refreshed')
+            ->success()
+            ->send();
+    }
+
+    /**
+     * @param  Collection<int, ExchangeRate>  $records
+     */
+    public static function refreshExchangeRates(Collection $records, string $reason): void
+    {
+        static::authorizeWorkspace();
+
+        $refreshedAt = now();
+        $records->each(function (Model $record) use ($refreshedAt): void {
+            $record->update(['valid_at' => $refreshedAt]);
+        });
+
+        static::adminActionGovernance()->auditDirectAction(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.exchange_rates.bulk_refreshed',
+            reason: $reason,
+            metadata: [
+                'record_count' => $records->count(),
+                'pairs' => $records
+                    ->map(fn (Model $record): string => static::exchangeRatePair($record))
+                    ->values()
+                    ->all(),
+                'refreshed_at' => $refreshedAt->toIso8601String(),
+            ],
+            tags: 'backoffice,finance,exchange-rates'
+        );
+
+        Notification::make()
+            ->title('Exchange rates refreshed')
+            ->success()
+            ->send();
+    }
+
+    public static function exchangeRatePair(ExchangeRate $record): string
+    {
+        return sprintf('%s/%s', $record->from_asset_code, $record->to_asset_code);
+    }
+
+    public static function formatRateValue(mixed $rate): string
+    {
+        return number_format((float) $rate, 10, '.', '');
+    }
+
+    public static function adminActionGovernance(): AdminActionGovernance
+    {
+        return app(AdminActionGovernance::class);
+    }
+
+    public static function authorizeWorkspace(): void
+    {
+        app(BackofficeWorkspaceAccess::class)->authorize(static::getBackofficeWorkspace());
     }
 }

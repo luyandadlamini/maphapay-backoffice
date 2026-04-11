@@ -8,13 +8,16 @@ use App\Domain\User\Services\UserInvitationService;
 use App\Filament\Admin\Resources\UserInvitationResource;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class CreateUserInvitation extends CreateRecord
 {
     protected static string $resource = UserInvitationResource::class;
 
-    protected function mutateFormDataBeforeCreate(array $data): array
+    protected function handleRecordCreation(array $data): Model
     {
+        UserInvitationResource::authorizeWorkspace();
+
         /** @var \App\Models\User $user */
         $user = auth()->user();
 
@@ -25,22 +28,25 @@ class CreateUserInvitation extends CreateRecord
             $user,
         );
 
+        UserInvitationResource::adminActionGovernance()->auditDirectAction(
+            workspace: UserInvitationResource::getBackofficeWorkspace(),
+            action: 'backoffice.user_invitations.created',
+            reason: (string) $data['reason'],
+            auditable: $invitation,
+            metadata: [
+                'email' => $invitation->email,
+                'role' => $invitation->role,
+                'actor_email' => $user->email ?? 'system',
+            ],
+            tags: 'backoffice,platform,user-invitations'
+        );
+
         Notification::make()
             ->title('Invitation sent to ' . $data['email'])
             ->success()
             ->send();
 
-        // Redirect back to list — the record is already created by the service
-        $this->redirect(UserInvitationResource::getUrl('index'));
-
-        // Return the data from the created invitation so Filament doesn't try to create again
-        return [
-            'email'      => $invitation->email,
-            'token'      => $invitation->token,
-            'role'       => $invitation->role,
-            'invited_by' => $invitation->invited_by,
-            'expires_at' => $invitation->expires_at,
-        ];
+        return $invitation;
     }
 
     protected function getRedirectUrl(): string
