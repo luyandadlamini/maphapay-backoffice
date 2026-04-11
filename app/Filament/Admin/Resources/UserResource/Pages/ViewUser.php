@@ -6,7 +6,9 @@ namespace App\Filament\Admin\Resources\UserResource\Pages;
 
 use App\Filament\Admin\Resources\UserResource;
 use App\Models\User;
+use App\Support\Backoffice\AdminActionGovernance;
 use Filament\Actions;
+use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Auth\Passwords\PasswordBroker;
@@ -29,7 +31,7 @@ class ViewUser extends ViewRecord
                 ->color('warning')
                 ->requiresConfirmation()
                 ->form([
-                    \Filament\Forms\Components\Textarea::make('reason')->required(),
+                    Textarea::make('reason')->required()->minLength(10),
                 ])
                 ->action(function (User $record, array $data): void {
                     $record->forceFill([
@@ -38,40 +40,84 @@ class ViewUser extends ViewRecord
                         'two_factor_confirmed_at'   => null,
                     ])->save();
 
-                    if (function_exists('activity')) {
-                        activity()
-                            ->performedOn($record)
-                            ->causedBy(auth()->user())
-                            ->withProperties(['reason' => $data['reason']])
-                            ->log('reset_2fa');
-                    }
+                    $actorEmail = auth()->user()->email ?? 'system';
+
+                    app(AdminActionGovernance::class)->auditDirectAction(
+                        workspace: UserResource::getBackofficeWorkspace(),
+                        action: 'backoffice.users.2fa_reset',
+                        reason: (string) $data['reason'],
+                        auditable: $record,
+                        metadata: [
+                            'user_uuid' => $record->uuid,
+                            'user_email' => $record->email,
+                            'actor_email' => $actorEmail,
+                        ],
+                        tags: 'backoffice,support,users'
+                    );
 
                     Notification::make()
                         ->title('2FA Disabled')
                         ->success()
                         ->send();
                 })
-                ->visible(fn (): bool => auth()->user()?->can('reset-user-password') ?? false),
+                ->visible(fn (): bool => UserResource::userCanResetCredentials()),
             Actions\Action::make('resetPassword')
                 ->label('Force Password Reset')
                 ->icon('heroicon-o-key')
                 ->color('warning')
                 ->requiresConfirmation()
                 ->modalDescription('This will send a password reset link to the user\'s email address.')
-                ->action(function (User $record): void {
+                ->form([
+                    Textarea::make('reason')->required()->minLength(10),
+                ])
+                ->action(function (User $record, array $data): void {
                     $record->sendPasswordResetNotification(
                         app(PasswordBroker::class)->createToken($record)
                     );
+
+                    $actorEmail = auth()->user()->email ?? 'system';
+
+                    app(AdminActionGovernance::class)->auditDirectAction(
+                        workspace: UserResource::getBackofficeWorkspace(),
+                        action: 'backoffice.users.password_reset_forced',
+                        reason: (string) $data['reason'],
+                        auditable: $record,
+                        metadata: [
+                            'user_uuid' => $record->uuid,
+                            'user_email' => $record->email,
+                            'actor_email' => $actorEmail,
+                        ],
+                        tags: 'backoffice,support,users'
+                    );
+
                     Notification::make()
                         ->title('Password reset link sent')
                         ->success()
                         ->send();
                 })
-                ->visible(fn (): bool => auth()->user()?->can('reset-user-password') ?? false),
+                ->visible(fn (): bool => UserResource::userCanResetCredentials()),
             Actions\EditAction::make()
-                ->visible(fn (): bool => auth()->user()?->can('manage-users') ?? false),
-            Actions\DeleteAction::make()
-                ->visible(fn (): bool => auth()->user()?->hasRole('super-admin') ?? false),
+                ->visible(false),
+            Actions\Action::make('delete')
+                ->label('Delete')
+                ->icon('heroicon-o-trash')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->form([
+                    Textarea::make('reason')->required()->minLength(10),
+                ])
+                ->visible(fn (): bool => UserResource::userCanRequestUserDeletion())
+                ->action(function (User $record, array $data): void {
+                    UserResource::requestUserDeletionApproval(
+                        record: $record,
+                        reason: (string) $data['reason'],
+                    );
+
+                    Notification::make()
+                        ->title('User deletion request submitted')
+                        ->warning()
+                        ->send();
+                }),
         ];
     }
 }

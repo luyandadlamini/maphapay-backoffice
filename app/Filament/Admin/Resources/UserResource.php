@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources;
 
 use App\Domain\Account\Models\AccountBalance;
-use App\Domain\Compliance\Services\KycService;
 use App\Domain\Shared\Services\OtpService;
+use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Filament\Admin\Concerns\MasksPii;
 use App\Filament\Admin\Resources\UserResource\Pages;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\AccountsRelationManager;
@@ -22,7 +22,7 @@ use App\Filament\Admin\Resources\UserResource\RelationManagers\UserAuditLogRelat
 use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use App\Models\User;
 use App\Models\UserOtp;
-use Exception;
+use App\Support\Backoffice\AdminActionGovernance;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\Grid;
@@ -34,11 +34,13 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Auth\Passwords\PasswordBroker;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
 class UserResource extends Resource
 {
+    use HasBackofficeWorkspace;
     use MasksPii;
     use RespectsModuleVisibility;
 
@@ -46,9 +48,36 @@ class UserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
 
-    protected static ?string $navigationGroup = 'Customers';
+    protected static ?string $navigationGroup = 'Support Hub';
 
     protected static ?int $navigationSort = 10;
+
+    protected static string $backofficeWorkspace = 'support';
+
+    public static function canViewAny(): bool
+    {
+        return static::userCanViewUsers();
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return false;
+    }
 
     public static function form(Form $form): Form
     {
@@ -313,34 +342,7 @@ class UserResource extends Resource
                                     ->send();
                             }
                         })
-                        ->visible(fn (User $record): bool => (bool) $record->mobile),
-                    Tables\Actions\Action::make('resetPassword')
-                        ->label('Reset Password')
-                        ->icon('heroicon-o-key')
-                        ->color('info')
-                        ->requiresConfirmation()
-                        ->modalHeading('Reset User Password')
-                        ->modalDescription('This will send a password reset link to the user\'s email address.')
-                        ->modalSubmitActionLabel('Send Reset Link')
-                        ->action(function (User $record): void {
-                            try {
-                                $record->sendPasswordResetNotification(
-                                    app(PasswordBroker::class)->createToken($record)
-                                );
-
-                                Notification::make()
-                                    ->title('Password Reset Sent')
-                                    ->success()
-                                    ->body('A password reset link has been sent to ' . $record->email)
-                                    ->send();
-                            } catch (Throwable $e) {
-                                Notification::make()
-                                    ->title('Failed to Send Reset')
-                                    ->danger()
-                                    ->body($e->getMessage())
-                                    ->send();
-                            }
-                        }),
+                        ->visible(fn (User $record): bool => (bool) $record->mobile && static::userCanResendOtp()),
                     Tables\Actions\Action::make('freeze')
                         ->label('Freeze User')
                         ->icon('heroicon-o-lock-closed')
@@ -356,23 +358,18 @@ class UserResource extends Resource
                                 ->maxLength(500),
                         ])
                         ->action(function (User $record, array $data): void {
-                            try {
-                                $record->freeze($data['reason']);
+                            static::requestUserStateApproval(
+                                record: $record,
+                                requestedState: 'frozen',
+                                reason: (string) $data['reason'],
+                            );
 
-                                Notification::make()
-                                    ->title('User Frozen')
-                                    ->success()
-                                    ->body($record->name . ' has been frozen.')
-                                    ->send();
-                            } catch (Throwable $e) {
-                                Notification::make()
-                                    ->title('Failed to Freeze User')
-                                    ->danger()
-                                    ->body($e->getMessage())
-                                    ->send();
-                            }
+                            Notification::make()
+                                ->title('User freeze request submitted')
+                                ->warning()
+                                ->send();
                         })
-                        ->visible(fn (User $record): bool => ! $record->isFrozen()),
+                        ->visible(fn (User $record): bool => ! $record->isFrozen() && static::userCanRequestFreezeActions()),
                     Tables\Actions\Action::make('unfreeze')
                         ->label('Unfreeze User')
                         ->icon('heroicon-o-lock-open')
@@ -381,33 +378,54 @@ class UserResource extends Resource
                         ->modalHeading('Unfreeze User Account')
                         ->modalDescription('This will allow the user to log in and perform transactions again.')
                         ->modalSubmitActionLabel('Yes, unfreeze user')
-                        ->action(function (User $record): void {
-                            try {
-                                $record->unfreeze();
+                        ->form([
+                            Forms\Components\Textarea::make('reason')
+                                ->label('Reason for unfreezing')
+                                ->required()
+                                ->maxLength(500),
+                        ])
+                        ->action(function (User $record, array $data): void {
+                            static::requestUserStateApproval(
+                                record: $record,
+                                requestedState: 'active',
+                                reason: (string) $data['reason'],
+                            );
 
-                                Notification::make()
-                                    ->title('User Unfrozen')
-                                    ->success()
-                                    ->body($record->name . ' has been unfrozen.')
-                                    ->send();
-                            } catch (Throwable $e) {
-                                Notification::make()
-                                    ->title('Failed to Unfreeze User')
-                                    ->danger()
-                                    ->body($e->getMessage())
-                                    ->send();
-                            }
+                            Notification::make()
+                                ->title('User unfreeze request submitted')
+                                ->warning()
+                                ->send();
                         })
-                        ->visible(fn (User $record): bool => $record->isFrozen()),
+                        ->visible(fn (User $record): bool => $record->isFrozen() && static::userCanRequestFreezeActions()),
                     Tables\Actions\ViewAction::make(),
-                    Tables\Actions\EditAction::make(),
                 ]
             )
             ->bulkActions(
                 [
                     Tables\Actions\BulkActionGroup::make(
                         [
-                            Tables\Actions\DeleteBulkAction::make(),
+                            Tables\Actions\BulkAction::make('requestDelete')
+                                ->label('Delete Users')
+                                ->icon('heroicon-o-trash')
+                                ->color('danger')
+                                ->requiresConfirmation()
+                                ->form([
+                                    Forms\Components\Textarea::make('reason')
+                                        ->required()
+                                        ->minLength(10),
+                                ])
+                                ->visible(fn (): bool => static::userCanRequestUserDeletion())
+                                ->action(function (Collection $records, array $data): void {
+                                    static::requestBulkUserDeletionApproval(
+                                        records: $records,
+                                        reason: (string) $data['reason'],
+                                    );
+
+                                    Notification::make()
+                                        ->title('User deletion request submitted')
+                                        ->warning()
+                                        ->send();
+                                }),
                             Tables\Actions\BulkAction::make('approveKyc')
                                 ->label('Approve KYC')
                                 ->icon('heroicon-o-check-badge')
@@ -416,36 +434,23 @@ class UserResource extends Resource
                                 ->modalHeading('Approve KYC')
                                 ->modalDescription('Are you sure you want to approve KYC for the selected user(s)?')
                                 ->modalSubmitActionLabel('Yes, approve')
-                                ->action(function ($records): void {
-                                    $kycService = app(KycService::class);
-                                    $adminEmail = auth()->user()->email ?? 'unknown';
-                                    $success = 0;
-                                    $failed = 0;
+                                ->form([
+                                    Forms\Components\Textarea::make('reason')
+                                        ->required()
+                                        ->minLength(10),
+                                ])
+                                ->visible(fn (): bool => static::userCanApproveKyc())
+                                ->action(function (Collection $records, array $data): void {
+                                    static::requestBulkKycApproval(
+                                        records: $records,
+                                        approved: true,
+                                        reason: (string) $data['reason'],
+                                    );
 
-                                    foreach ($records as $record) {
-                                        try {
-                                            $kycService->verifyKyc($record, $adminEmail);
-                                            $success++;
-                                        } catch (Exception $e) {
-                                            $failed++;
-                                        }
-                                    }
-
-                                    if ($success > 0) {
-                                        Notification::make()
-                                            ->title('KYC Approved')
-                                            ->success()
-                                            ->body("{$success} user(s) KYC approved.")
-                                            ->send();
-                                    }
-
-                                    if ($failed > 0) {
-                                        Notification::make()
-                                            ->title('Some Approvals Failed')
-                                            ->warning()
-                                            ->body("{$failed} user(s) could not be approved.")
-                                            ->send();
-                                    }
+                                    Notification::make()
+                                        ->title('KYC approval request submitted')
+                                        ->warning()
+                                        ->send();
                                 }),
                             Tables\Actions\BulkAction::make('rejectKyc')
                                 ->label('Reject KYC')
@@ -461,37 +466,18 @@ class UserResource extends Resource
                                         ->required()
                                         ->placeholder('Enter the reason for rejection'),
                                 ])
-                                ->action(function ($records, array $data): void {
-                                    $kycService = app(KycService::class);
-                                    $adminEmail = auth()->user()->email ?? 'unknown';
-                                    $reason = $data['reason'] ?? 'Admin rejection';
-                                    $success = 0;
-                                    $failed = 0;
+                                ->visible(fn (): bool => static::userCanRejectKyc())
+                                ->action(function (Collection $records, array $data): void {
+                                    static::requestBulkKycApproval(
+                                        records: $records,
+                                        approved: false,
+                                        reason: (string) $data['reason'],
+                                    );
 
-                                    foreach ($records as $record) {
-                                        try {
-                                            $kycService->rejectKyc($record, $adminEmail, $reason);
-                                            $success++;
-                                        } catch (Exception $e) {
-                                            $failed++;
-                                        }
-                                    }
-
-                                    if ($success > 0) {
-                                        Notification::make()
-                                            ->title('KYC Rejected')
-                                            ->warning()
-                                            ->body("{$success} user(s) KYC rejected.")
-                                            ->send();
-                                    }
-
-                                    if ($failed > 0) {
-                                        Notification::make()
-                                            ->title('Some Rejections Failed')
-                                            ->danger()
-                                            ->body("{$failed} user(s) could not be rejected.")
-                                            ->send();
-                                    }
+                                    Notification::make()
+                                        ->title('KYC rejection request submitted')
+                                        ->warning()
+                                        ->send();
                                 }),
                         ]
                     ),
@@ -523,5 +509,147 @@ class UserResource extends Resource
             'view'   => Pages\ViewUser::route('/{record}'),
             'edit'   => Pages\EditUser::route('/{record}/edit'),
         ];
+    }
+
+    public static function requestUserStateApproval(User $record, string $requestedState, string $reason): void
+    {
+        $actorEmail = auth()->user()->email ?? 'system';
+
+        static::adminActionGovernance()->submitApprovalRequest(
+            workspace: static::getBackofficeWorkspace(),
+            action: sprintf('backoffice.users.%s', $requestedState === 'frozen' ? 'freeze' : 'unfreeze'),
+            reason: $reason,
+            targetType: User::class,
+            targetIdentifier: $record->uuid,
+            payload: [
+                'user_uuid' => $record->uuid,
+                'user_email' => $record->email,
+                'current_state' => $record->isFrozen() ? 'frozen' : 'active',
+                'requested_state' => $requestedState,
+            ],
+            metadata: [
+                'mode' => 'request_approve',
+                'actor_email' => $actorEmail,
+            ],
+        );
+    }
+
+    /** @param Collection<int, User> $records */
+    public static function requestBulkKycApproval(Collection $records, bool $approved, string $reason): void
+    {
+        $actorEmail = auth()->user()->email ?? 'system';
+
+        static::adminActionGovernance()->submitApprovalRequest(
+            workspace: static::getBackofficeWorkspace(),
+            action: sprintf('backoffice.users.bulk_kyc_%s', $approved ? 'approve' : 'reject'),
+            reason: $reason,
+            payload: [
+                'requested_state' => $approved ? 'approved' : 'rejected',
+                'record_count' => $records->count(),
+                'user_uuids' => $records->map(fn (User $u): string => (string) $u->uuid)->values()->all(),
+                'user_emails' => $records->map(fn (User $u): string => (string) $u->email)->values()->all(),
+                'reason' => $reason,
+            ],
+            metadata: [
+                'mode' => 'request_approve',
+                'actor_email' => $actorEmail,
+            ],
+        );
+    }
+
+    public static function requestUserDeletionApproval(User $record, string $reason): void
+    {
+        $actorEmail = auth()->user()->email ?? 'system';
+
+        static::adminActionGovernance()->submitApprovalRequest(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.users.delete',
+            reason: $reason,
+            targetType: User::class,
+            targetIdentifier: $record->uuid,
+            payload: [
+                'user_uuid' => $record->uuid,
+                'user_email' => $record->email,
+                'requested_state' => 'deleted',
+            ],
+            metadata: [
+                'mode' => 'request_approve',
+                'actor_email' => $actorEmail,
+            ],
+        );
+    }
+
+    /** @param Collection<int, User> $records */
+    public static function requestBulkUserDeletionApproval(Collection $records, string $reason): void
+    {
+        $actorEmail = auth()->user()->email ?? 'system';
+
+        static::adminActionGovernance()->submitApprovalRequest(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.users.bulk_delete',
+            reason: $reason,
+            payload: [
+                'requested_state' => 'deleted',
+                'record_count' => $records->count(),
+                'user_uuids' => $records->map(fn (User $u): string => (string) $u->uuid)->values()->all(),
+                'user_emails' => $records->map(fn (User $u): string => (string) $u->email)->values()->all(),
+            ],
+            metadata: [
+                'mode' => 'request_approve',
+                'actor_email' => $actorEmail,
+            ],
+        );
+    }
+
+    public static function adminActionGovernance(): AdminActionGovernance
+    {
+        return app(AdminActionGovernance::class);
+    }
+
+    public static function userCanViewUsers(): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null && ($user->can('view-users') || $user->hasRole('super-admin'));
+    }
+
+    public static function userCanResendOtp(): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null && ($user->can('resend-otp') || $user->hasRole('super-admin'));
+    }
+
+    public static function userCanResetCredentials(): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null && ($user->can('reset-user-password') || $user->hasRole('super-admin'));
+    }
+
+    public static function userCanRequestFreezeActions(): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null && ($user->can('freeze-users') || $user->hasRole('super-admin'));
+    }
+
+    public static function userCanApproveKyc(): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null && ($user->can('approve-kyc') || $user->hasRole('super-admin'));
+    }
+
+    public static function userCanRejectKyc(): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null && ($user->can('reject-kyc') || $user->hasRole('super-admin'));
+    }
+
+    public static function userCanRequestUserDeletion(): bool
+    {
+        return auth()->user()?->hasRole('super-admin') ?? false;
     }
 }

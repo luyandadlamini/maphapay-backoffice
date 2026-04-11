@@ -7,15 +7,19 @@ namespace App\Filament\Admin\Pages\FundManagement;
 use App\Domain\Account\Models\Account;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\FundManagement\Services\FundManagementService;
+use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
+use App\Support\Backoffice\AdminActionGovernance;
+use App\Support\Backoffice\BackofficeWorkspaceAccess;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Alignment;
-use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class FundAccountPage extends Page
 {
+    use HasBackofficeWorkspace;
+
     protected static ?string $navigationIcon = 'heroicon-o-plus-circle';
 
     protected static ?string $navigationLabel = 'Fund Account';
@@ -28,11 +32,18 @@ class FundAccountPage extends Page
 
     protected static string $view = 'filament.admin.pages.fund-management.fund-account';
 
+    protected static string $backofficeWorkspace = 'finance';
+
     public ?string $accountUuid = null;
 
     public ?Account $selectedAccount = null;
 
     public array $availableAssets = [];
+
+    public static function canAccess(): bool
+    {
+        return app(BackofficeWorkspaceAccess::class)->canAccess(static::getBackofficeWorkspace());
+    }
 
     public function mount(): void
     {
@@ -144,6 +155,28 @@ class FundAccountPage extends Page
         $this->selectedAccount = Account::with('user')->where('uuid', $uuid)->first();
     }
 
+    /** @param array<string, mixed> $data */
+    public function requestFundingApproval(array $data): void
+    {
+        $this->authorizeWorkspace();
+
+        app(AdminActionGovernance::class)->submitApprovalRequest(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.fund_accounts.fund',
+            reason: $data['reason'],
+            payload: [
+                'account_uuid' => $data['account_uuid'],
+                'asset_code'   => $data['asset_code'],
+                'amount_minor' => (int) round((float) $data['amount'] * 100),
+                'notes'        => $data['notes'] ?? null,
+            ],
+            metadata: [
+                'mode' => 'request_approve',
+            ],
+        );
+    }
+
+    /** @param array<string, mixed> $data */
     protected function fundAccount(array $data): void
     {
         if (! $this->selectedAccount) {
@@ -167,39 +200,27 @@ class FundAccountPage extends Page
         }
 
         try {
-            DB::beginTransaction();
-
-            $asset = Asset::where('code', $data['asset_code'])->firstOrFail();
-            $amountInSmallestUnit = $asset->toSmallestUnit((float) $data['amount']);
-
-            $fundService = app(FundManagementService::class);
-            $fundService->fundAccount(
-                account: $this->selectedAccount,
-                assetCode: $data['asset_code'],
-                amountInSmallestUnit: $amountInSmallestUnit,
-                reason: $data['reason'],
-                notes: $data['notes'] ?? null,
-                performedBy: auth()->user()
-            );
-
-            DB::commit();
+            $this->requestFundingApproval($data);
 
             Notification::make()
-                ->title('Funding Successful')
-                ->body("{$asset->formatAmount($amountInSmallestUnit)} has been credited to account {$this->selectedAccount->name}")
+                ->title('Funding Request Submitted')
+                ->body('The funding request has been submitted for approval.')
                 ->success()
                 ->send();
 
             $this->reset(['accountUuid', 'selectedAccount']);
 
         } catch (Throwable $e) {
-            DB::rollBack();
-
             Notification::make()
-                ->title('Funding Failed')
+                ->title('Funding Request Failed')
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
         }
+    }
+
+    public function authorizeWorkspace(): void
+    {
+        app(BackofficeWorkspaceAccess::class)->authorize(static::getBackofficeWorkspace());
     }
 }

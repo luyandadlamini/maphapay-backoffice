@@ -4,19 +4,25 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Filament\Admin\Resources\ReconciliationReportResource\Pages;
 use App\Filament\Admin\Resources\ReconciliationReportResource\Widgets\ReconciliationDiscrepancyWidget;
 use App\Filament\Admin\Traits\RespectsModuleVisibility;
+use App\Support\Backoffice\AdminActionGovernance;
+use App\Support\Backoffice\BackofficeWorkspaceAccess;
+use App\Support\Reconciliation\ReconciliationReportRecord;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReconciliationReportResource extends Resource
 {
+    use HasBackofficeWorkspace;
     use RespectsModuleVisibility;
 
     protected static ?string $model = null;
@@ -29,9 +35,11 @@ class ReconciliationReportResource extends Resource
 
     protected static ?string $navigationLabel = 'Reconciliation Reports';
 
-    public static function canAccess(): bool
+    protected static string $backofficeWorkspace = 'finance';
+
+    public static function canViewAny(): bool
     {
-        return auth()->user()?->can('view-transactions') ?? false;
+        return app(BackofficeWorkspaceAccess::class)->canAccess(static::getBackofficeWorkspace());
     }
 
     public static function getModelLabel(): string
@@ -55,8 +63,10 @@ class ReconciliationReportResource extends Resource
                 ->requiresConfirmation()
                 ->modalHeading('Run Daily Reconciliation')
                 ->modalDescription('This will reconcile all account balances against external custodian records. It may take several minutes.')
-                ->visible(fn () => auth()->user()?->can('approve-adjustments') ?? false)
+                ->visible(fn () => app(BackofficeWorkspaceAccess::class)->canAccess(static::getBackofficeWorkspace()))
                 ->action(function (): void {
+                    static::runReconciliation('Manually triggered reconciliation run from backoffice.');
+
                     Artisan::queue('reconciliation:daily', ['--force' => true]);
 
                     Notification::make()
@@ -138,7 +148,9 @@ class ReconciliationReportResource extends Resource
                         ->label('Download')
                         ->icon('heroicon-m-arrow-down-tray')
                         ->action(
-                            function ($record) {
+                            function ($record): mixed {
+                                static::downloadReport($record, 'Governed report download from backoffice.');
+
                                 $filename = "reconciliation-{$record['date']}.json";
 
                                 return response()->json($record)
@@ -152,7 +164,9 @@ class ReconciliationReportResource extends Resource
                     Tables\Actions\BulkAction::make('exportCsv')
                         ->label('Export CSV')
                         ->icon('heroicon-m-arrow-down-tray')
-                        ->action(function ($records): StreamedResponse {
+                        ->action(function (Collection $records): StreamedResponse {
+                            static::exportReportsAsCsv($records, 'Governed CSV export from backoffice.');
+
                             $filename = 'reconciliation-report-' . now()->format('Y-m-d-His') . '.csv';
 
                             return response()->streamDownload(function () use ($records): void {
@@ -179,6 +193,72 @@ class ReconciliationReportResource extends Resource
                         ->deselectRecordsAfterCompletion(),
                 ]
             );
+    }
+
+    public static function runReconciliation(string $reason): void
+    {
+        static::authorizeWorkspace();
+
+        static::adminActionGovernance()->auditDirectAction(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.reconciliation.run',
+            reason: $reason,
+            metadata: [
+                'mode'      => 'direct_elevated',
+                'workspace' => 'finance',
+            ],
+            tags: 'backoffice,finance,reconciliation'
+        );
+    }
+
+    public static function downloadReport(ReconciliationReportRecord $report, string $reason): void
+    {
+        static::authorizeWorkspace();
+
+        static::adminActionGovernance()->auditDirectAction(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.reconciliation.downloaded',
+            reason: $reason,
+            auditable: $report,
+            metadata: [
+                'mode'        => 'direct_elevated',
+                'workspace'   => 'finance',
+                'report_date' => (string) $report->getAttribute('date'),
+                'format'      => 'json',
+            ],
+            tags: 'backoffice,finance,reconciliation'
+        );
+    }
+
+    /**
+     * @param  Collection<int, ReconciliationReportRecord>  $reports
+     */
+    public static function exportReportsAsCsv(Collection $reports, string $reason): void
+    {
+        static::authorizeWorkspace();
+
+        static::adminActionGovernance()->auditDirectAction(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.reconciliation.exported_csv',
+            reason: $reason,
+            metadata: [
+                'mode'         => 'direct_elevated',
+                'workspace'    => 'finance',
+                'report_dates' => $reports->pluck('date')->values()->all(),
+                'format'       => 'csv',
+            ],
+            tags: 'backoffice,finance,reconciliation'
+        );
+    }
+
+    public static function adminActionGovernance(): AdminActionGovernance
+    {
+        return app(AdminActionGovernance::class);
+    }
+
+    public static function authorizeWorkspace(): void
+    {
+        app(BackofficeWorkspaceAccess::class)->authorize(static::getBackofficeWorkspace());
     }
 
     public static function getWidgets(): array

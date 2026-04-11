@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Services\AccountService;
+use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Filament\Admin\Resources\AccountResource\Pages;
 use App\Filament\Admin\Resources\AccountResource\RelationManagers;
-use Exception;
+use App\Support\Backoffice\AdminActionGovernance;
+use App\Support\Backoffice\BackofficeWorkspaceAccess;
 use Filament\Forms;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
@@ -18,10 +21,12 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class AccountResource extends Resource
 {
+    use HasBackofficeWorkspace;
     use \App\Filament\Admin\Traits\RespectsModuleVisibility;
 
     protected static ?string $model = Account::class;
@@ -32,9 +37,36 @@ class AccountResource extends Resource
 
     protected static ?string $modelLabel = 'Bank Account';
 
-    protected static ?string $navigationGroup = 'Wallets & Ledgers';
+    protected static ?string $navigationGroup = 'Finance & Reconciliation';
 
     protected static ?int $navigationSort = 1;
+
+    protected static string $backofficeWorkspace = 'finance';
+
+    public static function canViewAny(): bool
+    {
+        return app(BackofficeWorkspaceAccess::class)->canAccess(static::getBackofficeWorkspace());
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return false;
+    }
 
     public static function form(Form $form): Form
     {
@@ -81,7 +113,7 @@ class AccountResource extends Resource
                                     ->helperText('Frozen accounts cannot perform transactions')
                                     ->reactive()
                                     ->afterStateUpdated(
-                                        function ($state, $old) {
+                                        function ($state, $old): void {
                                             if ($state !== $old && $old !== null) {
                                                 Notification::make()
                                                     ->title($state ? 'Account will be frozen' : 'Account will be unfrozen')
@@ -201,7 +233,6 @@ class AccountResource extends Resource
             ->actions(
                 [
                     Tables\Actions\ViewAction::make(),
-                    Tables\Actions\EditAction::make(),
                     Tables\Actions\Action::make('deposit')
                         ->label('Deposit')
                         ->icon('heroicon-o-plus-circle')
@@ -215,32 +246,39 @@ class AccountResource extends Resource
                                     ->minValue(0.01)
                                     ->prefix('$')
                                     ->helperText('Enter the amount to deposit'),
+                                Forms\Components\Textarea::make('reason')
+                                    ->label('Reason')
+                                    ->required()
+                                    ->minLength(20)
+                                    ->rows(3)
+                                    ->helperText('Provide a reason for this deposit (min. 20 characters)'),
                             ]
                         )
                         ->action(
                             function (Account $record, array $data): void {
-                                try {
-                                    DB::beginTransaction();
+                                static::adminActionGovernance()->submitApprovalRequest(
+                                    workspace: static::getBackofficeWorkspace(),
+                                    action: 'backoffice.accounts.deposit',
+                                    reason: $data['reason'],
+                                    targetType: Account::class,
+                                    targetIdentifier: (string) $record->getKey(),
+                                    payload: [
+                                        'operation'    => 'deposit',
+                                        'asset_code'   => 'USD',
+                                        'amount_minor' => (int) round((float) $data['amount'] * 100),
+                                        'account_uuid' => $record->uuid,
+                                    ],
+                                    metadata: [
+                                        'mode'            => 'request_approve',
+                                        'requester_email' => auth()->user()?->email,
+                                    ],
+                                );
 
-                                    $accountService = app(\App\Domain\Account\Services\AccountService::class);
-                                    $accountService->deposit($record->uuid, (int) ($data['amount'] * 100));
-
-                                    DB::commit();
-
-                                    Notification::make()
-                                        ->title('Deposit Successful')
-                                        ->success()
-                                        ->body('$' . number_format($data['amount'], 2) . ' has been deposited.')
-                                        ->send();
-                                } catch (Exception $e) {
-                                    DB::rollBack();
-
-                                    Notification::make()
-                                        ->title('Deposit Failed')
-                                        ->danger()
-                                        ->body($e->getMessage())
-                                        ->send();
-                                }
+                                Notification::make()
+                                    ->title('Deposit Request Submitted')
+                                    ->success()
+                                    ->body('Your deposit request has been submitted for approval.')
+                                    ->send();
                             }
                         )
                         ->visible(fn (Account $record): bool => ! $record->frozen),
@@ -257,61 +295,67 @@ class AccountResource extends Resource
                                     ->minValue(0.01)
                                     ->prefix('$')
                                     ->helperText('Enter the amount to withdraw'),
+                                Forms\Components\Textarea::make('reason')
+                                    ->label('Reason')
+                                    ->required()
+                                    ->minLength(20)
+                                    ->rows(3)
+                                    ->helperText('Provide a reason for this withdrawal (min. 20 characters)'),
                             ]
                         )
                         ->action(
                             function (Account $record, array $data): void {
-                                try {
-                                    DB::beginTransaction();
+                                static::adminActionGovernance()->submitApprovalRequest(
+                                    workspace: static::getBackofficeWorkspace(),
+                                    action: 'backoffice.accounts.withdraw',
+                                    reason: $data['reason'],
+                                    targetType: Account::class,
+                                    targetIdentifier: (string) $record->getKey(),
+                                    payload: [
+                                        'operation'             => 'withdraw',
+                                        'amount_minor'          => (int) round((float) $data['amount'] * 100),
+                                        'current_balance_minor' => $record->getBalance('USD'),
+                                        'account_uuid'          => $record->uuid,
+                                    ],
+                                    metadata: [
+                                        'mode'            => 'request_approve',
+                                        'requester_email' => auth()->user()?->email,
+                                    ],
+                                );
 
-                                    $accountService = app(\App\Domain\Account\Services\AccountService::class);
-                                    $accountService->withdraw($record->uuid, (int) ($data['amount'] * 100));
-
-                                    DB::commit();
-
-                                    Notification::make()
-                                        ->title('Withdrawal Successful')
-                                        ->success()
-                                        ->body('$' . number_format($data['amount'], 2) . ' has been withdrawn.')
-                                        ->send();
-                                } catch (Exception $e) {
-                                    DB::rollBack();
-
-                                    Notification::make()
-                                        ->title('Withdrawal Failed')
-                                        ->danger()
-                                        ->body($e->getMessage())
-                                        ->send();
-                                }
+                                Notification::make()
+                                    ->title('Withdrawal Request Submitted')
+                                    ->success()
+                                    ->body('Your withdrawal request has been submitted for approval.')
+                                    ->send();
                             }
                         )
-                        ->visible(fn (Account $record): bool => ! $record->frozen && $record->balance > 0),
+                        ->visible(fn (Account $record): bool => ! $record->frozen),
                     Tables\Actions\Action::make('freeze')
                         ->label('Freeze')
                         ->icon('heroicon-o-lock-closed')
                         ->color('danger')
-                        ->requiresConfirmation()
                         ->modalHeading('Freeze Account')
-                        ->modalDescription('Are you sure you want to freeze this account? This will prevent all transactions.')
                         ->modalSubmitActionLabel('Yes, freeze account')
+                        ->form(
+                            [
+                                Forms\Components\Textarea::make('reason')
+                                    ->label('Reason')
+                                    ->required()
+                                    ->minLength(10)
+                                    ->rows(3)
+                                    ->helperText('Provide a reason for freezing this account (min. 10 characters)'),
+                            ]
+                        )
                         ->action(
-                            function (Account $record): void {
-                                try {
-                                    $accountService = app(\App\Domain\Account\Services\AccountService::class);
-                                    $accountService->freeze($record->uuid);
+                            function (Account $record, array $data): void {
+                                static::freezeAccount($record, $data['reason']);
 
-                                    Notification::make()
-                                        ->title('Account Frozen')
-                                        ->success()
-                                        ->body('The account has been frozen successfully.')
-                                        ->send();
-                                } catch (Exception $e) {
-                                    Notification::make()
-                                        ->title('Failed to Freeze Account')
-                                        ->danger()
-                                        ->body($e->getMessage())
-                                        ->send();
-                                }
+                                Notification::make()
+                                    ->title('Account Frozen')
+                                    ->success()
+                                    ->body('The account has been frozen successfully.')
+                                    ->send();
                             }
                         )
                         ->visible(fn (Account $record): bool => ! $record->frozen),
@@ -325,22 +369,31 @@ class AccountResource extends Resource
                         ->modalSubmitActionLabel('Yes, unfreeze account')
                         ->action(
                             function (Account $record): void {
-                                try {
-                                    $accountService = app(\App\Domain\Account\Services\AccountService::class);
-                                    $accountService->unfreeze($record->uuid);
+                                $oldValues = ['frozen' => true];
 
-                                    Notification::make()
-                                        ->title('Account Unfrozen')
-                                        ->success()
-                                        ->body('The account has been unfrozen successfully.')
-                                        ->send();
-                                } catch (Exception $e) {
-                                    Notification::make()
-                                        ->title('Failed to Unfreeze Account')
-                                        ->danger()
-                                        ->body($e->getMessage())
-                                        ->send();
-                                }
+                                app(AccountService::class)->unfreeze($record->uuid);
+
+                                static::adminActionGovernance()->auditDirectAction(
+                                    workspace: static::getBackofficeWorkspace(),
+                                    action: 'backoffice.accounts.unfrozen',
+                                    reason: 'Account unfrozen from resource table',
+                                    auditable: $record,
+                                    oldValues: $oldValues,
+                                    newValues: ['frozen' => false],
+                                    metadata: [
+                                        'mode'         => 'direct_elevated',
+                                        'workspace'    => 'finance',
+                                        'account_uuid' => $record->uuid,
+                                        'context'      => 'account_resource',
+                                    ],
+                                    tags: 'backoffice,finance,accounts'
+                                );
+
+                                Notification::make()
+                                    ->title('Account Unfrozen')
+                                    ->success()
+                                    ->body('The account has been unfrozen successfully.')
+                                    ->send();
                             }
                         )
                         ->visible(fn (Account $record): bool => $record->frozen),
@@ -354,45 +407,79 @@ class AccountResource extends Resource
                                 ->label('Freeze Selected')
                                 ->icon('heroicon-o-lock-closed')
                                 ->color('danger')
-                                ->requiresConfirmation()
+                                ->form(
+                                    [
+                                        Forms\Components\Textarea::make('reason')
+                                            ->label('Reason')
+                                            ->required()
+                                            ->minLength(10)
+                                            ->rows(3)
+                                            ->helperText('Provide a reason for bulk freezing these accounts'),
+                                    ]
+                                )
                                 ->action(
-                                    function ($records): void {
-                                        $accountService = app(\App\Domain\Account\Services\AccountService::class);
-                                        $success = 0;
-                                        $failed = 0;
+                                    function (Collection $records, array $data): void {
+                                        static::adminActionGovernance()->submitApprovalRequest(
+                                            workspace: static::getBackofficeWorkspace(),
+                                            action: 'backoffice.accounts.bulk_freeze',
+                                            reason: $data['reason'],
+                                            payload: [
+                                                'requested_state' => 'frozen',
+                                                'record_count'    => $records->count(),
+                                                'account_uuids'   => $records->map(fn (Account $a): string => $a->uuid)->values()->all(),
+                                            ],
+                                            metadata: [
+                                                'mode' => 'request_approve',
+                                            ],
+                                        );
 
-                                        foreach ($records as $record) {
-                                            if (! $record->frozen) {
-                                                try {
-                                                    $accountService->freeze($record->uuid);
-                                                    $success++;
-                                                } catch (Exception $e) {
-                                                    $failed++;
-                                                }
-                                            }
-                                        }
-
-                                        if ($success > 0) {
-                                            Notification::make()
-                                                ->title('Accounts Frozen')
-                                                ->success()
-                                                ->body("{$success} account(s) frozen successfully.")
-                                                ->send();
-                                        }
-
-                                        if ($failed > 0) {
-                                            Notification::make()
-                                                ->title('Some Freezes Failed')
-                                                ->warning()
-                                                ->body("{$failed} account(s) could not be frozen.")
-                                                ->send();
-                                        }
+                                        Notification::make()
+                                            ->title('Bulk Freeze Request Submitted')
+                                            ->success()
+                                            ->body('The bulk freeze request has been submitted for approval.')
+                                            ->send();
                                     }
                                 ),
                         ]
                     ),
                 ]
             );
+    }
+
+    public static function freezeAccount(Account $record, string $reason): void
+    {
+        static::authorizeWorkspace();
+
+        $oldValues = ['frozen' => false];
+
+        app(AccountService::class)->freeze($record->uuid);
+
+        static::adminActionGovernance()->auditDirectAction(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.accounts.frozen',
+            reason: $reason,
+            auditable: $record,
+            oldValues: $oldValues,
+            newValues: ['frozen' => true],
+            metadata: [
+                'mode'         => 'direct_elevated',
+                'workspace'    => 'finance',
+                'reason'       => $reason,
+                'account_uuid' => $record->uuid,
+                'context'      => 'account_resource',
+            ],
+            tags: 'backoffice,finance,accounts'
+        );
+    }
+
+    public static function adminActionGovernance(): AdminActionGovernance
+    {
+        return app(AdminActionGovernance::class);
+    }
+
+    public static function authorizeWorkspace(): void
+    {
+        app(BackofficeWorkspaceAccess::class)->authorize(static::getBackofficeWorkspace());
     }
 
     public static function getRelations(): array

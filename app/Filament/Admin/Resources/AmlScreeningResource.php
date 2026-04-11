@@ -5,16 +5,22 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources;
 
 use App\Domain\Compliance\Models\AmlScreening;
+use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Filament\Admin\Resources\AmlScreeningResource\Pages;
+use App\Support\Backoffice\AdminActionGovernance;
+use App\Support\Backoffice\BackofficeWorkspaceAccess;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class AmlScreeningResource extends Resource
 {
+    use HasBackofficeWorkspace;
+
     protected static ?string $model = AmlScreening::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shield-check';
@@ -25,9 +31,36 @@ class AmlScreeningResource extends Resource
 
     protected static ?string $navigationLabel = 'AML Screening';
 
+    protected static string $backofficeWorkspace = 'compliance';
+
+    public static function canViewAny(): bool
+    {
+        return app(BackofficeWorkspaceAccess::class)->canAccess(static::getBackofficeWorkspace());
+    }
+
     public static function canAccess(): bool
     {
-        return auth()->user()?->can('view-aml-screenings') ?? false;
+        return static::canViewAny();
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return false;
     }
 
     public static function table(Table $table): Table
@@ -125,10 +158,15 @@ class AmlScreeningResource extends Resource
                             ->required(),
                     ])
                     ->action(function ($record, array $data): void {
+                        static::requestSarApproval($record, [
+                            'description' => (string) $data['description'],
+                            'reference' => (string) $data['reference'],
+                        ]);
+
                         Notification::make()
-                            ->title('SAR submitted')
-                            ->body("SAR for screening {$record->screening_number} has been filed.")
-                            ->success()
+                            ->title('SAR approval request submitted')
+                            ->body("SAR filing for screening {$record->screening_number} has been queued for approval.")
+                            ->warning()
                             ->send();
                     }),
 
@@ -144,12 +182,7 @@ class AmlScreeningResource extends Resource
                             ->minLength(10),
                     ])
                     ->action(function ($record, array $data): void {
-                        $record->update([
-                            'review_decision' => AmlScreening::DECISION_CLEAR,
-                            'review_notes'    => $data['reason'],
-                            'reviewed_by'     => auth()->id(),
-                            'reviewed_at'     => now(),
-                        ]);
+                        static::clearFlag($record, (string) $data['reason']);
 
                         Notification::make()
                             ->title('Flag cleared')
@@ -163,7 +196,15 @@ class AmlScreeningResource extends Resource
                     ->icon('heroicon-o-arrow-up')
                     ->color('warning')
                     ->requiresConfirmation()
-                    ->action(function ($record): void {
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Escalation evidence')
+                            ->required()
+                            ->minLength(10),
+                    ])
+                    ->action(function ($record, array $data): void {
+                        static::escalateScreening($record, (string) $data['reason']);
+
                         Notification::make()
                             ->title('Escalated')
                             ->body('The case has been escalated to the compliance lead.')
@@ -178,5 +219,124 @@ class AmlScreeningResource extends Resource
         return [
             'index' => Pages\ListAmlScreenings::route('/'),
         ];
+    }
+
+    /**
+     * @param  array{description: string, reference: string}  $data
+     */
+    public static function requestSarApproval(AmlScreening $record, array $data): void
+    {
+        static::authorizeWorkspace();
+
+        static::adminActionGovernance()->submitApprovalRequest(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.aml_screenings.submit_sar',
+            reason: (string) $data['description'],
+            targetType: AmlScreening::class,
+            targetIdentifier: (string) $record->getKey(),
+            payload: [
+                'screening_number' => $record->screening_number,
+                'overall_risk' => $record->overall_risk,
+                'total_matches' => $record->total_matches,
+                'confirmed_matches' => $record->confirmed_matches,
+                'sar_reference' => (string) $data['reference'],
+                'requested_state' => 'sar_pending_approval',
+                'evidence' => [
+                    'description' => (string) $data['description'],
+                    'reference' => (string) $data['reference'],
+                ],
+            ],
+            metadata: [
+                'screening_type' => $record->type,
+                'decision' => 'submit_sar',
+            ],
+        );
+    }
+
+    public static function clearFlag(AmlScreening $record, string $reason): void
+    {
+        static::authorizeWorkspace();
+
+        $oldValues = static::reviewState($record);
+
+        $record->update([
+            'review_decision' => AmlScreening::DECISION_CLEAR,
+            'review_notes' => $reason,
+            'reviewed_by' => auth()->id(),
+            'reviewed_at' => now(),
+        ]);
+
+        $record->refresh();
+
+        static::adminActionGovernance()->auditDirectAction(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.aml_screenings.flag_cleared',
+            reason: $reason,
+            auditable: $record,
+            oldValues: $oldValues,
+            newValues: static::reviewState($record),
+            metadata: [
+                'screening_number' => $record->screening_number,
+                'decision' => AmlScreening::DECISION_CLEAR,
+                'overall_risk' => $record->overall_risk,
+                'total_matches' => $record->total_matches,
+            ],
+            tags: 'backoffice,compliance,aml-screenings'
+        );
+    }
+
+    public static function escalateScreening(AmlScreening $record, string $reason): void
+    {
+        static::authorizeWorkspace();
+
+        $oldValues = static::reviewState($record);
+
+        $record->update([
+            'review_decision' => AmlScreening::DECISION_ESCALATE,
+            'review_notes' => $reason,
+            'reviewed_by' => auth()->id(),
+            'reviewed_at' => now(),
+        ]);
+
+        $record->refresh();
+
+        static::adminActionGovernance()->auditDirectAction(
+            workspace: static::getBackofficeWorkspace(),
+            action: 'backoffice.aml_screenings.escalated',
+            reason: $reason,
+            auditable: $record,
+            oldValues: $oldValues,
+            newValues: static::reviewState($record),
+            metadata: [
+                'screening_number' => $record->screening_number,
+                'decision' => AmlScreening::DECISION_ESCALATE,
+                'overall_risk' => $record->overall_risk,
+                'total_matches' => $record->total_matches,
+            ],
+            tags: 'backoffice,compliance,aml-screenings'
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected static function reviewState(AmlScreening $record): array
+    {
+        return [
+            'review_decision' => $record->review_decision,
+            'review_notes' => $record->review_notes,
+            'reviewed_by' => $record->reviewed_by,
+            'reviewed_at' => $record->reviewed_at?->toIso8601String(),
+        ];
+    }
+
+    public static function adminActionGovernance(): AdminActionGovernance
+    {
+        return app(AdminActionGovernance::class);
+    }
+
+    public static function authorizeWorkspace(): void
+    {
+        app(BackofficeWorkspaceAccess::class)->authorize(static::getBackofficeWorkspace());
     }
 }
