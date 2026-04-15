@@ -33,6 +33,7 @@ Route::middleware(['auth:sanctum', 'account.context'])->group(function () {
     // Account management endpoints (query rate limiting)
     Route::middleware('api.rate_limit:query')->group(function () {
         Route::post('/accounts', [AccountController::class, 'store'])->middleware('scope:write');
+        Route::patch('/accounts/{uuid}', [AccountController::class, 'update'])->middleware('scope:write');
         Route::get('/accounts/{uuid}', [AccountController::class, 'show'])->middleware('scope:read');
         Route::delete('/accounts/{uuid}', [AccountController::class, 'destroy'])->middleware('scope:delete');
         Route::post('/accounts/{uuid}/freeze', [AccountController::class, 'freeze'])->middleware('scope:write');

@@ -305,6 +305,69 @@ class AccountController extends Controller
         );
     }
 
+    #[OA\Patch(
+        path: '/api/accounts/{uuid}',
+        operationId: 'updateAccount',
+        tags: ['Accounts'],
+        summary: 'Update an account',
+        description: 'Updates an account\'s display name',
+        security: [['sanctum' => []]],
+        parameters: [
+        new OA\Parameter(name: 'uuid', in: 'path', description: 'Account UUID', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(properties: [
+        new OA\Property(property: 'display_name', type: 'string', example: 'My Business', maxLength: 255),
+        ]))
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Account updated successfully',
+        content: new OA\JsonContent(properties: [
+        new OA\Property(property: 'data', ref: '#/components/schemas/Account'),
+        ])
+    )]
+    #[OA\Response(
+        response: 422,
+        description: 'Validation error',
+        content: new OA\JsonContent(ref: '#/components/schemas/Error')
+    )]
+    public function update(Request $request, string $uuid): JsonResponse
+    {
+        $validated = $request->validate(
+            [
+                'display_name' => ['sometimes', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
+            ]
+        );
+
+        $membership = AccountMembership::query()
+            ->where('account_uuid', $uuid)
+            ->where('user_uuid', $request->user()->uuid)
+            ->first();
+
+        if (! $membership) {
+            abort(403, 'Forbidden');
+        }
+
+        if (isset($validated['display_name'])) {
+            $sanitized = strip_tags($validated['display_name']);
+            $sanitized = htmlspecialchars($sanitized, ENT_QUOTES, 'UTF-8');
+            $sanitized = (string) preg_replace('/javascript:/i', '', $sanitized);
+            $sanitized = (string) preg_replace('/data:/i', '', $sanitized);
+            $sanitized = (string) preg_replace('/vbscript:/i', '', $sanitized);
+            $sanitized = trim($sanitized);
+
+            $membership->display_name = $sanitized;
+            $membership->save();
+        }
+
+        return response()->json([
+            'data' => [
+                'uuid' => $membership->account_uuid,
+                'display_name' => $membership->display_name,
+            ],
+        ]);
+    }
+
     /**
      * @param \Illuminate\Support\Collection<int, AccountMembership> $memberships
      * @return \Illuminate\Support\Collection<int, array<string, mixed>>
