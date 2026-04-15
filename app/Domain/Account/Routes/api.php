@@ -29,6 +29,10 @@ Route::middleware(['auth:sanctum', 'account.context'])->group(function () {
     Route::get('/accounts/company/documents/required', [CompanyDocumentController::class, 'requiredDocuments'])->middleware(['api.rate_limit:query', 'scope:read']);
     Route::get('/accounts/company/documents/{documentId}', [CompanyDocumentController::class, 'download'])->middleware(['api.rate_limit:query', 'scope:read']);
 
+    // Admin KYB verification
+    Route::post('/accounts/company/documents/{documentId}/verify', [CompanyDocumentController::class, 'verify'])
+        ->middleware(['auth:sanctum', 'api.rate_limit:mutation', 'scope:write']);
+
     // Versioned routes for backward compatibility
     Route::prefix('v1')->middleware('api.rate_limit:query')->group(function () {
         Route::get('/accounts', [AccountController::class, 'index']);

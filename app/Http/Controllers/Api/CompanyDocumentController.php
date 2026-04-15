@@ -290,4 +290,85 @@ class CompanyDocumentController extends Controller
             $document->original_file_name
         );
     }
+
+    public function verify(Request $request, string $documentId): JsonResponse
+    {
+        $validated = $request->validate([
+            'action' => 'required|in:verify,reject',
+            'rejection_reason' => 'required_if:action,reject|nullable|string|max:1000',
+        ]);
+
+        /** @var User $user */
+        $user = $request->user();
+
+        if (!$user->hasRole(['admin', 'super_admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin privileges required.',
+            ], 403);
+        }
+
+        $document = AccountProfileCompanyDocument::query()->find($documentId);
+
+        if ($document === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document not found.',
+            ], 404);
+        }
+
+        $action = $validated['action'];
+        $isVerify = $action === 'verify';
+
+        $document->update([
+            'status' => $isVerify ? 'verified' : 'rejected',
+            'verified_at' => $isVerify ? now() : null,
+            'verified_by_user_uuid' => $isVerify ? $user->uuid : null,
+            'rejection_reason' => !$isVerify ? ($validated['rejection_reason'] ?? null) : null,
+        ]);
+
+        if ($isVerify) {
+            $companyProfile = $document->companyProfile;
+            $requiredDocs = \App\Domain\Account\Models\AccountProfileCompanyDocument::REQUIRED_BY_TYPE[$companyProfile->business_type] ?? [];
+
+            $uploadedDocs = \App\Domain\Account\Models\AccountProfileCompanyDocument::query()
+                ->where('company_profile_id', $companyProfile->id)
+                ->where('status', 'verified')
+                ->pluck('document_type')
+                ->toArray();
+
+            $allVerified = empty($requiredDocs) || count(array_intersect($requiredDocs, $uploadedDocs)) === count($requiredDocs);
+
+            if ($allVerified) {
+                $companyProfile->update([
+                    'kyb_status' => 'verified',
+                    'kyb_verified_at' => now(),
+                ]);
+            } else {
+                $companyProfile->update(['kyb_status' => 'in_progress']);
+            }
+        }
+
+        AuditLog::log(
+            $isVerify ? 'company.document.verified' : 'company.document.rejected',
+            $document,
+            null,
+            ['status' => $document->status],
+            [
+                'verified_by' => $user->uuid,
+                'rejection_reason' => $document->rejection_reason,
+            ],
+            'kyb,document'
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'document_id' => $document->id,
+                'status' => $document->status,
+                'verified_at' => $document->verified_at?->toISOString(),
+            ],
+            'message' => $isVerify ? 'Document verified successfully.' : 'Document rejected.',
+        ]);
+    }
 }
