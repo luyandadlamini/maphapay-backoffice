@@ -60,15 +60,43 @@ class CompanyDocumentController extends Controller
         /** @var \Illuminate\Http\UploadedFile $file */
         $file = $request->file('document');
 
+        // Validate file is present and valid (security best practice)
+        if (!$request->hasFile('document') || !$file->isValid()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or missing file.',
+                'errors' => ['document' => ['File is invalid or missing.']],
+            ], 400);
+        }
+
+        // Check for duplicate document type
+        $existingDoc = AccountProfileCompanyDocument::query()
+            ->where('company_profile_id', $companyProfile->id)
+            ->where('document_type', $validated['document_type'])
+            ->exists();
+
+        if ($existingDoc) {
+            return response()->json([
+                'success' => false,
+                'message' => 'A document of this type already exists. Please delete the existing document first or contact support.',
+                'errors' => ['document_type' => ['A document of this type already exists.']],
+            ], 409);
+        }
+
         try {
-            // Store the document
-            $path = (string) $file->store('company_documents/' . $companyProfile->id, 'private');
+            // Generate safe filename using hashName (prevents path traversal)
+            $safeFileName = $file->hashName();
+            $fileHash = hash_file('sha256', $file->getRealPath());
+
+            // Store the document with safe filename
+            $path = (string) $file->storeAs('company_documents/' . $companyProfile->id, $safeFileName, 'private');
 
             // Create document record
             $document = AccountProfileCompanyDocument::query()->create([
                 'company_profile_id' => $companyProfile->id,
                 'document_type' => $validated['document_type'],
                 'file_path' => $path,
+                'file_hash' => $fileHash,
                 'original_file_name' => $file->getClientOriginalName(),
                 'mime_type' => $file->getMimeType(),
                 'file_size' => $file->getSize(),

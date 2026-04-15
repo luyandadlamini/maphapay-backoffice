@@ -25,9 +25,9 @@ Route::middleware(['auth:sanctum', 'account.context'])->group(function () {
 
     // Company KYB document upload
     Route::post('/accounts/company/documents', [CompanyDocumentController::class, 'upload'])->middleware(['api.rate_limit:mutation', 'scope:write']);
-    Route::get('/accounts/company/documents', [CompanyDocumentController::class, 'list'])->middleware('api.rate_limit:query');
-    Route::get('/accounts/company/documents/required', [CompanyDocumentController::class, 'requiredDocuments'])->middleware('api.rate_limit:query');
-    Route::get('/accounts/company/documents/{documentId}', [CompanyDocumentController::class, 'download'])->middleware('api.rate_limit:query');
+    Route::get('/accounts/company/documents', [CompanyDocumentController::class, 'list'])->middleware(['api.rate_limit:query', 'scope:read']);
+    Route::get('/accounts/company/documents/required', [CompanyDocumentController::class, 'requiredDocuments'])->middleware(['api.rate_limit:query', 'scope:read']);
+    Route::get('/accounts/company/documents/{documentId}', [CompanyDocumentController::class, 'download'])->middleware(['api.rate_limit:query', 'scope:read']);
 
     // Versioned routes for backward compatibility
     Route::prefix('v1')->middleware('api.rate_limit:query')->group(function () {

@@ -22,6 +22,7 @@ class AccountProfileCompanyDocument extends Model
         'uploaded_at' => 'datetime',
         'verified_at' => 'datetime',
         'file_size' => 'integer',
+        'file_hash' => 'string',
     ];
 
     public const DOCUMENT_TYPES = [
