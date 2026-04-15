@@ -7,7 +7,9 @@ namespace App\Http\Controllers\Api;
 use App\Domain\Compliance\Models\AuditLog;
 use App\Domain\Account\Models\AccountProfileCompany;
 use App\Domain\Account\Models\AccountProfileCompanyDocument;
+use App\Domain\Account\Services\CompanyKybWebhookService;
 use App\Http\Controllers\Controller;
+use App\Jobs\SendKybWebhookJob;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -326,6 +328,18 @@ class CompanyDocumentController extends Controller
             'verified_by_user_uuid' => $isVerify ? $user->uuid : null,
             'rejection_reason' => !$isVerify ? ($validated['rejection_reason'] ?? null) : null,
         ]);
+
+        // Send webhook notification
+        $webhookService = CompanyKybWebhookService::forCompany($document->companyProfile);
+        if ($webhookService) {
+            SendKybWebhookJob::dispatch(
+                $webhookService,
+                $document->id,
+                'pending',
+                $document->status,
+                $user->uuid
+            );
+        }
 
         if ($isVerify) {
             $companyProfile = $document->companyProfile;

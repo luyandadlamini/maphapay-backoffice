@@ -15,6 +15,8 @@ return new class () extends Migration {
             $table->string('document_type'); // certificate_of_incorporation, form_j, memo_articles, directors_id, trading_license, proof_of_address, bank_statement
             $table->string('file_path');
             $table->string('file_hash')->nullable(); // SHA-256 hash for tamper detection
+            $table->string('upload_token')->nullable();
+            $table->timestamp('expires_at')->nullable();
             $table->string('original_file_name');
             $table->string('mime_type');
             $table->integer('file_size')->nullable(); // in bytes
