@@ -123,6 +123,12 @@ return [
             'throw'                   => false,
         ],
 
+        'encrypted' => [
+            'driver' => 'local',
+            'root' => storage_path('app/encrypted'),
+            'throw' => true,
+        ],
+
     ],
 
     /*
