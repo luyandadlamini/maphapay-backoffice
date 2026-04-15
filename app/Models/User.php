@@ -474,4 +474,22 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->hasMany(\App\Domain\Support\Models\SupportCase::class, 'user_id');
     }
+
+    /**
+     * Get the account memberships for this user (multi-account).
+     *
+     * @return HasMany<\App\Domain\Account\Models\AccountMembership, $this>
+     */
+    public function accountMemberships(): HasMany
+    {
+        return $this->hasMany(\App\Domain\Account\Models\AccountMembership::class, 'user_uuid', 'uuid');
+    }
+
+    /**
+     * Get only active account memberships.
+     */
+    public function activeAccountMemberships()
+    {
+        return $this->accountMemberships()->active();
+    }
 }

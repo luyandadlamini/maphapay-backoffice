@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use InvalidArgumentException;
 
 /**
@@ -133,6 +134,7 @@ class Account extends Model
      */
     protected $casts = [
         'frozen' => 'boolean',
+        'capabilities' => 'array',
     ];
 
     /**
@@ -264,6 +266,21 @@ class Account extends Model
     public function turnovers(): HasMany
     {
         return $this->hasMany(Turnover::class, 'account_uuid', 'uuid');
+    }
+
+    public function merchantProfile(): HasOne
+    {
+        return $this->hasOne(AccountProfileMerchant::class, 'account_uuid', 'uuid');
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AccountAuditLog::class, 'account_uuid', 'uuid');
+    }
+
+    public function hasCapability(string $capability): bool
+    {
+        return in_array($capability, $this->capabilities ?? [], true);
     }
 
     /**
