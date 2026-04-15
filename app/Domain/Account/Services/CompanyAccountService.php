@@ -39,6 +39,19 @@ class CompanyAccountService
             ]);
         }
 
+        // Check for duplicate registration number if provided
+        if (!empty($profileData['registration_number'])) {
+            $existingByReg = AccountProfileCompany::query()
+                ->where('registration_number', $profileData['registration_number'])
+                ->exists();
+
+            if ($existingByReg) {
+                throw ValidationException::withMessages([
+                    'registration_number' => ['A company with this registration number already exists.'],
+                ]);
+            }
+        }
+
         $account = null;
         $profile = null;
 

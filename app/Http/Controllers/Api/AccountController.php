@@ -156,7 +156,7 @@ class AccountController extends Controller
     {
         $validated = $request->validate([
             'company_name' => ['required', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
-            'registration_number' => ['nullable', 'string', 'max:50'],
+            'registration_number' => ['nullable', 'string', 'max:50', 'regex:/^[A-Z0-9\-]+$/i'],
             'industry' => ['required', 'string', 'max:100', new NoControlCharacters(), new NoSqlInjection()],
             'company_size' => 'required|in:small,medium,large,enterprise',
             'settlement_method' => 'required|in:maphapay_wallet,mobile_money,bank',
