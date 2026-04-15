@@ -156,13 +156,33 @@ class AccountController extends Controller
     {
         $validated = $request->validate([
             'company_name' => ['required', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
-            'registration_number' => ['nullable', 'string', 'max:50', 'regex:/^[A-Z0-9\-]+$/i'],
-            'industry' => ['required', 'string', 'max:100', new NoControlCharacters(), new NoSqlInjection()],
-            'company_size' => 'required|in:small,medium,large,enterprise',
+            'business_type' => 'required|in:pty_ltd,public,sole_trader,informal',
+            'registration_number' => ['nullable', 'string', 'max:50', new NoControlCharacters(), new NoSqlInjection()],
+            'tin_number' => ['nullable', 'string', 'max:20', 'regex:/^\d{10}$/'],
+            'industry' => ['nullable', 'string', 'max:100', new NoControlCharacters(), new NoSqlInjection()],
+            'company_size' => ['nullable', 'string', 'in:small,medium,large,enterprise'],
             'settlement_method' => 'required|in:maphapay_wallet,mobile_money,bank',
             'address' => ['nullable', 'string', 'max:500', new NoControlCharacters(), new NoSqlInjection()],
             'description' => ['nullable', 'string', 'max:1000', new NoControlCharacters(), new NoSqlInjection()],
         ]);
+
+        // Conditional validation: formal businesses require industry and company_size
+        if (in_array($validated['business_type'], ['pty_ltd', 'public', 'sole_trader'], true)) {
+            if (empty($validated['industry'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Industry is required for formal business types.',
+                    'errors' => ['industry' => ['Industry is required for formal business types.']],
+                ], 422);
+            }
+            if (empty($validated['company_size'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Company size is required for formal business types.',
+                    'errors' => ['company_size' => ['Company size is required for formal business types.']],
+                ], 422);
+            }
+        }
 
         /** @var \App\Models\User $user */
         $user = $request->user();

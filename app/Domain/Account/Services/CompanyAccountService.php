@@ -52,6 +52,19 @@ class CompanyAccountService
             }
         }
 
+        // Check for duplicate TIN if provided
+        if (!empty($profileData['tin_number'])) {
+            $existingByTin = AccountProfileCompany::query()
+                ->where('tin_number', $profileData['tin_number'])
+                ->exists();
+
+            if ($existingByTin) {
+                throw ValidationException::withMessages([
+                    'tin_number' => ['A company with this TIN already exists.'],
+                ]);
+            }
+        }
+
         $account = null;
         $profile = null;
 
@@ -78,9 +91,11 @@ class CompanyAccountService
                 $profile = AccountProfileCompany::query()->create([
                     'account_uuid' => $account->uuid,
                     'company_name' => $profileData['company_name'],
+                    'business_type' => $profileData['business_type'],
                     'registration_number' => $profileData['registration_number'] ?? null,
-                    'industry' => $profileData['industry'],
-                    'company_size' => $profileData['company_size'],
+                    'tin_number' => $profileData['tin_number'] ?? null,
+                    'industry' => $profileData['industry'] ?? null,
+                    'company_size' => $profileData['company_size'] ?? null,
                     'settlement_method' => $profileData['settlement_method'],
                     'address' => $profileData['address'] ?? null,
                     'description' => $profileData['description'] ?? null,

@@ -13,9 +13,11 @@ return new class () extends Migration {
             $table->uuid('id')->primary();
             $table->uuid('account_uuid');
             $table->string('company_name');
-            $table->string('registration_number')->nullable();
-            $table->string('industry');
-            $table->string('company_size'); // small, medium, large, enterprise
+            $table->string('business_type'); // pty_ltd, public, sole_trader, informal
+            $table->string('registration_number')->nullable(); // Company registration number or TIN
+            $table->string('tin_number')->nullable(); // Tax Identification Number (10 digits)
+            $table->string('industry')->nullable(); // Required for formal, optional for informal
+            $table->string('company_size')->nullable(); // Required for formal, optional for informal
             $table->string('settlement_method'); // maphapay_wallet, mobile_money, bank
             $table->string('address')->nullable();
             $table->text('description')->nullable();
@@ -24,6 +26,8 @@ return new class () extends Migration {
 
             $table->foreign('account_uuid')->references('uuid')->on('accounts')->cascadeOnDelete();
             $table->index('account_uuid');
+            $table->index('tin_number');
+            $table->index('registration_number');
         });
     }
 
