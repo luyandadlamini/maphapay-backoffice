@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\AccountBalanceController;
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\BalanceController;
+use App\Http\Controllers\Api\CompanyDocumentController;
 use App\Http\Controllers\Api\CustodianController;
 use App\Http\Controllers\Api\SubProductController;
 use App\Http\Controllers\Api\TransactionController;
@@ -21,6 +22,12 @@ Route::middleware(['auth:sanctum', 'account.context'])->group(function () {
     Route::get('/accounts', [AccountController::class, 'index'])->middleware('api.rate_limit:query');
     Route::post('/accounts/merchant', [AccountController::class, 'createMerchant'])->middleware(['api.rate_limit:mutation', 'scope:write']);
     Route::post('/accounts/company', [AccountController::class, 'createCompany'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+
+    // Company KYB document upload
+    Route::post('/accounts/company/documents', [CompanyDocumentController::class, 'upload'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+    Route::get('/accounts/company/documents', [CompanyDocumentController::class, 'list'])->middleware('api.rate_limit:query');
+    Route::get('/accounts/company/documents/required', [CompanyDocumentController::class, 'requiredDocuments'])->middleware('api.rate_limit:query');
+    Route::get('/accounts/company/documents/{documentId}', [CompanyDocumentController::class, 'download'])->middleware('api.rate_limit:query');
 
     // Versioned routes for backward compatibility
     Route::prefix('v1')->middleware('api.rate_limit:query')->group(function () {
