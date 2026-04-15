@@ -371,4 +371,28 @@ class CompanyDocumentController extends Controller
             'message' => $isVerify ? 'Document verified successfully.' : 'Document rejected.',
         ]);
     }
+
+    public function pendingDocuments(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (!$user->hasRole(['admin', 'super_admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin privileges required.',
+            ], 403);
+        }
+
+        $documents = AccountProfileCompanyDocument::query()
+            ->where('status', 'pending')
+            ->with(['companyProfile:id,company_name,business_type,account_uuid'])
+            ->orderBy('uploaded_at', 'desc')
+            ->paginate(20);
+
+        return response()->json([
+            'success' => true,
+            'data' => $documents,
+        ]);
+    }
 }
