@@ -35,6 +35,12 @@ Route::middleware(['auth:sanctum', 'account.context'])->group(function () {
     Route::get('/accounts/company/documents/pending', [CompanyDocumentController::class, 'pendingDocuments'])
         ->middleware(['auth:sanctum', 'api.rate_limit:query', 'scope:read']);
 
+    // Presigned URL upload routes
+    Route::post('/accounts/company/documents/upload-url', [CompanyDocumentController::class, 'getUploadUrl'])
+        ->middleware(['auth:sanctum', 'api.rate_limit:mutation', 'scope:write']);
+    Route::post('/accounts/company/documents/confirm', [CompanyDocumentController::class, 'confirmUpload'])
+        ->middleware(['auth:sanctum', 'api.rate_limit:mutation', 'scope:write']);
+
     // Versioned routes for backward compatibility
     Route::prefix('v1')->middleware('api.rate_limit:query')->group(function () {
         Route::get('/accounts', [AccountController::class, 'index']);
