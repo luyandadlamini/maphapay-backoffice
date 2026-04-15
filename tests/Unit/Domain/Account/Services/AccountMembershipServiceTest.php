@@ -10,12 +10,17 @@ use App\Domain\Account\Services\AccountMembershipService;
 use App\Models\Team;
 use App\Models\Tenant;
 use App\Models\User;
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
-use Stancl\Tenancy\Tenancy;
-use Tests\TestCase;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
+use Tests\CreatesApplication;
 
-class AccountMembershipServiceTest extends TestCase
+class AccountMembershipServiceTest extends BaseTestCase
 {
+    use CreatesApplication;
+
     protected User $user;
 
     protected Tenant $tenant;
@@ -23,11 +28,6 @@ class AccountMembershipServiceTest extends TestCase
     protected Account $account;
 
     protected AccountMembershipService $service;
-
-    protected function shouldCreateDefaultAccountsInSetup(): bool
-    {
-        return false;
-    }
 
     protected function setUp(): void
     {
@@ -39,34 +39,38 @@ class AccountMembershipServiceTest extends TestCase
             $this->markTestSkipped('Central database connection not available: ' . $exception->getMessage());
         }
 
-        $this->user = User::factory()->create();
-        $team = Team::factory()->create([
+        if (! Schema::connection('central')->hasTable('account_memberships')) {
+            Artisan::call('migrate', [
+                '--database' => 'central',
+                '--force' => true,
+            ]);
+        }
+
+        $this->user = User::factory()->make();
+        $this->user->setConnection('central');
+        $this->user->save();
+
+        $team = Team::factory()->make([
             'user_id' => $this->user->id,
             'name' => 'Owner Team',
         ]);
+        $team->setConnection('central');
+        $team->save();
 
-        $this->tenant = Tenant::createFromTeam($team);
-        tenancy()->initialize($this->tenant);
-
-        $this->account = Account::factory()->forUser($this->user)->create([
-            'type' => 'personal',
+        $this->tenant = Tenant::on('central')->create([
+            'team_id' => $team->id,
+            'name' => $team->name,
+            'plan' => 'default',
+        ]);
+        $this->account = new Account([
+            'uuid' => (string) Str::uuid(),
+            'user_uuid' => $this->user->uuid,
+            'name' => 'Personal Wallet',
             'display_name' => 'Personal Wallet',
+            'type' => 'personal',
         ]);
 
-        app(Tenancy::class)->end();
-
         $this->service = app(AccountMembershipService::class);
-    }
-
-    protected function tearDown(): void
-    {
-        $tenancy = app(Tenancy::class);
-
-        if ($tenancy->initialized) {
-            $tenancy->end();
-        }
-
-        parent::tearDown();
     }
 
     public function test_create_owner_membership_creates_active_owner_membership(): void

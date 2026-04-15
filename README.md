@@ -1,457 +1,239 @@
-# FinAegis Core Banking Platform
+# MaphaPay Backoffice
 
-[![CI Pipeline](https://github.com/finaegis/core-banking-prototype-laravel/actions/workflows/ci-pipeline.yml/badge.svg)](https://github.com/finaegis/core-banking-prototype-laravel/actions/workflows/ci-pipeline.yml)
-[![Version](https://img.shields.io/badge/version-6.5.0-blue.svg)](CHANGELOG.md)
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![PHP Version](https://img.shields.io/badge/php-%3E%3D8.4-8892BF.svg)](https://php.net/)
-[![Laravel Version](https://img.shields.io/badge/Laravel-12.x-FF2D20.svg)](https://laravel.com/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![Mobile Ready](https://img.shields.io/badge/mobile-ready-green.svg)](docs/MOBILE_APP_SPECIFICATION.md)
+Laravel backend and operations backoffice for MaphaPay. This repository is a FinAegis-based fork, but in day-to-day use it serves two concrete roles:
 
-**An open-source core banking platform built with event sourcing, domain-driven design, and modern financial patterns.**
+- the API consumed by the mobile app in `/Users/Lihle/Development/Coding/maphapayrn`
+- the internal admin/backoffice surface built on Filament
 
-FinAegis provides the foundation for building digital banking applications. The **Global Currency Unit (GCU)** serves as a complete reference implementation demonstrating how to build basket currencies, governance systems, and democratic financial instruments on this platform.
+This README is focused on the code that is active in this repo now, not the broader upstream FinAegis marketing surface.
 
-This fork is currently being hardened as the backend for the MaphaPay mobile app at `/Users/Lihle/Development/Coding/maphapayrn`, with active focus on send-money, request-money, verification, and transaction-inspection integrity.
+## Stack
 
-[Live Demo](https://finaegis.org) | [Documentation](docs/README.md) | [Quick Start](#quick-start) | [Contributing](CONTRIBUTING.md)
+- PHP `8.4+`
+- Laravel `12`
+- Filament admin panel
+- Sanctum-based authenticated API flows
+- Spatie event sourcing
+- Horizon-compatible queue setup
+- Vite for frontend assets
+- Pest for tests
 
----
+Selected packages currently installed:
 
-## Why FinAegis?
+- `filament/filament`
+- `laravel/sanctum`
+- `laravel/horizon`
+- `spatie/laravel-event-sourcing`
+- `nuwave/lighthouse`
+- `pusher/pusher-php-server`
+- `laravel/passport`
+- `stancl/tenancy`
 
-| Challenge | FinAegis Solution |
-|-----------|-------------------|
-| Building financial systems from scratch | 49 production-ready domain modules |
-| Audit trail requirements | Event sourcing with domain-specific event tables |
-| Complex multi-step transactions | Saga pattern with automatic compensation |
-| Regulatory compliance | Built-in KYC/AML, SOC 2, PCI DSS, GDPR (v3.5.0) |
-| Multi-tenant SaaS deployment | Team-based tenant isolation (v2.0.0) |
-| Hardware wallet security | Ledger/Trezor support with multi-sig (v2.1.0) |
-| Mobile wallet backend | Biometric auth, passkeys, push notifications (v2.2.0+) |
-| Privacy-preserving transactions | ZK-KYC, Merkle trees, ERC-4337 gas abstraction (v2.4.0-v2.6.0) |
-| Multi-jurisdiction RegTech | MiFID II, MiCA, FATF Travel Rule, 4-jurisdiction adapters (v2.8.0) |
-| Cross-chain & DeFi | Bridge protocols, DEX aggregation, yield optimization (v3.0.0) |
-| Modular plugin architecture | 49 domains with manifests, enable/disable, dependency resolution (v3.2.0) |
-| Compliance certification | SOC 2 Type II, PCI DSS readiness, multi-region deployment (v3.5.0) |
-| GraphQL API | Schema-first Lighthouse PHP, 39 domains, subscriptions (v4.0.0+) |
-| Event Store v2 | Domain routing (49 domains), upcasting, migration tooling (v4.0.0) |
-| Plugin Marketplace | Manager, loader, sandbox, security scanner (v4.0.0) |
-| Event streaming | Redis Streams publisher/consumer, live dashboard (v5.0.0) |
-| API monetization | x402 protocol: HTTP-native micropayments with USDC on Base (v5.2.0) |
-| Privacy protocol | RAILGUN SDK integration: shield/unshield/transfer with Merkle proofs (v5.6.0) |
-| Mobile gamification | Rewards system: quests, XP/levels, points shop, streaks (v5.7.0) |
-| Fiat on/off ramp | Onramper aggregator with provider-agnostic session management (v5.12.0) |
-| Design system v2 | Complete frontend overhaul with consistent typography, dark heroes (v5.12.0) |
-| Developer ecosystem | Plugin marketplace, developer portal, 3 official SDKs (v6.0.0) |
-| Post-quantum cryptography | ML-KEM-768, ML-DSA-65, hybrid encryption with key rotation (v6.1.0) |
-| Feature completeness | Card sync webhooks, bank transfer state machine, tenant provisioning (v6.1.1) |
-| Distributed tracing | OpenTelemetry, Zipkin, Jaeger, per-request trace propagation (v6.2.0) |
-| AI agent commerce | A2A messaging, DID identity, escrow, reputation framework (v6.3.0) |
-| Machine payments | MPP multi-rail (Stripe, USDC, Lightning), AP2 mandates, x402 Solana (v6.4.0) |
-| Payment orchestration | HyperSwitch 150+ connectors, smart routing, failover (v6.4.2) |
-| Mobile launch readiness | Quest auto-triggers, device attestation, JIT funding, rewards (v6.5.0) |
-| SMS multi-rail payments | Twilio or mock SMS, MPP-gated SMS, MCP tool for AI agents (v6.5.0) |
-| Learning modern architecture | Complete DDD + CQRS + Event Sourcing example |
+## What this repo currently owns
 
----
+For MaphaPay specifically, the current backend includes:
 
-## Plugin Architecture (v3.2.0)
+- Mobile and standard auth routes
+- Mobile profile completion
+- Device token registration
+- Transaction PIN toggle
+- Mobile compatibility API routes loaded from `routes/api-compat.php`
+- Dashboard and transaction history endpoints used by the mobile app
+- Send money and request money flows with idempotency and verification enforcement
+- Payment-link lookup endpoint
+- Savings pockets endpoints
+- Push-notification list/read/sync endpoints
+- Wallet-linking endpoint
+- Social money threads, messages, friend requests, groups, bill-split, and thread payments
+- MTN MoMo initiation and status endpoints
+- Mobile-device management and biometric-auth APIs
+- Filament admin pages for operations and inspection
 
-FinAegis uses a modular plugin system where each domain is a self-contained module:
+## Routing model
 
-```bash
-php artisan domain:list              # List all 49 domain modules with status
-php artisan module:enable exchange   # Enable a module
-php artisan module:disable exchange  # Disable a module (preserves data)
-php artisan domain:verify exchange   # Verify module health
-php artisan performance:report       # Generate performance baseline
-```
+Routing is configured in `bootstrap/app.php`.
 
-- **Module manifests** (`module.json`) define dependencies, interfaces, events, and commands
-- **Route isolation** — each domain loads its own `Routes/api.php` via `ModuleRouteLoader`
-- **Admin UI** — Filament page at `/admin/modules` with search, filters, enable/disable actions
-- **REST API** — `GET /api/v2/modules` for programmatic module management
+Current behavior:
 
----
+- Main web host:
+  - web routes from `routes/web.php`
+  - API routes under `/api/...`
+  - compatibility routes under `/api/...`
+- `api.*` subdomain:
+  - API routes loaded without the `/api` prefix
+- `x402.*` and `mpp.*` protocol subdomains:
+  - API routes loaded without the `/api` prefix
+  - protocol middleware automatically applied
 
-## GraphQL API (v4.0.0-v4.3.0)
+Important files:
 
-FinAegis provides a schema-first GraphQL API via [Lighthouse PHP](https://lighthouse-php.com/) covering 36 domains:
+- `routes/api.php` -> core API routes
+- `routes/api-compat.php` -> mobile compatibility surface
+- `routes/web.php` -> browser/admin routes
+- `routes/channels.php` -> broadcast channels
+- `routes/console.php` -> scheduled tasks
 
-```bash
-# Available at /graphql
-# Interactive playground at /graphql-playground
+## Mobile-facing API areas
 
-# Example query
-curl -X POST http://localhost:8000/graphql \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ accounts { id name balance currency } }"}'
-```
+The mobile app depends primarily on the compatibility and mobile endpoints in this repo.
 
-- **39 domain schemas** — Account, AgentProtocol, AI, Asset, Banking, Basket, Batch, CardIssuance, Cgo, Commerce, Compliance, CrossChain, Custodian, DeFi, Exchange, FinancialInstitution, Fraud, Governance, KeyManagement, Lending, MachinePay, Mobile, MobilePayment, Payment, Privacy, Product, RegTech, Regulatory, Relayer, Stablecoin, Treasury, TrustCert, User, Wallet, X402
-- **Subscriptions** — Real-time updates via WebSocket (account updates, wallet changes, compliance alerts, order matching)
-- **DataLoaders** — N+1 query prevention with batched loading
-- **Security** — `@guard(with: ["sanctum"])`, query cost analysis, introspection control
+Current compatibility areas in `routes/api-compat.php`:
 
----
+- `verification-process/*`
+- `send-money/store`
+- `request-money/*`
+- `scheduled-send/*`
+- `mtn/*`
+- `transactions`, `transactions/sync`
+- `dashboard`
+- `social-money/*`
+- `pockets*`
+- `push-notifications*`
+- `wallet-linking`
+- rewards, budget, notification settings, group pockets, virtual cards
 
-## Event Streaming (v5.0.0)
+Current mobile endpoints in `routes/api.php` and `app/Http/Controllers/Api/MobileController.php` include:
 
-Redis Streams-based event streaming for real-time data pipelines:
+- `/api/mobile/config`
+- `/api/mobile/devices`
+- `/api/mobile/auth/biometric/*`
+- `/api/mobile/notifications`
+- `/api/mobile/notifications/preferences`
 
-```bash
-php artisan event-stream:monitor    # Monitor stream health, lag, throughput
-```
+## Money-movement contract notes
 
-- **Event publisher** — Publishes domain events to 15 Redis Streams with XADD
-- **Consumer groups** — XREADGROUP-based consumers with acknowledgement and dead letter handling
-- **Live dashboard** — 5 REST endpoints for real-time metrics (projector lag, event throughput, domain health)
-- **Notification system** — Multi-channel notifications (email, push, in-app, webhook, SMS)
-- **API gateway** — Unified middleware with request ID tracing, timing headers
+The codebase currently enforces stricter mobile compatibility behavior for money movement:
 
----
+- send money uses idempotency middleware
+- request money create/accept flows are migration-flagged and idempotent
+- verification endpoints are separated into PIN, OTP, and biometric flows
+- compatibility responses are expected to fail closed unless the backend returns terminal success
 
-## GCU: The Reference Implementation
+Those rules live in and around:
 
-<table>
-<tr>
-<td width="60%">
+- `routes/api-compat.php`
+- compatibility controllers under `app/Http/Controllers/Api/Compatibility`
+- money-movement tests under `tests/Feature/Http/Controllers/Api/Compatibility`
 
-The **Global Currency Unit (GCU)** demonstrates FinAegis capabilities through a democratic basket currency:
+## Local setup
 
-- **Multi-Asset Basket** - USD (40%), EUR (30%), GBP (15%), CHF (10%), JPY (3%), XAU (2%)
-- **Democratic Governance** - Community votes on basket composition
-- **Automatic Rebalancing** - Monthly adjustment to maintain target weights
-- **Transparent NAV** - Real-time Net Asset Value calculation
-- **Full Integration** - Uses Exchange, Governance, Compliance, and Treasury domains
+Prerequisites:
 
-GCU shows how to build complex financial products using FinAegis primitives.
+- PHP 8.4+
+- Composer
+- Node.js 18+
+- MySQL, MariaDB, or PostgreSQL
+- Redis if you want the full queue/cache/broadcast stack
 
-</td>
-<td width="40%">
-
-```
-┌─────────────────────┐
-│   GCU Basket        │
-├─────────────────────┤
-│ USD ████████░░ 40%  │
-│ EUR ██████░░░░ 30%  │
-│ GBP ███░░░░░░░ 15%  │
-│ CHF ██░░░░░░░░ 10%  │
-│ JPY █░░░░░░░░░  3%  │
-│ XAU █░░░░░░░░░  2%  │
-└─────────────────────┘
-```
-
-</td>
-</tr>
-</table>
-
-See [ADR-004: GCU Basket Design](docs/ADR/ADR-004-gcu-basket-design.md) for architecture details.
-
----
-
-## Quick Start
-
-### MaphaPay Local Verification Notes
-
-Recent money-movement verification runs in this workspace used a disposable MySQL instance on `127.0.0.1:3307` because the machine-wide daemon on `3306` was not reliably usable with the expected blank-password `root` test account.
+Install:
 
 ```bash
-DB_CONNECTION=mysql \
-DB_HOST=127.0.0.1 \
-DB_PORT=3307 \
-DB_DATABASE=maphapay_backoffice_test \
-DB_USERNAME=root \
-DB_PASSWORD='' \
-php -d max_execution_time=300 ./vendor/bin/pest \
-  tests/Feature/Http/Controllers/Api/Compatibility/SendMoney/SendMoneyPolicyEnforcementTest.php \
-  tests/Feature/Http/Controllers/Api/Compatibility/RequestMoney/RequestMoneyStoreControllerTest.php \
-  tests/Feature/Http/Controllers/Api/Compatibility/RequestMoney/RequestMoneyReceivedStoreControllerTest.php \
-  tests/Unit/Domain/Monitoring/Services/MoneyMovementTransactionInspectorTest.php
-```
-
-- **Database Isolation**: Stable testing requires a dedicated MySQL instance (e.g., `3307`) to avoid interference with the main daemon's root password state.
-- **Terminal Success**: The backend now strictly enforces that money movement is only complete when `status` is `success` and `next_step` is `none`.
-- `phpunit.xml` now uses a 300-second default test time limit.
-- On a fresh disposable MySQL instance, `max_execution_time` should be `0` before first-run migrations.
-
-### Demo Mode (Recommended)
-
-No external dependencies - everything runs locally:
-
-```bash
-git clone https://github.com/finaegis/core-banking-prototype-laravel.git
-cd core-banking-prototype-laravel
 composer install
-cp .env.demo .env
-php artisan key:generate
-php artisan migrate --seed
-npm install && npm run build
-php artisan serve
-```
-
-Visit `http://localhost:8000` with demo credentials:
-- `demo.user@gcu.global` / `demo123`
-- `demo.business@gcu.global` / `demo123`
-- `demo.investor@gcu.global` / `demo123`
-
-### Full Installation
-
-```bash
-git clone https://github.com/finaegis/core-banking-prototype-laravel.git
-cd core-banking-prototype-laravel
-composer install && npm install
+npm install
 cp .env.example .env
 php artisan key:generate
-# Configure MySQL/PostgreSQL and Redis in .env
-php artisan migrate --seed
-npm run build
+```
+
+Configure your database and queue settings in `.env`, then run:
+
+```bash
+php artisan migrate
 php artisan serve
-php artisan queue:work --queue=events,ledger,transactions,transfers,webhooks
 ```
 
-**Requirements**: PHP 8.4+, MySQL 8.0+ / MariaDB 10.3+ / PostgreSQL 13+, Redis 6.0+, Node.js 18+
-
-### Modular Installation (v1.3.0+)
-
-Install only the domains you need:
+For frontend assets during local work:
 
 ```bash
-# List available domains
-php artisan domain:list
-
-# Install specific domains
-php artisan domain:install exchange
-php artisan domain:install lending
-
-# Check dependencies
-php artisan domain:dependencies exchange
-
-# Verify domain health
-php artisan domain:verify
+npm run dev
 ```
 
-| Domain Type | Examples | Installation |
-|-------------|----------|--------------|
-| **Core** (always installed) | `account`, `user`, `compliance`, `shared` | Automatic |
-| **Financial** | `exchange`, `lending`, `treasury`, `wallet` | `domain:install` |
-| **AI/Agent** | `ai`, `agent-protocol`, `governance` | `domain:install` |
-| **Infrastructure** | `monitoring`, `fraud`, `batch` | `domain:install` |
-
-See [Domain Management Guide](docs/06-DEVELOPMENT/DOMAIN_MANAGEMENT.md) for details.
-
----
-
-## Platform Capabilities
-
-### Core Banking
-
-| Domain | Capabilities |
-|--------|-------------|
-| **Account** | Multi-asset accounts, deposits, withdrawals, statements |
-| **Banking** | SEPA/SWIFT transfers, multi-bank routing, reconciliation |
-| **Compliance** | 3-tier KYC, AML screening, SAR/CTR reporting |
-| **Treasury** | Portfolio management, cash allocation, yield optimization |
-
-### Digital Assets
-
-| Domain | Capabilities |
-|--------|-------------|
-| **Exchange** | Order matching, liquidity pools, AMM, external connectors, WebSocket streaming |
-| **Stablecoin** | Multi-collateral minting, burning, liquidation |
-| **Wallet** | Multi-chain (BTC, ETH, Polygon, BSC), Hardware wallets (Ledger, Trezor), Multi-sig (M-of-N) |
-| **Basket (GCU)** | Weighted currency basket, NAV calculation, rebalancing |
-
-### Platform Services
-
-| Domain | Capabilities |
-|--------|-------------|
-| **Governance** | Democratic voting, proposals, asset-weighted strategies |
-| **Lending** | P2P loans, credit scoring, risk assessment |
-| **AI Framework** | MCP server, 20+ banking tools, natural language queries, pattern analysis (v2.8.0) |
-| **Agent Protocol** | A2A messaging, escrow, reputation system |
-| **RegTech** | MiFID II reporting, MiCA compliance, FATF Travel Rule, 4-jurisdiction adapters (v2.8.0) |
-| **Multi-Tenancy** | Team-based isolation, tenant-aware event sourcing |
-
-### Mobile Backend (v2.4.0+)
-
-| Domain | Capabilities |
-|--------|-------------|
-| **Key Management** | Shamir's Secret Sharing (2-of-3), HSM integration |
-| **Privacy** | ZK-KYC verification, Proof of Innocence, selective disclosure |
-| **Card Issuance** | Virtual cards for Apple Pay/Google Pay, JIT funding |
-| **Gas Relayer** | ERC-4337 meta-transactions, pay fees in USDC |
-| **TrustCert** | W3C Verifiable Credentials, QR/deep link verification |
-| **Mobile** | Biometric auth, push notifications, device management |
-| **Mobile Payments** | Payment intents, activity feed, receipts, USDC on Solana/Tron (v2.7.0), **Payment Links for Request Money** (v5.12.0) |
-| **Passkey Auth** | WebAuthn/FIDO2 with rpIdHash, UV/UP flags, COSE validation (v2.7.0+v5.7.0) |
-| **P2P Transfers** | Address validation, name resolution, fee quotes (v2.7.0) |
-| **Rewards** | Gamification: XP/levels, quests, points shop, streaks, race-safe redemption (v5.7.0) |
-
-### API Monetization (v5.2.0)
-
-| Domain | Capabilities |
-|--------|-------------|
-| **X402 Protocol** | HTTP 402 native micropayments, USDC on Base L2, EIP-3009/Permit2 payment schemes |
-| **Payment Gate** | Middleware-based API monetization, per-endpoint pricing, automatic settlement |
-| **AI Agent Payments** | Autonomous payments for AI agents, spending limits, MCP tool integration |
-
----
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         API / Admin Panel                           │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
-│  │ Account  │ │ Exchange │ │ Basket   │ │Compliance│ │ Treasury │  │
-│  │  Domain  │ │  Domain  │ │  (GCU)   │ │  Domain  │ │  Domain  │  │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘  │
-│       │            │            │            │            │         │
-│  ┌────▼────────────▼────────────▼────────────▼────────────▼─────┐  │
-│  │                    CQRS + Event Sourcing                      │  │
-│  │  Commands → Aggregates → Events → Projectors → Read Models   │  │
-│  └──────────────────────────────┬────────────────────────────────┘  │
-│                                 │                                    │
-│  ┌──────────────────────────────▼────────────────────────────────┐  │
-│  │                    Saga / Workflow Engine                      │  │
-│  │         Multi-step transactions with compensation              │  │
-│  └───────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-**Key Patterns:**
-- **Event Sourcing** - Domain-specific event tables with Event Store v2, replay, and upcasting (v4.0.0)
-- **CQRS** - Separated read/write models for optimal performance
-- **Saga Pattern** - Distributed transactions with automatic rollback
-- **DDD** — 49 bounded contexts with clear boundaries
-- **Atomic Transfers** — Multi-layered **Zero-Amount Guards** and unified transfer workflows for financial integrity
-- **Multi-Tenancy** — Team-based data isolation with stancl/tenancy v3.9
-- **GraphQL** - Schema-first Lighthouse PHP across 39 domains with subscriptions (v4.0.0+)
-- **Event Streaming** - Redis Streams publisher/consumer with live dashboard (v5.0.0)
-
-See [Architecture Decision Records](docs/ADR/) for detailed design rationale.
-
----
-
-## Documentation
-
-| Category | Links |
-|----------|-------|
-| **Getting Started** | [Quick Start](#quick-start) · [User Guides](docs/05-USER-GUIDES/) |
-| **Architecture** | [Overview](docs/02-ARCHITECTURE/) · [ADRs](docs/ADR/) · [Roadmap](docs/ARCHITECTURAL_ROADMAP.md) |
-| **API** | [REST Reference](docs/04-API/REST_API_REFERENCE.md) · [OpenAPI](/api/documentation) · [GraphQL](/graphql-playground) |
-| **Version History** | [Changelog](CHANGELOG.md) · [Version Roadmap](docs/VERSION_ROADMAP.md) |
-| **Development** | [Contributing](CONTRIBUTING.md) · [Dev Guides](docs/06-DEVELOPMENT/) |
-| **Reference** | [GCU Design](docs/ADR/ADR-004-gcu-basket-design.md) · [Event Sourcing](docs/ADR/ADR-001-event-sourcing.md) |
-
----
-
-## Contributing
-
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+For production-style built assets:
 
 ```bash
-# Fork, clone, then:
-git checkout -b feature/your-feature
-# Make changes with tests
-./bin/pre-commit-check.sh --fix
-# Submit PR
+npm run build
 ```
 
-**Standards**: PSR-12 · PHPStan Level 8 · 50%+ Coverage · Conventional Commits
+## Queues and background work
 
-This project supports AI coding assistants. Look for `AGENTS.md` files for context-aware guidance.
+This repo includes scheduled jobs and queue-backed flows for notifications, events, and financial processing.
 
----
-
-## Deployment
-
-### Kubernetes (v2.1.0+)
-
-Deploy to any Kubernetes cluster with Helm:
+At minimum, for local development that touches async behavior, run a worker:
 
 ```bash
-# Add Bitnami repo for dependencies
-helm repo add bitnami https://charts.bitnami.com/bitnami
-
-# Install with staging values
-helm upgrade --install finaegis ./helm/finaegis \
-  --values ./helm/finaegis/values-staging.yaml \
-  --namespace finaegis-staging \
-  --create-namespace
-
-# Install with production values
-helm upgrade --install finaegis ./helm/finaegis \
-  --values ./helm/finaegis/values-production.yaml \
-  --namespace finaegis
+php artisan queue:work
 ```
 
-**Features:**
-- Multi-stage Docker build (PHP 8.4-fpm-alpine)
-- Horizontal Pod Autoscaler (CPU, memory, queue depth)
-- Istio service mesh compatible (mTLS, circuit breaker)
-- External Secrets for Vault/AWS integration
-- Prometheus ServiceMonitor for observability
-- Network Policies for pod isolation
+If you are using the fuller queue setup in this project, Horizon is also available:
 
-See [Kubernetes Deployment Guide](docs/06-DEVELOPMENT/KUBERNETES.md) for details.
+```bash
+php artisan horizon
+```
 
----
+Scheduled tasks are defined in `routes/console.php`, including mobile-notification processing and stale-device cleanup.
 
-## Tech Stack
+## Environment notes
 
-| Layer | Technology |
-|-------|------------|
-| **Backend** | Laravel 12, PHP 8.4+ |
-| **Event Sourcing** | Spatie Event Sourcing with Event Store v2 (domain routing, upcasting) |
-| **GraphQL** | Lighthouse PHP (schema-first, 36 domains, subscriptions) |
-| **Workflows** | Laravel Workflow (Waterline) |
-| **Multi-Tenancy** | stancl/tenancy v3.9 |
-| **Database** | MySQL 8.0+ / MariaDB 10.3+ / PostgreSQL 13+ |
-| **Cache/Queue/Streaming** | Redis (cache, queues, Streams), Laravel Horizon |
-| **Real-time** | Soketi (Pusher-compatible), Laravel Echo, Redis Streams |
-| **Testing** | Pest PHP (parallel, 886 test files, 6,500+ tests), PHPStan Level 8 |
-| **Admin** | Filament v3 |
-| **Frontend** | Livewire, Tailwind CSS |
-| **Deployment** | Docker, Kubernetes (Helm), Istio |
+The shipped `.env.example` is still FinAegis-branded in places, but the code in this repo is what matters.
 
----
+Important defaults and expectations visible in the current config:
 
-## Project Status
+- `APP_TIMEZONE=Africa/Mbabane`
+- default DB connection in the sample file is `mariadb`
+- default queue connection in the sample file is `database`
+- registration is disabled by default in the sample env
+- mobile feature flags and version settings are exposed through `/api/mobile/config`
 
-This is a **demonstration platform** showcasing modern banking architecture. Use it for:
+## Admin and operations
 
-- Learning event sourcing and DDD patterns
-- Understanding core banking concepts
-- Building proof-of-concepts
-- Contributing to open-source fintech
-- Studying GCU as a basket currency reference
+This repo includes a substantial Filament admin surface under `app/Filament/Admin`.
 
-**Production Readiness**: The codebase includes production-grade infrastructure (CQRS, event sourcing, multi-tenancy, GraphQL API, event streaming, 50%+ test coverage, PHPStan Level 8, 6,300+ tests). However, **a security audit and compliance review are required** before any production deployment. See [Security Policy](SECURITY.md) for vulnerability reporting.
+Examples of current admin/ops pages:
 
----
+- Dashboard
+- Money Movement Inspector
+- Projector Health Dashboard
+- Event Store Dashboard
+- Exceptions Dashboard
+- Broadcast Notification Page
+- Modules
+- Settings
+- Fund management pages
 
-## Community
+There is also an authenticated API admin dashboard route at:
 
-- [GitHub Discussions](https://github.com/finaegis/core-banking-prototype-laravel/discussions) - Questions & Ideas
-- [GitHub Issues](https://github.com/finaegis/core-banking-prototype-laravel/issues) - Bug Reports
-- [Security Policy](SECURITY.md) - Vulnerability Reporting
-- [Code of Conduct](CODE_OF_CONDUCT.md) - Community Guidelines
-- [Changelog](CHANGELOG.md) - Version History
+- `/api/admin/dashboard`
 
----
+That route requires:
+
+- `auth:sanctum`
+- `require.2fa.admin`
+
+## Testing and quality
+
+Useful commands already defined in `composer.json`:
+
+```bash
+composer test
+composer phpstan
+composer phpcs
+composer quality
+```
+
+The test suite includes coverage for:
+
+- mobile controller response shapes
+- compatibility route behavior
+- send money and request money policy enforcement
+- money-movement transaction inspection
+- Filament admin pages
+
+## Repo relationship
+
+- Backoffice/API: `/Users/Lihle/Development/Coding/maphapay-backoffice`
+- Mobile client: `/Users/Lihle/Development/Coding/maphapayrn`
+
+If you update request/response shapes here, update the mobile app README and callers alongside the controller or route changes.
 
 ## License
 
-[Apache License 2.0](LICENSE)
-
----
-
-<p align="center">
-<strong>Built for the open-source financial community</strong>
-</p>
+Apache-2.0, inherited from the FinAegis base unless your team applies a different internal policy for deployment and operations.

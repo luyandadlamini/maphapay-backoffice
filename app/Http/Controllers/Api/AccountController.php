@@ -7,7 +7,9 @@ namespace App\Http\Controllers\Api;
 use App\Domain\Account\DataObjects\AccountUuid;
 use App\Domain\Account\DataObjects\Money;
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Services\AccountService;
+use App\Domain\Account\Services\MerchantAccountService;
 use App\Domain\Account\Services\Cache\AccountCacheService;
 use App\Domain\Account\Workflows\CreateAccountWorkflow;
 use App\Domain\Account\Workflows\DepositAccountWorkflow;
@@ -28,7 +30,8 @@ class AccountController extends Controller
     public function __construct(
         // @phpstan-ignore-next-line
         private readonly AccountService $accountService,
-        private readonly AccountCacheService $accountCache
+        private readonly AccountCacheService $accountCache,
+        private readonly MerchantAccountService $merchantAccountService,
     ) {
     }
 
@@ -53,6 +56,17 @@ class AccountController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user();
 
+        $memberships = $user->activeAccountMemberships()
+            ->with('user')
+            ->get();
+
+        if ($memberships->isNotEmpty()) {
+            return response()->json([
+                'success' => true,
+                'data' => $this->transformMemberships($memberships),
+            ]);
+        }
+
         // Retrieve accounts for the authenticated user
         $accounts = Account::where('user_uuid', $user->uuid)
             ->orderBy('created_at', 'desc')
@@ -76,6 +90,64 @@ class AccountController extends Controller
                 ),
             ]
         );
+    }
+
+    public function createMerchant(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'trade_name' => ['required', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
+            'merchant_category' => ['required', 'string', 'max:100', new NoControlCharacters(), new NoSqlInjection()],
+            'classification' => 'required|in:informal,sole_proprietor,registered_business',
+            'settlement_method' => 'required|in:maphapay_wallet,mobile_money,bank',
+            'location' => ['nullable', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
+            'description' => ['nullable', 'string', 'max:1000', new NoControlCharacters(), new NoSqlInjection()],
+        ]);
+
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $tenantId = (string) ($request->attributes->get('tenant_id') ?? '');
+
+        if ($tenantId === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'A valid account context is required to create a merchant account.',
+            ], 403);
+        }
+
+        // Verify personal account membership exists
+        $personalMembership = AccountMembership::query()
+            ->forUser($user->uuid)
+            ->where('account_type', 'personal')
+            ->where('status', 'active')
+            ->first();
+
+        if ($personalMembership === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'A personal account is required before creating a merchant account.',
+            ], 403);
+        }
+
+        // KYC gate — only approved users may create a merchant account
+        if (!in_array($user->kyc_status, ['approved'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Identity verification is required before creating a merchant account.',
+            ], 403);
+        }
+
+        $result = $this->merchantAccountService->createForUser($user, $tenantId, $validated);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'account_uuid' => $result['account']->uuid,
+                'tenant_id' => $tenantId,
+                'account_type' => 'merchant',
+                'display_name' => $result['account']->display_name,
+                'role' => $result['membership']->role,
+            ],
+        ], 201);
     }
 
         #[OA\Post(
@@ -231,6 +303,34 @@ class AccountController extends Controller
                 ],
             ]
         );
+    }
+
+    /**
+     * @param \Illuminate\Support\Collection<int, AccountMembership> $memberships
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    private function transformMemberships($memberships)
+    {
+        return $memberships->map(function (AccountMembership $membership): array {
+            if ($membership->account_type === 'personal') {
+                $displayName = $membership->user?->name ?: 'Personal';
+            } else {
+                $displayName = $membership->display_name ?: $membership->account_uuid;
+            }
+
+            return [
+                'account_uuid' => $membership->account_uuid,
+                'tenant_id' => $membership->tenant_id,
+                'account_type' => $membership->account_type,
+                'display_name' => $displayName,
+                'role' => $membership->role,
+                'status' => $membership->status,
+                'capabilities' => $membership->capabilities ?? [],
+                'verification_tier' => $membership->verification_tier ?? 'unverified',
+                'balance_preview' => null,
+                'currency' => 'SZL',
+            ];
+        })->values();
     }
 
         #[OA\Delete(

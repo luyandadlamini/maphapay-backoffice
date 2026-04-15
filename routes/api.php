@@ -113,7 +113,7 @@ Route::prefix('auth')->middleware('api.rate_limit:auth')->group(function () {
     Route::post('/social/{provider}/callback', [SocialAuthController::class, 'callback']);
 
     // Protected auth endpoints
-    Route::middleware(['auth:sanctum'])->group(function () {
+    Route::middleware(['auth:sanctum', 'account.context'])->group(function () {
         Route::post('/logout', [LoginController::class, 'logout']);
         Route::post('/logout-all', [LoginController::class, 'logoutAll']);
         Route::get('/user', [LoginController::class, 'user'])->withoutMiddleware('api.rate_limit:auth')->middleware('api.rate_limit:query');
@@ -161,14 +161,14 @@ Route::prefix('auth')->middleware('api.rate_limit:auth')->group(function () {
 });
 
 // User profile (avatar upload/delete)
-Route::prefix('v1/users')->middleware(['auth:sanctum'])->group(function () {
+Route::prefix('v1/users')->middleware(['auth:sanctum', 'account.context'])->group(function () {
     Route::post('/avatar', [App\Http\Controllers\Api\UserProfileController::class, 'uploadAvatar'])->middleware('throttle:10,1')->name('api.users.avatar.upload');
     Route::delete('/avatar', [App\Http\Controllers\Api\UserProfileController::class, 'deleteAvatar'])->middleware('api.rate_limit:query')->name('api.users.avatar.delete');
     Route::post('/transaction-pin/toggle', [App\Http\Controllers\Api\UserProfileController::class, 'toggleTransactionPin'])->name('api.users.transaction-pin.toggle');
 });
 
 // Device token management (authenticated)
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', 'account.context'])->group(function () {
     Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
 });
 

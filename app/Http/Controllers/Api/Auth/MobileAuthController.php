@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Auth;
 
+use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Onboarding\Services\DefaultUserResourceProvisioningService;
 use App\Domain\Shared\Services\OtpService;
 use App\Http\Controllers\Controller;
@@ -151,6 +152,8 @@ class MobileAuthController extends Controller
                 'remark'  => 'login_success',
                 'data'    => [
                     'user'               => $this->transformUser($user),
+                    'accounts'           => $this->transformAccountMemberships($user),
+                    'active_account_id'  => $this->resolveActiveAccountId($user),
                     'access_token'       => $tokenPair['access_token'],
                     'refresh_token'      => $tokenPair['refresh_token'],
                     'token_type'         => 'Bearer',
@@ -328,6 +331,8 @@ class MobileAuthController extends Controller
             'success' => true,
             'data'    => [
                 'user'          => $this->transformUser($user),
+                'accounts'      => $this->transformAccountMemberships($user),
+                'active_account_id' => $this->resolveActiveAccountId($user),
                 'access_token'  => $tokenPair['access_token'],
                 'refresh_token' => $tokenPair['refresh_token'],
                 'token_type'    => 'Bearer',
@@ -787,6 +792,48 @@ class MobileAuthController extends Controller
             'transaction_pin_enabled'  => $user->transaction_pin_enabled,
             'has_completed_onboarding' => $user->has_completed_onboarding,
         ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function transformAccountMemberships(User $user): array
+    {
+        return $user->activeAccountMemberships()
+            ->with('user')
+            ->get()
+            ->map(function (AccountMembership $membership) use ($user): array {
+                if ($membership->account_type === 'personal') {
+                    $displayName = $user->name ?: 'Personal';
+                } else {
+                    $displayName = $membership->display_name ?: $membership->account_uuid;
+                }
+
+                return [
+                    'account_uuid' => $membership->account_uuid,
+                    'tenant_id' => $membership->tenant_id,
+                    'account_type' => $membership->account_type,
+                    'display_name' => $displayName,
+                    'role' => $membership->role,
+                    'capabilities' => $membership->capabilities ?? [],
+                    'verification_tier' => $membership->verification_tier ?? 'unverified',
+                    'balance_preview' => null,
+                    'currency' => 'SZL',
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function resolveActiveAccountId(User $user): ?string
+    {
+        $membership = $user->activeAccountMemberships()
+            ->active()
+            ->orderByRaw("case when account_type = 'personal' then 0 else 1 end")
+            ->orderByDesc('joined_at')
+            ->first();
+
+        return $membership?->account_uuid;
     }
 
     /**

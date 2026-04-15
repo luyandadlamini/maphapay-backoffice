@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Auth;
 
+use App\Domain\Account\Models\AccountMembership;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\IpBlockingService;
@@ -370,12 +371,61 @@ class LoginController extends Controller
     )]
     public function user(Request $request): JsonResponse
     {
+        /** @var User $user */
+        $user = $request->user();
+        $accounts = $this->transformAccountMemberships($user);
+        $activeAccountId = (string) ($request->attributes->get('account_uuid') ?? $this->resolveActiveAccountId($user));
+        $payload = array_merge($user->toArray(), [
+            'accounts' => $accounts,
+            'active_account_id' => $activeAccountId,
+        ]);
+
         return response()->json(
             [
                 'success' => true,
-                'data'    => $request->user(),
+                'data'    => $payload,
+                'accounts' => $accounts,
+                'active_account_id' => $activeAccountId,
             ]
         );
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function transformAccountMemberships(User $user): array
+    {
+        return $user->activeAccountMemberships()
+            ->with('user')
+            ->get()
+            ->map(function (AccountMembership $membership) use ($user): array {
+                return [
+                    'account_uuid' => $membership->account_uuid,
+                    'tenant_id' => $membership->tenant_id,
+                    'account_type' => $membership->account_type,
+                    'display_name' => $membership->account_type === 'personal'
+                        ? ($user->name ?: 'Personal')
+                        : $membership->account_uuid,
+                    'role' => $membership->role,
+                    'capabilities' => [],
+                    'verification_tier' => 'unverified',
+                    'balance_preview' => null,
+                    'currency' => 'SZL',
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function resolveActiveAccountId(User $user): ?string
+    {
+        $membership = $user->activeAccountMemberships()
+            ->active()
+            ->orderByRaw("case when account_type = 'personal' then 0 else 1 end")
+            ->orderByDesc('joined_at')
+            ->first();
+
+        return $membership?->account_uuid;
     }
 
     /**

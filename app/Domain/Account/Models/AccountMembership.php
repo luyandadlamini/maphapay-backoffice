@@ -11,6 +11,7 @@ class AccountMembership extends Model
 {
     use HasUuids;
 
+    protected $connection = 'central';
     protected $table = 'account_memberships';
     protected $keyType = 'string';
     public $incrementing = false;
@@ -18,6 +19,7 @@ class AccountMembership extends Model
 
     protected $casts = [
         'permissions_override' => 'array',
+        'capabilities' => 'array',
         'joined_at' => 'datetime',
     ];
 

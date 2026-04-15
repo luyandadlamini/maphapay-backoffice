@@ -13,12 +13,13 @@ use App\Http\Controllers\Api\TransferController;
 use Illuminate\Support\Facades\Route;
 
 // Core account, transaction, and transfer endpoints
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'account.context'])->group(function () {
     // Sub-product status for authenticated users
     Route::get('/sub-products/enabled', [SubProductController::class, 'enabled']);
 
     // Legacy accounts route for backward compatibility
     Route::get('/accounts', [AccountController::class, 'index'])->middleware('api.rate_limit:query');
+    Route::post('/accounts/merchant', [AccountController::class, 'createMerchant'])->middleware(['api.rate_limit:mutation', 'scope:write']);
 
     // Versioned routes for backward compatibility
     Route::prefix('v1')->middleware('api.rate_limit:query')->group(function () {

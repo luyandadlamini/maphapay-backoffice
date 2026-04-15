@@ -5,15 +5,21 @@ declare(strict_types=1);
 namespace App\Domain\Account\Listeners;
 
 use App\Domain\Account\DataObjects\Account;
+use App\Domain\Account\Models\Account as AccountModel;
+use App\Domain\Account\Services\AccountMembershipService;
 use App\Domain\Account\Services\AccountService;
+use App\Models\Tenant;
 use Exception;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Log;
+use Stancl\Tenancy\Tenancy;
 
 class CreateAccountForNewUser
 {
     public function __construct(
-        private AccountService $accountService
+        private AccountService $accountService,
+        private AccountMembershipService $accountMembershipService,
+        private Tenancy $tenancy,
     ) {
     }
 
@@ -25,13 +31,47 @@ class CreateAccountForNewUser
         /** @var \App\Models\User $user */
         $user = $event->user;
         try {
-            // Create the user's main Maphapay Wallet directly (no workflow needed)
-            $this->accountService->createDirect(
-                new Account(
-                    name: 'Maphapay Wallet',
-                    userUuid: $user->uuid
-                )
+            $team = $user->ownedTeams()
+                ->where('personal_team', true)
+                ->first();
+
+            if ($team === null) {
+                throw new Exception('Personal team not found for registered user.');
+            }
+
+            $tenant = Tenant::query()->firstOrCreate(
+                ['team_id' => $team->id],
+                [
+                    'name' => $team->name,
+                    'plan' => 'default',
+                ],
             );
+
+            $this->tenancy->initialize($tenant);
+
+            $account = AccountModel::query()
+                ->where('user_uuid', $user->uuid)
+                ->orderBy('created_at')
+                ->first();
+
+            if ($account === null) {
+                $accountUuid = $this->accountService->createDirect(
+                    new Account(
+                        name: 'Maphapay Wallet',
+                        userUuid: $user->uuid
+                    )
+                );
+
+                $account = AccountModel::query()
+                    ->where('uuid', $accountUuid)
+                    ->first();
+            }
+
+            if ($account === null) {
+                throw new Exception('Failed to resolve newly created wallet account.');
+            }
+
+            $this->accountMembershipService->createOwnerMembership($user, (string) $tenant->id, $account);
 
             Log::info(
                 'Created Maphapay Wallet for new user',
@@ -50,6 +90,10 @@ class CreateAccountForNewUser
                     'trace'     => $e->getTraceAsString(),
                 ]
             );
+        } finally {
+            if ($this->tenancy->initialized) {
+                $this->tenancy->end();
+            }
         }
     }
 }

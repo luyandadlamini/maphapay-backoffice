@@ -29,6 +29,8 @@ class RegisterControllerTest extends ControllerTestCase
                         'id',
                         'name',
                         'email',
+                        'accounts',
+                        'active_account_id',
                     ],
                     'access_token',
                     'refresh_token',
@@ -113,6 +115,12 @@ class RegisterControllerTest extends ControllerTestCase
         // Test that the token works
         $authResponse = $this->withToken($token)->getJson('/api/auth/user');
         $authResponse->assertOk()
-            ->assertJsonPath('data.email', 'john@example.com');
+            ->assertJsonPath('data.email', 'john@example.com')
+            ->assertJsonStructure([
+                'data' => [
+                    'accounts',
+                    'active_account_id',
+                ],
+            ]);
     }
 }

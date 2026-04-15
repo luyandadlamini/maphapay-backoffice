@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Account\Models;
 
+use App\Domain\Shared\Traits\UsesTenantConnection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Stancl\Tenancy\Database\Concerns\UsesTenantConnection;
 
 class AccountAuditLog extends Model
 {

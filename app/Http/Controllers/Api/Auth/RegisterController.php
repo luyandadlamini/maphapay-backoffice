@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Traits\HasApiScopes;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
@@ -95,6 +96,8 @@ class RegisterController extends Controller
                 'terms'                 => true, // For API, we assume terms are accepted
             ]
         );
+
+        event(new Registered($user));
 
         // Create access/refresh token pair
         $tokenPair = $this->createTokenPair($user, 'api-token');

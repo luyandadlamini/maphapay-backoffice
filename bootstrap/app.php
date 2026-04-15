@@ -56,7 +56,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     ->prefix('v2')
                     ->group(base_path('routes/api-v2.php'));
 
-                Route::middleware(['api', 'protocol.subdomain', 'auth:sanctum'])
+                Route::middleware(['api', 'protocol.subdomain', 'auth:sanctum', 'account.context'])
                     ->group(base_path('routes/api-compat.php'));
             } elseif ($isApiSubdomain) {
                 // For api.* subdomain, ONLY load API routes without /api prefix
@@ -70,7 +70,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     ->prefix('v2')
                     ->group(base_path('routes/api-v2.php'));
 
-                Route::middleware(['api', 'auth:sanctum'])
+                Route::middleware(['api', 'auth:sanctum', 'account.context'])
                     ->group(base_path('routes/api-compat.php'));
             } else {
                 // For main domain, load web routes and API routes with prefix
@@ -89,7 +89,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     ->prefix('api/v2')
                     ->group(base_path('routes/api-v2.php'));
 
-                Route::middleware(['api', 'auth:sanctum'])
+                Route::middleware(['api', 'auth:sanctum', 'account.context'])
                     ->prefix('api')
                     ->group(base_path('routes/api-compat.php'));
             }
@@ -127,6 +127,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'partner.auth' => App\Http\Middleware\PartnerAuthMiddleware::class,
             // Multi-tenancy middleware
             'tenant' => App\Http\Middleware\InitializeTenancyByTeam::class,
+            'account.context' => App\Http\Middleware\ResolveAccountContext::class,
             // Performance monitoring middleware
             'query.performance' => App\Http\Middleware\QueryPerformanceMiddleware::class,
             'metrics'           => App\Http\Middleware\MetricsMiddleware::class,
