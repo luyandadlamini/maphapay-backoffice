@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Compliance\Models\AuditLog;
 use App\Domain\Account\Models\AccountProfileCompany;
 use App\Domain\Account\Models\AccountProfileCompanyDocument;
 use App\Http\Controllers\Controller;
@@ -105,12 +106,19 @@ class CompanyDocumentController extends Controller
                 'uploaded_at' => now(),
             ]);
 
-            Log::info('Company document uploaded', [
-                'document_id' => $document->id,
-                'document_type' => $validated['document_type'],
-                'user_uuid' => $user->uuid,
-                'company_profile_id' => $companyProfile->id,
-            ]);
+            AuditLog::log(
+                'company.document.uploaded',
+                $document,
+                null,
+                null,
+                [
+                    'document_type' => $validated['document_type'],
+                    'company_profile_id' => $companyProfile->id,
+                    'file_hash' => $fileHash,
+                    'file_size' => $file->getSize(),
+                ],
+                'kyb,document'
+            );
 
             return response()->json([
                 'success' => true,
@@ -264,6 +272,18 @@ class CompanyDocumentController extends Controller
                 'message' => 'Document file not found.',
             ], 404);
         }
+
+        AuditLog::log(
+            'company.document.downloaded',
+            $document,
+            null,
+            null,
+            [
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ],
+            'kyb,document'
+        );
 
         return Storage::disk('private')->download(
             $document->file_path,
