@@ -9,6 +9,7 @@ use App\Domain\Account\DataObjects\Money;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Services\AccountService;
+use App\Domain\Account\Services\CompanyAccountService;
 use App\Domain\Account\Services\MerchantAccountService;
 use App\Domain\Account\Services\Cache\AccountCacheService;
 use App\Domain\Account\Workflows\CreateAccountWorkflow;
@@ -32,6 +33,7 @@ class AccountController extends Controller
         private readonly AccountService $accountService,
         private readonly AccountCacheService $accountCache,
         private readonly MerchantAccountService $merchantAccountService,
+        private readonly CompanyAccountService $companyAccountService,
     ) {
     }
 
@@ -140,7 +142,7 @@ class AccountController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
+'data' => [
                 'account_uuid' => $result['account']->uuid,
                 'tenant_id' => $tenantId,
                 'account_type' => 'merchant',
@@ -150,7 +152,66 @@ class AccountController extends Controller
         ], 201);
     }
 
-        #[OA\Post(
+    public function createCompany(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'company_name' => ['required', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
+            'registration_number' => ['nullable', 'string', 'max:50'],
+            'industry' => ['required', 'string', 'max:100', new NoControlCharacters(), new NoSqlInjection()],
+            'company_size' => 'required|in:small,medium,large,enterprise',
+            'settlement_method' => 'required|in:maphapay_wallet,mobile_money,bank',
+            'address' => ['nullable', 'string', 'max:500', new NoControlCharacters(), new NoSqlInjection()],
+            'description' => ['nullable', 'string', 'max:1000', new NoControlCharacters(), new NoSqlInjection()],
+        ]);
+
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $tenantId = (string) ($request->attributes->get('tenant_id') ?? '');
+
+        if ($tenantId === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'A valid account context is required to create a company account.',
+            ], 403);
+        }
+
+        $personalMembership = AccountMembership::query()
+            ->forUser($user->uuid)
+            ->where('account_type', 'personal')
+            ->where('status', 'active')
+            ->first();
+
+        if ($personalMembership === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'A personal account is required before creating a company account.',
+            ], 403);
+        }
+
+        if (!in_array($user->kyc_status, ['approved'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Identity verification is required before creating a company account.',
+            ], 403);
+        }
+
+        $result = $this->companyAccountService->createForUser($user, $tenantId, $validated);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'account_uuid' => $result['account']->uuid,
+                'tenant_id' => $tenantId,
+                'account_type' => 'company',
+                'display_name' => $result['account']->display_name,
+                'role' => $result['membership']->role,
+                'verification_tier' => $result['membership']->verification_tier,
+                'capabilities' => $result['membership']->capabilities ?? [],
+            ],
+        ], 201);
+    }
+
+    #[OA\Post(
             path: '/api/accounts',
             operationId: 'createAccount',
             tags: ['Accounts'],

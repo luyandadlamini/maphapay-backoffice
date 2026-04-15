@@ -20,6 +20,7 @@ Route::middleware(['auth:sanctum', 'account.context'])->group(function () {
     // Legacy accounts route for backward compatibility
     Route::get('/accounts', [AccountController::class, 'index'])->middleware('api.rate_limit:query');
     Route::post('/accounts/merchant', [AccountController::class, 'createMerchant'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+    Route::post('/accounts/company', [AccountController::class, 'createCompany'])->middleware(['api.rate_limit:mutation', 'scope:write']);
 
     // Versioned routes for backward compatibility
     Route::prefix('v1')->middleware('api.rate_limit:query')->group(function () {
