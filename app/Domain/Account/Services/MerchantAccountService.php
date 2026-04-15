@@ -96,6 +96,7 @@ class MerchantAccountService
                 'actor_user_uuid' => $user->uuid,
                 'action' => 'account.created',
                 'metadata' => ['trade_name' => $profileData['trade_name'], 'type' => 'merchant'],
+                'created_at' => now(),
             ]);
 
             return [

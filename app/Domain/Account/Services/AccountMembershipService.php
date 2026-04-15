@@ -43,6 +43,7 @@ class AccountMembershipService
             'actor_user_uuid' => $user->uuid,
             'action' => 'membership.owner.assigned',
             'metadata' => ['role' => 'owner'],
+            'created_at' => now(),
         ]);
 
         return $membership->refresh();

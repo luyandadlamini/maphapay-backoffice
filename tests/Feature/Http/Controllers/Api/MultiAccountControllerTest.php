@@ -141,12 +141,40 @@ class MultiAccountControllerTest extends BaseTestCase
      */
     private function createUserAndTenant(): array
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'kyc_status' => 'approved',
+        ]);
         $team = Team::factory()->create([
             'user_id' => $user->id,
             'name' => 'Owner Team',
         ]);
         $tenant = Tenant::createFromTeam($team);
+
+        $tenant->run(function (): void {
+            if (! Schema::connection('tenant')->hasTable('accounts')) {
+                (require base_path('database/migrations/tenant/0001_01_01_000001_create_tenant_accounts_table.php'))->up();
+            }
+
+            if (! Schema::connection('tenant')->hasTable('ledgers')) {
+                (require base_path('database/migrations/2024_08_28_154719_create_ledgers_table.php'))->up();
+            }
+
+            if (! Schema::connection('tenant')->hasColumn('accounts', 'display_name')) {
+                (require base_path('database/migrations/tenant/2026_04_15_100001_add_multi_account_columns_to_accounts.php'))->up();
+            }
+
+            if (! Schema::connection('tenant')->hasTable('account_profiles_merchant')) {
+                (require base_path('database/migrations/tenant/2026_04_15_100002_create_account_profiles_merchant_table.php'))->up();
+            }
+
+            if (! Schema::connection('tenant')->hasTable('account_audit_logs')) {
+                (require base_path('database/migrations/tenant/2026_04_15_100003_create_account_audit_logs_table.php'))->up();
+            }
+
+            if (! Schema::connection('tenant')->hasColumn('accounts', 'account_number')) {
+                (require base_path('database/migrations/tenant/2026_04_15_100004_add_account_number_to_tenant_accounts_table.php'))->up();
+            }
+        });
 
         return [$user, $tenant];
     }

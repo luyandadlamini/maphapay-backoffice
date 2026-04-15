@@ -17,7 +17,17 @@ final class AccountRepository
 
     public function create(AccountDTO $account): Account
     {
-        return $this->account->create($account->toArray());
+        $attributes = $account->toArray();
+        $uuid = $account->getUuid();
+
+        if ($uuid !== null) {
+            return $this->account->newQuery()->updateOrCreate(
+                ['uuid' => $uuid],
+                $attributes,
+            );
+        }
+
+        return $this->account->create($attributes);
     }
 
     public function findByUuid(string $uuid): Account

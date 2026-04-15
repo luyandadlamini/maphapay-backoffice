@@ -46,6 +46,22 @@ class AccountMembershipServiceTest extends BaseTestCase
             ]);
         }
 
+        if (! Schema::connection('central')->hasTable('account_audit_logs')) {
+            Schema::connection('central')->create('account_audit_logs', function ($table): void {
+                $table->uuid('id')->primary();
+                $table->uuid('account_uuid');
+                $table->uuid('actor_user_uuid');
+                $table->string('action');
+                $table->string('target_type')->nullable();
+                $table->uuid('target_id')->nullable();
+                $table->json('metadata')->nullable();
+                $table->timestamp('created_at')->nullable();
+
+                $table->index(['account_uuid', 'created_at']);
+                $table->index('actor_user_uuid');
+            });
+        }
+
         $this->user = User::factory()->make();
         $this->user->setConnection('central');
         $this->user->save();
