@@ -8,7 +8,7 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\Asset\Models\ExchangeRate;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 
 #[OA\Tag(
@@ -33,10 +33,10 @@ class WalletController extends Controller
         response: 500,
         description: 'Server error'
     )]
-    public function index()
+    public function index(Request $request)
     {
-        $user = Auth::user();
         /** @var User $user */
+        $user = $request->user();
         $account = $user->accounts()->first();
 
         return view('wallet.index', compact('account'));
@@ -58,9 +58,11 @@ class WalletController extends Controller
         response: 500,
         description: 'Server error'
     )]
-    public function showDeposit()
+    public function showDeposit(Request $request)
     {
-        $account = Auth::user()->accounts()->first();
+        /** @var User $user */
+        $user = $request->user();
+        $account = $user->accounts()->first();
         $assets = Asset::where('is_active', true)->get();
 
         return view('wallet.deposit', compact('account', 'assets'));
@@ -82,9 +84,11 @@ class WalletController extends Controller
         response: 500,
         description: 'Server error'
     )]
-    public function showWithdraw()
+    public function showWithdraw(Request $request)
     {
-        $account = Auth::user()->accounts()->first();
+        /** @var User $user */
+        $user = $request->user();
+        $account = $user->accounts()->first();
         $balances = $account ? $account->balances()->with('asset')->where('balance', '>', 0)->get() : collect();
 
         return view('wallet.withdraw-options', compact('account', 'balances'));
@@ -106,9 +110,11 @@ class WalletController extends Controller
         response: 500,
         description: 'Server error'
     )]
-    public function showTransfer()
+    public function showTransfer(Request $request)
     {
-        $account = Auth::user()->accounts()->first();
+        /** @var User $user */
+        $user = $request->user();
+        $account = $user->accounts()->first();
         $balances = $account ? $account->balances()->with('asset')->where('balance', '>', 0)->get() : collect();
 
         return view('wallet.transfer', compact('account', 'balances'));
@@ -130,9 +136,11 @@ class WalletController extends Controller
         response: 500,
         description: 'Server error'
     )]
-    public function showConvert()
+    public function showConvert(Request $request)
     {
-        $account = Auth::user()->accounts()->first();
+        /** @var User $user */
+        $user = $request->user();
+        $account = $user->accounts()->first();
         $balances = $account ? $account->balances()->with('asset')->where('balance', '>', 0)->get() : collect();
         $assets = Asset::where('is_active', true)->get();
         $rates = ExchangeRate::getLatestRates();
@@ -156,9 +164,10 @@ class WalletController extends Controller
         response: 500,
         description: 'Server error'
     )]
-    public function transactions()
+    public function transactions(Request $request)
     {
-        $account = Auth::user()->accounts()->first();
+        /** @var User $user */
+        $account = $request->user()->accounts()->first();
 
         if (! $account) {
             return view(

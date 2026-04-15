@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\CompanyDocumentController;
 use App\Http\Controllers\Api\Compatibility\Budget\BudgetCategoriesController;
 use App\Http\Controllers\Api\Compatibility\Budget\BudgetCategoriesDeleteController;
 use App\Http\Controllers\Api\Compatibility\Budget\BudgetCategoriesStoreController;
@@ -365,6 +367,33 @@ Route::prefix('savings/group-pockets')->middleware('auth:sanctum')->group(functi
     Route::post('{id}/withdraw-request', [App\Http\Controllers\Api\GroupSavings\GroupPocketWithdrawalController::class, 'request']);
     Route::post('{id}/withdraw-request/{requestId}/approve', [App\Http\Controllers\Api\GroupSavings\GroupPocketWithdrawalController::class, 'approve']);
     Route::post('{id}/withdraw-request/{requestId}/reject', [App\Http\Controllers\Api\GroupSavings\GroupPocketWithdrawalController::class, 'reject']);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Company account management (mobile KYB flow)
+// POST   accounts/company         → create company account (3/hour, kyc_approved)
+// GET    accounts/company/documents/required → list required docs by business type
+// GET    accounts/company/documents           → list uploaded docs for a company
+// POST   accounts/company/documents           → upload a KYB document (10/hour)
+// GET    accounts/company/documents/{id}      → download a document (private disk)
+// ─────────────────────────────────────────────────────────────────────────────
+Route::prefix('accounts/company')->middleware('auth:sanctum')->group(function (): void {
+    Route::post('/', [AccountController::class, 'createCompany'])
+        ->middleware(['kyc_approved', 'throttle:maphapay-company-create'])
+        ->name('maphapay.compat.company.create');
+
+    Route::get('/documents/required', [CompanyDocumentController::class, 'requiredDocuments'])
+        ->name('maphapay.compat.company.documents.required');
+
+    Route::get('/documents', [CompanyDocumentController::class, 'list'])
+        ->name('maphapay.compat.company.documents.list');
+
+    Route::post('/documents', [CompanyDocumentController::class, 'upload'])
+        ->middleware('throttle:maphapay-company-documents')
+        ->name('maphapay.compat.company.documents.upload');
+
+    Route::get('/documents/{documentId}', [CompanyDocumentController::class, 'download'])
+        ->name('maphapay.compat.company.documents.download');
 });
 
 // Catch-all: log any compat-prefix requests that don't match a defined route.

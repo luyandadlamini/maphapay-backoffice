@@ -22,8 +22,11 @@ use App\Rules\NoControlCharacters;
 use App\Rules\NoSqlInjection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
+use Throwable;
 use Workflow\WorkflowStub;
 
 class AccountController extends Controller
@@ -138,11 +141,29 @@ class AccountController extends Controller
             ], 403);
         }
 
-        $result = $this->merchantAccountService->createForUser($user, $tenantId, $validated);
+        try {
+            $result = $this->merchantAccountService->createForUser($user, $tenantId, $validated);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (Throwable $e) {
+            Log::error('AccountController: createMerchant failed', [
+                'user_uuid' => $user->uuid,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to create merchant account. Please try again.',
+            ], 500);
+        }
 
         return response()->json([
             'success' => true,
-'data' => [
+            'data' => [
                 'account_uuid' => $result['account']->uuid,
                 'tenant_id' => $tenantId,
                 'account_type' => 'merchant',
@@ -157,7 +178,7 @@ class AccountController extends Controller
         $validated = $request->validate([
             'company_name' => ['required', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
             'business_type' => 'required|in:pty_ltd,public,sole_trader,informal',
-            'registration_number' => ['nullable', 'string', 'max:50', new NoControlCharacters(), new NoSqlInjection()],
+            'registration_number' => ['nullable', 'string', 'max:20', 'regex:/^R7\/\d{5}$/'],
             'tin_number' => ['nullable', 'string', 'max:20', 'regex:/^\d{10}$/'],
             'industry' => ['nullable', 'string', 'max:100', new NoControlCharacters(), new NoSqlInjection()],
             'company_size' => ['nullable', 'string', 'in:small,medium,large,enterprise'],
@@ -215,7 +236,25 @@ class AccountController extends Controller
             ], 403);
         }
 
-        $result = $this->companyAccountService->createForUser($user, $tenantId, $validated);
+        try {
+            $result = $this->companyAccountService->createForUser($user, $tenantId, $validated);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (Throwable $e) {
+            Log::error('CompanyController: createCompany failed', [
+                'user_uuid' => $user->uuid,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to create company account. Please try again.',
+            ], 500);
+        }
 
         return response()->json([
             'success' => true,

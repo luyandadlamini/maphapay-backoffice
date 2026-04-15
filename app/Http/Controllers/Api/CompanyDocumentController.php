@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Models\AccountProfileCompany;
 use App\Domain\Account\Models\AccountProfileCompanyDocument;
 use App\Http\Controllers\Controller;
@@ -43,7 +44,7 @@ class CompanyDocumentController extends Controller
         }
 
         // Verify user owns this company (via membership)
-        $hasAccess = \App\Domain\Account\Models\AccountMembership::query()
+        $hasAccess = AccountMembership::query()
             ->forUser($user->uuid)
             ->where('account_uuid', $companyProfile->account_uuid)
             ->where('account_type', 'company')
@@ -157,7 +158,7 @@ class CompanyDocumentController extends Controller
             ], 404);
         }
 
-        $hasAccess = \App\Domain\Account\Models\AccountMembership::query()
+        $hasAccess = AccountMembership::query()
             ->forUser($user->uuid)
             ->where('account_uuid', $companyProfile->account_uuid)
             ->where('account_type', 'company')
@@ -171,21 +172,34 @@ class CompanyDocumentController extends Controller
             ], 403);
         }
 
-        $documents = AccountProfileCompanyDocument::query()
-            ->where('company_profile_id', $companyProfile->id)
-            ->orderBy('uploaded_at', 'desc')
-            ->get()
-            ->map(function ($doc) {
-                return [
-                    'id' => $doc->id,
-                    'document_type' => $doc->document_type,
-                    'document_type_label' => AccountProfileCompanyDocument::DOCUMENT_TYPES[$doc->document_type] ?? $doc->document_type,
-                    'status' => $doc->status,
-                    'uploaded_at' => $doc->uploaded_at?->toISOString(),
-                    'verified_at' => $doc->verified_at?->toISOString(),
-                    'rejection_reason' => $doc->rejection_reason,
-                ];
-            });
+        try {
+            $documents = AccountProfileCompanyDocument::query()
+                ->where('company_profile_id', $companyProfile->id)
+                ->orderBy('uploaded_at', 'desc')
+                ->get()
+                ->map(function ($doc) {
+                    return [
+                        'id' => $doc->id,
+                        'document_type' => $doc->document_type,
+                        'document_type_label' => AccountProfileCompanyDocument::DOCUMENT_TYPES[$doc->document_type] ?? $doc->document_type,
+                        'status' => $doc->status,
+                        'uploaded_at' => $doc->uploaded_at?->toISOString(),
+                        'verified_at' => $doc->verified_at?->toISOString(),
+                        'rejection_reason' => $doc->rejection_reason,
+                    ];
+                });
+        } catch (Throwable $e) {
+            Log::error('CompanyDocumentController: list failed', [
+                'user_uuid' => $user->uuid,
+                'company_profile_id' => $companyProfile->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to retrieve documents. Please try again.',
+            ], 500);
+        }
 
         return response()->json([
             'success' => true,
@@ -199,75 +213,120 @@ class CompanyDocumentController extends Controller
             'business_type' => ['required', 'string', 'in:pty_ltd,public,sole_trader,informal'],
         ]);
 
-        $requiredDocs = AccountProfileCompanyDocument::REQUIRED_BY_TYPE[$validated['business_type']] ?? [];
+        try {
+            $requiredDocs = AccountProfileCompanyDocument::REQUIRED_BY_TYPE[$validated['business_type']] ?? [];
 
-        $documents = array_map(function ($docType) use ($requiredDocs) {
-            return [
-                'type' => $docType,
-                'label' => AccountProfileCompanyDocument::DOCUMENT_TYPES[$docType] ?? $docType,
-                'required' => in_array($docType, $requiredDocs),
-            ];
-        }, array_keys(AccountProfileCompanyDocument::DOCUMENT_TYPES));
+            $documents = array_map(function ($docType) use ($requiredDocs) {
+                return [
+                    'type' => $docType,
+                    'label' => AccountProfileCompanyDocument::DOCUMENT_TYPES[$docType] ?? $docType,
+                    'required' => in_array($docType, $requiredDocs, true),
+                ];
+            }, array_keys(AccountProfileCompanyDocument::DOCUMENT_TYPES));
 
-        return response()->json([
-            'success' => true,
-            'data' => $documents,
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $documents,
+            ]);
+        } catch (Throwable $e) {
+            Log::error('CompanyDocumentController: requiredDocuments failed', [
+                'business_type' => $validated['business_type'],
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to retrieve required documents. Please try again.',
+            ], 500);
+        }
     }
 
-    public function download(Request $request, string $documentId): JsonResponse
+    public function download(Request $request, string $documentId): JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse
     {
-        $request->validate([
-            'document_id' => ['required', 'uuid'],
-        ]);
+        // Validate the route parameter is a UUID (no body param needed — ID comes from URL)
+        if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $documentId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid document identifier.',
+            ], 422);
+        }
 
         /** @var User $user */
         $user = $request->user();
 
-        $document = AccountProfileCompanyDocument::query()->find($documentId);
+        try {
+            $document = AccountProfileCompanyDocument::query()->find($documentId);
 
-        if ($document === null) {
+            if ($document === null) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Document not found.',
+                ], 404);
+            }
+
+            $companyProfile = AccountProfileCompany::query()
+                ->where('id', $document->company_profile_id)
+                ->first();
+
+            if ($companyProfile === null) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Company profile not found.',
+                ], 404);
+            }
+
+            $hasAccess = AccountMembership::query()
+                ->forUser($user->uuid)
+                ->where('account_uuid', $companyProfile->account_uuid)
+                ->where('account_type', 'company')
+                ->active()
+                ->exists();
+
+            if (!$hasAccess) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have access to this document.',
+                ], 403);
+            }
+
+            if (!Storage::disk('private')->exists($document->file_path)) {
+                Log::warning('CompanyDocumentController: file missing from storage', [
+                    'document_id' => $documentId,
+                    'file_path' => $document->file_path,
+                    'user_uuid' => $user->uuid,
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Document file not found.',
+                ], 404);
+            }
+
+            Log::info('Company document downloaded', [
+                'document_id' => $documentId,
+                'user_uuid' => $user->uuid,
+                'company_profile_id' => $companyProfile->id,
+            ]);
+
+            // Serve through download controller — file is on private disk, never public/
+            // Use a sanitized filename to prevent header injection
+            $safeFilename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $document->original_file_name ?? 'document');
+
+            return Storage::disk('private')->download(
+                $document->file_path,
+                $safeFilename
+            );
+        } catch (Throwable $e) {
+            Log::error('CompanyDocumentController: download failed', [
+                'document_id' => $documentId,
+                'user_uuid' => $user->uuid,
+                'error' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Document not found.',
-            ], 404);
+                'message' => 'Unable to download document. Please try again.',
+            ], 500);
         }
-
-        $companyProfile = AccountProfileCompany::query()
-            ->where('id', $document->company_profile_id)
-            ->first();
-
-        if ($companyProfile === null) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Company profile not found.',
-            ], 404);
-        }
-
-        $hasAccess = \App\Domain\Account\Models\AccountMembership::query()
-            ->forUser($user->uuid)
-            ->where('account_uuid', $companyProfile->account_uuid)
-            ->where('account_type', 'company')
-            ->active()
-            ->exists();
-
-        if (!$hasAccess) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You do not have access to this document.',
-            ], 403);
-        }
-
-        if (!Storage::disk('private')->exists($document->file_path)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Document file not found.',
-            ], 404);
-        }
-
-        return Storage::disk('private')->download(
-            $document->file_path,
-            $document->original_file_name
-        );
     }
 }
