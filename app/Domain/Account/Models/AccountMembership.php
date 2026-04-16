@@ -1,138 +1,45 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Domain\Account\Models;
 
-use App\Domain\Shared\Traits\UsesTenantConnection;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * @property string $id
- * @property string $minor_account_id
- * @property string $guardian_account_id
- * @property string $role
- * @property array|null $permissions
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- *
- * @method static \Illuminate\Database\Eloquent\Builder forMinorAccount(string $accountId)
- * @method static \Illuminate\Database\Eloquent\Builder forGuardianAccount(string $accountId)
- * @method static \Illuminate\Database\Eloquent\Builder primary()
- * @method static \Illuminate\Database\Eloquent\Builder coGuardians()
- */
 class AccountMembership extends Model
 {
-    use UsesTenantConnection;
-    use HasFactory;
     use HasUuids;
 
+    protected $connection = 'central';
     protected $table = 'account_memberships';
-
     protected $keyType = 'string';
-
     public $incrementing = false;
+    protected $guarded = [];
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-    protected $fillable = [
-        'minor_account_id',
-        'guardian_account_id',
-        'role',
-        'permissions',
-    ];
-
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
-        'id' => 'string',
-        'minor_account_id' => 'string',
-        'guardian_account_id' => 'string',
-        'permissions' => 'array',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'permissions_override' => 'array',
+        'capabilities' => 'array',
+        'joined_at' => 'datetime',
     ];
 
-    /**
-     * Get the columns that should receive a unique identifier.
-     *
-     * @return array<int, string>
-     */
-    public function uniqueIds(): array
+    public function user(): BelongsTo
     {
-        return ['id'];
+        return $this->belongsTo(User::class, 'user_uuid', 'uuid');
     }
 
-    /**
-     * The minor account this membership belongs to.
-     */
-    public function minorAccount(): BelongsTo
+    public function scopeActive($query)
     {
-        return $this->belongsTo(Account::class, 'minor_account_id', 'uuid');
+        return $query->where('status', 'active');
     }
 
-    /**
-     * The guardian account this membership belongs to.
-     */
-    public function guardianAccount(): BelongsTo
+    public function scopeForUser($query, string $userUuid)
     {
-        return $this->belongsTo(Account::class, 'guardian_account_id', 'uuid');
+        return $query->where('user_uuid', $userUuid);
     }
 
-    /**
-     * Scope: Filter memberships for a specific minor account.
-     */
-    public function scopeForMinorAccount($query, string $accountId)
+    public function scopeForAccount($query, string $accountUuid)
     {
-        return $query->where('minor_account_id', $accountId);
-    }
-
-    /**
-     * Scope: Filter memberships for a specific guardian account.
-     */
-    public function scopeForGuardianAccount($query, string $accountId)
-    {
-        return $query->where('guardian_account_id', $accountId);
-    }
-
-    /**
-     * Scope: Filter to primary guardians only (role='guardian').
-     */
-    public function scopePrimary($query)
-    {
-        return $query->where('role', 'guardian');
-    }
-
-    /**
-     * Scope: Filter to co-guardians only (role='co_guardian').
-     */
-    public function scopeCoGuardians($query)
-    {
-        return $query->where('role', 'co_guardian');
-    }
-
-    /**
-     * Check if this membership is a primary guardian.
-     */
-    public function isPrimary(): bool
-    {
-        return $this->role === 'guardian';
-    }
-
-    /**
-     * Check if this membership is a co-guardian.
-     */
-    public function isCoGuardian(): bool
-    {
-        return $this->role === 'co_guardian';
+        return $query->where('account_uuid', $accountUuid);
     }
 }
