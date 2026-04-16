@@ -129,6 +129,21 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        // Company account creation: max 3 attempts per hour per user.
+        // Company creation is a high-value operation; low limit reduces abuse risk.
+        RateLimiter::for('maphapay-company-create', function (Request $request): Limit {
+            $user = $request->user();
+
+            return Limit::perHour(3)->by((string) ($user !== null ? $user->id : $request->ip()));
+        });
+
+        // Document upload: max 10 uploads per hour per user (audit requirement).
+        RateLimiter::for('maphapay-company-documents', function (Request $request): Limit {
+            $user = $request->user();
+
+            return Limit::perHour(10)->by((string) ($user !== null ? $user->id : $request->ip()));
+        });
+
         // Treat 'demo' environment as production
         if ($this->app->environment('demo')) {
             // Force production-like settings
