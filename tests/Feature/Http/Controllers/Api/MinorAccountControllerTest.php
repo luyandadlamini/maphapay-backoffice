@@ -6,13 +6,19 @@ namespace Tests\Feature\Http\Controllers\Api;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
+use App\Http\Middleware\ResolveAccountContext;
 use App\Models\User;
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\ControllerTestCase;
+use Tests\CreatesApplication;
 
-class MinorAccountControllerTest extends ControllerTestCase
+class MinorAccountControllerTest extends BaseTestCase
 {
+    use CreatesApplication;
+
     protected User $user;
 
     protected Account $parentAccount;
@@ -21,17 +27,31 @@ class MinorAccountControllerTest extends ControllerTestCase
     {
         parent::setUp();
 
+        $this->withoutMiddleware(ResolveAccountContext::class);
+
         $this->user = User::factory()->create();
-        // Create a parent account for the user
         $this->parentAccount = Account::factory()->create([
             'user_uuid' => $this->user->uuid,
-            'type' => 'personal',
+            'account_type' => 'personal',
         ]);
 
         // Create active membership for parent account
-        AccountMembership::factory()->create([
+        $tenantId = (string) Str::uuid();
+        DB::connection('central')->table('tenants')->insert([
+            'id' => $tenantId,
+            'name' => 'Test Tenant',
+            'plan' => 'default',
+            'team_id' => null,
+            'trial_ends_at' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+            'data' => json_encode([]),
+        ]);
+
+        AccountMembership::create([
             'user_uuid' => $this->user->uuid,
             'account_uuid' => $this->parentAccount->uuid,
+            'tenant_id' => $tenantId,
             'account_type' => 'personal',
             'role' => 'owner',
             'status' => 'active',
@@ -53,26 +73,33 @@ class MinorAccountControllerTest extends ControllerTestCase
         $response->assertStatus(201)
             ->assertJsonStructure([
                 'data' => [
-                    'account_uuid',
-                    'account_type',
-                    'name',
-                    'tier',
-                    'permission_level',
-                    'parent_account_id',
-                ]
+                    'account' => [
+                        'uuid',
+                        'account_type',
+                        'name',
+                        'account_tier',
+                        'permission_level',
+                        'parent_account_id',
+                    ],
+                    'membership' => [
+                        'account_uuid',
+                        'user_uuid',
+                        'role',
+                        'status',
+                        'account_type',
+                    ],
+                ],
             ]);
 
-        // Verify the account was created
-        $data = $response->json('data');
+        $data = $response->json('data.account');
         $this->assertDatabaseHas('accounts', [
-            'uuid' => $data['account_uuid'],
-            'type' => 'minor',
+            'uuid' => $data['uuid'],
+            'account_type' => 'minor',
             'name' => 'Emma',
         ]);
 
-        // Verify membership was created with guardian role
         $this->assertDatabaseHas('account_memberships', [
-            'account_uuid' => $data['account_uuid'],
+            'account_uuid' => $data['uuid'],
             'user_uuid' => $this->user->uuid,
             'role' => 'guardian',
             'account_type' => 'minor',
@@ -93,7 +120,7 @@ class MinorAccountControllerTest extends ControllerTestCase
         ]);
 
         $response->assertStatus(201);
-        $this->assertEquals('grow', $response->json('data.tier'));
+        $this->assertEquals('grow', $response->json('data.account.account_tier'));
     }
 
     #[Test]
@@ -109,7 +136,7 @@ class MinorAccountControllerTest extends ControllerTestCase
         ]);
 
         $response->assertStatus(201);
-        $this->assertEquals('rise', $response->json('data.tier'));
+        $this->assertEquals('rise', $response->json('data.account.account_tier'));
     }
 
     #[Test]
@@ -125,7 +152,7 @@ class MinorAccountControllerTest extends ControllerTestCase
         ]);
 
         $response->assertStatus(201);
-        $this->assertEquals(1, $response->json('data.permission_level'));
+        $this->assertEquals(1, $response->json('data.account.permission_level'));
     }
 
     #[Test]
@@ -141,7 +168,7 @@ class MinorAccountControllerTest extends ControllerTestCase
         ]);
 
         $response->assertStatus(201);
-        $this->assertEquals(2, $response->json('data.permission_level'));
+        $this->assertEquals(2, $response->json('data.account.permission_level'));
     }
 
     #[Test]
@@ -157,7 +184,7 @@ class MinorAccountControllerTest extends ControllerTestCase
         ]);
 
         $response->assertStatus(201);
-        $this->assertEquals(3, $response->json('data.permission_level'));
+        $this->assertEquals(3, $response->json('data.account.permission_level'));
     }
 
     #[Test]
@@ -173,7 +200,7 @@ class MinorAccountControllerTest extends ControllerTestCase
         ]);
 
         $response->assertStatus(201);
-        $this->assertEquals(4, $response->json('data.permission_level'));
+        $this->assertEquals(4, $response->json('data.account.permission_level'));
     }
 
     #[Test]
@@ -189,7 +216,7 @@ class MinorAccountControllerTest extends ControllerTestCase
         ]);
 
         $response->assertStatus(201);
-        $this->assertEquals(5, $response->json('data.permission_level'));
+        $this->assertEquals(5, $response->json('data.account.permission_level'));
     }
 
     #[Test]
@@ -205,7 +232,7 @@ class MinorAccountControllerTest extends ControllerTestCase
         ]);
 
         $response->assertStatus(201);
-        $this->assertEquals(6, $response->json('data.permission_level'));
+        $this->assertEquals(6, $response->json('data.account.permission_level'));
     }
 
     #[Test]
@@ -310,7 +337,7 @@ class MinorAccountControllerTest extends ControllerTestCase
         ]);
 
         $response->assertStatus(201);
-        $data = $response->json('data');
+        $data = $response->json('data.membership');
 
         $this->assertDatabaseHas('account_memberships', [
             'account_uuid' => $data['account_uuid'],
@@ -334,7 +361,7 @@ class MinorAccountControllerTest extends ControllerTestCase
         ]);
 
         $response->assertStatus(201);
-        $data = $response->json('data');
+        $data = $response->json('data.account');
 
         $this->assertEquals($this->parentAccount->uuid, $data['parent_account_id']);
     }
