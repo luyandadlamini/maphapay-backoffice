@@ -31,7 +31,7 @@ class AccountPolicyTest extends BaseTestCase
     {
         $child = User::factory()->create();
         $childAccount = Account::factory()->create([
-            'user_uuid' => $child->uuid,
+            'user_uuid'    => $child->uuid,
             'account_type' => 'minor',
         ]);
 
@@ -135,7 +135,7 @@ class AccountPolicyTest extends BaseTestCase
     {
         $parent = User::factory()->create();
         $personalAccount = Account::factory()->create([
-            'user_uuid' => $parent->uuid,
+            'user_uuid'    => $parent->uuid,
             'account_type' => 'personal',
         ]);
 
@@ -149,7 +149,7 @@ class AccountPolicyTest extends BaseTestCase
     {
         $child = User::factory()->create();
         $minorAccount = Account::factory()->create([
-            'user_uuid' => $child->uuid,
+            'user_uuid'    => $child->uuid,
             'account_type' => 'minor',
         ]);
 
@@ -193,7 +193,7 @@ class AccountPolicyTest extends BaseTestCase
     {
         $child = User::factory()->create();
         $childAccount = Account::factory()->create([
-            'user_uuid' => $child->uuid,
+            'user_uuid'    => $child->uuid,
             'account_type' => 'minor',
         ]);
 
@@ -236,7 +236,7 @@ class AccountPolicyTest extends BaseTestCase
     {
         $child = User::factory()->create();
         $childAccount = Account::factory()->create([
-            'user_uuid' => $child->uuid,
+            'user_uuid'    => $child->uuid,
             'account_type' => 'minor',
         ]);
 
@@ -257,7 +257,7 @@ class AccountPolicyTest extends BaseTestCase
     {
         $parent = User::factory()->create();
         $personalAccount = Account::factory()->create([
-            'user_uuid' => $parent->uuid,
+            'user_uuid'    => $parent->uuid,
             'account_type' => 'personal',
         ]);
 
@@ -271,7 +271,7 @@ class AccountPolicyTest extends BaseTestCase
     {
         $child = User::factory()->create();
         $minorAccount = Account::factory()->create([
-            'user_uuid' => $child->uuid,
+            'user_uuid'    => $child->uuid,
             'account_type' => 'minor',
         ]);
 
@@ -297,10 +297,10 @@ class AccountPolicyTest extends BaseTestCase
     ): AccountMembership {
         return AccountMembership::create([
             'account_uuid' => $account->uuid,
-            'user_uuid' => $user->uuid,
-            'tenant_id' => $this->createCentralTenant(),
-            'role' => $role,
-            'status' => $status,
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $this->createCentralTenant(),
+            'role'         => $role,
+            'status'       => $status,
             'account_type' => $accountType ?? (string) $account->account_type,
         ]);
     }
@@ -310,14 +310,14 @@ class AccountPolicyTest extends BaseTestCase
         $tenantId = (string) Str::uuid();
 
         DB::connection('central')->table('tenants')->insert([
-            'id' => $tenantId,
-            'name' => 'Policy Test Tenant',
-            'plan' => 'default',
-            'team_id' => null,
+            'id'            => $tenantId,
+            'name'          => 'Policy Test Tenant',
+            'plan'          => 'default',
+            'team_id'       => null,
             'trial_ends_at' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-            'data' => json_encode([]),
+            'created_at'    => now(),
+            'updated_at'    => now(),
+            'data'          => json_encode([]),
         ]);
 
         return $tenantId;

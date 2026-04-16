@@ -31,7 +31,7 @@ class MinorAccountController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
+            'name'          => ['required', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
             'date_of_birth' => ['required', 'date_format:Y-m-d', 'before:today'],
             'photo_id_path' => ['nullable', 'string', 'max:255'],
         ]);
@@ -64,7 +64,7 @@ class MinorAccountController extends Controller
         if ($age < 6 || $age > 17) {
             return response()->json([
                 'success' => false,
-                'errors' => [
+                'errors'  => [
                     'date_of_birth' => ['Child must be between 6 and 17 years old.'],
                 ],
             ], 422);
@@ -85,32 +85,32 @@ class MinorAccountController extends Controller
             $sanitizedName = trim($sanitizedName);
 
             $account = Account::create([
-                'user_uuid' => $user->uuid,
+                'user_uuid'         => $user->uuid,
                 'parent_account_id' => $parentMembership->account_uuid,
-                'name' => $sanitizedName,
-                'account_type' => 'minor',
-                'account_tier' => $tier,
-                'permission_level' => $permissionLevel,
+                'name'              => $sanitizedName,
+                'account_type'      => 'minor',
+                'account_tier'      => $tier,
+                'permission_level'  => $permissionLevel,
             ]);
 
             $membership = $this->membershipService->createGuardianMembership($user, $tenantId, $account);
 
             return response()->json([
                 'success' => true,
-                'data' => [
+                'data'    => [
                     'account' => [
-                        'uuid' => $account->uuid,
-                        'account_type' => $account->account_type,
-                        'name' => $account->name,
-                        'account_tier' => $account->account_tier,
-                        'permission_level' => $account->permission_level,
+                        'uuid'              => $account->uuid,
+                        'account_type'      => $account->account_type,
+                        'name'              => $account->name,
+                        'account_tier'      => $account->account_tier,
+                        'permission_level'  => $account->permission_level,
                         'parent_account_id' => $account->parent_account_id,
                     ],
                     'membership' => [
                         'account_uuid' => $membership->account_uuid,
-                        'user_uuid' => $membership->user_uuid,
-                        'role' => $membership->role,
-                        'status' => $membership->status,
+                        'user_uuid'    => $membership->user_uuid,
+                        'role'         => $membership->role,
+                        'status'       => $membership->status,
                         'account_type' => $membership->account_type,
                     ],
                 ],
@@ -118,7 +118,7 @@ class MinorAccountController extends Controller
         } catch (Throwable $e) {
             Log::error('MinorAccountController: store failed', [
                 'user_uuid' => $user->uuid,
-                'error' => $e->getMessage(),
+                'error'     => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -128,6 +128,64 @@ class MinorAccountController extends Controller
         }
     }
 
+    public function updatePermissionLevel(Request $request, string $uuid): JsonResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $account = Account::query()->where('uuid', $uuid)->firstOrFail();
+
+        abort_unless($this->accountPolicy->updateMinor($user, $account), 403);
+
+        $validated = $request->validate([
+            'permission_level' => ['required', 'integer', 'min:1', 'max:7'],
+        ]);
+
+        $newPermissionLevel = (int) $validated['permission_level'];
+        $currentPermissionLevel = (int) ($account->permission_level ?? 0);
+
+        if ($newPermissionLevel < $currentPermissionLevel) {
+            return response()->json([
+                'message' => 'The permission level cannot be lower than the current level.',
+                'errors'  => [
+                    'permission_level' => ['The permission level cannot be lower than the current level.'],
+                ],
+            ], 422);
+        }
+
+        if ($account->account_tier === 'grow' && $newPermissionLevel > 4) {
+            return response()->json([
+                'message' => 'Grow tier accounts cannot exceed permission level 4.',
+                'errors'  => [
+                    'permission_level' => ['Grow tier accounts cannot exceed permission level 4.'],
+                ],
+            ], 422);
+        }
+
+        if ($account->account_tier === 'rise' && $newPermissionLevel > 7) {
+            return response()->json([
+                'message' => 'Rise tier accounts cannot exceed permission level 7.',
+                'errors'  => [
+                    'permission_level' => ['Rise tier accounts cannot exceed permission level 7.'],
+                ],
+            ], 422);
+        }
+
+        $account->forceFill([
+            'permission_level' => $newPermissionLevel,
+        ])->save();
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'uuid'              => $account->uuid,
+                'account_type'      => $account->account_type,
+                'account_tier'      => $account->account_tier,
+                'permission_level'  => $account->permission_level,
+                'parent_account_id' => $account->parent_account_id,
+            ],
+        ]);
+    }
+
     /**
      * Determine permission level based on age.
      * 6–7 → 1
@@ -135,17 +193,17 @@ class MinorAccountController extends Controller
      * 10–11 → 3
      * 12–13 → 4
      * 14–15 → 5
-     * 16–17 → 6
+     * 16–17 → 6.
      */
     private function getPermissionLevel(int $age): int
     {
         return match (true) {
-            $age <= 7 => 1,
-            $age <= 9 => 2,
+            $age <= 7  => 1,
+            $age <= 9  => 2,
             $age <= 11 => 3,
             $age <= 13 => 4,
             $age <= 15 => 5,
-            default => 6,
+            default    => 6,
         };
     }
 }

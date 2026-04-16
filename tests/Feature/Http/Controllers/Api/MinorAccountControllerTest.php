@@ -31,30 +31,30 @@ class MinorAccountControllerTest extends BaseTestCase
 
         $this->user = User::factory()->create();
         $this->parentAccount = Account::factory()->create([
-            'user_uuid' => $this->user->uuid,
+            'user_uuid'    => $this->user->uuid,
             'account_type' => 'personal',
         ]);
 
         // Create active membership for parent account
         $tenantId = (string) Str::uuid();
         DB::connection('central')->table('tenants')->insert([
-            'id' => $tenantId,
-            'name' => 'Test Tenant',
-            'plan' => 'default',
-            'team_id' => null,
+            'id'            => $tenantId,
+            'name'          => 'Test Tenant',
+            'plan'          => 'default',
+            'team_id'       => null,
             'trial_ends_at' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-            'data' => json_encode([]),
+            'created_at'    => now(),
+            'updated_at'    => now(),
+            'data'          => json_encode([]),
         ]);
 
         AccountMembership::create([
-            'user_uuid' => $this->user->uuid,
+            'user_uuid'    => $this->user->uuid,
             'account_uuid' => $this->parentAccount->uuid,
-            'tenant_id' => $tenantId,
+            'tenant_id'    => $tenantId,
             'account_type' => 'personal',
-            'role' => 'owner',
-            'status' => 'active',
+            'role'         => 'owner',
+            'status'       => 'active',
         ]);
     }
 
@@ -66,7 +66,7 @@ class MinorAccountControllerTest extends BaseTestCase
         $dateOfBirth = now()->subYears(10)->format('Y-m-d');
 
         $response = $this->postJson('/api/accounts/minor', [
-            'name' => 'Emma',
+            'name'          => 'Emma',
             'date_of_birth' => $dateOfBirth,
         ]);
 
@@ -93,17 +93,17 @@ class MinorAccountControllerTest extends BaseTestCase
 
         $data = $response->json('data.account');
         $this->assertDatabaseHas('accounts', [
-            'uuid' => $data['uuid'],
+            'uuid'         => $data['uuid'],
             'account_type' => 'minor',
-            'name' => 'Emma',
+            'name'         => 'Emma',
         ]);
 
         $this->assertDatabaseHas('account_memberships', [
             'account_uuid' => $data['uuid'],
-            'user_uuid' => $this->user->uuid,
-            'role' => 'guardian',
+            'user_uuid'    => $this->user->uuid,
+            'role'         => 'guardian',
             'account_type' => 'minor',
-            'status' => 'active',
+            'status'       => 'active',
         ]);
     }
 
@@ -115,7 +115,7 @@ class MinorAccountControllerTest extends BaseTestCase
         $dateOfBirth = now()->subYears(10)->format('Y-m-d');
 
         $response = $this->postJson('/api/accounts/minor', [
-            'name' => 'Child',
+            'name'          => 'Child',
             'date_of_birth' => $dateOfBirth,
         ]);
 
@@ -131,7 +131,7 @@ class MinorAccountControllerTest extends BaseTestCase
         $dateOfBirth = now()->subYears(14)->format('Y-m-d');
 
         $response = $this->postJson('/api/accounts/minor', [
-            'name' => 'Teen',
+            'name'          => 'Teen',
             'date_of_birth' => $dateOfBirth,
         ]);
 
@@ -147,7 +147,7 @@ class MinorAccountControllerTest extends BaseTestCase
         $dateOfBirth = now()->subYears(6)->format('Y-m-d');
 
         $response = $this->postJson('/api/accounts/minor', [
-            'name' => 'Young',
+            'name'          => 'Young',
             'date_of_birth' => $dateOfBirth,
         ]);
 
@@ -163,7 +163,7 @@ class MinorAccountControllerTest extends BaseTestCase
         $dateOfBirth = now()->subYears(8)->format('Y-m-d');
 
         $response = $this->postJson('/api/accounts/minor', [
-            'name' => 'Child',
+            'name'          => 'Child',
             'date_of_birth' => $dateOfBirth,
         ]);
 
@@ -179,7 +179,7 @@ class MinorAccountControllerTest extends BaseTestCase
         $dateOfBirth = now()->subYears(10)->format('Y-m-d');
 
         $response = $this->postJson('/api/accounts/minor', [
-            'name' => 'Child',
+            'name'          => 'Child',
             'date_of_birth' => $dateOfBirth,
         ]);
 
@@ -195,7 +195,7 @@ class MinorAccountControllerTest extends BaseTestCase
         $dateOfBirth = now()->subYears(12)->format('Y-m-d');
 
         $response = $this->postJson('/api/accounts/minor', [
-            'name' => 'Child',
+            'name'          => 'Child',
             'date_of_birth' => $dateOfBirth,
         ]);
 
@@ -211,7 +211,7 @@ class MinorAccountControllerTest extends BaseTestCase
         $dateOfBirth = now()->subYears(14)->format('Y-m-d');
 
         $response = $this->postJson('/api/accounts/minor', [
-            'name' => 'Teen',
+            'name'          => 'Teen',
             'date_of_birth' => $dateOfBirth,
         ]);
 
@@ -227,7 +227,7 @@ class MinorAccountControllerTest extends BaseTestCase
         $dateOfBirth = now()->subYears(16)->format('Y-m-d');
 
         $response = $this->postJson('/api/accounts/minor', [
-            'name' => 'Teen',
+            'name'          => 'Teen',
             'date_of_birth' => $dateOfBirth,
         ]);
 
@@ -243,15 +243,15 @@ class MinorAccountControllerTest extends BaseTestCase
         $dateOfBirth = now()->subYears(5)->format('Y-m-d');
 
         $response = $this->postJson('/api/accounts/minor', [
-            'name' => 'TooYoung',
+            'name'          => 'TooYoung',
             'date_of_birth' => $dateOfBirth,
         ]);
 
         $response->assertStatus(422)
             ->assertJsonStructure([
                 'errors' => [
-                    'date_of_birth'
-                ]
+                    'date_of_birth',
+                ],
             ]);
     }
 
@@ -263,15 +263,15 @@ class MinorAccountControllerTest extends BaseTestCase
         $dateOfBirth = now()->subYears(18)->format('Y-m-d');
 
         $response = $this->postJson('/api/accounts/minor', [
-            'name' => 'TooOld',
+            'name'          => 'TooOld',
             'date_of_birth' => $dateOfBirth,
         ]);
 
         $response->assertStatus(422)
             ->assertJsonStructure([
                 'errors' => [
-                    'date_of_birth'
-                ]
+                    'date_of_birth',
+                ],
             ]);
     }
 
@@ -289,8 +289,8 @@ class MinorAccountControllerTest extends BaseTestCase
         $response->assertStatus(422)
             ->assertJsonStructure([
                 'errors' => [
-                    'name'
-                ]
+                    'name',
+                ],
             ]);
     }
 
@@ -306,8 +306,8 @@ class MinorAccountControllerTest extends BaseTestCase
         $response->assertStatus(422)
             ->assertJsonStructure([
                 'errors' => [
-                    'date_of_birth'
-                ]
+                    'date_of_birth',
+                ],
             ]);
     }
 
@@ -317,7 +317,7 @@ class MinorAccountControllerTest extends BaseTestCase
         $dateOfBirth = now()->subYears(10)->format('Y-m-d');
 
         $response = $this->postJson('/api/accounts/minor', [
-            'name' => 'Emma',
+            'name'          => 'Emma',
             'date_of_birth' => $dateOfBirth,
         ]);
 
@@ -332,7 +332,7 @@ class MinorAccountControllerTest extends BaseTestCase
         $dateOfBirth = now()->subYears(10)->format('Y-m-d');
 
         $response = $this->postJson('/api/accounts/minor', [
-            'name' => 'Emma',
+            'name'          => 'Emma',
             'date_of_birth' => $dateOfBirth,
         ]);
 
@@ -341,10 +341,10 @@ class MinorAccountControllerTest extends BaseTestCase
 
         $this->assertDatabaseHas('account_memberships', [
             'account_uuid' => $data['account_uuid'],
-            'user_uuid' => $this->user->uuid,
+            'user_uuid'    => $this->user->uuid,
             'account_type' => 'minor',
-            'role' => 'guardian',
-            'status' => 'active',
+            'role'         => 'guardian',
+            'status'       => 'active',
         ]);
     }
 
@@ -356,7 +356,7 @@ class MinorAccountControllerTest extends BaseTestCase
         $dateOfBirth = now()->subYears(10)->format('Y-m-d');
 
         $response = $this->postJson('/api/accounts/minor', [
-            'name' => 'Emma',
+            'name'          => 'Emma',
             'date_of_birth' => $dateOfBirth,
         ]);
 
@@ -364,5 +364,109 @@ class MinorAccountControllerTest extends BaseTestCase
         $data = $response->json('data.account');
 
         $this->assertEquals($this->parentAccount->uuid, $data['parent_account_id']);
+    }
+
+    #[Test]
+    public function test_primary_guardian_can_update_permission_level(): void
+    {
+        Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
+
+        $createResponse = $this->postJson('/api/accounts/minor', [
+            'name'          => 'Emma',
+            'date_of_birth' => now()->subYears(10)->format('Y-m-d'),
+        ]);
+
+        $createResponse->assertStatus(201);
+        $minorAccountUuid = (string) $createResponse->json('data.account.uuid');
+
+        $response = $this
+            ->withHeaders(['X-Account-Id' => $minorAccountUuid])
+            ->putJson("/api/accounts/minor/{$minorAccountUuid}/permission-level", [
+                'permission_level' => 4,
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.permission_level', 4)
+            ->assertJsonPath('data.uuid', $minorAccountUuid);
+    }
+
+    #[Test]
+    public function test_permission_level_cannot_be_demoted(): void
+    {
+        Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
+
+        $createResponse = $this->postJson('/api/accounts/minor', [
+            'name'          => 'Emma',
+            'date_of_birth' => now()->subYears(14)->format('Y-m-d'),
+        ]);
+
+        $minorAccountUuid = (string) $createResponse->json('data.account.uuid');
+
+        $response = $this
+            ->withHeaders(['X-Account-Id' => $minorAccountUuid])
+            ->putJson("/api/accounts/minor/{$minorAccountUuid}/permission-level", [
+                'permission_level' => 4,
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['permission_level']);
+    }
+
+    #[Test]
+    public function test_grow_tier_cannot_exceed_permission_level_four(): void
+    {
+        Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
+
+        $createResponse = $this->postJson('/api/accounts/minor', [
+            'name'          => 'Emma',
+            'date_of_birth' => now()->subYears(10)->format('Y-m-d'),
+        ]);
+
+        $minorAccountUuid = (string) $createResponse->json('data.account.uuid');
+
+        $response = $this
+            ->withHeaders(['X-Account-Id' => $minorAccountUuid])
+            ->putJson("/api/accounts/minor/{$minorAccountUuid}/permission-level", [
+                'permission_level' => 5,
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['permission_level']);
+    }
+
+    #[Test]
+    public function test_co_guardian_cannot_update_permission_level(): void
+    {
+        Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
+
+        $createResponse = $this->postJson('/api/accounts/minor', [
+            'name'          => 'Emma',
+            'date_of_birth' => now()->subYears(14)->format('Y-m-d'),
+        ]);
+
+        $minorAccountUuid = (string) $createResponse->json('data.account.uuid');
+        $coGuardian = User::factory()->create();
+
+        AccountMembership::query()->create([
+            'user_uuid'    => $coGuardian->uuid,
+            'account_uuid' => $minorAccountUuid,
+            'tenant_id'    => AccountMembership::query()
+                ->where('account_uuid', $minorAccountUuid)
+                ->value('tenant_id'),
+            'account_type' => 'minor',
+            'role'         => 'co_guardian',
+            'status'       => 'active',
+            'joined_at'    => now(),
+        ]);
+
+        Sanctum::actingAs($coGuardian, ['read', 'write', 'delete']);
+
+        $response = $this
+            ->withHeaders(['X-Account-Id' => $minorAccountUuid])
+            ->putJson("/api/accounts/minor/{$minorAccountUuid}/permission-level", [
+                'permission_level' => 6,
+            ]);
+
+        $response->assertForbidden();
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AccountBalanceController;
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\BalanceController;
 use App\Http\Controllers\Api\CompanyDocumentController;
+use App\Http\Controllers\Api\CoGuardianController;
 use App\Http\Controllers\Api\CustodianController;
 use App\Http\Controllers\Api\MinorAccountController;
 use App\Http\Controllers\Api\SubProductController;
@@ -24,6 +25,9 @@ Route::middleware(['auth:sanctum', 'account.context'])->group(function () {
     Route::post('/accounts/merchant', [AccountController::class, 'createMerchant'])->middleware(['api.rate_limit:mutation', 'scope:write']);
     Route::post('/accounts/company', [AccountController::class, 'createCompany'])->middleware(['api.rate_limit:mutation', 'scope:write']);
     Route::post('/accounts/minor', [MinorAccountController::class, 'store'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+    Route::put('/accounts/minor/{uuid}/permission-level', [MinorAccountController::class, 'updatePermissionLevel'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+    Route::post('/accounts/minor/{minorAccountUuid}/invite-co-guardian', [CoGuardianController::class, 'storeInvite'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+    Route::post('/guardian-invites/{code}/accept', [CoGuardianController::class, 'acceptInvite'])->middleware(['api.rate_limit:mutation', 'scope:write']);
 
     // Company KYB document upload
     Route::post('/accounts/company/documents', [CompanyDocumentController::class, 'upload'])->middleware(['api.rate_limit:mutation', 'scope:write']);

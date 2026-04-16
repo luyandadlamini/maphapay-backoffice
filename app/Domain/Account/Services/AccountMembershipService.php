@@ -20,9 +20,9 @@ class AccountMembershipService
     {
         $values = array_merge([
             'account_type' => (string) ($account->account_type ?? 'personal'),
-            'role' => 'owner',
-            'status' => 'active',
-            'joined_at' => now(),
+            'role'         => 'owner',
+            'status'       => 'active',
+            'joined_at'    => now(),
         ], $extra);
 
         if ($displayName !== null) {
@@ -31,19 +31,19 @@ class AccountMembershipService
 
         $membership = AccountMembership::query()->updateOrCreate(
             [
-                'user_uuid' => $user->uuid,
-                'tenant_id' => $tenantId,
+                'user_uuid'    => $user->uuid,
+                'tenant_id'    => $tenantId,
                 'account_uuid' => $account->uuid,
             ],
             $values,
         );
 
         AccountAuditLog::create([
-            'account_uuid' => $account->uuid,
+            'account_uuid'    => $account->uuid,
             'actor_user_uuid' => $user->uuid,
-            'action' => 'membership.owner.assigned',
-            'metadata' => ['role' => 'owner'],
-            'created_at' => now(),
+            'action'          => 'membership.owner.assigned',
+            'metadata'        => ['role' => 'owner'],
+            'created_at'      => now(),
         ]);
 
         return $membership->refresh();
@@ -53,15 +53,15 @@ class AccountMembershipService
     {
         $membership = AccountMembership::query()->updateOrCreate(
             [
-                'user_uuid' => $user->uuid,
-                'tenant_id' => $tenantId,
+                'user_uuid'    => $user->uuid,
+                'tenant_id'    => $tenantId,
                 'account_uuid' => $account->uuid,
             ],
             array_merge([
                 'account_type' => (string) ($account->account_type ?? 'minor'),
-                'role' => $role,
-                'status' => 'active',
-                'joined_at' => now(),
+                'role'         => $role,
+                'status'       => 'active',
+                'joined_at'    => now(),
             ], $extra),
         );
 
