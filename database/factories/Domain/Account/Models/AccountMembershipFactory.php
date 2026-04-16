@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Database\Factories;
+namespace Database\Factories\Domain\Account\Models;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;

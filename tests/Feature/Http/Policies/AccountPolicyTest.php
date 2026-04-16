@@ -77,7 +77,7 @@ class AccountPolicyTest extends TestCase
 
         $coGuardianAccount = Account::factory()
             ->for($coGuardianUser, 'user')
-            ->create(['type' => 'personal']);
+            ->create(['account_type' => 'personal']);
 
         AccountMembership::factory()->create([
             'minor_account_id' => $childAccount->uuid,
@@ -109,7 +109,7 @@ class AccountPolicyTest extends TestCase
 
         $childAccount = Account::factory()
             ->for($randomUser2, 'user')
-            ->create(['type' => 'minor']);
+            ->create(['account_type' => 'minor']);
 
         $this->assertFalse($this->policy->viewMinor($randomUser1, $childAccount));
     }
@@ -155,7 +155,7 @@ class AccountPolicyTest extends TestCase
 
         $coGuardianAccount = Account::factory()
             ->for($coGuardianUser, 'user')
-            ->create(['type' => 'personal']);
+            ->create(['account_type' => 'personal']);
 
         $childAccount = Account::factory()
             ->for($childUser, 'user')
@@ -179,7 +179,7 @@ class AccountPolicyTest extends TestCase
 
         Account::factory()
             ->for($parentUser, 'user')
-            ->create(['type' => 'personal']);
+            ->create(['account_type' => 'personal']);
 
         $this->assertTrue($this->policy->createMinor($parentUser));
     }
@@ -191,7 +191,7 @@ class AccountPolicyTest extends TestCase
 
         Account::factory()
             ->for($childUser, 'user')
-            ->create(['type' => 'minor']);
+            ->create(['account_type' => 'minor']);
 
         $this->assertFalse($this->policy->createMinor($childUser));
     }
@@ -243,7 +243,7 @@ class AccountPolicyTest extends TestCase
 
         $coGuardianAccount = Account::factory()
             ->for($coGuardianUser, 'user')
-            ->create(['type' => 'personal']);
+            ->create(['account_type' => 'personal']);
 
         AccountMembership::factory()->create([
             'minor_account_id' => $childAccount->uuid,
@@ -316,7 +316,7 @@ class AccountPolicyTest extends TestCase
 
         $coGuardianAccount = Account::factory()
             ->for($coGuardianUser, 'user')
-            ->create(['type' => 'personal']);
+            ->create(['account_type' => 'personal']);
 
         AccountMembership::factory()->create([
             'minor_account_id' => $childAccount->uuid,
@@ -361,7 +361,7 @@ class AccountPolicyTest extends TestCase
 
         Account::factory()
             ->for($parentUser, 'user')
-            ->create(['type' => 'personal']);
+            ->create(['account_type' => 'personal']);
 
         $this->assertTrue($this->policy->manageChildren($parentUser));
     }
@@ -373,7 +373,7 @@ class AccountPolicyTest extends TestCase
 
         Account::factory()
             ->for($childUser, 'user')
-            ->create(['type' => 'minor']);
+            ->create(['account_type' => 'minor']);
 
         $this->assertFalse($this->policy->manageChildren($childUser));
     }
