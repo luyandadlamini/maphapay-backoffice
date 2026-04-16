@@ -31,6 +31,9 @@ class AddGuardianRolesToAccountMembershipsTest extends BaseTestCase
     /** @var array<string> Rows inserted during each test, cleaned up in tearDown */
     private array $insertedIds = [];
 
+    /** @var \Illuminate\Database\Migrations\Migration|null Cached migration instance (avoids redeclaration) */
+    private static ?\Illuminate\Database\Migrations\Migration $migration = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -63,9 +66,30 @@ class AddGuardianRolesToAccountMembershipsTest extends BaseTestCase
         }
 
         // Drop the constraint so the test database is not permanently altered.
-        DB::connection('central')->statement(
-            'ALTER TABLE account_memberships DROP CONSTRAINT IF EXISTS account_memberships_role_check'
-        );
+        // Use information_schema check for MySQL < 8.0.29 compatibility.
+        $conn   = DB::connection('central');
+        $driver = $conn->getDriverName();
+
+        if ($driver === 'pgsql') {
+            $conn->statement(
+                'ALTER TABLE account_memberships DROP CONSTRAINT IF EXISTS account_memberships_role_check'
+            );
+        } else {
+            $exists = $conn->selectOne(
+                "SELECT CONSTRAINT_NAME
+                   FROM information_schema.TABLE_CONSTRAINTS
+                  WHERE TABLE_SCHEMA    = DATABASE()
+                    AND TABLE_NAME      = 'account_memberships'
+                    AND CONSTRAINT_NAME = 'account_memberships_role_check'
+                    AND CONSTRAINT_TYPE = 'CHECK'"
+            );
+
+            if ($exists) {
+                $conn->statement(
+                    'ALTER TABLE account_memberships DROP CONSTRAINT account_memberships_role_check'
+                );
+            }
+        }
 
         parent::tearDown();
     }
@@ -74,39 +98,53 @@ class AddGuardianRolesToAccountMembershipsTest extends BaseTestCase
     // Helpers
     // -------------------------------------------------------------------------
 
+    private function getMigration(): \Illuminate\Database\Migrations\Migration
+    {
+        if (self::$migration === null) {
+            self::$migration = require_once base_path(
+                'database/migrations/2026_04_16_120100_add_guardian_roles_to_account_memberships.php'
+            );
+        }
+
+        return self::$migration;
+    }
+
     private function runMigrationUp(): void
     {
-        $migration = require base_path(
-            'database/migrations/2026_04_16_120100_add_guardian_roles_to_account_memberships.php'
-        );
-        $migration->up();
+        $this->getMigration()->up();
     }
 
     private function runMigrationDown(): void
     {
-        $migration = require base_path(
-            'database/migrations/2026_04_16_120100_add_guardian_roles_to_account_memberships.php'
-        );
-        $migration->down();
+        $this->getMigration()->down();
     }
 
     /**
      * Insert a minimal account_memberships row for testing; tracks the id for cleanup.
+     * Foreign key checks are disabled for the duration of the insert so that
+     * the test does not require real user / account rows to exist.
      */
     private function insertMembershipRow(string $role): string
     {
-        $id = (string) Uuid::uuid4();
+        $id   = (string) Uuid::uuid4();
+        $conn = DB::connection('central');
 
-        DB::connection('central')->table('account_memberships')->insert([
-            'id'           => $id,
-            'user_uuid'    => (string) Uuid::uuid4(),
-            'tenant_id'    => 'test-tenant-' . substr($id, 0, 8),
-            'account_uuid' => (string) Uuid::uuid4(),
-            'role'         => $role,
-            'status'       => 'active',
-            'created_at'   => now(),
-            'updated_at'   => now(),
-        ]);
+        $conn->statement('SET FOREIGN_KEY_CHECKS=0');
+
+        try {
+            $conn->table('account_memberships')->insert([
+                'id'           => $id,
+                'user_uuid'    => (string) Uuid::uuid4(),
+                'tenant_id'    => 'test-tenant-' . substr($id, 0, 8),
+                'account_uuid' => (string) Uuid::uuid4(),
+                'role'         => $role,
+                'status'       => 'active',
+                'created_at'   => now(),
+                'updated_at'   => now(),
+            ]);
+        } finally {
+            $conn->statement('SET FOREIGN_KEY_CHECKS=1');
+        }
 
         $this->insertedIds[] = $id;
 
