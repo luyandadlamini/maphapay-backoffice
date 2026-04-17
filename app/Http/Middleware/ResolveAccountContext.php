@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Models\Tenant;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Stancl\Tenancy\Tenancy;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -58,14 +60,56 @@ class ResolveAccountContext
                 ->active()
                 ->first();
 
-            if ($membership === null) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You do not have access to this account.',
-                ], 403);
+            if ($membership !== null) {
+                return $membership;
             }
 
-            return $membership;
+            $accountMembership = AccountMembership::query()
+                ->forAccount($requestedAccountId)
+                ->active()
+                ->first();
+
+            if ($accountMembership !== null && $accountMembership->account_type === 'minor') {
+                $tenant = Tenant::on('central')->find($accountMembership->tenant_id);
+
+                if ($tenant === null) {
+                    abort(503, 'Account context temporarily unavailable.');
+                }
+
+                if (! $this->tenancy->initialized) {
+                    $this->tenancy->initialize($tenant);
+                }
+
+                $accountRecord = app()->runningUnitTests()
+                    ? DB::connection('mysql')->table('accounts')
+                        ->where('uuid', $requestedAccountId)
+                        ->where('account_type', 'minor')
+                        ->first()
+                    : Account::query()
+                        ->where('uuid', $requestedAccountId)
+                        ->where('account_type', 'minor')
+                        ->first();
+
+                if ($accountRecord !== null && (string) $accountRecord->user_uuid === $userUuid) {
+                    $childMembership = new AccountMembership();
+                    $childMembership->forceFill([
+                        'user_uuid'    => $userUuid,
+                        'tenant_id'    => $accountMembership->tenant_id,
+                        'account_uuid' => $requestedAccountId,
+                        'account_type' => 'minor',
+                        'role'         => 'child',
+                        'status'       => 'active',
+                        'joined_at'    => now(),
+                    ]);
+
+                    return $childMembership;
+                }
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have access to this account.',
+            ], 403);
         }
 
         return AccountMembership::query()

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Http\Middleware;
 
+use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Http\Middleware\ResolveAccountContext;
-use App\Models\Team;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
 use Tests\CreatesApplication;
+use Throwable;
 
 class ResolveAccountContextTest extends BaseTestCase
 {
@@ -28,14 +29,14 @@ class ResolveAccountContextTest extends BaseTestCase
 
         try {
             DB::connection('central')->getPdo();
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->markTestSkipped('Central database connection not available: ' . $exception->getMessage());
         }
 
         if (! Schema::connection('central')->hasTable('account_memberships')) {
             Artisan::call('migrate', [
                 '--database' => 'central',
-                '--force' => true,
+                '--force'    => true,
             ]);
         }
 
@@ -45,7 +46,7 @@ class ResolveAccountContextTest extends BaseTestCase
                     'account_uuid' => $request->attributes->get('account_uuid'),
                     'account_type' => $request->attributes->get('account_type'),
                     'account_role' => $request->attributes->get('account_role'),
-                    'tenant_id' => $request->attributes->get('tenant_id'),
+                    'tenant_id'    => $request->attributes->get('tenant_id'),
                 ]);
             });
     }
@@ -55,13 +56,13 @@ class ResolveAccountContextTest extends BaseTestCase
         [$user, $tenant] = $this->createUserAndTenant();
 
         AccountMembership::query()->create([
-            'user_uuid' => $user->uuid,
-            'tenant_id' => $tenant->id,
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $tenant->id,
             'account_uuid' => 'acc-123',
             'account_type' => 'personal',
-            'role' => 'owner',
-            'status' => 'active',
-            'joined_at' => now(),
+            'role'         => 'owner',
+            'status'       => 'active',
+            'joined_at'    => now(),
         ]);
 
         Sanctum::actingAs($user, ['*']);
@@ -74,7 +75,7 @@ class ResolveAccountContextTest extends BaseTestCase
                 'account_uuid' => 'acc-123',
                 'account_type' => 'personal',
                 'account_role' => 'owner',
-                'tenant_id' => $tenant->id,
+                'tenant_id'    => $tenant->id,
             ]);
     }
 
@@ -83,13 +84,13 @@ class ResolveAccountContextTest extends BaseTestCase
         [$user, $tenant] = $this->createUserAndTenant();
 
         AccountMembership::query()->create([
-            'user_uuid' => $user->uuid,
-            'tenant_id' => $tenant->id,
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $tenant->id,
             'account_uuid' => 'acc-personal',
             'account_type' => 'personal',
-            'role' => 'owner',
-            'status' => 'active',
-            'joined_at' => now(),
+            'role'         => 'owner',
+            'status'       => 'active',
+            'joined_at'    => now(),
         ]);
 
         Sanctum::actingAs($user, ['*']);
@@ -101,7 +102,7 @@ class ResolveAccountContextTest extends BaseTestCase
                 'account_uuid' => 'acc-personal',
                 'account_type' => 'personal',
                 'account_role' => 'owner',
-                'tenant_id' => $tenant->id,
+                'tenant_id'    => $tenant->id,
             ]);
     }
 
@@ -123,13 +124,13 @@ class ResolveAccountContextTest extends BaseTestCase
         [$user, $tenant] = $this->createUserAndTenant();
 
         AccountMembership::query()->create([
-            'user_uuid' => $user->uuid,
-            'tenant_id' => $tenant->id,
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $tenant->id,
             'account_uuid' => 'acc-suspended',
             'account_type' => 'merchant',
-            'role' => 'owner',
-            'status' => 'suspended',
-            'joined_at' => now(),
+            'role'         => 'owner',
+            'status'       => 'suspended',
+            'joined_at'    => now(),
         ]);
 
         Sanctum::actingAs($user, ['*']);
@@ -140,17 +141,123 @@ class ResolveAccountContextTest extends BaseTestCase
         $response->assertForbidden();
     }
 
+    public function test_allows_guardian_access_to_minor_account_context(): void
+    {
+        [$guardian, $tenant] = $this->createUserAndTenant();
+        $child = User::factory()->create();
+        $minorAccount = Account::factory()->create([
+            'user_uuid'    => $child->uuid,
+            'account_type' => 'minor',
+        ]);
+
+        AccountMembership::query()->create([
+            'user_uuid'    => $guardian->uuid,
+            'tenant_id'    => $tenant->id,
+            'account_uuid' => $minorAccount->uuid,
+            'account_type' => 'minor',
+            'role'         => 'guardian',
+            'status'       => 'active',
+            'joined_at'    => now(),
+        ]);
+
+        Sanctum::actingAs($guardian, ['*']);
+
+        $response = $this->withHeaders(['X-Account-Id' => $minorAccount->uuid])
+            ->getJson('/__test/account-context');
+
+        $response->assertOk()
+            ->assertJson([
+                'account_uuid' => $minorAccount->uuid,
+                'account_type' => 'minor',
+                'account_role' => 'guardian',
+                'tenant_id'    => $tenant->id,
+            ]);
+    }
+
+    public function test_allows_child_access_to_own_minor_account_context_without_membership(): void
+    {
+        [$child, $tenant] = $this->createUserAndTenant();
+        $guardian = User::factory()->create();
+        $minorAccount = Account::factory()->create([
+            'user_uuid'    => $child->uuid,
+            'account_type' => 'minor',
+        ]);
+
+        AccountMembership::query()->create([
+            'user_uuid'    => $guardian->uuid,
+            'tenant_id'    => $tenant->id,
+            'account_uuid' => $minorAccount->uuid,
+            'account_type' => 'minor',
+            'role'         => 'guardian',
+            'status'       => 'active',
+            'joined_at'    => now(),
+        ]);
+
+        Sanctum::actingAs($child, ['*']);
+
+        $response = $this->withHeaders(['X-Account-Id' => $minorAccount->uuid])
+            ->getJson('/__test/account-context');
+
+        $response->assertOk()
+            ->assertJson([
+                'account_uuid' => $minorAccount->uuid,
+                'account_type' => 'minor',
+                'account_role' => 'child',
+                'tenant_id'    => $tenant->id,
+            ]);
+    }
+
+    public function test_rejects_user_without_minor_account_access(): void
+    {
+        [$user, $tenant] = $this->createUserAndTenant();
+        $guardian = User::factory()->create();
+        $child = User::factory()->create();
+        $minorAccount = Account::factory()->create([
+            'user_uuid'    => $child->uuid,
+            'account_type' => 'minor',
+        ]);
+
+        AccountMembership::query()->create([
+            'user_uuid'    => $guardian->uuid,
+            'tenant_id'    => $tenant->id,
+            'account_uuid' => $minorAccount->uuid,
+            'account_type' => 'minor',
+            'role'         => 'guardian',
+            'status'       => 'active',
+            'joined_at'    => now(),
+        ]);
+
+        Sanctum::actingAs($user, ['*']);
+
+        $response = $this->withHeaders(['X-Account-Id' => $minorAccount->uuid])
+            ->getJson('/__test/account-context');
+
+        $response->assertForbidden()
+            ->assertJsonPath('message', 'You do not have access to this account.');
+    }
+
     /**
      * @return array{0: User, 1: Tenant}
      */
     private function createUserAndTenant(): array
     {
-        $user = User::factory()->create();
-        $team = Team::factory()->create([
-            'user_id' => $user->id,
-            'name' => 'Owner Team',
+        $user = User::factory()->create([
+            'email' => sprintf('middleware-%s@example.test', \Illuminate\Support\Str::uuid()),
         ]);
-        $tenant = Tenant::createFromTeam($team);
+        $tenantId = (string) \Illuminate\Support\Str::uuid();
+
+        DB::connection('central')->table('tenants')->insert([
+            'id'            => $tenantId,
+            'name'          => 'Owner Tenant',
+            'plan'          => 'default',
+            'team_id'       => null,
+            'trial_ends_at' => null,
+            'created_at'    => now(),
+            'updated_at'    => now(),
+            'data'          => json_encode([]),
+        ]);
+
+        $tenant = Tenant::on('central')->findOrFail($tenantId);
 
         return [$user, $tenant];
     }

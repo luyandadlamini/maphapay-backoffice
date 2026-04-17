@@ -17,13 +17,13 @@ class AccountPolicy
      * Determine whether the user can view a minor account.
      *
      * Returns true if:
-     * - User is the child: account.user_uuid === $user->uuid AND account.account_type === 'minor'
+     * - User is the child: account.user_uuid === $user->uuid AND account.type === 'minor'
      * - OR user has active AccountMembership for this account with role IN ('guardian', 'co_guardian')
      */
     public function viewMinor(User $user, Account $account): bool
     {
         // Check if user is the child (owner of the minor account)
-        if ($account->user_uuid === $user->uuid && $account->account_type === 'minor') {
+        if ($account->user_uuid === $user->uuid && $account->type === 'minor') {
             return true;
         }
 
