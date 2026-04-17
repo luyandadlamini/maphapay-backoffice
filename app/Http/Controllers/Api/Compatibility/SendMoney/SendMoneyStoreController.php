@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Compatibility\SendMoney;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountMembership;
+use App\Domain\Account\Models\MinorSpendApproval;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\AuthorizedTransaction\Services\AuthorizedTransactionManager;
@@ -181,6 +183,51 @@ class SendMoneyStoreController extends Controller
                 return $this->errorResponse($request, $limitError, 422, [
                     'event' => 'minor_spend_limit_exceeded',
                 ]);
+            }
+
+            // Approval threshold: hold high-value spends for guardian sign-off
+            $permissionLevel = (int) ($fromAccount->permission_level ?? 0);
+            $threshold = ValidateMinorAccountPermission::approvalThresholdFor($permissionLevel);
+
+            if ($threshold !== null && (float) $normalizedAmount > $threshold) {
+                // Find the primary guardian's account UUID
+                $guardianAccountUuid = null;
+                try {
+                    $guardianMembership = AccountMembership::query()
+                        ->forAccount($fromAccount->uuid)
+                        ->active()
+                        ->where('role', 'guardian')
+                        ->first();
+
+                    $guardianAccountUuid = $guardianMembership?->account_uuid;
+                } catch (\Exception) {
+                    // AccountMembership table may not be accessible
+                }
+
+                $guardianAccountUuid = $guardianAccountUuid ?? (string) $fromAccount->parent_account_id;
+
+                $approval = MinorSpendApproval::create([
+                    'minor_account_uuid'    => $fromAccount->uuid,
+                    'guardian_account_uuid' => $guardianAccountUuid,
+                    'from_account_uuid'     => $fromAccount->uuid,
+                    'to_account_uuid'       => $toAccount->uuid,
+                    'amount'                => $normalizedAmount,
+                    'asset_code'            => $asset->code,
+                    'note'                  => $validated['note'] ?? null,
+                    'merchant_category'     => $merchantCategory,
+                    'status'                => 'pending',
+                    'expires_at'            => now()->addHours(24),
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'This transaction requires guardian approval.',
+                    'data'    => [
+                        'approval_id' => $approval->id,
+                        'status'      => 'pending_guardian_approval',
+                        'expires_at'  => $approval->expires_at->toISOString(),
+                    ],
+                ], 202);
             }
         }
         // ────────────────────────────────────────────────────────────────────
