@@ -270,6 +270,24 @@ abstract class TestCase extends BaseTestCase
             });
         }
 
+        if (! Schema::hasTable('minor_spend_approvals')) {
+            Schema::create('minor_spend_approvals', function ($table): void {
+                $table->uuid('id')->primary();
+                $table->uuid('minor_account_uuid')->index();
+                $table->uuid('guardian_account_uuid')->index();
+                $table->uuid('from_account_uuid')->index();
+                $table->uuid('to_account_uuid')->index();
+                $table->decimal('amount', 20, 2);
+                $table->string('asset_code', 10);
+                $table->text('note')->nullable();
+                $table->string('merchant_category', 100);
+                $table->enum('status', ['pending', 'approved', 'declined', 'cancelled'])->default('pending')->index();
+                $table->timestamp('expires_at')->index();
+                $table->timestamp('decided_at')->nullable();
+                $table->timestamps();
+            });
+        }
+
         if (! Schema::hasTable('authorized_transactions')) {
             Schema::create('authorized_transactions', function ($table): void {
                 $table->uuid('id')->primary();

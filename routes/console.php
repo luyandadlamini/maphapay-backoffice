@@ -234,3 +234,9 @@ Schedule::command('trustcert:check-expired')
     ->onFailure(function () {
         Log::warning('TrustCert expiry check failed to run');
     });
+
+// Minor Accounts - Expire stale spend approvals
+Schedule::command('minor-accounts:expire-approvals')
+    ->dailyAt('00:00')
+    ->description('Cancel pending minor spend approvals past their 24-hour expiry')
+    ->appendOutputTo(storage_path('logs/minor-accounts-expire-approvals.log'));
