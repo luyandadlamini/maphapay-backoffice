@@ -19,7 +19,7 @@ class AccountMembershipService
     public function createOwnerMembership(User $user, string $tenantId, Account $account, ?string $displayName = null, array $extra = []): AccountMembership
     {
         $values = array_merge([
-            'account_type' => (string) ($account->account_type ?? 'personal'),
+            'account_type' => (string) ($account->type ?? 'personal'),
             'role'         => 'owner',
             'status'       => 'active',
             'joined_at'    => now(),
@@ -58,7 +58,7 @@ class AccountMembershipService
                 'account_uuid' => $account->uuid,
             ],
             array_merge([
-                'account_type' => (string) ($account->account_type ?? 'minor'),
+                'account_type' => (string) ($account->type ?? 'minor'),
                 'role'         => $role,
                 'status'       => 'active',
                 'joined_at'    => now(),
