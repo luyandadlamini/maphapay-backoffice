@@ -32,7 +32,7 @@ return new class () extends Migration {
         Schema::table('anomaly_detections', function (Blueprint $table) {
             $table->dropForeign(['assigned_to']);
             $table->dropForeign(['resolved_by']);
-            $table->dropColumns([
+            $table->dropColumn([
                 'triage_status', 'assigned_to', 'resolved_by',
                 'resolution_notes', 'resolution_type', 'resolved_at',
             ]);

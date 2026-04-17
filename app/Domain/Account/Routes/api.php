@@ -35,6 +35,9 @@ Route::middleware(['auth:sanctum', 'account.context'])->group(function () {
     Route::post('/minor-accounts/approvals/{id}/approve', [MinorSpendApprovalController::class, 'approve'])->middleware(['api.rate_limit:mutation', 'scope:write']);
     Route::post('/minor-accounts/approvals/{id}/decline', [MinorSpendApprovalController::class, 'decline'])->middleware(['api.rate_limit:mutation', 'scope:write']);
 
+    // Emergency allowance
+    Route::put('/accounts/minor/{uuid}/emergency-allowance', [MinorAccountController::class, 'setEmergencyAllowance'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+
     // Company KYB document upload
     Route::post('/accounts/company/documents', [CompanyDocumentController::class, 'upload'])->middleware(['api.rate_limit:mutation', 'scope:write']);
     Route::get('/accounts/company/documents', [CompanyDocumentController::class, 'list'])->middleware(['api.rate_limit:query', 'scope:read']);

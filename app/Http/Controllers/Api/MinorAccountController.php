@@ -187,6 +187,41 @@ class MinorAccountController extends Controller
     }
 
     /**
+     * PUT /api/accounts/minor/{uuid}/emergency-allowance
+     *
+     * Guardian pre-sets an emergency reserve (SZL integer).
+     * Setting to 0 disables emergency allowance.
+     */
+    public function setEmergencyAllowance(Request $request, string $uuid): JsonResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $account = Account::query()->where('uuid', $uuid)->firstOrFail();
+
+        abort_unless($this->accountPolicy->updateMinor($user, $account), 403);
+
+        $validated = $request->validate([
+            'amount' => ['required', 'integer', 'min:0', 'max:100000'],
+        ]);
+
+        $amount = (int) $validated['amount'];
+
+        $account->forceFill([
+            'emergency_allowance_amount'  => $amount > 0 ? $amount : null,
+            'emergency_allowance_balance' => $amount,
+        ])->save();
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'uuid'                        => $account->uuid,
+                'emergency_allowance_amount'  => $account->emergency_allowance_amount,
+                'emergency_allowance_balance' => $account->emergency_allowance_balance,
+            ],
+        ]);
+    }
+
+    /**
      * Determine permission level based on age.
      * 6–7 → 1
      * 8–9 → 2
