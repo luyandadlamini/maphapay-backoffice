@@ -8,20 +8,28 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Http\Middleware\ResolveAccountContext;
 use App\Models\User;
-use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\CreatesApplication;
+use Tests\TestCase;
 
-class MinorAccountControllerTest extends BaseTestCase
+class MinorAccountControllerTest extends TestCase
 {
-    use CreatesApplication;
-
     protected User $user;
 
     protected Account $parentAccount;
+
+    /** Wrap both connections in a transaction so every insert rolls back automatically. */
+    protected function connectionsToTransact(): array
+    {
+        return ['mysql', 'central'];
+    }
+
+    protected function shouldCreateDefaultAccountsInSetup(): bool
+    {
+        return false;
+    }
 
     protected function setUp(): void
     {
@@ -31,11 +39,11 @@ class MinorAccountControllerTest extends BaseTestCase
 
         $this->user = User::factory()->create();
         $this->parentAccount = Account::factory()->create([
-            'user_uuid'    => $this->user->uuid,
-            'account_type' => 'personal',
+            'user_uuid' => $this->user->uuid,
+            'type'      => 'personal',
         ]);
 
-        // Create active membership for parent account
+        // Create a tenant row so the AccountMembership FK is satisfied.
         $tenantId = (string) Str::uuid();
         DB::connection('central')->table('tenants')->insert([
             'id'            => $tenantId,
@@ -63,41 +71,21 @@ class MinorAccountControllerTest extends BaseTestCase
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
 
-        $dateOfBirth = now()->subYears(10)->format('Y-m-d');
-
         $response = $this->postJson('/api/accounts/minor', [
             'name'          => 'Emma',
-            'date_of_birth' => $dateOfBirth,
+            'date_of_birth' => now()->subYears(10)->format('Y-m-d'),
         ]);
 
         $response->assertStatus(201)
             ->assertJsonStructure([
                 'data' => [
-                    'account' => [
-                        'uuid',
-                        'account_type',
-                        'name',
-                        'account_tier',
-                        'permission_level',
-                        'parent_account_id',
-                    ],
-                    'membership' => [
-                        'account_uuid',
-                        'user_uuid',
-                        'role',
-                        'status',
-                        'account_type',
-                    ],
+                    'account'    => ['uuid', 'account_type', 'name', 'account_tier', 'permission_level', 'parent_account_id'],
+                    'membership' => ['account_uuid', 'user_uuid', 'role', 'status', 'account_type'],
                 ],
             ]);
 
         $data = $response->json('data.account');
-        $this->assertDatabaseHas('accounts', [
-            'uuid'         => $data['uuid'],
-            'account_type' => 'minor',
-            'name'         => 'Emma',
-        ]);
-
+        $this->assertDatabaseHas('accounts', ['uuid' => $data['uuid'], 'type' => 'minor', 'name' => 'Emma']);
         $this->assertDatabaseHas('account_memberships', [
             'account_uuid' => $data['uuid'],
             'user_uuid'    => $this->user->uuid,
@@ -112,11 +100,8 @@ class MinorAccountControllerTest extends BaseTestCase
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
 
-        $dateOfBirth = now()->subYears(10)->format('Y-m-d');
-
         $response = $this->postJson('/api/accounts/minor', [
-            'name'          => 'Child',
-            'date_of_birth' => $dateOfBirth,
+            'name' => 'Child', 'date_of_birth' => now()->subYears(10)->format('Y-m-d'),
         ]);
 
         $response->assertStatus(201);
@@ -128,11 +113,8 @@ class MinorAccountControllerTest extends BaseTestCase
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
 
-        $dateOfBirth = now()->subYears(14)->format('Y-m-d');
-
         $response = $this->postJson('/api/accounts/minor', [
-            'name'          => 'Teen',
-            'date_of_birth' => $dateOfBirth,
+            'name' => 'Teen', 'date_of_birth' => now()->subYears(14)->format('Y-m-d'),
         ]);
 
         $response->assertStatus(201);
@@ -143,14 +125,7 @@ class MinorAccountControllerTest extends BaseTestCase
     public function test_permission_level_assignment_age_6(): void
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
-
-        $dateOfBirth = now()->subYears(6)->format('Y-m-d');
-
-        $response = $this->postJson('/api/accounts/minor', [
-            'name'          => 'Young',
-            'date_of_birth' => $dateOfBirth,
-        ]);
-
+        $response = $this->postJson('/api/accounts/minor', ['name' => 'Young', 'date_of_birth' => now()->subYears(6)->format('Y-m-d')]);
         $response->assertStatus(201);
         $this->assertEquals(1, $response->json('data.account.permission_level'));
     }
@@ -159,14 +134,7 @@ class MinorAccountControllerTest extends BaseTestCase
     public function test_permission_level_assignment_age_8(): void
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
-
-        $dateOfBirth = now()->subYears(8)->format('Y-m-d');
-
-        $response = $this->postJson('/api/accounts/minor', [
-            'name'          => 'Child',
-            'date_of_birth' => $dateOfBirth,
-        ]);
-
+        $response = $this->postJson('/api/accounts/minor', ['name' => 'Child', 'date_of_birth' => now()->subYears(8)->format('Y-m-d')]);
         $response->assertStatus(201);
         $this->assertEquals(2, $response->json('data.account.permission_level'));
     }
@@ -175,14 +143,7 @@ class MinorAccountControllerTest extends BaseTestCase
     public function test_permission_level_assignment_age_10(): void
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
-
-        $dateOfBirth = now()->subYears(10)->format('Y-m-d');
-
-        $response = $this->postJson('/api/accounts/minor', [
-            'name'          => 'Child',
-            'date_of_birth' => $dateOfBirth,
-        ]);
-
+        $response = $this->postJson('/api/accounts/minor', ['name' => 'Child', 'date_of_birth' => now()->subYears(10)->format('Y-m-d')]);
         $response->assertStatus(201);
         $this->assertEquals(3, $response->json('data.account.permission_level'));
     }
@@ -191,14 +152,7 @@ class MinorAccountControllerTest extends BaseTestCase
     public function test_permission_level_assignment_age_12(): void
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
-
-        $dateOfBirth = now()->subYears(12)->format('Y-m-d');
-
-        $response = $this->postJson('/api/accounts/minor', [
-            'name'          => 'Child',
-            'date_of_birth' => $dateOfBirth,
-        ]);
-
+        $response = $this->postJson('/api/accounts/minor', ['name' => 'Child', 'date_of_birth' => now()->subYears(12)->format('Y-m-d')]);
         $response->assertStatus(201);
         $this->assertEquals(4, $response->json('data.account.permission_level'));
     }
@@ -207,14 +161,7 @@ class MinorAccountControllerTest extends BaseTestCase
     public function test_permission_level_assignment_age_14(): void
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
-
-        $dateOfBirth = now()->subYears(14)->format('Y-m-d');
-
-        $response = $this->postJson('/api/accounts/minor', [
-            'name'          => 'Teen',
-            'date_of_birth' => $dateOfBirth,
-        ]);
-
+        $response = $this->postJson('/api/accounts/minor', ['name' => 'Teen', 'date_of_birth' => now()->subYears(14)->format('Y-m-d')]);
         $response->assertStatus(201);
         $this->assertEquals(5, $response->json('data.account.permission_level'));
     }
@@ -223,14 +170,7 @@ class MinorAccountControllerTest extends BaseTestCase
     public function test_permission_level_assignment_age_16(): void
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
-
-        $dateOfBirth = now()->subYears(16)->format('Y-m-d');
-
-        $response = $this->postJson('/api/accounts/minor', [
-            'name'          => 'Teen',
-            'date_of_birth' => $dateOfBirth,
-        ]);
-
+        $response = $this->postJson('/api/accounts/minor', ['name' => 'Teen', 'date_of_birth' => now()->subYears(16)->format('Y-m-d')]);
         $response->assertStatus(201);
         $this->assertEquals(6, $response->json('data.account.permission_level'));
     }
@@ -239,88 +179,38 @@ class MinorAccountControllerTest extends BaseTestCase
     public function test_invalid_age_too_young(): void
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
-
-        $dateOfBirth = now()->subYears(5)->format('Y-m-d');
-
-        $response = $this->postJson('/api/accounts/minor', [
-            'name'          => 'TooYoung',
-            'date_of_birth' => $dateOfBirth,
-        ]);
-
-        $response->assertStatus(422)
-            ->assertJsonStructure([
-                'errors' => [
-                    'date_of_birth',
-                ],
-            ]);
+        $response = $this->postJson('/api/accounts/minor', ['name' => 'TooYoung', 'date_of_birth' => now()->subYears(5)->format('Y-m-d')]);
+        $response->assertStatus(422)->assertJsonStructure(['errors' => ['date_of_birth']]);
     }
 
     #[Test]
     public function test_invalid_age_too_old(): void
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
-
-        $dateOfBirth = now()->subYears(18)->format('Y-m-d');
-
-        $response = $this->postJson('/api/accounts/minor', [
-            'name'          => 'TooOld',
-            'date_of_birth' => $dateOfBirth,
-        ]);
-
-        $response->assertStatus(422)
-            ->assertJsonStructure([
-                'errors' => [
-                    'date_of_birth',
-                ],
-            ]);
+        $response = $this->postJson('/api/accounts/minor', ['name' => 'TooOld', 'date_of_birth' => now()->subYears(18)->format('Y-m-d')]);
+        $response->assertStatus(422)->assertJsonStructure(['errors' => ['date_of_birth']]);
     }
 
     #[Test]
     public function test_missing_name_validation(): void
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
-
-        $dateOfBirth = now()->subYears(10)->format('Y-m-d');
-
-        $response = $this->postJson('/api/accounts/minor', [
-            'date_of_birth' => $dateOfBirth,
-        ]);
-
-        $response->assertStatus(422)
-            ->assertJsonStructure([
-                'errors' => [
-                    'name',
-                ],
-            ]);
+        $response = $this->postJson('/api/accounts/minor', ['date_of_birth' => now()->subYears(10)->format('Y-m-d')]);
+        $response->assertStatus(422)->assertJsonStructure(['errors' => ['name']]);
     }
 
     #[Test]
     public function test_missing_date_of_birth_validation(): void
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
-
-        $response = $this->postJson('/api/accounts/minor', [
-            'name' => 'Emma',
-        ]);
-
-        $response->assertStatus(422)
-            ->assertJsonStructure([
-                'errors' => [
-                    'date_of_birth',
-                ],
-            ]);
+        $response = $this->postJson('/api/accounts/minor', ['name' => 'Emma']);
+        $response->assertStatus(422)->assertJsonStructure(['errors' => ['date_of_birth']]);
     }
 
     #[Test]
     public function test_requires_authentication(): void
     {
-        $dateOfBirth = now()->subYears(10)->format('Y-m-d');
-
-        $response = $this->postJson('/api/accounts/minor', [
-            'name'          => 'Emma',
-            'date_of_birth' => $dateOfBirth,
-        ]);
-
+        $response = $this->postJson('/api/accounts/minor', ['name' => 'Emma', 'date_of_birth' => now()->subYears(10)->format('Y-m-d')]);
         $response->assertStatus(401);
     }
 
@@ -329,11 +219,8 @@ class MinorAccountControllerTest extends BaseTestCase
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
 
-        $dateOfBirth = now()->subYears(10)->format('Y-m-d');
-
         $response = $this->postJson('/api/accounts/minor', [
-            'name'          => 'Emma',
-            'date_of_birth' => $dateOfBirth,
+            'name' => 'Emma', 'date_of_birth' => now()->subYears(10)->format('Y-m-d'),
         ]);
 
         $response->assertStatus(201);
@@ -353,17 +240,12 @@ class MinorAccountControllerTest extends BaseTestCase
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
 
-        $dateOfBirth = now()->subYears(10)->format('Y-m-d');
-
         $response = $this->postJson('/api/accounts/minor', [
-            'name'          => 'Emma',
-            'date_of_birth' => $dateOfBirth,
+            'name' => 'Emma', 'date_of_birth' => now()->subYears(10)->format('Y-m-d'),
         ]);
 
         $response->assertStatus(201);
-        $data = $response->json('data.account');
-
-        $this->assertEquals($this->parentAccount->uuid, $data['parent_account_id']);
+        $this->assertEquals($this->parentAccount->uuid, $response->json('data.account.parent_account_id'));
     }
 
     #[Test]
@@ -372,22 +254,18 @@ class MinorAccountControllerTest extends BaseTestCase
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
 
         $createResponse = $this->postJson('/api/accounts/minor', [
-            'name'          => 'Emma',
-            'date_of_birth' => now()->subYears(10)->format('Y-m-d'),
+            'name' => 'Emma', 'date_of_birth' => now()->subYears(10)->format('Y-m-d'),
         ]);
-
         $createResponse->assertStatus(201);
-        $minorAccountUuid = (string) $createResponse->json('data.account.uuid');
+        $minorUuid = (string) $createResponse->json('data.account.uuid');
 
         $response = $this
-            ->withHeaders(['X-Account-Id' => $minorAccountUuid])
-            ->putJson("/api/accounts/minor/{$minorAccountUuid}/permission-level", [
-                'permission_level' => 4,
-            ]);
+            ->withHeaders(['X-Account-Id' => $minorUuid])
+            ->putJson("/api/accounts/minor/{$minorUuid}/permission-level", ['permission_level' => 4]);
 
         $response->assertOk()
             ->assertJsonPath('data.permission_level', 4)
-            ->assertJsonPath('data.uuid', $minorAccountUuid);
+            ->assertJsonPath('data.uuid', $minorUuid);
     }
 
     #[Test]
@@ -395,21 +273,17 @@ class MinorAccountControllerTest extends BaseTestCase
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
 
+        // Age 14 → level 5 (rise tier); try to demote to level 4
         $createResponse = $this->postJson('/api/accounts/minor', [
-            'name'          => 'Emma',
-            'date_of_birth' => now()->subYears(14)->format('Y-m-d'),
+            'name' => 'Emma', 'date_of_birth' => now()->subYears(14)->format('Y-m-d'),
         ]);
-
-        $minorAccountUuid = (string) $createResponse->json('data.account.uuid');
+        $minorUuid = (string) $createResponse->json('data.account.uuid');
 
         $response = $this
-            ->withHeaders(['X-Account-Id' => $minorAccountUuid])
-            ->putJson("/api/accounts/minor/{$minorAccountUuid}/permission-level", [
-                'permission_level' => 4,
-            ]);
+            ->withHeaders(['X-Account-Id' => $minorUuid])
+            ->putJson("/api/accounts/minor/{$minorUuid}/permission-level", ['permission_level' => 4]);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['permission_level']);
+        $response->assertStatus(422)->assertJsonValidationErrors(['permission_level']);
     }
 
     #[Test]
@@ -417,21 +291,17 @@ class MinorAccountControllerTest extends BaseTestCase
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
 
+        // Age 10 → level 3 (grow tier); try to advance to level 5
         $createResponse = $this->postJson('/api/accounts/minor', [
-            'name'          => 'Emma',
-            'date_of_birth' => now()->subYears(10)->format('Y-m-d'),
+            'name' => 'Emma', 'date_of_birth' => now()->subYears(10)->format('Y-m-d'),
         ]);
-
-        $minorAccountUuid = (string) $createResponse->json('data.account.uuid');
+        $minorUuid = (string) $createResponse->json('data.account.uuid');
 
         $response = $this
-            ->withHeaders(['X-Account-Id' => $minorAccountUuid])
-            ->putJson("/api/accounts/minor/{$minorAccountUuid}/permission-level", [
-                'permission_level' => 5,
-            ]);
+            ->withHeaders(['X-Account-Id' => $minorUuid])
+            ->putJson("/api/accounts/minor/{$minorUuid}/permission-level", ['permission_level' => 5]);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['permission_level']);
+        $response->assertStatus(422)->assertJsonValidationErrors(['permission_level']);
     }
 
     #[Test]
@@ -440,19 +310,15 @@ class MinorAccountControllerTest extends BaseTestCase
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
 
         $createResponse = $this->postJson('/api/accounts/minor', [
-            'name'          => 'Emma',
-            'date_of_birth' => now()->subYears(14)->format('Y-m-d'),
+            'name' => 'Emma', 'date_of_birth' => now()->subYears(14)->format('Y-m-d'),
         ]);
+        $minorUuid = (string) $createResponse->json('data.account.uuid');
 
-        $minorAccountUuid = (string) $createResponse->json('data.account.uuid');
         $coGuardian = User::factory()->create();
-
         AccountMembership::query()->create([
             'user_uuid'    => $coGuardian->uuid,
-            'account_uuid' => $minorAccountUuid,
-            'tenant_id'    => AccountMembership::query()
-                ->where('account_uuid', $minorAccountUuid)
-                ->value('tenant_id'),
+            'account_uuid' => $minorUuid,
+            'tenant_id'    => AccountMembership::query()->where('account_uuid', $minorUuid)->value('tenant_id'),
             'account_type' => 'minor',
             'role'         => 'co_guardian',
             'status'       => 'active',
@@ -462,10 +328,8 @@ class MinorAccountControllerTest extends BaseTestCase
         Sanctum::actingAs($coGuardian, ['read', 'write', 'delete']);
 
         $response = $this
-            ->withHeaders(['X-Account-Id' => $minorAccountUuid])
-            ->putJson("/api/accounts/minor/{$minorAccountUuid}/permission-level", [
-                'permission_level' => 6,
-            ]);
+            ->withHeaders(['X-Account-Id' => $minorUuid])
+            ->putJson("/api/accounts/minor/{$minorUuid}/permission-level", ['permission_level' => 6]);
 
         $response->assertForbidden();
     }

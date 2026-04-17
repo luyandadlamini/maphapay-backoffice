@@ -88,8 +88,8 @@ class MinorAccountController extends Controller
                 'user_uuid'         => $user->uuid,
                 'parent_account_id' => $parentMembership->account_uuid,
                 'name'              => $sanitizedName,
-                'account_type'      => 'minor',
-                'account_tier'      => $tier,
+                'type'              => 'minor',
+                'tier'              => $tier,
                 'permission_level'  => $permissionLevel,
             ]);
 
@@ -100,9 +100,9 @@ class MinorAccountController extends Controller
                 'data'    => [
                     'account' => [
                         'uuid'              => $account->uuid,
-                        'account_type'      => $account->account_type,
+                        'account_type'      => $account->type,
                         'name'              => $account->name,
-                        'account_tier'      => $account->account_tier,
+                        'account_tier'      => $account->tier,
                         'permission_level'  => $account->permission_level,
                         'parent_account_id' => $account->parent_account_id,
                     ],
@@ -152,7 +152,7 @@ class MinorAccountController extends Controller
             ], 422);
         }
 
-        if ($account->account_tier === 'grow' && $newPermissionLevel > 4) {
+        if ($account->tier === 'grow' && $newPermissionLevel > 4) {
             return response()->json([
                 'message' => 'Grow tier accounts cannot exceed permission level 4.',
                 'errors'  => [
@@ -161,7 +161,7 @@ class MinorAccountController extends Controller
             ], 422);
         }
 
-        if ($account->account_tier === 'rise' && $newPermissionLevel > 7) {
+        if ($account->tier === 'rise' && $newPermissionLevel > 7) {
             return response()->json([
                 'message' => 'Rise tier accounts cannot exceed permission level 7.',
                 'errors'  => [
@@ -178,8 +178,8 @@ class MinorAccountController extends Controller
             'success' => true,
             'data'    => [
                 'uuid'              => $account->uuid,
-                'account_type'      => $account->account_type,
-                'account_tier'      => $account->account_tier,
+                'account_type'      => $account->type,
+                'account_tier'      => $account->tier,
                 'permission_level'  => $account->permission_level,
                 'parent_account_id' => $account->parent_account_id,
             ],

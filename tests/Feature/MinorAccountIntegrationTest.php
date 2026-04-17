@@ -10,7 +10,7 @@ use App\Domain\Account\Models\TransactionProjection;
 use App\Models\User;
 use App\Policies\AccountPolicy;
 use App\Rules\ValidateMinorAccountPermission;
-use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Tests\TestCase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -18,11 +18,18 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\CreatesApplication;
 
-class MinorAccountIntegrationTest extends BaseTestCase
+class MinorAccountIntegrationTest extends TestCase
 {
-    use CreatesApplication;
+    protected function connectionsToTransact(): array
+    {
+        return ['mysql', 'central'];
+    }
+
+    protected function shouldCreateDefaultAccountsInSetup(): bool
+    {
+        return false;
+    }
 
     #[Test]
     public function it_covers_the_phase_one_minor_account_workflow(): void
@@ -55,14 +62,14 @@ class MinorAccountIntegrationTest extends BaseTestCase
 
         $parentAccount = Account::factory()->create([
             'user_uuid'    => $parent->uuid,
-            'account_type' => 'personal',
+            'type'         => 'personal',
         ]);
 
         AccountMembership::query()->create([
             'user_uuid'    => $parent->uuid,
             'tenant_id'    => $tenantId,
             'account_uuid' => $parentAccount->uuid,
-            'account_type' => 'personal',
+            'type'         => 'personal',
             'role'         => 'owner',
             'status'       => 'active',
             'joined_at'    => now(),

@@ -27,7 +27,7 @@ class AccountFactory extends Factory
             'uuid' => $this->faker->uuid(),
             'name' => $this->faker->words(3, true),
             'user_uuid' => $user->uuid,
-            'account_type' => 'personal',
+            'type' => 'personal',
             'balance' => $this->faker->numberBetween(0, 100000),
             'frozen' => false,
         ];

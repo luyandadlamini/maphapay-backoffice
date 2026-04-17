@@ -7,18 +7,25 @@ namespace Tests\Feature\Http\Controllers\Api;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Models\User;
-use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Tests\TestCase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\CreatesApplication;
 
-class CoGuardianControllerTest extends BaseTestCase
+class CoGuardianControllerTest extends TestCase
 {
-    use CreatesApplication;
+    protected function connectionsToTransact(): array
+    {
+        return ['mysql', 'central'];
+    }
+
+    protected function shouldCreateDefaultAccountsInSetup(): bool
+    {
+        return false;
+    }
 
     private User $guardian;
 
@@ -59,9 +66,9 @@ class CoGuardianControllerTest extends BaseTestCase
 
         $this->minorAccount = Account::factory()->create([
             'user_uuid'        => $this->guardian->uuid,
-            'account_type'     => 'minor',
+            'type'              => 'minor',
             'permission_level' => 3,
-            'account_tier'     => 'grow',
+            'tier'              => 'grow',
         ]);
 
         AccountMembership::query()->create([
