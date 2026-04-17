@@ -22,6 +22,12 @@ return new class () extends Migration {
             $table->string('address')->nullable();
             $table->text('description')->nullable();
             $table->timestamp('verified_at')->nullable();
+            $table->string('kyb_status')->default('pending');
+            $table->timestamp('kyb_submitted_at')->nullable();
+            $table->timestamp('kyb_verified_at')->nullable();
+            $table->text('kyb_rejection_reason')->nullable();
+            $table->string('webhook_url')->nullable();
+            $table->string('webhook_secret')->nullable();
             $table->timestamps();
 
             $table->foreign('account_uuid')->references('uuid')->on('accounts')->cascadeOnDelete();

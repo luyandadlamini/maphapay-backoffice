@@ -62,6 +62,7 @@ return [
             'url'                     => env('AWS_URL'),
             'endpoint'                => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'encryption'               => 'aes256',
             'throw'                   => false,
         ],
 
@@ -84,6 +85,7 @@ return [
             'url'                     => env('AWS_S3_EU_URL'),
             'endpoint'                => env('AWS_S3_EU_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'encryption'               => 'aes256',
             'throw'                   => false,
         ],
 
@@ -96,6 +98,7 @@ return [
             'url'                     => env('AWS_S3_US_URL'),
             'endpoint'                => env('AWS_S3_US_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'encryption'               => 'aes256',
             'throw'                   => false,
         ],
 
@@ -108,6 +111,7 @@ return [
             'url'                     => env('AWS_S3_APAC_URL'),
             'endpoint'                => env('AWS_S3_APAC_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'encryption'               => 'aes256',
             'throw'                   => false,
         ],
 
@@ -120,7 +124,14 @@ return [
             'url'                     => env('AWS_S3_UK_URL'),
             'endpoint'                => env('AWS_S3_UK_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'encryption'               => 'aes256',
             'throw'                   => false,
+        ],
+
+        'encrypted' => [
+            'driver' => 'local',
+            'root' => storage_path('app/encrypted'),
+            'throw' => true,
         ],
 
     ],
