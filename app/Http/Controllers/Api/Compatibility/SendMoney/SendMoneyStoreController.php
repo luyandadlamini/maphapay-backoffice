@@ -17,6 +17,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MoneyRequest;
 use App\Models\User;
 use App\Rules\MajorUnitAmountString;
+use App\Rules\ValidateMinorAccountPermission;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -54,6 +55,7 @@ class SendMoneyStoreController extends Controller
             'note' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'verification_type' => ['sometimes', 'nullable', 'string', Rule::in(['sms', 'email', 'pin', 'none'])],
             'asset_code' => ['sometimes', 'string', 'exists:assets,code'],
+            'merchant_category' => ['sometimes', 'nullable', 'string', 'max:60'],
         ]);
 
         /** @var User $requestUser */
@@ -156,6 +158,32 @@ class SendMoneyStoreController extends Controller
                 'recipient_user_id' => $recipient->id,
             ]);
         }
+
+        // ── Minor account spending enforcement ──────────────────────────────
+        if ($fromAccount->type === 'minor') {
+            $merchantCategory = isset($validated['merchant_category'])
+                ? (string) $validated['merchant_category']
+                : 'general';
+
+            $minorPermissionRule = new ValidateMinorAccountPermission(
+                $fromAccount,
+                $merchantCategory,
+            );
+
+            $limitError = null;
+            $minorPermissionRule->validate(
+                'amount',
+                $normalizedAmount,
+                function (string $msg) use (&$limitError): void { $limitError = $msg; }
+            );
+
+            if ($limitError !== null) {
+                return $this->errorResponse($request, $limitError, 422, [
+                    'event' => 'minor_spend_limit_exceeded',
+                ]);
+            }
+        }
+        // ────────────────────────────────────────────────────────────────────
 
         $policy = $this->verificationPolicyResolver->resolveSendMoneyPolicy(
             user: $authUser,
