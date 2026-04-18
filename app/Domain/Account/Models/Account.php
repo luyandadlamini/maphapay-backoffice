@@ -25,6 +25,10 @@ use InvalidArgumentException;
  * @property int $balance
  * @property bool $frozen
  * @property string|null $team_uuid
+ * @property string|null $type
+ * @property string|null $tier
+ * @property int|null $permission_level
+ * @property string|null $parent_account_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  *
