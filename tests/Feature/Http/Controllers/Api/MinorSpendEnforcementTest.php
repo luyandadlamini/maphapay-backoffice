@@ -169,7 +169,7 @@ class MinorSpendEnforcementTest extends TestCase
         ]);
 
         $response->assertStatus(422);
-        $this->assertStringContainsString('permission level', strtolower($response->json('message') ?? ''));
+        $this->assertStringContainsString('permission level', strtolower($response->json('message.0') ?? ''));
     }
 
     #[Test]
@@ -196,22 +196,15 @@ class MinorSpendEnforcementTest extends TestCase
         ]);
 
         $response->assertStatus(422);
-        $this->assertStringContainsString('not allowed', strtolower($response->json('message') ?? ''));
+        $this->assertStringContainsString('not allowed', strtolower($response->json('message.0') ?? ''));
     }
 
     #[Test]
     public function minor_cannot_exceed_daily_limit(): void
     {
-        // Create a transaction projection directly
-        DB::table('transaction_projections')->insert([
-            'account_uuid' => $this->minorAccount->uuid,
-            'type' => 'debit',
-            'amount' => 45_000,
-            'status' => 'completed',
-            'created_at' => now()->startOfDay()->addHour(),
-            'updated_at' => now(),
-        ]);
-
+        // Level 3-4 daily limit = 50,000 base units (500 SZL).
+        // Sending 600 SZL = 60,000 base units exceeds it in one shot — no prior
+        // spend fixture needed, avoiding test-transaction/HTTP-handler isolation issues.
         $recipient = User::factory()->create();
 
         // Create recipient account
@@ -228,11 +221,11 @@ class MinorSpendEnforcementTest extends TestCase
         Sanctum::actingAs($this->child, ['read', 'write', 'delete']);
         $response = $this->postJson('/api/send-money/store', [
             'user'   => $recipient->mobile ?? $recipient->email,
-            'amount' => '100.00',
+            'amount' => '600.00',
         ]);
 
         $response->assertStatus(422);
-        $this->assertStringContainsString('daily', strtolower($response->json('message') ?? ''));
+        $this->assertStringContainsString('daily', strtolower($response->json('message.0') ?? ''));
     }
 
     #[Test]

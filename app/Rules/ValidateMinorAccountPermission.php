@@ -55,7 +55,7 @@ final class ValidateMinorAccountPermission implements ValidationRule
             return;
         }
 
-        $amount = (int) $value;
+        $amount = (int) round((float) $value * 100);
         $todaySpend = $this->baseSpendQuery()
             ->whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()])
             ->sum('amount');
