@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\CompanyDocumentController;
 use App\Http\Controllers\Api\CoGuardianController;
 use App\Http\Controllers\Api\CustodianController;
 use App\Http\Controllers\Api\MinorAccountController;
+use App\Http\Controllers\Api\MinorChoreController;
 use App\Http\Controllers\Api\MinorPointsController;
 use App\Http\Controllers\Api\MinorSpendApprovalController;
 use App\Http\Controllers\Api\SubProductController;
@@ -45,6 +46,14 @@ Route::middleware(['auth:sanctum', 'account.context'])->group(function () {
     Route::get('/accounts/minor/{uuid}/rewards', [MinorPointsController::class, 'catalog'])->middleware(['api.rate_limit:query', 'scope:read']);
     Route::post('/accounts/minor/{uuid}/rewards/{rewardId}/redeem', [MinorPointsController::class, 'redeem'])->middleware(['api.rate_limit:mutation', 'scope:write']);
     Route::get('/accounts/minor/{uuid}/rewards/redemptions', [MinorPointsController::class, 'redemptions'])->middleware(['api.rate_limit:query', 'scope:read']);
+
+    // Minor accounts — Chores (Phase 4)
+    Route::get('/accounts/minor/{uuid}/chores', [MinorChoreController::class, 'index'])->middleware(['api.rate_limit:query', 'scope:read']);
+    Route::post('/accounts/minor/{uuid}/chores', [MinorChoreController::class, 'store'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+    Route::delete('/accounts/minor/{uuid}/chores/{choreId}', [MinorChoreController::class, 'destroy'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+    Route::post('/accounts/minor/{uuid}/chores/{choreId}/complete', [MinorChoreController::class, 'complete'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+    Route::post('/accounts/minor/{uuid}/chores/{choreId}/approve/{completionId}', [MinorChoreController::class, 'approve'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+    Route::post('/accounts/minor/{uuid}/chores/{choreId}/reject/{completionId}', [MinorChoreController::class, 'reject'])->middleware(['api.rate_limit:mutation', 'scope:write']);
 
     // Company KYB document upload
     Route::post('/accounts/company/documents', [CompanyDocumentController::class, 'upload'])->middleware(['api.rate_limit:mutation', 'scope:write']);
