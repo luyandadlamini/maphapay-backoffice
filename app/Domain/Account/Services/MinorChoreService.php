@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Domain\Account\Services;
 
 use App\Domain\Account\Models\Account;
@@ -10,7 +12,11 @@ use Illuminate\Validation\ValidationException;
 
 class MinorChoreService
 {
-    public function __construct(private readonly MinorPointsService $points) {}
+    public function __construct(
+        private readonly MinorPointsService $points,
+        private readonly MinorNotificationService $notifications,
+    ) {
+    }
 
     /**
      * Create a new chore for a minor account.
@@ -22,7 +28,7 @@ class MinorChoreService
      */
     public function create(Account $guardianAccount, Account $minorAccount, array $data): MinorChore
     {
-        return MinorChore::create([
+        $chore = MinorChore::create([
             'guardian_account_uuid' => $guardianAccount->uuid,
             'minor_account_uuid'    => $minorAccount->uuid,
             'title'                 => $data['title'],
@@ -32,6 +38,15 @@ class MinorChoreService
             'due_at'                => isset($data['due_at']) ? Carbon::parse($data['due_at']) : null,
             'status'                => 'active',
         ]);
+
+        // Notify child that a new chore has been assigned
+        $this->notifications->notify(
+            $minorAccount->uuid,
+            MinorNotificationService::TYPE_CHORE_ASSIGNED,
+            ['chore_id' => $chore->id, 'title' => $chore->title, 'payout_points' => $chore->payout_points]
+        );
+
+        return $chore;
     }
 
     /**
@@ -47,7 +62,7 @@ class MinorChoreService
         // Validate chore is active
         if ($chore->status !== 'active') {
             throw ValidationException::withMessages([
-                'chore' => ["This chore is not active and cannot be submitted."],
+                'chore' => ['This chore is not active and cannot be submitted.'],
             ]);
         }
 
@@ -83,7 +98,7 @@ class MinorChoreService
         // Validate completion is pending review
         if ($completion->status !== 'pending_review') {
             throw ValidationException::withMessages([
-                'completion' => ["This completion has already been reviewed."],
+                'completion' => ['This completion has already been reviewed.'],
             ]);
         }
 
@@ -92,22 +107,34 @@ class MinorChoreService
 
         // Update completion status and metadata
         $completion->update([
-            'status'                    => 'approved',
-            'reviewed_by_account_uuid'  => $guardianAccount->uuid,
-            'reviewed_at'               => now(),
-            'payout_processed_at'       => now(),
+            'status'                   => 'approved',
+            'reviewed_by_account_uuid' => $guardianAccount->uuid,
+            'reviewed_at'              => now(),
+            'payout_processed_at'      => now(),
         ]);
 
         // Award points to the minor account if there are points to award
         if ($chore->payout_points > 0) {
-            $this->points->award(
-                $chore->minorAccount,
-                $chore->payout_points,
-                'chore',
-                "Chore completed: {$chore->title}",
-                $completion->id
-            );
+            // Fetch the minor account by UUID to ensure it's loaded
+            $minorAccount = Account::where('uuid', $chore->minor_account_uuid)->first();
+
+            if ($minorAccount) {
+                $this->points->award(
+                    $minorAccount,
+                    $chore->payout_points,
+                    'chore',
+                    "Chore completed: {$chore->title}",
+                    $completion->id
+                );
+            }
         }
+
+        // Notify child that chore was approved
+        $this->notifications->notify(
+            $chore->minor_account_uuid,
+            MinorNotificationService::TYPE_CHORE_APPROVED,
+            ['chore_id' => $chore->id, 'title' => $chore->title, 'payout_points' => $chore->payout_points]
+        );
     }
 
     /**
@@ -124,17 +151,24 @@ class MinorChoreService
         // Validate completion is pending review
         if ($completion->status !== 'pending_review') {
             throw ValidationException::withMessages([
-                'completion' => ["This completion has already been reviewed."],
+                'completion' => ['This completion has already been reviewed.'],
             ]);
         }
 
         // Update completion status and metadata
         $completion->update([
-            'status'                    => 'rejected',
-            'reviewed_by_account_uuid'  => $guardianAccount->uuid,
-            'reviewed_at'               => now(),
-            'rejection_reason'          => $reason,
+            'status'                   => 'rejected',
+            'reviewed_by_account_uuid' => $guardianAccount->uuid,
+            'reviewed_at'              => now(),
+            'rejection_reason'         => $reason,
         ]);
+
+        // Notify child that chore was rejected
+        $this->notifications->notify(
+            $completion->chore->minor_account_uuid,
+            MinorNotificationService::TYPE_CHORE_REJECTED,
+            ['chore_id' => $completion->chore_id, 'reason' => $reason]
+        );
 
         // Note: Chore status remains 'active' so the child can re-submit
     }
