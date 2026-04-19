@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\CompanyDocumentController;
 use App\Http\Controllers\Api\CoGuardianController;
 use App\Http\Controllers\Api\CustodianController;
 use App\Http\Controllers\Api\MinorAccountController;
+use App\Http\Controllers\Api\MinorPointsController;
 use App\Http\Controllers\Api\MinorSpendApprovalController;
 use App\Http\Controllers\Api\SubProductController;
 use App\Http\Controllers\Api\TransactionController;
@@ -37,6 +38,13 @@ Route::middleware(['auth:sanctum', 'account.context'])->group(function () {
 
     // Emergency allowance
     Route::put('/accounts/minor/{uuid}/emergency-allowance', [MinorAccountController::class, 'setEmergencyAllowance'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+
+    // Minor points and rewards
+    Route::get('/accounts/minor/{uuid}/points', [MinorPointsController::class, 'balance'])->middleware(['api.rate_limit:query', 'scope:read']);
+    Route::get('/accounts/minor/{uuid}/points/history', [MinorPointsController::class, 'history'])->middleware(['api.rate_limit:query', 'scope:read']);
+    Route::get('/accounts/minor/{uuid}/rewards', [MinorPointsController::class, 'catalog'])->middleware(['api.rate_limit:query', 'scope:read']);
+    Route::post('/accounts/minor/{uuid}/rewards/{rewardId}/redeem', [MinorPointsController::class, 'redeem'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+    Route::get('/accounts/minor/{uuid}/rewards/redemptions', [MinorPointsController::class, 'redemptions'])->middleware(['api.rate_limit:query', 'scope:read']);
 
     // Company KYB document upload
     Route::post('/accounts/company/documents', [CompanyDocumentController::class, 'upload'])->middleware(['api.rate_limit:mutation', 'scope:write']);
