@@ -7,12 +7,13 @@ namespace App\Http\Controllers\Api;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Models\MinorPointsLedger;
+use App\Domain\Account\Models\MinorReward;
 use App\Domain\Account\Models\MinorRewardRedemption;
 use App\Domain\Account\Services\MinorPointsService;
 use App\Domain\Account\Services\MinorRewardService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -29,10 +30,8 @@ class MinorPointsController extends Controller
      *
      * Returns the current points balance for a minor account.
      */
-    public function balance(Request $request, string $uuid): JsonResponse
+    public function balance(string $uuid): JsonResponse
     {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
         $this->authorize('view', $account);
@@ -53,10 +52,8 @@ class MinorPointsController extends Controller
      *
      * Returns the points ledger history for a minor account.
      */
-    public function history(Request $request, string $uuid): JsonResponse
+    public function history(string $uuid): JsonResponse
     {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
         $this->authorize('view', $account);
@@ -95,10 +92,8 @@ class MinorPointsController extends Controller
      *
      * Returns the available rewards catalog for a minor account.
      */
-    public function catalog(Request $request, string $uuid): JsonResponse
+    public function catalog(string $uuid): JsonResponse
     {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
         $this->authorize('view', $account);
@@ -130,15 +125,13 @@ class MinorPointsController extends Controller
      *
      * Redeems a reward for a minor account.
      */
-    public function redeem(Request $request, string $uuid, string $rewardId): JsonResponse
+    public function redeem(string $uuid, string $rewardId): JsonResponse
     {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
         $this->authorize('view', $account);
 
-        $reward = \App\Domain\Account\Models\MinorReward::query()
+        $reward = MinorReward::query()
             ->where('id', $rewardId)
             ->firstOrFail();
 
@@ -163,8 +156,7 @@ class MinorPointsController extends Controller
                 'errors'  => $e->errors(),
             ], 422);
         } catch (Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('MinorPointsController: redeem failed', [
-                'user_uuid'  => $user->uuid,
+            Log::error('MinorPointsController: redeem failed', [
                 'account_uuid' => $account->uuid,
                 'reward_id'  => $rewardId,
                 'error'      => $e->getMessage(),
@@ -182,10 +174,8 @@ class MinorPointsController extends Controller
      *
      * Returns the redemption history for a minor account.
      */
-    public function redemptions(Request $request, string $uuid): JsonResponse
+    public function redemptions(string $uuid): JsonResponse
     {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
         $this->authorize('view', $account);
