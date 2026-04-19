@@ -17,7 +17,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('payout_type', 20)->default('points'); // 'points'|'amount'
             $table->unsignedInteger('payout_points')->default(0);
-            $table->decimal('payout_amount', 10, 2)->nullable(); // Phase 5 stub
+            $table->decimal('payout_amount', 15, 2)->nullable(); // Phase 5 stub
             $table->timestamp('due_at')->nullable();
             $table->string('recurrence', 20)->nullable(); // 'weekly'|'biweekly'|'monthly'|null
             $table->string('status', 20)->default('active'); // 'active'|'inactive'|'archived'
