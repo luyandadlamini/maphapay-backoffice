@@ -47,7 +47,7 @@ class MinorChoreService
         // Validate chore is active
         if ($chore->status !== 'active') {
             throw ValidationException::withMessages([
-                'chore' => ["Chore is not active. Current status: {$chore->status}."],
+                'chore' => ["This chore is not active and cannot be submitted."],
             ]);
         }
 
@@ -59,7 +59,7 @@ class MinorChoreService
 
         if ($existingPending) {
             throw ValidationException::withMessages([
-                'completion' => ['A completion for this chore is already pending review.'],
+                'completion' => ['A completion is already pending review for this chore.'],
             ]);
         }
 
@@ -83,7 +83,7 @@ class MinorChoreService
         // Validate completion is pending review
         if ($completion->status !== 'pending_review') {
             throw ValidationException::withMessages([
-                'completion' => ["Completion has already been reviewed. Current status: {$completion->status}."],
+                'completion' => ["This completion has already been reviewed."],
             ]);
         }
 
@@ -104,7 +104,7 @@ class MinorChoreService
                 $chore->minorAccount,
                 $chore->payout_points,
                 'chore',
-                "Chore completion: {$chore->title}",
+                "Chore completed: {$chore->title}",
                 $completion->id
             );
         }
@@ -124,7 +124,7 @@ class MinorChoreService
         // Validate completion is pending review
         if ($completion->status !== 'pending_review') {
             throw ValidationException::withMessages([
-                'completion' => ["Completion has already been reviewed. Current status: {$completion->status}."],
+                'completion' => ["This completion has already been reviewed."],
             ]);
         }
 
