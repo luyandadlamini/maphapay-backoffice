@@ -139,7 +139,7 @@ class MinorChoreController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Chore cancelled successfully.',
+            'message' => 'Chore cancelled.',
             'data'    => [
                 'id'     => $chore->id,
                 'status' => $chore->status,
@@ -164,13 +164,13 @@ class MinorChoreController extends Controller
             ->firstOrFail();
 
         $validated = $request->validate([
-            'submission_note' => 'nullable|string|max:500',
+            'note' => 'nullable|string|max:500',
         ]);
 
         try {
             $completion = $this->choreService->submitCompletion(
                 $chore,
-                $validated['submission_note'] ?? null
+                $validated['note'] ?? null
             );
 
             return response()->json([
