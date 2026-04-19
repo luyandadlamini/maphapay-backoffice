@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Models\MinorPointsLedger;
 use App\Domain\Account\Models\MinorRewardRedemption;
 use App\Domain\Account\Services\MinorPointsService;
 use App\Domain\Account\Services\MinorRewardService;
 use App\Http\Controllers\Controller;
-use App\Policies\AccountPolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -21,7 +21,6 @@ class MinorPointsController extends Controller
     public function __construct(
         private readonly MinorPointsService $pointsService,
         private readonly MinorRewardService $rewardService,
-        private readonly AccountPolicy $accountPolicy,
     ) {
     }
 
@@ -36,7 +35,7 @@ class MinorPointsController extends Controller
         $user = $request->user();
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
-        $this->authorize($user, $account);
+        $this->authorize('view', $account);
 
         $balance = $this->pointsService->getBalance($account);
 
@@ -44,7 +43,7 @@ class MinorPointsController extends Controller
             'success' => true,
             'data'    => [
                 'minor_account_uuid' => $account->uuid,
-                'points_balance'     => $balance,
+                'balance'            => $balance,
             ],
         ]);
     }
@@ -60,26 +59,33 @@ class MinorPointsController extends Controller
         $user = $request->user();
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
-        $this->authorize($user, $account);
+        $this->authorize('view', $account);
 
-        $ledgerEntries = MinorPointsLedger::query()
+        $paginated = MinorPointsLedger::query()
             ->where('minor_account_uuid', $account->uuid)
             ->orderByDesc('created_at')
-            ->get()
-            ->map(fn(MinorPointsLedger $entry) => [
-                'id'            => $entry->id,
-                'points'        => $entry->points,
-                'source'        => $entry->source,
-                'description'   => $entry->description,
-                'reference_id'  => $entry->reference_id,
-                'created_at'    => $entry->created_at?->toIso8601String(),
-            ]);
+            ->paginate(20);
+
+        $ledgerEntries = $paginated->map(fn(MinorPointsLedger $entry) => [
+            'id'            => $entry->id,
+            'points'        => $entry->points,
+            'source'        => $entry->source,
+            'description'   => $entry->description,
+            'reference_id'  => $entry->reference_id,
+            'created_at'    => $entry->created_at?->toIso8601String(),
+        ]);
 
         return response()->json([
             'success' => true,
             'data'    => [
                 'minor_account_uuid' => $account->uuid,
                 'history'            => $ledgerEntries,
+            ],
+            'meta'    => [
+                'current_page' => $paginated->currentPage(),
+                'last_page'    => $paginated->lastPage(),
+                'per_page'     => $paginated->perPage(),
+                'total'        => $paginated->total(),
             ],
         ]);
     }
@@ -95,7 +101,7 @@ class MinorPointsController extends Controller
         $user = $request->user();
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
-        $this->authorize($user, $account);
+        $this->authorize('view', $account);
 
         $rewards = $this->rewardService->availableCatalog($account)
             ->map(fn($reward) => [
@@ -130,7 +136,7 @@ class MinorPointsController extends Controller
         $user = $request->user();
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
-        $this->authorize($user, $account);
+        $this->authorize('view', $account);
 
         $reward = \App\Domain\Account\Models\MinorReward::query()
             ->where('id', $rewardId)
@@ -182,22 +188,23 @@ class MinorPointsController extends Controller
         $user = $request->user();
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
-        $this->authorize($user, $account);
+        $this->authorize('view', $account);
 
-        $redemptions = MinorRewardRedemption::query()
+        $paginated = MinorRewardRedemption::query()
             ->where('minor_account_uuid', $account->uuid)
             ->with('reward')
             ->orderByDesc('created_at')
-            ->get()
-            ->map(fn(MinorRewardRedemption $redemption) => [
-                'id'                 => $redemption->id,
-                'reward_id'          => $redemption->minor_reward_id,
-                'reward_name'        => $redemption->reward?->name,
-                'points_cost'        => $redemption->points_cost,
-                'status'             => $redemption->status,
-                'fulfilled_at'       => $redemption->fulfilled_at?->toIso8601String(),
-                'created_at'         => $redemption->created_at?->toIso8601String(),
-            ]);
+            ->paginate(20);
+
+        $redemptions = $paginated->map(fn(MinorRewardRedemption $redemption) => [
+            'id'                 => $redemption->id,
+            'reward_id'          => $redemption->minor_reward_id,
+            'reward_name'        => $redemption->reward?->name,
+            'points_cost'        => $redemption->points_cost,
+            'status'             => $redemption->status,
+            'fulfilled_at'       => $redemption->fulfilled_at?->toIso8601String(),
+            'created_at'         => $redemption->created_at?->toIso8601String(),
+        ]);
 
         return response()->json([
             'success' => true,
@@ -205,16 +212,39 @@ class MinorPointsController extends Controller
                 'minor_account_uuid' => $account->uuid,
                 'redemptions'        => $redemptions,
             ],
+            'meta'    => [
+                'current_page' => $paginated->currentPage(),
+                'last_page'    => $paginated->lastPage(),
+                'per_page'     => $paginated->perPage(),
+                'total'        => $paginated->total(),
+            ],
         ]);
     }
 
     /**
      * Private authorization helper.
      *
-     * Ensures the authenticated user is a guardian of the minor account.
+     * Ensures the authenticated user is the child or a guardian of the minor account.
      */
-    private function authorize(\App\Models\User $user, Account $account): void
+    private function authorize(string $ability, Account $account): void
     {
-        abort_unless($this->accountPolicy->updateMinor($user, $account), 403);
+        /** @var \App\Models\User $user */
+        $user = request()->user();
+        if (! $user) {
+            abort(401);
+        }
+        // Guardian or the child themselves can view points
+        // Policy check: user's account must be the minor account OR have guardian membership
+        $userAccount = Account::where('user_uuid', $user->uuid)->first();
+        $isChild     = $userAccount?->uuid === $account->uuid;
+        $isGuardian  = AccountMembership::query()
+            ->where('account_uuid', $userAccount?->uuid ?? '')
+            ->where('minor_account_uuid', $account->uuid)
+            ->where('role', 'guardian')
+            ->exists();
+
+        if (! $isChild && ! $isGuardian) {
+            abort(403, 'Forbidden. Only the child or their guardian may access this resource.');
+        }
     }
 }
