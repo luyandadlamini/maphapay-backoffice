@@ -394,6 +394,22 @@ class SendMoneyStoreController extends Controller
                 'recipient_user_id' => $recipient->id,
             ]));
 
+            // ── Saving milestone check (minor accounts only) ─────────────────────────────
+            if ($toAccount->type === 'minor') {
+                $totalSaved = (string) \Illuminate\Support\Facades\DB::table('transaction_projections')
+                    ->where('account_uuid', $toAccount->uuid)
+                    ->where('type', 'deposit')
+                    ->sum('amount');
+
+                try {
+                    app(\App\Domain\Account\Services\MinorPointsService::class)
+                        ->checkAndAwardSavingMilestones($toAccount, $totalSaved);
+                } catch (\Throwable) {
+                    // Milestone check is non-critical; never block the transfer response.
+                }
+            }
+            // ─────────────────────────────────────────────────────────────────────────────
+
             return response()->json([
                 'status' => 'success',
                 'remark' => 'send_money',

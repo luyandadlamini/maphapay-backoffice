@@ -140,6 +140,7 @@ class MinorAccountController extends Controller
             'permission_level' => ['required', 'integer', 'min:1', 'max:7'],
         ]);
 
+        $previousLevel = (int) $account->permission_level;
         $newPermissionLevel = (int) $validated['permission_level'];
         $currentPermissionLevel = (int) ($account->permission_level ?? 0);
 
@@ -173,6 +174,21 @@ class MinorAccountController extends Controller
         $account->forceFill([
             'permission_level' => $newPermissionLevel,
         ])->save();
+
+        // Award level-unlock bonus points when guardian advances the child's level
+        if ($newPermissionLevel > $previousLevel) {
+            try {
+                app(\App\Domain\Account\Services\MinorPointsService::class)->award(
+                    $account,
+                    100,
+                    'level_unlock',
+                    "Unlocked Level {$newPermissionLevel}",
+                    "level_{$newPermissionLevel}"
+                );
+            } catch (\Throwable) {
+                // Points are a bonus feature; never fail the level update.
+            }
+        }
 
         return response()->json([
             'success' => true,
