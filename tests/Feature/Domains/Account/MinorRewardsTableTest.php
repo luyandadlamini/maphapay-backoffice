@@ -4,25 +4,46 @@ declare(strict_types=1);
 namespace Tests\Feature\Domains\Account;
 
 use App\Domain\Account\Models\MinorReward;
-use Illuminate\Support\Str;
-use PHPUnit\Framework\Attributes\Test;
+use App\Models\Team;
+use App\Models\Tenant;
+use App\Models\User;
+use Stancl\Tenancy\Tenancy;
 use Tests\TestCase;
 
 class MinorRewardsTableTest extends TestCase
 {
-    protected function connectionsToTransact(): array
+    protected function setUp(): void
     {
-        return ['mysql', 'central'];
+        parent::setUp();
+
+        // Create a user, team, and tenant for testing
+        $user = User::factory()->create();
+        $team = Team::factory()->create(['user_id' => $user->id]);
+        $tenant = Tenant::createFromTeam($team);
+
+        // Initialize tenancy for this test
+        app(Tenancy::class)->initialize($tenant);
     }
 
-    #[Test]
-    public function minor_rewards_table_has_phase_8_columns(): void
+    protected function tearDown(): void
     {
-        $columns = \Illuminate\Support\Facades\DB::connection('mysql')
+        // End tenancy if active
+        $tenancy = app(Tenancy::class);
+        if ($tenancy->initialized) {
+            $tenancy->end();
+        }
+
+        parent::tearDown();
+    }
+
+    public function test_minor_rewards_table_has_phase_8_columns(): void
+    {
+        $columns = \Illuminate\Support\Facades\DB::connection('tenant')
             ->getSchemaBuilder()
             ->getColumnListing('minor_rewards');
 
         // Phase 8 additions beyond Phase 4
+        $this->assertContains('description', $columns);
         $this->assertContains('category', $columns);
         $this->assertContains('image_url', $columns);
         $this->assertContains('price_points', $columns);
@@ -33,11 +54,9 @@ class MinorRewardsTableTest extends TestCase
         $this->assertContains('age_restriction', $columns);
     }
 
-    #[Test]
-    public function reward_with_unlimited_stock(): void
+    public function test_reward_with_unlimited_stock(): void
     {
         $reward = MinorReward::create([
-            'id' => Str::uuid(),
             'name' => 'MTN 50 SZL Airtime',
             'category' => 'airtime',
             'price_points' => 100,
@@ -50,11 +69,9 @@ class MinorRewardsTableTest extends TestCase
         $this->assertEquals(-1, $reward->stock);
     }
 
-    #[Test]
-    public function reward_with_limited_stock(): void
+    public function test_reward_with_limited_stock(): void
     {
         $reward = MinorReward::create([
-            'id' => Str::uuid(),
             'name' => 'Voucher',
             'category' => 'voucher',
             'price_points' => 200,
@@ -66,11 +83,9 @@ class MinorRewardsTableTest extends TestCase
         $this->assertEquals(25, $reward->stock);
     }
 
-    #[Test]
-    public function reward_with_zero_stock_is_sold_out(): void
+    public function test_reward_with_zero_stock_is_sold_out(): void
     {
         $reward = MinorReward::create([
-            'id' => Str::uuid(),
             'name' => 'Sold Out Reward',
             'category' => 'experience',
             'price_points' => 500,

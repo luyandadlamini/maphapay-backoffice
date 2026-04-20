@@ -9,6 +9,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('minor_rewards')) {
+            return;
+        }
+
         Schema::create('minor_rewards', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name');

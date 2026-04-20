@@ -35,7 +35,25 @@ class MinorReward extends Model
     use HasUuids;
     use UsesTenantConnection;
 
-    protected $guarded = [];
+    protected $table = 'minor_rewards';
+
+    protected $fillable = [
+        'name',
+        'category',
+        'description',
+        'image_url',
+        'points_cost',
+        'price_points',
+        'type',
+        'metadata',
+        'stock',
+        'is_active',
+        'is_featured',
+        'partner_id',
+        'expiry_date',
+        'age_restriction',
+        'min_permission_level',
+    ];
 
     protected $casts = [
         'points_cost'          => 'integer',
@@ -46,6 +64,8 @@ class MinorReward extends Model
         'min_permission_level' => 'integer',
         'expiry_date'          => 'datetime',
         'metadata'             => 'array',
+        'created_at'           => 'datetime',
+        'updated_at'           => 'datetime',
     ];
 
     /**

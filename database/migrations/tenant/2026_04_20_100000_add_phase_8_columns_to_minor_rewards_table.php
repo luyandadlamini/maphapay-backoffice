@@ -18,7 +18,7 @@ return new class extends Migration
                 $table->string('image_url', 2048)->nullable()->after('description');
             }
             if (! Schema::hasColumn('minor_rewards', 'price_points')) {
-                $table->integer('price_points')->nullable()->after('image_url');
+                $table->integer('price_points')->notNullable()->after('image_url');
             }
             if (! Schema::hasColumn('minor_rewards', 'is_featured')) {
                 $table->boolean('is_featured')->default(false)->after('stock');
@@ -59,6 +59,9 @@ return new class extends Migration
             if (! Schema::hasIndex('minor_rewards', 'minor_rewards_is_featured_index')) {
                 $table->index('is_featured');
             }
+            if (! Schema::hasIndex('minor_rewards', 'minor_rewards_stock_index')) {
+                $table->index('stock');
+            }
         });
     }
 
@@ -81,6 +84,12 @@ return new class extends Migration
 
             try {
                 $table->dropIndex('minor_rewards_is_featured_index');
+            } catch (\Exception) {
+                // Index doesn't exist, which is fine
+            }
+
+            try {
+                $table->dropIndex('minor_rewards_stock_index');
             } catch (\Exception) {
                 // Index doesn't exist, which is fine
             }
