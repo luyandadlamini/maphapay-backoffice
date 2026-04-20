@@ -48,9 +48,11 @@ KidDashboard (Bottom Tab Navigator)
 │  │
 │  └─ RedemptionFlowModal (4 steps)
 │     ├─ Step 1: Confirmation (reward, points, delivery)
-│     ├─ Step 2: ShippingAddress (conditional)
-│     ├─ Step 3: ParentApproval (conditional)
-│     └─ Step 4: Success (celebration animation)
+│     ├─ Step 2: ShippingAddress (conditional — physical rewards only)
+│     ├─ Step 3: PhoneNumber (conditional — SMS delivery only)
+│     └─ Step 4: Success (celebration / awaiting-approval waiting state)
+│     Note: ParentApproval is a post-submit waiting state inside Step 4,
+│     not its own step — triggered when API returns awaiting_approval.
 │
 ├─ MyRewards Tab (NEW Phase 8)
 │  ├─ OrderStatusTabs (All, Pending, Active, Complete, Failed)
@@ -287,6 +289,7 @@ export function RewardsDashboardWidget({
         showsHorizontalScrollIndicator={false}
       >
         {featuredRewards.map((reward) => (
+          {/* Single Pressable per card — no nested Pressable (causes touch conflicts on RN) */}
           <Pressable
             key={reward.id}
             onPress={() => navigation.navigate('RewardDetail', {rewardId: reward.id})}
@@ -313,12 +316,12 @@ export function RewardsDashboardWidget({
             }}>
               {reward.price_points} pts
             </Text>
-            <Pressable
-              disabled={points < reward.price_points}
+            {/* Affordability badge — tapping the whole card navigates to detail where Redeem lives */}
+            <View
               style={{
-                minHeight: 36,
+                minHeight: 48,
                 backgroundColor: points >= reward.price_points
-                  ? theme.colors.primary
+                  ? theme.colors.primaryContainer
                   : theme.colors.surfaceVariant,
                 borderRadius: 4,
                 alignItems: 'center',
@@ -328,14 +331,14 @@ export function RewardsDashboardWidget({
             >
               <Text style={{
                 color: points >= reward.price_points
-                  ? theme.colors.onPrimary
+                  ? theme.colors.onPrimaryContainer
                   : theme.colors.onSurfaceVariant,
                 fontSize: 12,
                 fontWeight: '600',
               }}>
-                {points >= reward.price_points ? 'Redeem' : 'Soon'}
+                {points >= reward.price_points ? '✓ Tap to Redeem' : `Need ${reward.price_points - points} more pts`}
               </Text>
-            </Pressable>
+            </View>
           </Pressable>
         ))}
       </ScrollView>
@@ -424,6 +427,8 @@ export function RewardsCatalogScreen({
   const [page, setPage] = useState(1);
   
   // Hooks
+  // useMinorRewardsCatalog must use useInfiniteQuery internally (not useQuery)
+  // to expose hasNextPage + fetchNextPage
   const { data: catalogResponse, isLoading, hasNextPage, fetchNextPage } = useMinorRewardsCatalog({
     category: filters.category,
     minPrice: filters.priceRange[0],
@@ -627,7 +632,7 @@ function RewardCard({reward, availablePoints, onPress}: RewardCardProps) {
       <Pressable
         disabled={!canAfford || !inStock}
         style={{
-          minHeight: 36,
+          minHeight: 48, // 48dp minimum tap target (accessibility requirement)
           backgroundColor: (canAfford && inStock)
             ? theme.colors.primary
             : theme.colors.surfaceVariant,
@@ -729,7 +734,7 @@ export function RewardDetailModal({
       <Modal visible transparent>
         <View style={{
           flex: 1,
-          backgroundColor: 'rgba(0,0,0,0.5)',
+          backgroundColor: theme.colors.backdrop, // never hardcode rgba
           justifyContent: 'flex-end',
         }}>
           <ActivityIndicator color={theme.colors.primary} size="large" />
@@ -894,7 +899,7 @@ export function RewardDetailModal({
           
           {/* Parent Approval Notice */}
           <View style={{
-            backgroundColor: theme.colors.warningContainer,
+            backgroundColor: theme.colors.secondaryContainer, // warningContainer not in MD3 — use secondaryContainer or add custom token
             borderRadius: 8,
             padding: 12,
             marginBottom: 16,
@@ -1442,6 +1447,7 @@ function RedemptionStep3Phone({
 }
 
 // Step 4: Success
+// Requires: import LottieView from 'lottie-react-native';
 function RedemptionStep4Success({reward}: {reward: Reward}) {
   const theme = useAppTheme();
   
@@ -1652,9 +1658,11 @@ function OrderCard({order, onPress}: OrderCardProps) {
   const theme = useAppTheme();
   
   const statusColor = {
-    pending: theme.colors.warning,
-    active: theme.colors.info,
-    complete: theme.colors.success,
+    // warning/info/success are not standard MD3 tokens — use closest equivalents
+    // or extend the theme with custom tokens before implementation
+    pending: theme.colors.tertiary,       // amber-ish in most MD3 palettes
+    active: theme.colors.primary,         // blue-ish
+    complete: theme.colors.secondary,     // green-ish
     failed: theme.colors.error,
   }[order.status] ?? theme.colors.outline;
   

@@ -326,7 +326,7 @@ Sort:
 - **Validity:** When the reward expires or becomes unusable
 - **Parent Approval Notice:** "This reward requires parent approval (set in your Rewards Settings)"
 - **Share Widget:** Child can share reward with friends ("Check out this airtime deal!")
-- **Save for Later:** Add to wishlist (stored in app state, sync to backend)
+- **Save for Later:** Add to wishlist (stored in app state only — no backend persistence in Phase 8; resets on app restart)
 - **[Redeem] CTA:** Opens redemption flow
 
 **API Requirements:**
@@ -405,10 +405,10 @@ Triggered if:
 │ Waiting for Parent Approval...  │
 ├─────────────────────────────────┤
 │ [Reward Image]                  │
-│ MTN 50 SZL Airtime              │
-│ 100 Points                      │
+│ Museum Experience Voucher       │
+│ 300 Points                      │
 │                                 │
-│ This reward costs 100 points,   │
+│ This reward costs 300 points,   │
 │ which is over your approval     │
 │ threshold of 250 points.        │
 │                                 │
@@ -478,16 +478,16 @@ Triggered if:
 
 #### 4.1 Order Status Tabs
 ```
-┌──────────────────────────────────┐
-│ All  Pending  Active  Complete   │
-└──────────────────────────────────┘
+┌───────────────────────────────────────────────┐
+│ All  Pending  Active  Complete  Failed         │
+└───────────────────────────────────────────────┘
 ```
 
 - **All:** All redemptions, newest first
 - **Pending:** Awaiting parent approval or merchant fulfillment
 - **Active:** Processing, in-transit, ready for pickup
 - **Complete:** Delivered, redeemed (with delivery proof if applicable)
-- **Failed/Expired:** Cancelled, out-of-stock during checkout, parent declined
+- **Failed:** Cancelled, out-of-stock during checkout, parent declined, expired
 
 #### 4.2 Order Card (List)
 ```
@@ -815,8 +815,8 @@ Rewards Usage Report (Alex, Last 30 Days)
 - `GET /api/admin/minor-accounts/{childId}/redemptions?status=awaiting_approval` → Approval queue
 - `POST /api/admin/minor-accounts/{childId}/redemptions/{orderId}/approve` → Parent approves
 - `POST /api/admin/minor-accounts/{childId}/redemptions/{orderId}/decline` → Parent declines (with reason)
-- `GET /api/admin/minor-accounts/{childId}/rewards-settings` → Get limits + blocks
-- `PUT /api/admin/minor-accounts/{childId}/rewards-settings` → Update limits
+- `GET /api/admin/minor-accounts/{childId}/rewards-settings` → Get limits + blocks (includes `redemption_interval_hours`: int|null — minimum hours between redemptions; null = no limit)
+- `PUT /api/admin/minor-accounts/{childId}/rewards-settings` → Update limits (accepts `approval_threshold`, `daily_limit`, `weekly_limit`, `blocked_categories`, `redemption_interval_hours`)
 - `GET /api/admin/minor-accounts/{childId}/redemption-analytics?period=month` → Analytics data
 
 ---
@@ -1161,8 +1161,8 @@ CREATE TABLE merchant_redemption_queue (
     completed_at TIMESTAMP NULL,
     failure_reason VARCHAR(255) NULL,
     tracking_number VARCHAR(255) NULL,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
 );
 
 -- Merchant QR-pay bonus tracking
@@ -1181,7 +1181,7 @@ CREATE TABLE merchant_qr_transactions (
 
 **MinorRewardsController** (Child-facing)
 ```php
-POST   /api/minor-accounts/{childId}/rewards                 -> GET catalog
+GET    /api/minor-accounts/{childId}/rewards                 -> catalog (filtered, paginated)
 GET    /api/minor-accounts/{childId}/rewards/{rewardId}      -> GET detail
 GET    /api/minor-accounts/{childId}/rewards/search          -> Search
 POST   /api/minor-accounts/{childId}/redemptions             -> Submit redemption
