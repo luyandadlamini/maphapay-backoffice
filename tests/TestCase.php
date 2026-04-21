@@ -264,6 +264,30 @@ abstract class TestCase extends BaseTestCase
             });
         }
 
+        if (Schema::hasTable('accounts') && ! Schema::hasColumn('accounts', 'type')) {
+            Schema::table('accounts', function ($table): void {
+                $table->string('type')->default('personal')->after('name');
+            });
+        }
+
+        if (Schema::hasTable('accounts') && ! Schema::hasColumn('accounts', 'tier')) {
+            Schema::table('accounts', function ($table): void {
+                $table->string('tier')->nullable()->after('type');
+            });
+        }
+
+        if (Schema::hasTable('accounts') && ! Schema::hasColumn('accounts', 'permission_level')) {
+            Schema::table('accounts', function ($table): void {
+                $table->integer('permission_level')->nullable()->after('tier');
+            });
+        }
+
+        if (Schema::hasTable('accounts') && ! Schema::hasColumn('accounts', 'parent_account_id')) {
+            Schema::table('accounts', function ($table): void {
+                $table->uuid('parent_account_id')->nullable()->after('user_uuid');
+            });
+        }
+
         if (Schema::hasTable('accounts') && ! Schema::hasColumn('accounts', 'frozen')) {
             Schema::table('accounts', function ($table): void {
                 $table->boolean('frozen')->default(false)->after('balance');

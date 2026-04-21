@@ -22,8 +22,7 @@ class AccountPolicy
      */
     public function viewMinor(User $user, Account $account): bool
     {
-        // Check if user is the child (owner of the minor account)
-        if ($account->user_uuid === $user->uuid && $account->type === 'minor') {
+        if ($this->isChildIdentity($user, $account)) {
             return true;
         }
 
@@ -109,6 +108,28 @@ class AccountPolicy
             ->active()
             ->where('role', 'owner')
             ->where('account_type', 'personal')
+            ->exists();
+    }
+
+    private function isChildIdentity(User $user, Account $account): bool
+    {
+        if ($account->type !== 'minor' || $account->user_uuid !== $user->uuid) {
+            return false;
+        }
+
+        $hasGuardianMembership = AccountMembership::query()
+            ->forAccount($account->uuid)
+            ->active()
+            ->whereIn('role', ['guardian', 'co_guardian'])
+            ->exists();
+
+        if (! $hasGuardianMembership) {
+            return false;
+        }
+
+        return ! AccountMembership::query()
+            ->forAccount($account->uuid)
+            ->forUser($user->uuid)
             ->exists();
     }
 }

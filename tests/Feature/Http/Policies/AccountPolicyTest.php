@@ -30,19 +30,34 @@ class AccountPolicyTest extends BaseTestCase
     public function test_viewMinor_allows_child_viewing_own_account(): void
     {
         $child = User::factory()->create();
+        $guardian = User::factory()->create();
         $childAccount = Account::factory()->create([
             'user_uuid'    => $child->uuid,
-            'account_type' => 'minor',
+            'type'         => 'minor',
         ]);
 
+        $this->createMembership($guardian, $childAccount, 'guardian');
+
         $this->assertTrue($this->policy->viewMinor($child, $childAccount));
+    }
+
+    #[Test]
+    public function test_viewMinor_denies_guardian_owned_minor_account_without_guardian_membership(): void
+    {
+        $guardian = User::factory()->create();
+        $childAccount = Account::factory()->create([
+            'user_uuid'    => $guardian->uuid,
+            'type'         => 'minor',
+        ]);
+
+        $this->assertFalse($this->policy->viewMinor($guardian, $childAccount));
     }
 
     #[Test]
     public function test_viewMinor_allows_guardian_viewing_minor_account(): void
     {
         $guardian = User::factory()->create();
-        $childAccount = Account::factory()->create(['account_type' => 'minor']);
+        $childAccount = Account::factory()->create(['type' => 'minor']);
 
         $this->createMembership($guardian, $childAccount, 'guardian');
 
@@ -53,7 +68,7 @@ class AccountPolicyTest extends BaseTestCase
     public function test_viewMinor_allows_co_guardian_viewing_minor_account(): void
     {
         $coGuardian = User::factory()->create();
-        $childAccount = Account::factory()->create(['account_type' => 'minor']);
+        $childAccount = Account::factory()->create(['type' => 'minor']);
 
         $this->createMembership($coGuardian, $childAccount, 'co_guardian');
 
@@ -64,7 +79,7 @@ class AccountPolicyTest extends BaseTestCase
     public function test_viewMinor_denies_non_guardian(): void
     {
         $nonGuardian = User::factory()->create();
-        $childAccount = Account::factory()->create(['account_type' => 'minor']);
+        $childAccount = Account::factory()->create(['type' => 'minor']);
 
         $this->assertFalse($this->policy->viewMinor($nonGuardian, $childAccount));
     }
@@ -73,7 +88,7 @@ class AccountPolicyTest extends BaseTestCase
     public function test_viewMinor_denies_inactive_membership(): void
     {
         $guardian = User::factory()->create();
-        $childAccount = Account::factory()->create(['account_type' => 'minor']);
+        $childAccount = Account::factory()->create(['type' => 'minor']);
 
         $this->createMembership($guardian, $childAccount, 'guardian', 'inactive');
 
@@ -84,7 +99,7 @@ class AccountPolicyTest extends BaseTestCase
     public function test_viewMinor_denies_random_user(): void
     {
         $randomUser = User::factory()->create();
-        $childAccount = Account::factory()->create(['account_type' => 'minor']);
+        $childAccount = Account::factory()->create(['type' => 'minor']);
 
         $this->assertFalse($this->policy->viewMinor($randomUser, $childAccount));
     }
@@ -93,7 +108,7 @@ class AccountPolicyTest extends BaseTestCase
     public function test_viewAnyMinor_allows_user_with_active_guardian_membership(): void
     {
         $guardian = User::factory()->create();
-        $childAccount = Account::factory()->create(['account_type' => 'minor']);
+        $childAccount = Account::factory()->create(['type' => 'minor']);
 
         $this->createMembership($guardian, $childAccount, 'guardian');
 
@@ -104,7 +119,7 @@ class AccountPolicyTest extends BaseTestCase
     public function test_viewAnyMinor_allows_user_with_active_co_guardian_membership(): void
     {
         $coGuardian = User::factory()->create();
-        $childAccount = Account::factory()->create(['account_type' => 'minor']);
+        $childAccount = Account::factory()->create(['type' => 'minor']);
 
         $this->createMembership($coGuardian, $childAccount, 'co_guardian');
 
@@ -123,7 +138,7 @@ class AccountPolicyTest extends BaseTestCase
     public function test_viewAnyMinor_denies_user_with_inactive_membership(): void
     {
         $guardian = User::factory()->create();
-        $childAccount = Account::factory()->create(['account_type' => 'minor']);
+        $childAccount = Account::factory()->create(['type' => 'minor']);
 
         $this->createMembership($guardian, $childAccount, 'guardian', 'inactive');
 
@@ -136,7 +151,7 @@ class AccountPolicyTest extends BaseTestCase
         $parent = User::factory()->create();
         $personalAccount = Account::factory()->create([
             'user_uuid'    => $parent->uuid,
-            'account_type' => 'personal',
+            'type'         => 'personal',
         ]);
 
         $this->createMembership($parent, $personalAccount, 'owner', 'active', 'personal');
@@ -150,7 +165,7 @@ class AccountPolicyTest extends BaseTestCase
         $child = User::factory()->create();
         $minorAccount = Account::factory()->create([
             'user_uuid'    => $child->uuid,
-            'account_type' => 'minor',
+            'type'         => 'minor',
         ]);
 
         $this->createMembership($child, $minorAccount, 'owner', 'active', 'minor');
@@ -170,7 +185,7 @@ class AccountPolicyTest extends BaseTestCase
     public function test_updateMinor_allows_primary_guardian(): void
     {
         $guardian = User::factory()->create();
-        $childAccount = Account::factory()->create(['account_type' => 'minor']);
+        $childAccount = Account::factory()->create(['type' => 'minor']);
 
         $this->createMembership($guardian, $childAccount, 'guardian');
 
@@ -181,7 +196,7 @@ class AccountPolicyTest extends BaseTestCase
     public function test_updateMinor_denies_co_guardian(): void
     {
         $coGuardian = User::factory()->create();
-        $childAccount = Account::factory()->create(['account_type' => 'minor']);
+        $childAccount = Account::factory()->create(['type' => 'minor']);
 
         $this->createMembership($coGuardian, $childAccount, 'co_guardian');
 
@@ -194,7 +209,7 @@ class AccountPolicyTest extends BaseTestCase
         $child = User::factory()->create();
         $childAccount = Account::factory()->create([
             'user_uuid'    => $child->uuid,
-            'account_type' => 'minor',
+            'type'         => 'minor',
         ]);
 
         $this->assertFalse($this->policy->updateMinor($child, $childAccount));
@@ -204,7 +219,7 @@ class AccountPolicyTest extends BaseTestCase
     public function test_updateMinor_denies_non_guardian(): void
     {
         $nonGuardian = User::factory()->create();
-        $childAccount = Account::factory()->create(['account_type' => 'minor']);
+        $childAccount = Account::factory()->create(['type' => 'minor']);
 
         $this->assertFalse($this->policy->updateMinor($nonGuardian, $childAccount));
     }
@@ -213,7 +228,7 @@ class AccountPolicyTest extends BaseTestCase
     public function test_deleteMinor_allows_primary_guardian(): void
     {
         $guardian = User::factory()->create();
-        $childAccount = Account::factory()->create(['account_type' => 'minor']);
+        $childAccount = Account::factory()->create(['type' => 'minor']);
 
         $this->createMembership($guardian, $childAccount, 'guardian');
 
@@ -224,7 +239,7 @@ class AccountPolicyTest extends BaseTestCase
     public function test_deleteMinor_denies_co_guardian(): void
     {
         $coGuardian = User::factory()->create();
-        $childAccount = Account::factory()->create(['account_type' => 'minor']);
+        $childAccount = Account::factory()->create(['type' => 'minor']);
 
         $this->createMembership($coGuardian, $childAccount, 'co_guardian');
 
@@ -237,7 +252,7 @@ class AccountPolicyTest extends BaseTestCase
         $child = User::factory()->create();
         $childAccount = Account::factory()->create([
             'user_uuid'    => $child->uuid,
-            'account_type' => 'minor',
+            'type'         => 'minor',
         ]);
 
         $this->assertFalse($this->policy->deleteMinor($child, $childAccount));
@@ -247,7 +262,7 @@ class AccountPolicyTest extends BaseTestCase
     public function test_deleteMinor_denies_non_guardian(): void
     {
         $nonGuardian = User::factory()->create();
-        $childAccount = Account::factory()->create(['account_type' => 'minor']);
+        $childAccount = Account::factory()->create(['type' => 'minor']);
 
         $this->assertFalse($this->policy->deleteMinor($nonGuardian, $childAccount));
     }
@@ -258,7 +273,7 @@ class AccountPolicyTest extends BaseTestCase
         $parent = User::factory()->create();
         $personalAccount = Account::factory()->create([
             'user_uuid'    => $parent->uuid,
-            'account_type' => 'personal',
+            'type'         => 'personal',
         ]);
 
         $this->createMembership($parent, $personalAccount, 'owner', 'active', 'personal');
@@ -272,7 +287,7 @@ class AccountPolicyTest extends BaseTestCase
         $child = User::factory()->create();
         $minorAccount = Account::factory()->create([
             'user_uuid'    => $child->uuid,
-            'account_type' => 'minor',
+            'type'         => 'minor',
         ]);
 
         $this->createMembership($child, $minorAccount, 'owner', 'active', 'minor');
@@ -301,7 +316,7 @@ class AccountPolicyTest extends BaseTestCase
             'tenant_id'    => $this->createCentralTenant(),
             'role'         => $role,
             'status'       => $status,
-            'account_type' => $accountType ?? (string) $account->account_type,
+            'account_type' => $accountType ?? (string) $account->type,
         ]);
     }
 

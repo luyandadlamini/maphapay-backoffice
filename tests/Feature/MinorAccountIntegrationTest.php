@@ -10,26 +10,19 @@ use App\Domain\Account\Models\TransactionProjection;
 use App\Models\User;
 use App\Policies\AccountPolicy;
 use App\Rules\ValidateMinorAccountPermission;
-use Tests\TestCase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\CreatesApplication;
 
-class MinorAccountIntegrationTest extends TestCase
+class MinorAccountIntegrationTest extends BaseTestCase
 {
-    protected function connectionsToTransact(): array
-    {
-        return ['mysql', 'central'];
-    }
-
-    protected function shouldCreateDefaultAccountsInSetup(): bool
-    {
-        return false;
-    }
+    use CreatesApplication;
 
     #[Test]
     public function it_covers_the_phase_one_minor_account_workflow(): void
@@ -58,8 +51,6 @@ class MinorAccountIntegrationTest extends TestCase
 
         $parent = User::factory()->create();
         $coGuardian = User::factory()->create();
-        $child = User::factory()->create();
-
         $parentAccount = Account::factory()->create([
             'user_uuid'    => $parent->uuid,
             'type'         => 'personal',
@@ -69,7 +60,7 @@ class MinorAccountIntegrationTest extends TestCase
             'user_uuid'    => $parent->uuid,
             'tenant_id'    => $tenantId,
             'account_uuid' => $parentAccount->uuid,
-            'type'         => 'personal',
+            'account_type' => 'personal',
             'role'         => 'owner',
             'status'       => 'active',
             'joined_at'    => now(),
@@ -88,8 +79,8 @@ class MinorAccountIntegrationTest extends TestCase
 
         $minorAccountUuid = (string) $createResponse->json('data.account.uuid');
         $minorAccount = Account::query()->where('uuid', $minorAccountUuid)->firstOrFail();
-
-        $minorAccount->update(['user_uuid' => $child->uuid]);
+        $this->assertNotSame($parent->uuid, $minorAccount->user_uuid);
+        $child = User::query()->where('uuid', $minorAccount->user_uuid)->firstOrFail();
 
         $accountsResponse = $this->getJson('/api/accounts');
         $accountsResponse->assertOk();
@@ -112,11 +103,12 @@ class MinorAccountIntegrationTest extends TestCase
 
         $policy = app(AccountPolicy::class);
 
+        $this->assertTrue($policy->viewMinor($child, $minorAccount->fresh()));
         $this->assertTrue($policy->viewMinor($coGuardian, $minorAccount->fresh()));
         $this->assertFalse($policy->updateMinor($coGuardian, $minorAccount->fresh()));
 
         $withinLimitValidator = Validator::make(
-            ['amount' => 10000],
+            ['amount' => 100],
             ['amount' => [new ValidateMinorAccountPermission($minorAccount->fresh(), 'transfer')]],
         );
         $this->assertFalse($withinLimitValidator->fails());
@@ -131,7 +123,7 @@ class MinorAccountIntegrationTest extends TestCase
         ]);
 
         $overLimitValidator = Validator::make(
-            ['amount' => 10000],
+            ['amount' => 100],
             ['amount' => [new ValidateMinorAccountPermission($minorAccount->fresh(), 'transfer')]],
         );
         $this->assertTrue($overLimitValidator->fails());

@@ -21,12 +21,10 @@ class AccountFactory extends Factory
      */
     public function definition(): array
     {
-        $user = User::factory()->create();
-
         return [
             'uuid' => $this->faker->uuid(),
             'name' => $this->faker->words(3, true),
-            'user_uuid' => $user->uuid,
+            'user_uuid' => static fn (): string => User::factory()->create()->uuid,
             'type' => 'personal',
             'balance' => $this->faker->numberBetween(0, 100000),
             'frozen' => false,

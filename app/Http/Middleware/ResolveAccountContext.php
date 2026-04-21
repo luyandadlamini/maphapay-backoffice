@@ -83,14 +83,26 @@ class ResolveAccountContext
                 $accountRecord = app()->runningUnitTests()
                     ? DB::connection('mysql')->table('accounts')
                         ->where('uuid', $requestedAccountId)
-                        ->where('account_type', 'minor')
+                        ->where('type', 'minor')
                         ->first()
                     : Account::query()
                         ->where('uuid', $requestedAccountId)
-                        ->where('account_type', 'minor')
+                        ->where('type', 'minor')
                         ->first();
 
                 if ($accountRecord !== null && (string) $accountRecord->user_uuid === $userUuid) {
+                    $existingMembership = AccountMembership::query()
+                        ->forAccount($requestedAccountId)
+                        ->forUser($userUuid)
+                        ->exists();
+
+                    if ($existingMembership) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'You do not have access to this account.',
+                        ], 403);
+                    }
+
                     $childMembership = new AccountMembership();
                     $childMembership->forceFill([
                         'user_uuid'    => $userUuid,

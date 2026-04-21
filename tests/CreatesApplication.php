@@ -65,7 +65,7 @@ trait CreatesApplication
         }
 
         if (! getenv('DB_PORT')) {
-            $port = getenv('TEST_DB_PORT') ?: '3307';
+            $port = getenv('TEST_DB_PORT') ?: '3306';
             putenv("DB_PORT={$port}");
             $_ENV['DB_PORT'] = $port;
             $_SERVER['DB_PORT'] = $port;
