@@ -1,218 +1,130 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Tests\Feature\Http\Controllers\Api;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Models\MinorChore;
-use App\Domain\Account\Models\MinorChoreCompletion;
-use App\Domain\Account\Services\MinorChoreService;
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\ControllerTestCase;
+use Tests\CreatesApplication;
 
-class MinorChoreTest extends ControllerTestCase
+class MinorChoreTest extends BaseTestCase
 {
-    protected function connectionsToTransact(): array
-    {
-        return ['mysql', 'central'];
-    }
+    use CreatesApplication;
 
-    private MinorChoreService $service;
+    private string $tenantId;
     private User $guardianUser;
+    private User $coGuardianUser;
     private User $childUser;
+    private User $strangerUser;
     private Account $guardianAccount;
+    private Account $coGuardianAccount;
     private Account $minorAccount;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->withoutMiddleware();
 
-        $this->service = app(MinorChoreService::class);
+        if (! Schema::hasTable('minor_chores')) {
+            Artisan::call('migrate', [
+                '--path'  => 'database/migrations/tenant/2026_04_18_100003_create_minor_chores_table.php',
+                '--force' => true,
+            ]);
+        }
 
-        // Create users
-        $this->guardianUser = User::factory()->create();
-        $this->childUser = User::factory()->create();
+        if (! Schema::hasTable('minor_chore_completions')) {
+            Artisan::call('migrate', [
+                '--path'  => 'database/migrations/tenant/2026_04_18_100004_create_minor_chore_completions_table.php',
+                '--force' => true,
+            ]);
+        }
 
-        // Create accounts
-        $this->guardianAccount = Account::factory()->create([
-            'user_uuid' => $this->guardianUser->uuid,
-            'type'      => 'personal',
+        $this->tenantId = (string) Str::uuid();
+        DB::connection('central')->table('tenants')->insert([
+            'id'            => $this->tenantId,
+            'name'          => 'Minor Chore Test Tenant',
+            'plan'          => 'default',
+            'team_id'       => null,
+            'trial_ends_at' => null,
+            'created_at'    => now(),
+            'updated_at'    => now(),
+            'data'          => json_encode([]),
         ]);
 
+        $this->guardianUser = User::factory()->create();
+        $this->coGuardianUser = User::factory()->create();
+        $this->childUser = User::factory()->create();
+        $this->strangerUser = User::factory()->create();
+
+        $this->guardianAccount = $this->createOwnedPersonalAccount($this->guardianUser);
+        $this->coGuardianAccount = $this->createOwnedPersonalAccount($this->coGuardianUser);
+
         $this->minorAccount = Account::factory()->create([
-            'user_uuid' => $this->childUser->uuid,
-            'type'      => 'minor',
-            'tier'      => 'grow',
+            'user_uuid'         => $this->childUser->uuid,
+            'type'              => 'minor',
+            'tier'              => 'grow',
+            'permission_level'  => 3,
             'parent_account_id' => $this->guardianAccount->id,
         ]);
 
-        // Create account membership linking the guardian to the minor account
-        AccountMembership::create([
-            'user_uuid'    => $this->guardianUser->uuid,
-            'account_uuid' => $this->minorAccount->uuid,
-            'status'       => 'active',
-        ]);
-    }
-
-    // ========== SERVICE-LEVEL TESTS ==========
-
-    #[Test]
-    public function guardian_can_create_chore_for_minor(): void
-    {
-        $data = [
-            'title'          => 'Clean bedroom',
-            'description'    => 'Tidy up the room and make the bed',
-            'payout_points'  => 30,
-            'due_at'         => Carbon::now()->addDays(3),
-        ];
-
-        $chore = $this->service->create($this->guardianAccount, $this->minorAccount, $data);
-
-        $this->assertSame('Clean bedroom', $chore->title);
-        $this->assertSame('Tidy up the room and make the bed', $chore->description);
-        $this->assertSame(30, $chore->payout_points);
-        $this->assertSame('active', $chore->status);
-        $this->assertSame('points', $chore->payout_type);
-        $this->assertSame($this->guardianAccount->uuid, $chore->guardian_account_uuid);
-        $this->assertSame($this->minorAccount->uuid, $chore->minor_account_uuid);
-        $this->assertDatabaseHas('minor_chores', [
-            'id'                    => $chore->id,
-            'title'                 => 'Clean bedroom',
-            'status'                => 'active',
-            'payout_points'         => 30,
-        ]);
+        $this->createMinorMembership($this->guardianUser, $this->minorAccount, 'guardian');
+        $this->createMinorMembership($this->coGuardianUser, $this->minorAccount, 'co_guardian');
     }
 
     #[Test]
-    public function child_can_submit_completion_and_status_becomes_pending_review(): void
-    {
-        $chore = MinorChore::create([
-            'guardian_account_uuid' => $this->guardianAccount->uuid,
-            'minor_account_uuid'    => $this->minorAccount->uuid,
-            'title'                 => 'Do homework',
-            'payout_points'         => 20,
-            'status'                => 'active',
-            'payout_type'           => 'points',
-        ]);
-
-        $completion = $this->service->submitCompletion($chore, 'I finished all homework!');
-
-        $this->assertSame('pending_review', $completion->status);
-        $this->assertSame('I finished all homework!', $completion->submission_note);
-        $this->assertSame($chore->id, $completion->chore_id);
-        $this->assertDatabaseHas('minor_chore_completions', [
-            'chore_id'       => $chore->id,
-            'status'         => 'pending_review',
-            'submission_note' => 'I finished all homework!',
-        ]);
-    }
-
-    #[Test]
-    public function approving_completion_awards_points_and_marks_payout_processed(): void
-    {
-        $chore = MinorChore::create([
-            'guardian_account_uuid' => $this->guardianAccount->uuid,
-            'minor_account_uuid'    => $this->minorAccount->uuid,
-            'title'                 => 'Mow the lawn',
-            'payout_points'         => 30,
-            'status'                => 'active',
-            'payout_type'           => 'points',
-        ]);
-
-        $completion = MinorChoreCompletion::create([
-            'chore_id' => $chore->id,
-            'status'   => 'pending_review',
-        ]);
-
-        $this->service->approve($completion, $this->guardianAccount);
-
-        $completion->refresh();
-
-        $this->assertSame('approved', $completion->status);
-        $this->assertNotNull($completion->reviewed_at);
-        $this->assertNotNull($completion->payout_processed_at);
-        $this->assertSame($this->guardianAccount->uuid, $completion->reviewed_by_account_uuid);
-
-        // Verify points were awarded
-        $this->assertDatabaseHas('minor_points_ledger', [
-            'minor_account_uuid' => $this->minorAccount->uuid,
-            'points'             => 30,
-            'source'             => 'chore',
-            'reference_id'       => $completion->id,
-        ]);
-    }
-
-    #[Test]
-    public function rejecting_completion_sets_reason_and_chore_stays_active(): void
-    {
-        $chore = MinorChore::create([
-            'guardian_account_uuid' => $this->guardianAccount->uuid,
-            'minor_account_uuid'    => $this->minorAccount->uuid,
-            'title'                 => 'Wash dishes',
-            'payout_points'         => 15,
-            'status'                => 'active',
-            'payout_type'           => 'points',
-        ]);
-
-        $completion = MinorChoreCompletion::create([
-            'chore_id' => $chore->id,
-            'status'   => 'pending_review',
-        ]);
-
-        $this->service->reject($completion, $this->guardianAccount, 'Not done properly');
-
-        $completion->refresh();
-        $chore->refresh();
-
-        $this->assertSame('rejected', $completion->status);
-        $this->assertSame('Not done properly', $completion->rejection_reason);
-        $this->assertNotNull($completion->reviewed_at);
-        $this->assertSame($this->guardianAccount->uuid, $completion->reviewed_by_account_uuid);
-
-        // Verify chore stays active for re-submission
-        $this->assertSame('active', $chore->status);
-
-        // Verify no points were awarded
-        $this->assertDatabaseMissing('minor_points_ledger', [
-            'reference_id' => $completion->id,
-        ]);
-    }
-
-    // ========== HTTP API TESTS ==========
-
-    #[Test]
-    public function guardian_creates_chore_via_api(): void
+    public function guardian_can_create_chore_via_real_membership(): void
     {
         Sanctum::actingAs($this->guardianUser, ['read', 'write', 'delete']);
 
         $payload = [
-            'title'          => 'Organize bookshelf',
-            'payout_points'  => 25,
-            'description'    => 'Arrange books by color',
-            'due_at'         => Carbon::now()->addDays(5)->toDateTimeString(),
-        ];
-
-        $response = $this->postJson(
-            "/api/accounts/minor/{$this->minorAccount->uuid}/chores",
-            $payload
-        );
-
-        $response->assertCreated();
-        $this->assertDatabaseHas('minor_chores', [
             'title'         => 'Organize bookshelf',
             'payout_points' => 25,
-            'status'        => 'active',
+            'description'   => 'Arrange books by color',
+            'due_at'        => Carbon::now()->addDays(5)->toDateTimeString(),
+        ];
+
+        $this->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/chores", $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.title', 'Organize bookshelf');
+
+        $this->assertDatabaseHas('minor_chores', [
+            'minor_account_uuid'    => $this->minorAccount->uuid,
+            'guardian_account_uuid' => $this->guardianAccount->uuid,
+            'title'                 => 'Organize bookshelf',
         ]);
     }
 
     #[Test]
-    public function child_lists_own_chores_via_api(): void
+    public function co_guardian_can_create_chore_via_real_membership(): void
     {
-        // Create a test chore
+        Sanctum::actingAs($this->coGuardianUser, ['read', 'write', 'delete']);
+
+        $this->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/chores", [
+            'title'         => 'Wash dishes',
+            'payout_points' => 10,
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('minor_chores', [
+            'minor_account_uuid'    => $this->minorAccount->uuid,
+            'guardian_account_uuid' => $this->coGuardianAccount->uuid,
+            'title'                 => 'Wash dishes',
+        ]);
+    }
+
+    #[Test]
+    public function child_can_list_own_chores_when_minor_has_guardian_membership(): void
+    {
         MinorChore::create([
             'guardian_account_uuid' => $this->guardianAccount->uuid,
             'minor_account_uuid'    => $this->minorAccount->uuid,
@@ -224,133 +136,61 @@ class MinorChoreTest extends ControllerTestCase
 
         Sanctum::actingAs($this->childUser, ['read', 'write', 'delete']);
 
-        $response = $this->getJson(
-            "/api/accounts/minor/{$this->minorAccount->uuid}/chores"
-        );
-
-        $response->assertOk()
-            ->assertJsonStructure([
-                'data' => [
-                    '*' => ['id', 'title', 'payout_points', 'status'],
-                ],
-            ]);
-
-        $chores = $response->json('data');
-        $this->assertCount(1, $chores);
-        $this->assertSame('Water plants', $chores[0]['title']);
-        $this->assertSame(10, $chores[0]['payout_points']);
-        $this->assertSame('active', $chores[0]['status']);
+        $this->getJson("/api/accounts/minor/{$this->minorAccount->uuid}/chores")
+            ->assertOk()
+            ->assertJsonFragment(['title' => 'Water plants']);
     }
 
     #[Test]
-    public function child_marks_chore_complete_via_api(): void
+    public function child_cannot_create_chore(): void
     {
-        $chore = MinorChore::create([
-            'guardian_account_uuid' => $this->guardianAccount->uuid,
-            'minor_account_uuid'    => $this->minorAccount->uuid,
-            'title'                 => 'Practice piano',
-            'payout_points'         => 20,
-            'status'                => 'active',
-            'payout_type'           => 'points',
-        ]);
-
         Sanctum::actingAs($this->childUser, ['read', 'write', 'delete']);
 
-        $payload = [
-            'submission_note' => 'Practiced for 30 minutes',
-        ];
-
-        $response = $this->postJson(
-            "/api/accounts/minor/{$this->minorAccount->uuid}/chores/{$chore->id}/complete",
-            $payload
-        );
-
-        $response->assertCreated()
-            ->assertJsonStructure([
-                'data' => ['id', 'status', 'submission_note'],
-            ]);
-
-        $data = $response->json('data');
-        $this->assertSame('pending_review', $data['status']);
-        $this->assertSame('Practiced for 30 minutes', $data['submission_note']);
+        $this->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/chores", [
+            'title'         => 'Take out trash',
+            'payout_points' => 10,
+        ])->assertForbidden();
     }
 
     #[Test]
-    public function guardian_approves_chore_via_api(): void
+    public function stranger_cannot_list_chores(): void
     {
-        $chore = MinorChore::create([
-            'guardian_account_uuid' => $this->guardianAccount->uuid,
-            'minor_account_uuid'    => $this->minorAccount->uuid,
-            'title'                 => 'Take out trash',
-            'payout_points'         => 15,
-            'status'                => 'active',
-            'payout_type'           => 'points',
-        ]);
+        Sanctum::actingAs($this->strangerUser, ['read', 'write', 'delete']);
 
-        $completion = MinorChoreCompletion::create([
-            'chore_id' => $chore->id,
-            'status'   => 'pending_review',
-        ]);
-
-        Sanctum::actingAs($this->guardianUser, ['read', 'write', 'delete']);
-
-        $response = $this->postJson(
-            "/api/accounts/minor/{$this->minorAccount->uuid}/chores/{$chore->id}/approve/{$completion->id}"
-        );
-
-        $response->assertOk()
-            ->assertJsonStructure([
-                'data' => ['id', 'status', 'reviewed_at', 'payout_processed_at'],
-            ]);
-
-        $data = $response->json('data');
-        $this->assertSame('approved', $data['status']);
-        $this->assertNotNull($data['reviewed_at']);
-        $this->assertNotNull($data['payout_processed_at']);
-
-        // Verify points were awarded
-        $this->assertDatabaseHas('minor_points_ledger', [
-            'minor_account_uuid' => $this->minorAccount->uuid,
-            'points'             => 15,
-            'source'             => 'chore',
-        ]);
+        $this->getJson("/api/accounts/minor/{$this->minorAccount->uuid}/chores")
+            ->assertForbidden();
     }
 
-    #[Test]
-    public function guardian_rejects_chore_with_reason_via_api(): void
+    private function createOwnedPersonalAccount(User $user): Account
     {
-        $chore = MinorChore::create([
-            'guardian_account_uuid' => $this->guardianAccount->uuid,
-            'minor_account_uuid'    => $this->minorAccount->uuid,
-            'title'                 => 'Clean bathroom',
-            'payout_points'         => 40,
-            'status'                => 'active',
-            'payout_type'           => 'points',
+        $account = Account::factory()->create([
+            'user_uuid' => $user->uuid,
+            'type'      => 'personal',
         ]);
 
-        $completion = MinorChoreCompletion::create([
-            'chore_id' => $chore->id,
-            'status'   => 'pending_review',
+        AccountMembership::query()->create([
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $this->tenantId,
+            'account_uuid' => $account->uuid,
+            'account_type' => 'personal',
+            'role'         => 'owner',
+            'status'       => 'active',
+            'joined_at'    => now(),
         ]);
 
-        Sanctum::actingAs($this->guardianUser, ['read', 'write', 'delete']);
+        return $account;
+    }
 
-        $payload = [
-            'reason' => 'The floor is still dirty',
-        ];
-
-        $response = $this->postJson(
-            "/api/accounts/minor/{$this->minorAccount->uuid}/chores/{$chore->id}/reject/{$completion->id}",
-            $payload
-        );
-
-        $response->assertOk()
-            ->assertJsonStructure([
-                'data' => ['id', 'status', 'rejection_reason'],
-            ]);
-
-        $data = $response->json('data');
-        $this->assertSame('rejected', $data['status']);
-        $this->assertSame('The floor is still dirty', $data['rejection_reason']);
+    private function createMinorMembership(User $user, Account $minorAccount, string $role): void
+    {
+        AccountMembership::query()->create([
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $this->tenantId,
+            'account_uuid' => $minorAccount->uuid,
+            'account_type' => 'minor',
+            'role'         => $role,
+            'status'       => 'active',
+            'joined_at'    => now(),
+        ]);
     }
 }

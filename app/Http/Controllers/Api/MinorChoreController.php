@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Account\Models\Account;
-use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Models\MinorChore;
 use App\Domain\Account\Models\MinorChoreCompletion;
+use App\Domain\Account\Services\MinorAccountAccessService;
 use App\Domain\Account\Services\MinorChoreService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -18,7 +18,11 @@ use Throwable;
 
 class MinorChoreController extends Controller
 {
-    public function __construct(private readonly MinorChoreService $choreService) {}
+    public function __construct(
+        private readonly MinorAccountAccessService $accessService,
+        private readonly MinorChoreService $choreService,
+    ) {
+    }
 
     /**
      * GET /api/accounts/minor/{uuid}/chores
@@ -337,22 +341,14 @@ class MinorChoreController extends Controller
             abort(401);
         }
 
-        $userAccount = Account::where('user_uuid', $user->uuid)->first();
-        if (! $userAccount) {
-            abort(403, 'Forbidden. User does not have an associated account.');
-        }
+        $this->accessService->authorizeView($user, $minorAccount);
 
-        $isChild    = $userAccount->uuid === $minorAccount->uuid;
-        $isGuardian = AccountMembership::query()
-            ->where('account_uuid', $userAccount->uuid)
-            ->where('minor_account_uuid', $minorAccount->uuid)
-            ->exists();
-
-        if (! $isChild && ! $isGuardian) {
-            abort(403, 'Forbidden. Only the child or their guardian may access this resource.');
-        }
-
-        return $userAccount;
+        return Account::query()
+            ->where('user_uuid', $user->uuid)
+            ->where('uuid', '!=', $minorAccount->uuid)
+            ->orderByRaw("case when type = 'personal' then 0 else 1 end")
+            ->orderBy('id')
+            ->first() ?? $minorAccount;
     }
 
     /**
@@ -369,20 +365,10 @@ class MinorChoreController extends Controller
             abort(401);
         }
 
-        $userAccount = Account::where('user_uuid', $user->uuid)->first();
-        if (! $userAccount) {
-            abort(403, 'Forbidden. User does not have an associated account.');
-        }
-
-        $isGuardian = AccountMembership::query()
-            ->where('account_uuid', $userAccount->uuid)
-            ->where('minor_account_uuid', $minorAccount->uuid)
-            ->exists();
-
-        if (! $isGuardian) {
-            abort(403, 'Forbidden. Only a guardian may perform this action.');
-        }
-
-        return $userAccount;
+        return $this->accessService->authorizeGuardian(
+            $user,
+            $minorAccount,
+            $request->attributes->get('account_uuid')
+        );
     }
 }

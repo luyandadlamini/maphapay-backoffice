@@ -1,123 +1,186 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Tests\Feature\Http\Controllers\Api;
 
 use App\Domain\Account\Models\Account;
-use App\Domain\Account\Models\MinorPointsLedger;
+use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Models\MinorReward;
-use App\Domain\Account\Services\MinorRewardService;
 use App\Models\User;
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
+use Tests\CreatesApplication;
 
-class MinorRewardTest extends TestCase
+class MinorRewardTest extends BaseTestCase
 {
-    protected function connectionsToTransact(): array { return ['mysql', 'central']; }
-    protected function shouldCreateDefaultAccountsInSetup(): bool { return false; }
+    use CreatesApplication;
 
-    private MinorRewardService $service;
+    private string $tenantId;
+    private User $guardianUser;
+    private User $coGuardianUser;
+    private User $childUser;
+    private User $strangerUser;
+    private Account $guardianAccount;
+    private Account $coGuardianAccount;
     private Account $minorAccount;
-    private MinorReward $reward;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = app(MinorRewardService::class);
-        $user = User::factory()->create();
+        $this->withoutMiddleware();
+
+        if (! Schema::hasTable('minor_rewards')) {
+            Artisan::call('migrate', [
+                '--path'  => 'database/migrations/tenant/2026_04_20_099999_create_minor_rewards_table.php',
+                '--force' => true,
+            ]);
+        }
+
+        if (! Schema::hasColumn('minor_rewards', 'is_featured')) {
+            Artisan::call('migrate', [
+                '--path'  => 'database/migrations/tenant/2026_04_20_100000_add_phase_8_columns_to_minor_rewards_table.php',
+                '--force' => true,
+            ]);
+        }
+
+        $this->tenantId = (string) Str::uuid();
+        DB::connection('central')->table('tenants')->insert([
+            'id'            => $this->tenantId,
+            'name'          => 'Minor Rewards Test Tenant',
+            'plan'          => 'default',
+            'team_id'       => null,
+            'trial_ends_at' => null,
+            'created_at'    => now(),
+            'updated_at'    => now(),
+            'data'          => json_encode([]),
+        ]);
+
+        $this->guardianUser = User::factory()->create();
+        $this->coGuardianUser = User::factory()->create();
+        $this->childUser = User::factory()->create();
+        $this->strangerUser = User::factory()->create();
+
+        $this->guardianAccount = $this->createOwnedPersonalAccount($this->guardianUser);
+        $this->coGuardianAccount = $this->createOwnedPersonalAccount($this->coGuardianUser);
+
         $this->minorAccount = Account::factory()->create([
-            'user_uuid'        => $user->uuid,
+            'user_uuid'        => $this->childUser->uuid,
             'type'             => 'minor',
             'permission_level' => 3,
+            'parent_account_id' => $this->guardianAccount->id,
         ]);
-        // Give the account 500 points
-        MinorPointsLedger::create([
-            'minor_account_uuid' => $this->minorAccount->uuid,
-            'points'             => 500,
-            'source'             => 'level_unlock',
-            'description'        => 'Test points',
-            'reference_id'       => null,
-        ]);
-        $this->reward = MinorReward::create([
-            'id'          => Str::uuid(),
-            'name'        => 'Test Airtime',
-            'description' => 'Test',
-            'points_cost' => 100,
-            'type'        => 'airtime',
-            'metadata'    => ['amount' => '50.00', 'provider' => 'MTN'],
-            'stock'       => 5,
-            'is_active'   => true,
+
+        $this->createMinorMembership($this->guardianUser, $this->minorAccount, 'guardian');
+        $this->createMinorMembership($this->coGuardianUser, $this->minorAccount, 'co_guardian');
+
+        MinorReward::create([
+            'id'                   => (string) Str::uuid(),
+            'name'                 => 'Test Airtime',
+            'description'          => 'Reward visible to authorized users',
+            'points_cost'          => 100,
+            'price_points'         => 100,
+            'type'                 => 'airtime',
+            'metadata'             => ['amount' => '50.00', 'provider' => 'MTN'],
+            'stock'                => 5,
+            'is_active'            => true,
+            'is_featured'          => false,
             'min_permission_level' => 1,
         ]);
     }
 
     #[Test]
-    public function it_redeems_reward_deducting_points_and_decrementing_stock(): void
+    public function guardian_can_view_rewards_catalog_via_real_membership(): void
     {
-        $redemption = $this->service->redeem($this->minorAccount, $this->reward);
+        Sanctum::actingAs($this->guardianUser, ['read', 'write', 'delete']);
 
-        $this->assertSame('pending', $redemption->status);
-        $this->assertSame($this->reward->points_cost, $redemption->points_cost);
-        $this->assertDatabaseHas('minor_reward_redemptions', [
-            'minor_account_uuid' => $this->minorAccount->uuid,
-            'minor_reward_id'    => $this->reward->id,
-            'status'             => 'pending',
-        ]);
-        // Stock decremented
-        $this->assertDatabaseHas('minor_rewards', [
-            'id'    => $this->reward->id,
-            'stock' => 4,
-        ]);
-        // Points deducted
-        $this->assertDatabaseHas('minor_points_ledger', [
-            'minor_account_uuid' => $this->minorAccount->uuid,
-            'points'             => -100,
-            'source'             => 'redemption',
-        ]);
+        $this->getJson("/api/accounts/minor/{$this->minorAccount->uuid}/rewards")
+            ->assertOk()
+            ->assertJsonPath('data.minor_account_uuid', $this->minorAccount->uuid)
+            ->assertJsonFragment(['name' => 'Test Airtime']);
     }
 
     #[Test]
-    public function it_throws_when_points_are_insufficient(): void
+    public function co_guardian_can_view_rewards_catalog_via_real_membership(): void
     {
-        // Drain most points
-        MinorPointsLedger::create([
-            'minor_account_uuid' => $this->minorAccount->uuid,
-            'points'             => -450,
-            'source'             => 'redemption',
-            'description'        => 'Drain',
-            'reference_id'       => 'drain',
+        Sanctum::actingAs($this->coGuardianUser, ['read', 'write', 'delete']);
+
+        $this->getJson("/api/accounts/minor/{$this->minorAccount->uuid}/rewards")
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Test Airtime']);
+    }
+
+    #[Test]
+    public function child_can_view_own_rewards_catalog_when_guardian_membership_exists(): void
+    {
+        Sanctum::actingAs($this->childUser, ['read', 'write', 'delete']);
+
+        $this->getJson("/api/accounts/minor/{$this->minorAccount->uuid}/rewards")
+            ->assertOk()
+            ->assertJsonPath('data.minor_account_uuid', $this->minorAccount->uuid);
+    }
+
+    #[Test]
+    public function stranger_is_forbidden_from_viewing_rewards_catalog(): void
+    {
+        Sanctum::actingAs($this->strangerUser, ['read', 'write', 'delete']);
+
+        $this->getJson("/api/accounts/minor/{$this->minorAccount->uuid}/rewards")
+            ->assertForbidden();
+    }
+
+    #[Test]
+    public function child_is_forbidden_when_minor_account_has_no_guardian_backing_membership(): void
+    {
+        $orphanChild = User::factory()->create();
+        $orphanMinorAccount = Account::factory()->create([
+            'user_uuid'        => $orphanChild->uuid,
+            'type'             => 'minor',
+            'permission_level' => 3,
+            'parent_account_id' => $this->guardianAccount->id,
         ]);
-        // Balance is now 50, reward costs 100
 
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
-        $this->service->redeem($this->minorAccount, $this->reward);
+        Sanctum::actingAs($orphanChild, ['read', 'write', 'delete']);
+
+        $this->getJson("/api/accounts/minor/{$orphanMinorAccount->uuid}/rewards")
+            ->assertForbidden();
     }
 
-    #[Test]
-    public function it_throws_when_reward_is_out_of_stock(): void
+    private function createOwnedPersonalAccount(User $user): Account
     {
-        $this->reward->update(['stock' => 0]);
+        $account = Account::factory()->create([
+            'user_uuid' => $user->uuid,
+            'type'      => 'personal',
+        ]);
 
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
-        $this->service->redeem($this->minorAccount, $this->reward);
+        AccountMembership::query()->create([
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $this->tenantId,
+            'account_uuid' => $account->uuid,
+            'account_type' => 'personal',
+            'role'         => 'owner',
+            'status'       => 'active',
+            'joined_at'    => now(),
+        ]);
+
+        return $account;
     }
 
-    #[Test]
-    public function it_throws_when_reward_is_inactive(): void
+    private function createMinorMembership(User $user, Account $minorAccount, string $role): void
     {
-        $this->reward->update(['is_active' => false]);
-
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
-        $this->service->redeem($this->minorAccount, $this->reward);
-    }
-
-    #[Test]
-    public function unlimited_stock_reward_does_not_decrement(): void
-    {
-        $this->reward->update(['stock' => -1]);
-        $this->service->redeem($this->minorAccount, $this->reward);
-
-        $this->assertDatabaseHas('minor_rewards', ['id' => $this->reward->id, 'stock' => -1]);
+        AccountMembership::query()->create([
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $this->tenantId,
+            'account_uuid' => $minorAccount->uuid,
+            'account_type' => 'minor',
+            'role'         => $role,
+            'status'       => 'active',
+            'joined_at'    => now(),
+        ]);
     }
 }

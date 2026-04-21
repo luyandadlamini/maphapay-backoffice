@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Account\Models\Account;
-use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Models\MinorPointsLedger;
 use App\Domain\Account\Models\MinorReward;
 use App\Domain\Account\Models\MinorRewardRedemption;
+use App\Domain\Account\Services\MinorAccountAccessService;
 use App\Domain\Account\Services\MinorPointsService;
 use App\Domain\Account\Services\MinorRewardService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -20,6 +21,7 @@ use Throwable;
 class MinorPointsController extends Controller
 {
     public function __construct(
+        private readonly MinorAccountAccessService $accessService,
         private readonly MinorPointsService $pointsService,
         private readonly MinorRewardService $rewardService,
     ) {
@@ -30,11 +32,11 @@ class MinorPointsController extends Controller
      *
      * Returns the current points balance for a minor account.
      */
-    public function balance(string $uuid): JsonResponse
+    public function balance(Request $request, string $uuid): JsonResponse
     {
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
-        $this->authorize('view', $account);
+        $this->accessService->authorizeView($request->user(), $account);
 
         $balance = $this->pointsService->getBalance($account);
 
@@ -52,11 +54,11 @@ class MinorPointsController extends Controller
      *
      * Returns the points ledger history for a minor account.
      */
-    public function history(string $uuid): JsonResponse
+    public function history(Request $request, string $uuid): JsonResponse
     {
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
-        $this->authorize('view', $account);
+        $this->accessService->authorizeView($request->user(), $account);
 
         $paginated = MinorPointsLedger::query()
             ->where('minor_account_uuid', $account->uuid)
@@ -92,11 +94,11 @@ class MinorPointsController extends Controller
      *
      * Returns the available rewards catalog for a minor account.
      */
-    public function catalog(string $uuid): JsonResponse
+    public function catalog(Request $request, string $uuid): JsonResponse
     {
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
-        $this->authorize('view', $account);
+        $this->accessService->authorizeView($request->user(), $account);
 
         $rewards = $this->rewardService->availableCatalog($account)
             ->map(fn($reward) => [
@@ -125,11 +127,11 @@ class MinorPointsController extends Controller
      *
      * Redeems a reward for a minor account.
      */
-    public function redeem(string $uuid, string $rewardId): JsonResponse
+    public function redeem(Request $request, string $uuid, string $rewardId): JsonResponse
     {
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
-        $this->authorize('view', $account);
+        $this->accessService->authorizeView($request->user(), $account);
 
         $reward = MinorReward::query()
             ->where('id', $rewardId)
@@ -174,11 +176,11 @@ class MinorPointsController extends Controller
      *
      * Returns the redemption history for a minor account.
      */
-    public function redemptions(string $uuid): JsonResponse
+    public function redemptions(Request $request, string $uuid): JsonResponse
     {
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
-        $this->authorize('view', $account);
+        $this->accessService->authorizeView($request->user(), $account);
 
         $paginated = MinorRewardRedemption::query()
             ->where('minor_account_uuid', $account->uuid)
@@ -211,30 +213,4 @@ class MinorPointsController extends Controller
         ]);
     }
 
-    /**
-     * Private authorization helper.
-     *
-     * Ensures the authenticated user is the child or a guardian of the minor account.
-     */
-    private function authorize(string $ability, Account $account): void
-    {
-        /** @var \App\Models\User $user */
-        $user = request()->user();
-        if (! $user) {
-            abort(401);
-        }
-        // Guardian or the child themselves can view points
-        // Policy check: user's account must be the minor account OR have guardian membership
-        $userAccount = Account::where('user_uuid', $user->uuid)->first();
-        $isChild     = $userAccount?->uuid === $account->uuid;
-        $isGuardian  = AccountMembership::query()
-            ->where('account_uuid', $userAccount?->uuid ?? '')
-            ->where('minor_account_uuid', $account->uuid)
-            ->where('role', 'guardian')
-            ->exists();
-
-        if (! $isChild && ! $isGuardian) {
-            abort(403, 'Forbidden. Only the child or their guardian may access this resource.');
-        }
-    }
 }
