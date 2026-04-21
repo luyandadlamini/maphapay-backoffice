@@ -11,6 +11,7 @@ use App\Domain\AuthorizedTransaction\Services\InternalP2pTransferService;
 use App\Domain\Shared\OperationRecord\OperationRecord;
 use App\Models\MoneyRequest;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
@@ -61,8 +62,9 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
 
         $response = $this->postJson('/api/send-money/store', [
             'user'              => $this->recipient->email,
-            'amount'            => '10.50',
+            'amount'            => '1000.50',
             'verification_type' => 'sms',
+            'attestation'       => 'trusted-proof',
         ]);
 
         $response->assertOk()
@@ -96,12 +98,18 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
             'maphapay_migration.enable_send_money' => true,
         ]);
 
+        $this->sender->update([
+            'transaction_pin' => bcrypt('1234'),
+            'transaction_pin_enabled' => true,
+        ]);
+
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
         $response = $this->postJson('/api/send-money/store', [
             'user'              => $this->recipient->email,
             'amount'            => '1.00',
             'verification_type' => 'pin',
+            'attestation'       => 'trusted-proof',
         ]);
 
         $response->assertOk()
@@ -142,6 +150,7 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
             'user'              => $this->recipient->email,
             'amount'            => '5.00',
             'verification_type' => 'pin',
+            'attestation'       => 'trusted-proof',
         ]);
 
         $response->assertOk();
@@ -151,6 +160,107 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
         $txn = AuthorizedTransaction::where('trx', $trx)->firstOrFail();
 
         $this->assertSame('00000000-0000-0000-0000-000000000001', $txn->payload['_idempotency_key'] ?? null);
+    }
+
+    #[Test]
+    public function test_minor_approval_initiation_replays_same_idempotency_key_without_creating_duplicate_rows(): void
+    {
+        config([
+            'maphapay_migration.enable_send_money' => true,
+            'mobile.attestation.enabled' => false,
+        ]);
+
+        $guardianAccount = Account::factory()->create([
+            'frozen' => false,
+        ]);
+
+        $senderAccount = Account::query()
+            ->where('user_uuid', $this->sender->uuid)
+            ->firstOrFail();
+
+        $senderAccount->forceFill([
+            'type' => 'minor',
+            'permission_level' => 3,
+            'parent_account_id' => $guardianAccount->uuid,
+        ])->save();
+
+        Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
+
+        $headers = [
+            'Idempotency-Key' => 'minor-approval-1',
+        ];
+        $payload = [
+            'user' => $this->recipient->email,
+            'amount' => '150.00',
+            'verification_type' => 'pin',
+            'attestation' => 'trusted-proof',
+        ];
+
+        $firstResponse = $this->withHeaders($headers)
+            ->postJson('/api/send-money/store', $payload);
+
+        $firstResponse->assertStatus(202)
+            ->assertJsonPath('data.status', 'pending_guardian_approval');
+
+        $firstApprovalId = $firstResponse->json('data.approval_id');
+
+        Cache::flush();
+
+        $secondResponse = $this->withHeaders($headers)
+            ->postJson('/api/send-money/store', $payload);
+
+        $secondResponse->assertStatus(202)
+            ->assertJsonPath('data.status', 'pending_guardian_approval')
+            ->assertJsonPath('data.approval_id', $firstApprovalId);
+
+        $this->assertSame(
+            1,
+            \App\Domain\Account\Models\MinorSpendApproval::query()
+                ->where('minor_account_uuid', $senderAccount->uuid)
+                ->where('status', 'pending')
+                ->count(),
+        );
+    }
+
+    #[Test]
+    public function test_minor_approval_request_applies_trust_step_up_before_creating_pending_approval(): void
+    {
+        config([
+            'maphapay_migration.enable_send_money' => true,
+            'mobile.attestation.enabled' => false,
+        ]);
+
+        $guardianAccount = Account::factory()->create([
+            'frozen' => false,
+        ]);
+
+        $senderAccount = Account::query()
+            ->where('user_uuid', $this->sender->uuid)
+            ->firstOrFail();
+
+        $senderAccount->forceFill([
+            'type' => 'minor',
+            'permission_level' => 3,
+            'parent_account_id' => $guardianAccount->uuid,
+        ])->save();
+
+        Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
+
+        $response = $this->postJson('/api/send-money/store', [
+            'user' => $this->recipient->email,
+            'amount' => '150.00',
+            'verification_type' => 'pin',
+        ]);
+
+        $response->assertStatus(428)
+            ->assertJsonPath('error.code', 'TRUST_POLICY_STEP_UP');
+
+        $this->assertSame(
+            0,
+            \App\Domain\Account\Models\MinorSpendApproval::query()
+                ->where('minor_account_uuid', $senderAccount->uuid)
+                ->count(),
+        );
     }
 
     #[Test]
@@ -266,6 +376,7 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
             'user'              => $this->recipient->email,
             'amount'            => '7.00',
             'verification_type' => 'pin',
+            'attestation'       => 'trusted-proof',
         ]);
         $initResponse->assertOk();
         $trx = (string) $initResponse->json('data.trx');

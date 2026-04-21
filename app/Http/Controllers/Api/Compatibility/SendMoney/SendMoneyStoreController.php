@@ -15,6 +15,8 @@ use App\Domain\Mobile\Services\HighRiskActionTrustPolicy;
 use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Domain\Payment\Services\PaymentLinkService;
 use App\Domain\Shared\Money\MoneyConverter;
+use App\Domain\Shared\OperationRecord\Exceptions\OperationPayloadMismatchException;
+use App\Domain\Shared\OperationRecord\OperationRecordService;
 use App\Http\Controllers\Controller;
 use App\Models\MoneyRequest;
 use App\Models\User;
@@ -40,12 +42,15 @@ use Throwable;
  */
 class SendMoneyStoreController extends Controller
 {
+    private const MINOR_SPEND_APPROVAL_OPERATION = 'minor_spend_approval';
+
     public function __construct(
         private readonly AuthorizedTransactionManager $authorizedTransactionManager,
         private readonly MoneyMovementVerificationPolicyResolver $verificationPolicyResolver,
         private readonly MaphaPayMoneyMovementTelemetry $telemetry,
         private readonly HighRiskActionTrustPolicy $trustPolicy,
         private readonly PaymentLinkService $paymentLinkService,
+        private readonly OperationRecordService $operationRecordService,
     ) {}
 
     public function __invoke(Request $request): JsonResponse
@@ -161,6 +166,8 @@ class SendMoneyStoreController extends Controller
             ]);
         }
 
+        $trust = null;
+
         // ── Minor account spending enforcement ──────────────────────────────
         if ($fromAccount->type === 'minor') {
             $merchantCategory = isset($validated['merchant_category'])
@@ -190,6 +197,34 @@ class SendMoneyStoreController extends Controller
             $threshold = ValidateMinorAccountPermission::approvalThresholdFor($permissionLevel);
 
             if ($threshold !== null && (float) $normalizedAmount > $threshold) {
+                $trust = $this->trustPolicy->evaluate($authUser, $request, 'send_money');
+
+                if (($trust['decision'] ?? 'allow') === 'deny') {
+                    return response()->json([
+                        'success' => false,
+                        'error' => [
+                            'code' => 'TRUST_POLICY_DENY',
+                            'message' => 'Request denied by mobile trust policy.',
+                            'trust_decision' => $trust['decision'] ?? 'deny',
+                            'trust_reason' => $trust['reason'] ?? 'policy',
+                            'trust_record_id' => $trust['record_id'] ?? null,
+                        ],
+                    ], 403);
+                }
+
+                if (in_array(($trust['decision'] ?? ''), ['step_up', 'degrade'], true)) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => [
+                            'code' => 'TRUST_POLICY_STEP_UP',
+                            'message' => 'Additional verification is required by mobile trust policy.',
+                            'trust_decision' => $trust['decision'],
+                            'trust_reason' => $trust['reason'] ?? 'policy',
+                            'trust_record_id' => $trust['record_id'] ?? null,
+                        ],
+                    ], 428);
+                }
+
                 // Find the primary guardian's account UUID
                 $guardianAccountUuid = null;
                 try {
@@ -205,29 +240,40 @@ class SendMoneyStoreController extends Controller
                 }
 
                 $guardianAccountUuid = $guardianAccountUuid ?? (string) $fromAccount->parent_account_id;
-
-                $approval = MinorSpendApproval::create([
-                    'minor_account_uuid'    => $fromAccount->uuid,
+                $approvalPayload = [
+                    'minor_account_uuid' => $fromAccount->uuid,
                     'guardian_account_uuid' => $guardianAccountUuid,
-                    'from_account_uuid'     => $fromAccount->uuid,
-                    'to_account_uuid'       => $toAccount->uuid,
-                    'amount'                => $normalizedAmount,
-                    'asset_code'            => $asset->code,
-                    'note'                  => $validated['note'] ?? null,
-                    'merchant_category'     => $merchantCategory,
-                    'status'                => 'pending',
-                    'expires_at'            => now()->addHours(24),
-                ]);
+                    'from_account_uuid' => $fromAccount->uuid,
+                    'to_account_uuid' => $toAccount->uuid,
+                    'amount' => $normalizedAmount,
+                    'asset_code' => $asset->code,
+                    'note' => $validated['note'] ?? null,
+                    'merchant_category' => $merchantCategory,
+                ];
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'This transaction requires guardian approval.',
-                    'data'    => [
-                        'approval_id' => $approval->id,
-                        'status'      => 'pending_guardian_approval',
-                        'expires_at'  => $approval->expires_at->toISOString(),
-                    ],
-                ], 202);
+                try {
+                    $approvalResponse = $idempotencyKey === ''
+                        ? $this->createMinorApprovalResponse($approvalPayload)
+                        : $this->operationRecordService->guardAndRun(
+                            userId: (int) $authUser->getAuthIdentifier(),
+                            type: self::MINOR_SPEND_APPROVAL_OPERATION,
+                            key: $idempotencyKey,
+                            payloadHash: $this->minorApprovalPayloadHash($approvalPayload),
+                            fn: fn (): array => $this->createMinorApprovalResponse($approvalPayload),
+                        );
+                } catch (OperationPayloadMismatchException) {
+                    return response()->json([
+                        'error' => 'Idempotency key already used',
+                        'message' => 'The provided idempotency key has already been used with different request parameters',
+                    ], 409);
+                } catch (RuntimeException $exception) {
+                    return response()->json([
+                        'error' => 'Request in progress',
+                        'message' => $exception->getMessage(),
+                    ], 409);
+                }
+
+                return response()->json($approvalResponse, 202);
             }
         }
         // ────────────────────────────────────────────────────────────────────
@@ -280,7 +326,7 @@ class SendMoneyStoreController extends Controller
             return response()->json($this->sendMoneyReplayPayload($replayedTxn, $validated));
         }
 
-        $trust = $this->trustPolicy->evaluate($authUser, $request, 'send_money');
+        $trust ??= $this->trustPolicy->evaluate($authUser, $request, 'send_money');
 
         if (($trust['decision'] ?? 'allow') === 'deny') {
             return response()->json([
@@ -572,5 +618,43 @@ class SendMoneyStoreController extends Controller
                 'code_sent_message' => $codeSentMessage,
             ],
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $approvalPayload
+     * @return array<string, mixed>
+     */
+    private function createMinorApprovalResponse(array $approvalPayload): array
+    {
+        $approval = MinorSpendApproval::create([
+            'minor_account_uuid' => $approvalPayload['minor_account_uuid'],
+            'guardian_account_uuid' => $approvalPayload['guardian_account_uuid'],
+            'from_account_uuid' => $approvalPayload['from_account_uuid'],
+            'to_account_uuid' => $approvalPayload['to_account_uuid'],
+            'amount' => $approvalPayload['amount'],
+            'asset_code' => $approvalPayload['asset_code'],
+            'note' => $approvalPayload['note'],
+            'merchant_category' => $approvalPayload['merchant_category'],
+            'status' => 'pending',
+            'expires_at' => now()->addHours(24),
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'This transaction requires guardian approval.',
+            'data' => [
+                'approval_id' => $approval->id,
+                'status' => 'pending_guardian_approval',
+                'expires_at' => $approval->expires_at->toISOString(),
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $approvalPayload
+     */
+    private function minorApprovalPayloadHash(array $approvalPayload): string
+    {
+        return hash('sha256', (string) json_encode($approvalPayload));
     }
 }
