@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\CustodianController;
 use App\Http\Controllers\Api\MinorAccountController;
 use App\Http\Controllers\Api\MinorChoreController;
 use App\Http\Controllers\Api\MinorPointsController;
+use App\Http\Controllers\Api\MinorRedemptionOrdersController;
+use App\Http\Controllers\Api\MinorRewardsCatalogController;
 use App\Http\Controllers\Api\MinorSpendApprovalController;
 use App\Http\Controllers\Api\SubProductController;
 use App\Http\Controllers\Api\TransactionController;
@@ -44,8 +46,14 @@ Route::middleware(['auth:sanctum', 'account.context'])->group(function () {
     Route::get('/accounts/minor/{uuid}/points', [MinorPointsController::class, 'balance'])->middleware(['api.rate_limit:query', 'scope:read']);
     Route::get('/accounts/minor/{uuid}/points/history', [MinorPointsController::class, 'history'])->middleware(['api.rate_limit:query', 'scope:read']);
     Route::get('/accounts/minor/{uuid}/rewards', [MinorPointsController::class, 'catalog'])->middleware(['api.rate_limit:query', 'scope:read']);
+    Route::get('/accounts/minor/{uuid}/rewards/catalog', [MinorRewardsCatalogController::class, 'index'])->middleware(['api.rate_limit:query', 'scope:read']);
+    Route::get('/accounts/minor/{uuid}/rewards/{rewardId}', [MinorRewardsCatalogController::class, 'show'])->middleware(['api.rate_limit:query', 'scope:read']);
     Route::post('/accounts/minor/{uuid}/rewards/{rewardId}/redeem', [MinorPointsController::class, 'redeem'])->middleware(['api.rate_limit:mutation', 'scope:write']);
     Route::get('/accounts/minor/{uuid}/rewards/redemptions', [MinorPointsController::class, 'redemptions'])->middleware(['api.rate_limit:query', 'scope:read']);
+    Route::post('/accounts/minor/{uuid}/redemptions/submit', [MinorRedemptionOrdersController::class, 'submit'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+    Route::get('/accounts/minor/{uuid}/redemptions', [MinorRedemptionOrdersController::class, 'index'])->middleware(['api.rate_limit:query', 'scope:read']);
+    Route::post('/accounts/minor/{uuid}/redemptions/{id}/approve', [MinorRedemptionOrdersController::class, 'approve'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+    Route::post('/accounts/minor/{uuid}/redemptions/{id}/decline', [MinorRedemptionOrdersController::class, 'decline'])->middleware(['api.rate_limit:mutation', 'scope:write']);
 
     // Minor accounts — Chores (Phase 4)
     Route::get('/accounts/minor/{uuid}/chores', [MinorChoreController::class, 'index'])->middleware(['api.rate_limit:query', 'scope:read']);

@@ -91,6 +91,13 @@ Recommended fix direction:
 - Define one canonical redemption/order model that extends the existing UUID-based reward system.
 - Rebuild phase 8 backend on top of the real minor account and points ledger model.
 
+Replacement design note for phase 8 rebuild:
+- Treat the halted worktree as reference material only. It is not mergeable source of truth.
+- Phase 8 must extend the existing tenant `Account` minor-account model and the existing UUID-based `MinorReward`, `MinorRewardRedemption`, and `MinorPointsLedger` records.
+- Do not introduce `owner_id`, `points_balance`, or a second integer-only minor-account identity model.
+- Approval, decline, catalog, and order APIs must be implemented against the stabilized UUID contract already used by phases 1-7.
+- Any new redemption workflow must preserve ledger-linked deductions and remain compatible with the existing audit trail model.
+
 #### 1. Minor account ownership model is internally contradictory
 
 Repos:
