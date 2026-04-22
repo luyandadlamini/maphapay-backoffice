@@ -120,13 +120,17 @@ class MinorRewardsCatalogControllerTest extends BaseTestCase
 
         $response->assertOk()
             ->assertJsonPath('data.minor_account_uuid', $this->minorAccount->uuid)
-            ->assertJsonPath('data.points_balance', 450)
-            ->assertJsonPath('data.rewards.0.id', $this->reward->id)
-            ->assertJsonPath('data.rewards.0.price_points', 300)
-            ->assertJsonPath('data.rewards.0.requires_approval', true)
-            ->assertJsonPath('data.rewards.0.can_redeem', true)
-            ->assertJsonPath('data.rewards.0.is_affordable', true)
-            ->assertJsonPath('data.rewards.0.stock_remaining', 4);
+            ->assertJsonPath('data.points_balance', 450);
+
+        $rewardPayload = collect($response->json('data.rewards'))
+            ->firstWhere('id', $this->reward->id);
+
+        self::assertNotNull($rewardPayload);
+        self::assertSame(300, $rewardPayload['price_points'] ?? null);
+        self::assertTrue($rewardPayload['requires_approval'] ?? false);
+        self::assertTrue($rewardPayload['can_redeem'] ?? false);
+        self::assertTrue($rewardPayload['is_affordable'] ?? false);
+        self::assertSame(4, $rewardPayload['stock_remaining'] ?? null);
     }
 
     #[Test]
