@@ -41,7 +41,7 @@ class BankTransferService
      */
     public function initiate(array $params): array
     {
-        $transferId = 'bt_' . Str::uuid()->toString();
+        $transferId = Str::uuid()->toString();
         $reference = $params['reference'] ?? strtoupper(Str::random(12));
 
         $transfer = [

@@ -105,11 +105,16 @@ class CreateSocialThreadTablesMigrationTest extends TestCase
 
     private function dropSocialThreadTables(): void
     {
+        Schema::disableForeignKeyConstraints();
+        Schema::dropIfExists('group_pocket_contributions');
+        Schema::dropIfExists('group_pocket_withdrawal_requests');
+        Schema::dropIfExists('group_pockets');
         Schema::dropIfExists('bill_split_participants');
         Schema::dropIfExists('bill_splits');
         Schema::dropIfExists('message_reads');
         Schema::dropIfExists('messages');
         Schema::dropIfExists('thread_participants');
         Schema::dropIfExists('threads');
+        Schema::enableForeignKeyConstraints();
     }
 }

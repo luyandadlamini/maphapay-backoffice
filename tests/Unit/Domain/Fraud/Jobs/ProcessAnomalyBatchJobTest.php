@@ -10,6 +10,7 @@ use App\Domain\Fraud\Jobs\ProcessAnomalyBatchJob;
 use App\Domain\Fraud\Services\AnomalyDetectionOrchestrator;
 use App\Models\User;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
@@ -129,7 +130,10 @@ class ProcessAnomalyBatchJobTest extends TestCase
     #[Test]
     public function command_reports_zero_transactions(): void
     {
-        // No transactions in DB within range
+        DB::table('transactions')->update([
+            'created_at' => now()->subDays(2),
+        ]);
+
         $this->artisan('fraud:scan-anomalies', ['--hours' => 1])
             ->expectsOutput('No transactions found in the specified time range.')
             ->assertExitCode(0);

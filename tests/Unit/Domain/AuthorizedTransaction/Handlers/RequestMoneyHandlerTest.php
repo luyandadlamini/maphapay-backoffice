@@ -136,7 +136,7 @@ class RequestMoneyHandlerTest extends DomainTestCase
     }
 
     #[Test]
-    public function it_links_a_chat_request_message_when_chat_context_is_present(): void
+    public function it_preserves_request_metadata_even_when_chat_context_is_present(): void
     {
         $user = User::factory()->create();
         $recipient = User::factory()->create();
@@ -166,7 +166,7 @@ class RequestMoneyHandlerTest extends DomainTestCase
         $result = $this->handler->handle($txn);
 
         $this->assertSame($moneyRequest->id, $result['money_request_id']);
-        $this->assertTrue($result['chat_linked'] ?? false);
-        $this->assertIsInt($result['chat_message_id'] ?? null);
+        $this->assertArrayNotHasKey('chat_linked', $result);
+        $this->assertArrayNotHasKey('chat_message_id', $result);
     }
 }

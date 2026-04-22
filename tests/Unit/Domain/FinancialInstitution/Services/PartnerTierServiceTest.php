@@ -29,9 +29,19 @@ class PartnerTierServiceTest extends TestCase
 
     private function createMockPartner(array $attributes = []): FinancialInstitutionPartner
     {
-        $mock = Mockery::mock(FinancialInstitutionPartner::class)->makePartial();
-        $mock->shouldReceive('update')->andReturn(true);
-        $mock->shouldReceive('refresh')->andReturnSelf();
+        $mock = new class () extends FinancialInstitutionPartner {
+            public function update(array $attributes = [], array $options = []): bool
+            {
+                $this->forceFill($attributes);
+
+                return true;
+            }
+
+            public function refresh(): static
+            {
+                return $this;
+            }
+        };
 
         // Set default attributes
         $defaults = [

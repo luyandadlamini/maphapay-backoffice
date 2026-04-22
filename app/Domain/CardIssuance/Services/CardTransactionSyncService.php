@@ -7,6 +7,8 @@ namespace App\Domain\CardIssuance\Services;
 use App\Domain\CardIssuance\Contracts\CardIssuerInterface;
 use App\Domain\CardIssuance\Models\Card;
 use App\Domain\CardIssuance\ValueObjects\CardTransaction;
+use Carbon\CarbonImmutable;
+use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -117,8 +119,10 @@ class CardTransactionSyncService
                 'amount_cents'      => (int) ($txData['amount'] ?? 0),
                 'currency'          => (string) ($txData['currency'] ?? 'USD'),
                 'status'            => $this->mapTransactionStatus((string) ($txData['status'] ?? 'pending')),
-                'transacted_at'     => $txData['created_at'] ?? $txData['timestamp'] ?? now(),
-                'updated_at'        => now(),
+                'transacted_at'     => $this->normalizeTransactionTimestamp(
+                    $txData['created_at'] ?? $txData['timestamp'] ?? now()
+                ),
+                'updated_at' => now(),
             ]
         );
 
@@ -221,5 +225,22 @@ class CardTransactionSyncService
             'reversed', 'refunded' => 'reversed',
             default => 'pending',
         };
+    }
+
+    private function normalizeTransactionTimestamp(mixed $timestamp): string
+    {
+        if ($timestamp instanceof DateTimeInterface) {
+            return CarbonImmutable::instance($timestamp)->toDateTimeString();
+        }
+
+        if (is_numeric($timestamp)) {
+            return CarbonImmutable::createFromTimestamp((int) $timestamp)->toDateTimeString();
+        }
+
+        if (is_string($timestamp) && $timestamp !== '') {
+            return CarbonImmutable::parse($timestamp)->toDateTimeString();
+        }
+
+        return now()->toDateTimeString();
     }
 }

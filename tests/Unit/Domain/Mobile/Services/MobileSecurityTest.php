@@ -406,17 +406,23 @@ class MobileSecurityTest extends TestCase
      */
     protected function generateTestPublicKey(): string
     {
-        $config = [
+        $key = @openssl_pkey_new([
             'private_key_type' => OPENSSL_KEYTYPE_EC,
             'curve_name'       => 'prime256v1',
-        ];
+        ]);
 
-        $key = openssl_pkey_new($config);
+        if ($key === false) {
+            $key = @openssl_pkey_new([
+                'private_key_type' => OPENSSL_KEYTYPE_RSA,
+                'private_key_bits' => 2048,
+            ]);
+        }
+
         if ($key === false) {
             // Fallback for testing environments without EC support
             return '-----BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEtest1234567890abcdefghijklmn
-opqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890test==
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEkKss5pWZ71nQqAbew0HSsHg/NiGW
+NY+6i0TIvCi+QdnFRmVFlzwk3/62l4ReXiLkbEBciY3b6sOAyZLa4UeqMg==
 -----END PUBLIC KEY-----';
         }
 

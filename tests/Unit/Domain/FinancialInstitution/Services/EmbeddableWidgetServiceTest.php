@@ -8,6 +8,7 @@ use App\Domain\FinancialInstitution\Models\FinancialInstitutionPartner;
 use App\Domain\FinancialInstitution\Models\PartnerBranding;
 use App\Domain\FinancialInstitution\Services\EmbeddableWidgetService;
 use App\Domain\FinancialInstitution\Services\PartnerTierService;
+use Illuminate\Support\Facades\Config;
 use Mockery;
 use Tests\TestCase;
 
@@ -18,6 +19,36 @@ class EmbeddableWidgetServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Config::set('baas.widgets.enabled', true);
+        Config::set('baas.widgets.sandbox_domain', 'sandbox.finaegis.com');
+        Config::set('baas.widgets.production_domain', 'api.finaegis.com');
+        Config::set('baas.widgets.types', [
+            'payment' => [
+                'name'        => 'Payment Form',
+                'description' => 'Embeddable payment form widget',
+                'js_file'     => 'finaegis-payment.js',
+            ],
+            'checkout' => [
+                'name'        => 'Checkout Experience',
+                'description' => 'Full checkout flow widget',
+                'js_file'     => 'finaegis-checkout.js',
+            ],
+            'balance' => [
+                'name'        => 'Balance Display',
+                'description' => 'Account balance display widget',
+                'js_file'     => 'finaegis-balance.js',
+            ],
+            'transfer' => [
+                'name'        => 'Transfer Form',
+                'description' => 'Money transfer widget',
+                'js_file'     => 'finaegis-transfer.js',
+            ],
+            'account' => [
+                'name'        => 'Account Summary',
+                'description' => 'Account summary widget',
+                'js_file'     => 'finaegis-account.js',
+            ],
+        ]);
         $this->service = new EmbeddableWidgetService(new PartnerTierService());
     }
 

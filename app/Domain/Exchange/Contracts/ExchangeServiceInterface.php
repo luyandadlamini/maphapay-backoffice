@@ -10,7 +10,7 @@ interface ExchangeServiceInterface
      * Place a new order on the exchange.
      */
     public function placeOrder(
-        string $accountId,
+        string|int $accountId,
         string $type,
         string $orderType,
         string $baseCurrency,

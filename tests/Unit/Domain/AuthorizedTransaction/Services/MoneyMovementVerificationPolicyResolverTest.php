@@ -8,7 +8,6 @@ use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\AuthorizedTransaction\Services\MoneyMovementVerificationPolicyResolver;
 use App\Models\User;
-use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\DomainTestCase;
 
@@ -194,8 +193,8 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
     {
         $user = User::factory()->create([
             'transaction_pin' => null,
-            'kyc_level'       => 'standard',
-            'risk_rating'     => 'low',
+            'kyc_level'       => 'enhanced',
+            'risk_rating'     => 'medium',
         ]);
         $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
 
@@ -409,7 +408,7 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
             AuthorizedTransaction::query()->create([
                 'user_id' => $user->id,
                 'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
-                'trx'     => 'TRX-AMOUNT-' . $index . '-' . Str::upper((string) Str::ulid()),
+                'trx'     => sprintf('TRX-AMT-%02d', $index),
                 'payload' => [
                     'amount'          => number_format($historicalAmount, 2, '.', ''),
                     'asset_code'      => 'SZL',
@@ -449,7 +448,7 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
             AuthorizedTransaction::query()->create([
                 'user_id' => $user->id,
                 'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
-                'trx'     => 'TRX-CHURN-' . $index . '-' . Str::upper((string) Str::ulid()),
+                'trx'     => sprintf('TRX-CHN-%02d', $index),
                 'payload' => [
                     'amount'          => '10.00',
                     'asset_code'      => 'SZL',

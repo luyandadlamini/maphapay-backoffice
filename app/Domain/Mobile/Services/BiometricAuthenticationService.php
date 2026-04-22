@@ -234,7 +234,7 @@ class BiometricAuthenticationService
                     Log::error('User not found for device', ['device_id' => $device->id]);
                     throw new RuntimeException('User not found for device');
                 }
-                $plainToken = $this->createTokenWithScopes($user, 'mobile-biometric');
+                $tokenResult = $this->createTokenWithScopes($user, 'mobile-biometric');
 
                 // Update device activity
                 $device->update(['last_active_at' => now()]);
@@ -246,7 +246,7 @@ class BiometricAuthenticationService
                 ]);
 
                 return [
-                    'token'      => $plainToken,
+                    'token'      => $tokenResult['plain_text_token'],
                     'expires_at' => $session->expires_at,
                     'session_id' => $session->id,
                 ];

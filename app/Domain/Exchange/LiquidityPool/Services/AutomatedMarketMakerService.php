@@ -6,10 +6,11 @@ namespace App\Domain\Exchange\LiquidityPool\Services;
 
 use App\Domain\Exchange\Contracts\PriceAggregatorInterface;
 use App\Domain\Exchange\Projections\LiquidityPool;
+use App\Domain\Exchange\Projections\Order;
 use App\Domain\Exchange\Projections\OrderBook;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
-use DB;
+use Illuminate\Support\Facades\DB;
 
 class AutomatedMarketMakerService
 {
@@ -337,8 +338,8 @@ class AutomatedMarketMakerService
     {
         // Get recent AMM orders
         $recentOrders = DB::table('orders')
-            ->where('pool_id', $pool->pool_id)
-            ->where('source', 'amm')
+            ->where('metadata->pool_id', $pool->pool_id)
+            ->where('metadata->source', 'amm')
             ->where('created_at', '>=', now()->subHours(24))
             ->get();
 

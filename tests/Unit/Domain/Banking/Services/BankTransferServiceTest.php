@@ -28,7 +28,7 @@ it('initiates a SEPA instant transfer', function (): void {
         'description'     => 'Rent payment',
     ]);
 
-    expect($result['transfer_id'])->toStartWith('bt_');
+    expect($result['transfer_id'])->toHaveLength(36);
     expect($result['status'])->toBe('initiated');
     expect($result['reference'])->toBeString()->not->toBeEmpty();
     expect($result['estimated_completion'])->toBeString();
@@ -45,7 +45,7 @@ it('initiates a SWIFT transfer for non-EUR', function (): void {
         'currency'        => 'USD',
     ]);
 
-    expect($result['transfer_id'])->toStartWith('bt_');
+    expect($result['transfer_id'])->toHaveLength(36);
     expect($result['status'])->toBe('initiated');
 });
 
@@ -70,7 +70,7 @@ it('gets transfer status from cache', function (): void {
 });
 
 it('returns not_found for unknown transfer', function (): void {
-    $status = $this->service->getStatus('bt_nonexistent');
+    $status = $this->service->getStatus('00000000-0000-0000-0000-000000000000');
 
     expect($status['status'])->toBe('not_found');
 });

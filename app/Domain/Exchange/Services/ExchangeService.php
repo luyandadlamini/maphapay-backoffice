@@ -26,7 +26,7 @@ class ExchangeService implements ExchangeServiceInterface
     }
 
     public function placeOrder(
-        string $accountId,
+        string|int $accountId,
         string $type,
         string $orderType,
         string $baseCurrency,
@@ -79,7 +79,7 @@ class ExchangeService implements ExchangeServiceInterface
         $order = Order::retrieve($orderId);
         $order->placeOrder(
             orderId: $orderId,
-            accountId: $accountId,
+            accountId: (string) $accountId,
             type: $type,
             orderType: $orderType,
             baseCurrency: $baseCurrency,
@@ -185,11 +185,11 @@ class ExchangeService implements ExchangeServiceInterface
             'spread'                => $orderBook->spread,
             'spread_percentage'     => $orderBook->spread_percentage,
             'mid_price'             => $orderBook->mid_price,
-            'last_price'            => $orderBook->last_price,
-            'volume_24h'            => $orderBook->volume_24h,
-            'high_24h'              => $orderBook->high_24h,
-            'low_24h'               => $orderBook->low_24h,
-            'change_24h'            => $orderBook->change_24h,
+            'last_price'            => $this->normalizeDecimalString($orderBook->last_price),
+            'volume_24h'            => $this->normalizeDecimalString($orderBook->volume_24h),
+            'high_24h'              => $this->normalizeDecimalString($orderBook->high_24h),
+            'low_24h'               => $this->normalizeDecimalString($orderBook->low_24h),
+            'change_24h'            => $this->normalizeDecimalString($orderBook->change_24h),
             'change_24h_percentage' => $orderBook->change_24h_percentage,
             'updated_at'            => $orderBook->updated_at->toIso8601String(),
         ];
@@ -246,6 +246,17 @@ class ExchangeService implements ExchangeServiceInterface
     private function getOrderBookId(string $baseCurrency, string $quoteCurrency): string
     {
         return "orderbook_{$baseCurrency}_{$quoteCurrency}";
+    }
+
+    private function normalizeDecimalString(null|string|int|float $value): null|string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = rtrim(rtrim((string) $value, '0'), '.');
+
+        return $normalized === '' ? '0' : $normalized;
     }
 
     /**

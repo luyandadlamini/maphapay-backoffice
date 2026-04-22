@@ -18,12 +18,18 @@ uses(Tests\TestCase::class);
  */
 function generatePasskeyKeyPair(): array
 {
-    $config = [
+    $key = @openssl_pkey_new([
         'private_key_type' => OPENSSL_KEYTYPE_EC,
         'curve_name'       => 'prime256v1',
-    ];
+    ]);
 
-    $key = openssl_pkey_new($config);
+    if ($key === false) {
+        $key = @openssl_pkey_new([
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+            'private_key_bits' => 2048,
+        ]);
+    }
+
     assert($key !== false, 'OpenSSL EC key generation failed');
 
     $details = openssl_pkey_get_details($key);

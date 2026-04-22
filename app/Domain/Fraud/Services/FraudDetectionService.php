@@ -478,7 +478,8 @@ class FraudDetectionService
                     }
                 )
                     ->whereDate('created_at', today())
-                    ->sum('amount');
+                    ->get()
+                    ->sum(fn ($transaction) => (float) ($transaction->event_properties['amount'] ?? 0));
             }
         );
     }
@@ -528,10 +529,17 @@ class FraudDetectionService
             }
         )
             ->where('created_at', '>=', now()->subDays($days))
-            ->select('id', 'amount', 'currency', 'type', 'status', 'created_at')
             ->orderBy('created_at', 'desc')
             ->limit(100)
             ->get()
+            ->map(fn ($transaction) => [
+                'id'         => $transaction->id,
+                'amount'     => $transaction->event_properties['amount'] ?? 0,
+                'currency'   => $transaction->event_properties['assetCode'] ?? 'USD',
+                'type'       => $transaction->meta_data['type'] ?? 'unknown',
+                'status'     => $transaction->meta_data['status'] ?? 'completed',
+                'created_at' => $transaction->created_at,
+            ])
             ->toArray();
     }
 
