@@ -56,6 +56,26 @@ These are ground-truth constraints discovered while executing the first two stab
 - Do not run the full tenant migration directory into the shared test DB for minor-account controller tests. That can collide with foundational tenant tables such as `accounts`.
 - For targeted minor rewards/chore controller tests, run only the exact tenant migration files required by that suite.
 
+### Reward And Chore Mutation Rules
+
+- A valid red phase for reward/chore concurrency does not require true parallel workers. Two stale model snapshots processed sequentially are enough to prove the bug if service validation is happening outside a transaction.
+- `MinorRewardService::redeem()` must lock and re-read the reward row before validating `is_active` and `stock`. Do not trust a preloaded `MinorReward` instance in repeat-call scenarios.
+- `MinorChoreService::approve()` and `reject()` must lock and re-read the completion row before checking `status`. Stale `pending_review` snapshots can otherwise award points or mutate review state twice.
+- Ledger writes for rewards and chores must be linked to a stable business reference on creation. Do not repair linkage later by querying for the "latest null reference" ledger row.
+- `MinorPointsService` must treat `(minor_account_uuid, source, reference_id)` as the repeat-call guard for these flows. Duplicate reward deductions or chore awards should resolve to the existing ledger row instead of creating a second one.
+
+### Audit Hook Rules
+
+- Minor lifecycle notifications in this area are not optional UI sugar. They are durable audit traces and should persist through an existing backend audit mechanism.
+- Reuse `account_audit_logs` for minor reward/chore lifecycle traces instead of leaving debug-only logging in place.
+- Audit metadata must include the concrete lifecycle target id and enough business context for later investigation, at minimum the child account, the lifecycle action, and the related reward/chore/completion identifiers.
+
+### Cross-Connection Test Rules
+
+- `tests/Feature/MinorAccountPhase4IntegrationTest.php` must not wrap both `mysql` and `central` in the same transactional harness. Cross-connection FK visibility can deadlock fixture setup instead of producing a clean red/green signal.
+- For central-backed membership fixtures in that suite, create the related `User` records on the `central` connection as well. Mixing default-connection users with central membership writes can block on FK checks.
+- If a phase 4 test inserts `minor_rewards` directly, include the currently-required reward columns from the live schema, including `price_points` when present. Older phase 4 fixture shapes may be stale relative to the active tenant schema.
+
 ### Drift Warnings
 
 - Comments and older tests in this area may describe behavior that is no longer canonical. Migrations and live model behavior take precedence.
@@ -237,7 +257,7 @@ Rules:
 Expected:
 - PASS without any test-time ownership mutation
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/Http/Controllers/Api/MinorAccountController.php \
@@ -306,7 +326,7 @@ Rules:
 Expected:
 - PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/Domain/Account/Services/MinorAccountAccessService.php \
@@ -398,13 +418,13 @@ git commit -m "fix(minor-accounts): make spend approvals replay-safe and trust-a
 - Test: `tests/Feature/Http/Controllers/Api/MinorChoreTest.php`
 - Create: `tests/Feature/Http/Controllers/Api/MinorRewardConcurrencyTest.php`
 
-- [ ] **Step 1: Write failing tests for duplicate redemption and duplicate chore approval**
+- [x] **Step 1: Write failing tests for duplicate redemption and duplicate chore approval**
 
 Prove:
 - a reward cannot be oversold under concurrent or repeated redemption attempts
 - a chore completion cannot be approved twice for duplicate points
 
-- [ ] **Step 2: Run the targeted tests**
+- [x] **Step 2: Run the targeted tests**
 
 Run:
 
@@ -417,14 +437,14 @@ php artisan test tests/Feature/Http/Controllers/Api/MinorRewardTest.php \
 Expected:
 - FAIL because current services have no transactions or repeat-call protection
 
-- [ ] **Step 3: Add transactions, locking, and repeat-call guards**
+- [x] **Step 3: Add transactions, locking, and repeat-call guards**
 
 Rules:
 - deduction + redemption creation + stock decrement is atomic
 - review update + points award is atomic
 - refund/deduction actions are ledger-linked and repeat-safe
 
-- [ ] **Step 4: Re-run the targeted tests**
+- [x] **Step 4: Re-run the targeted tests**
 
 Expected:
 - PASS
@@ -451,9 +471,9 @@ git commit -m "fix(minor-accounts): make rewards and chores transactional"
 - Modify: `app/Domain/Account/Services/MinorChoreService.php`
 - Test: `tests/Feature/MinorAccountPhase4IntegrationTest.php`
 
-- [ ] **Step 1: Write failing tests that assert durable side effects for reward/chore lifecycle events**
+- [x] **Step 1: Write failing tests that assert durable side effects for reward/chore lifecycle events**
 
-- [ ] **Step 2: Run the targeted tests**
+- [x] **Step 2: Run the targeted tests**
 
 Run:
 
@@ -464,9 +484,9 @@ php artisan test tests/Feature/MinorAccountPhase4IntegrationTest.php
 Expected:
 - FAIL because notifications are debug logs only
 
-- [ ] **Step 3: Implement durable notification or audit-event persistence using existing app patterns**
+- [x] **Step 3: Implement durable notification or audit-event persistence using existing app patterns**
 
-- [ ] **Step 4: Re-run the targeted tests**
+- [x] **Step 4: Re-run the targeted tests**
 
 Expected:
 - PASS with persisted lifecycle traces

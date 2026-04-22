@@ -8,6 +8,7 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Services\AccountMembershipService;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Policies\AccountPolicy;
 use App\Rules\NoControlCharacters;
 use App\Rules\NoSqlInjection;
@@ -15,6 +16,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 class MinorAccountController extends Controller
@@ -58,7 +60,7 @@ class MinorAccountController extends Controller
         $tenantId = (string) $parentMembership->tenant_id;
 
         // Calculate age and validate (6-17 years old)
-        $dateOfBirth = Carbon::createFromFormat('Y-m-d', $validated['date_of_birth']);
+        $dateOfBirth = Carbon::parse((string) $validated['date_of_birth'])->startOfDay();
         $age = (int) floor($dateOfBirth->diffInYears(now(), true));
 
         if ($age < 6 || $age > 17) {
@@ -83,9 +85,14 @@ class MinorAccountController extends Controller
             $sanitizedName = (string) preg_replace('/data:/i', '', $sanitizedName);
             $sanitizedName = (string) preg_replace('/vbscript:/i', '', $sanitizedName);
             $sanitizedName = trim($sanitizedName);
+            $child = User::query()->create([
+                'name'     => $sanitizedName,
+                'email'    => null,
+                'password' => Str::password(32),
+            ]);
 
             $account = Account::create([
-                'user_uuid'         => $user->uuid,
+                'user_uuid'         => $child->uuid,
                 'parent_account_id' => $parentMembership->account_uuid,
                 'name'              => $sanitizedName,
                 'type'              => 'minor',

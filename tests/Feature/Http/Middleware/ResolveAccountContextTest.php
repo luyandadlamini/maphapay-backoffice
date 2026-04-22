@@ -147,7 +147,7 @@ class ResolveAccountContextTest extends BaseTestCase
         $child = User::factory()->create();
         $minorAccount = Account::factory()->create([
             'user_uuid'    => $child->uuid,
-            'account_type' => 'minor',
+            'type'         => 'minor',
         ]);
 
         AccountMembership::query()->create([
@@ -180,7 +180,7 @@ class ResolveAccountContextTest extends BaseTestCase
         $guardian = User::factory()->create();
         $minorAccount = Account::factory()->create([
             'user_uuid'    => $child->uuid,
-            'account_type' => 'minor',
+            'type'         => 'minor',
         ]);
 
         AccountMembership::query()->create([
@@ -207,6 +207,38 @@ class ResolveAccountContextTest extends BaseTestCase
             ]);
     }
 
+    public function test_does_not_treat_guardian_owned_minor_account_as_child_context(): void
+    {
+        [$guardian, $tenant] = $this->createUserAndTenant();
+        $minorAccount = Account::factory()->create([
+            'user_uuid'    => $guardian->uuid,
+            'type'         => 'minor',
+        ]);
+
+        AccountMembership::query()->create([
+            'user_uuid'    => $guardian->uuid,
+            'tenant_id'    => $tenant->id,
+            'account_uuid' => $minorAccount->uuid,
+            'account_type' => 'minor',
+            'role'         => 'guardian',
+            'status'       => 'active',
+            'joined_at'    => now(),
+        ]);
+
+        Sanctum::actingAs($guardian, ['*']);
+
+        $response = $this->withHeaders(['X-Account-Id' => $minorAccount->uuid])
+            ->getJson('/__test/account-context');
+
+        $response->assertOk()
+            ->assertJson([
+                'account_uuid' => $minorAccount->uuid,
+                'account_type' => 'minor',
+                'account_role' => 'guardian',
+                'tenant_id'    => $tenant->id,
+            ]);
+    }
+
     public function test_rejects_user_without_minor_account_access(): void
     {
         [$user, $tenant] = $this->createUserAndTenant();
@@ -214,7 +246,7 @@ class ResolveAccountContextTest extends BaseTestCase
         $child = User::factory()->create();
         $minorAccount = Account::factory()->create([
             'user_uuid'    => $child->uuid,
-            'account_type' => 'minor',
+            'type'         => 'minor',
         ]);
 
         AccountMembership::query()->create([

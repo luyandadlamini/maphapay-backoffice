@@ -46,20 +46,21 @@ When planning new features or modifying existing ones in the Admin panel:
 
 ## Local Money-Movement Test Harness
 
-Use the disposable local MySQL instance when the machine-wide daemon on `3306` is not usable:
+Use the dedicated local MySQL test database on the machine-wide daemon at `3306`:
 
 ```bash
 DB_CONNECTION=mysql \
 DB_HOST=127.0.0.1 \
-DB_PORT=3307 \
+DB_PORT=3306 \
 DB_DATABASE=maphapay_backoffice_test \
-DB_USERNAME=root \
-DB_PASSWORD='' \
+DB_USERNAME=maphapay_test \
+DB_PASSWORD='maphapay_test_password' \
 php -d max_execution_time=300 ./vendor/bin/pest <tests...>
 ```
 
 - `phpunit.xml` now uses `defaultTimeLimit="300"` because first-run migration bootstrap is heavy.
-- On the disposable MySQL instance, `max_execution_time` must be `0` or large DDL can abort during bootstrap.
+- One-time local repair/provisioning: `./scripts/reset-local-mysql-test-access.sh`
+- Daily verification/bootstrap: `./scripts/bootstrap-local-test-db.sh`
 
 ## Architecture
 

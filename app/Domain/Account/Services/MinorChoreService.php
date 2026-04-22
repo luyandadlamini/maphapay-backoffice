@@ -8,6 +8,7 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\MinorChore;
 use App\Domain\Account\Models\MinorChoreCompletion;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class MinorChoreService
@@ -28,23 +29,34 @@ class MinorChoreService
      */
     public function create(Account $guardianAccount, Account $minorAccount, array $data): MinorChore
     {
-        $chore = MinorChore::create([
-            'guardian_account_uuid' => $guardianAccount->uuid,
-            'minor_account_uuid'    => $minorAccount->uuid,
-            'title'                 => $data['title'],
-            'description'           => $data['description'] ?? null,
-            'payout_type'           => 'points',
-            'payout_points'         => (int) ($data['payout_points'] ?? 0),
-            'due_at'                => isset($data['due_at']) ? Carbon::parse($data['due_at']) : null,
-            'status'                => 'active',
-        ]);
+        /** @var MinorChore $chore */
+        $chore = DB::transaction(function () use ($guardianAccount, $minorAccount, $data): MinorChore {
+            $chore = MinorChore::query()->create([
+                'guardian_account_uuid' => $guardianAccount->uuid,
+                'minor_account_uuid'    => $minorAccount->uuid,
+                'title'                 => $data['title'],
+                'description'           => $data['description'] ?? null,
+                'payout_type'           => 'points',
+                'payout_points'         => (int) ($data['payout_points'] ?? 0),
+                'due_at'                => isset($data['due_at']) ? Carbon::parse($data['due_at']) : null,
+                'status'                => 'active',
+            ]);
 
-        // Notify child that a new chore has been assigned
-        $this->notifications->notify(
-            $minorAccount->uuid,
-            MinorNotificationService::TYPE_CHORE_ASSIGNED,
-            ['chore_id' => $chore->id, 'title' => $chore->title, 'payout_points' => $chore->payout_points]
-        );
+            $this->notifications->notify(
+                $minorAccount->uuid,
+                MinorNotificationService::TYPE_CHORE_ASSIGNED,
+                [
+                    'chore_id'      => $chore->id,
+                    'title'         => $chore->title,
+                    'payout_points' => $chore->payout_points,
+                ],
+                $guardianAccount->user_uuid,
+                'minor_chore',
+                (string) $chore->id,
+            );
+
+            return $chore;
+        });
 
         return $chore;
     }
@@ -95,46 +107,62 @@ class MinorChoreService
      */
     public function approve(MinorChoreCompletion $completion, Account $guardianAccount): void
     {
-        // Validate completion is pending review
-        if ($completion->status !== 'pending_review') {
-            throw ValidationException::withMessages([
-                'completion' => ['This completion has already been reviewed.'],
-            ]);
-        }
+        DB::transaction(function () use ($completion, $guardianAccount): void {
+            /** @var MinorChoreCompletion $lockedCompletion */
+            $lockedCompletion = MinorChoreCompletion::query()
+                ->with('chore')
+                ->lockForUpdate()
+                ->findOrFail($completion->id);
 
-        // Load the chore to access payout_points
-        $chore = $completion->chore;
-
-        // Update completion status and metadata
-        $completion->update([
-            'status'                   => 'approved',
-            'reviewed_by_account_uuid' => $guardianAccount->uuid,
-            'reviewed_at'              => now(),
-            'payout_processed_at'      => now(),
-        ]);
-
-        // Award points to the minor account if there are points to award
-        if ($chore->payout_points > 0) {
-            // Fetch the minor account by UUID to ensure it's loaded
-            $minorAccount = Account::where('uuid', $chore->minor_account_uuid)->first();
-
-            if ($minorAccount) {
-                $this->points->award(
-                    $minorAccount,
-                    $chore->payout_points,
-                    'chore',
-                    "Chore completed: {$chore->title}",
-                    $completion->id
-                );
+            if ($lockedCompletion->status !== 'pending_review') {
+                throw ValidationException::withMessages([
+                    'completion' => ['This completion has already been reviewed.'],
+                ]);
             }
-        }
 
-        // Notify child that chore was approved
-        $this->notifications->notify(
-            $chore->minor_account_uuid,
-            MinorNotificationService::TYPE_CHORE_APPROVED,
-            ['chore_id' => $chore->id, 'title' => $chore->title, 'payout_points' => $chore->payout_points]
-        );
+            $chore = $lockedCompletion->chore;
+
+            $lockedCompletion->update([
+                'status'                   => 'approved',
+                'reviewed_by_account_uuid' => $guardianAccount->uuid,
+                'reviewed_at'              => now(),
+                'payout_processed_at'      => now(),
+            ]);
+
+            if ($chore->payout_points > 0) {
+                $minorAccount = Account::query()
+                    ->where('uuid', $chore->minor_account_uuid)
+                    ->first();
+
+                if ($minorAccount !== null) {
+                    $this->points->award(
+                        $minorAccount,
+                        $chore->payout_points,
+                        'chore',
+                        "Chore completed: {$chore->title}",
+                        (string) $lockedCompletion->id,
+                        true,
+                    );
+                }
+            }
+
+            $this->notifications->notify(
+                $chore->minor_account_uuid,
+                MinorNotificationService::TYPE_CHORE_APPROVED,
+                [
+                    'chore_id'      => $chore->id,
+                    'title'         => $chore->title,
+                    'payout_points' => $chore->payout_points,
+                    'completion_id' => (string) $lockedCompletion->id,
+                ],
+                $guardianAccount->user_uuid,
+                'minor_chore_completion',
+                (string) $lockedCompletion->id,
+            );
+
+            $completion->forceFill($lockedCompletion->getAttributes());
+            $completion->syncOriginal();
+        });
     }
 
     /**
@@ -148,28 +176,41 @@ class MinorChoreService
      */
     public function reject(MinorChoreCompletion $completion, Account $guardianAccount, string $reason): void
     {
-        // Validate completion is pending review
-        if ($completion->status !== 'pending_review') {
-            throw ValidationException::withMessages([
-                'completion' => ['This completion has already been reviewed.'],
+        DB::transaction(function () use ($completion, $guardianAccount, $reason): void {
+            /** @var MinorChoreCompletion $lockedCompletion */
+            $lockedCompletion = MinorChoreCompletion::query()
+                ->with('chore')
+                ->lockForUpdate()
+                ->findOrFail($completion->id);
+
+            if ($lockedCompletion->status !== 'pending_review') {
+                throw ValidationException::withMessages([
+                    'completion' => ['This completion has already been reviewed.'],
+                ]);
+            }
+
+            $lockedCompletion->update([
+                'status'                   => 'rejected',
+                'reviewed_by_account_uuid' => $guardianAccount->uuid,
+                'reviewed_at'              => now(),
+                'rejection_reason'         => $reason,
             ]);
-        }
 
-        // Update completion status and metadata
-        $completion->update([
-            'status'                   => 'rejected',
-            'reviewed_by_account_uuid' => $guardianAccount->uuid,
-            'reviewed_at'              => now(),
-            'rejection_reason'         => $reason,
-        ]);
+            $this->notifications->notify(
+                $lockedCompletion->chore->minor_account_uuid,
+                MinorNotificationService::TYPE_CHORE_REJECTED,
+                [
+                    'chore_id'      => $lockedCompletion->chore_id,
+                    'reason'        => $reason,
+                    'completion_id' => (string) $lockedCompletion->id,
+                ],
+                $guardianAccount->user_uuid,
+                'minor_chore_completion',
+                (string) $lockedCompletion->id,
+            );
 
-        // Notify child that chore was rejected
-        $this->notifications->notify(
-            $completion->chore->minor_account_uuid,
-            MinorNotificationService::TYPE_CHORE_REJECTED,
-            ['chore_id' => $completion->chore_id, 'reason' => $reason]
-        );
-
-        // Note: Chore status remains 'active' so the child can re-submit
+            $completion->forceFill($lockedCompletion->getAttributes());
+            $completion->syncOriginal();
+        });
     }
 }

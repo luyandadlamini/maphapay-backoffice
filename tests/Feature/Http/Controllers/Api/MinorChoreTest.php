@@ -7,6 +7,9 @@ namespace Tests\Feature\Http\Controllers\Api;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Models\MinorChore;
+use App\Domain\Account\Models\MinorChoreCompletion;
+use App\Domain\Account\Models\MinorPointsLedger;
+use App\Domain\Account\Services\MinorChoreService;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -14,6 +17,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\CreatesApplication;
@@ -23,12 +27,19 @@ class MinorChoreTest extends BaseTestCase
     use CreatesApplication;
 
     private string $tenantId;
+
     private User $guardianUser;
+
     private User $coGuardianUser;
+
     private User $childUser;
+
     private User $strangerUser;
+
     private Account $guardianAccount;
+
     private Account $coGuardianAccount;
+
     private Account $minorAccount;
 
     protected function setUp(): void
@@ -46,6 +57,13 @@ class MinorChoreTest extends BaseTestCase
         if (! Schema::hasTable('minor_chore_completions')) {
             Artisan::call('migrate', [
                 '--path'  => 'database/migrations/tenant/2026_04_18_100004_create_minor_chore_completions_table.php',
+                '--force' => true,
+            ]);
+        }
+
+        if (! Schema::hasTable('minor_points_ledger')) {
+            Artisan::call('migrate', [
+                '--path'  => 'database/migrations/tenant/2026_04_18_100000_create_minor_points_ledger_table.php',
                 '--force' => true,
             ]);
         }
@@ -159,6 +177,47 @@ class MinorChoreTest extends BaseTestCase
 
         $this->getJson("/api/accounts/minor/{$this->minorAccount->uuid}/chores")
             ->assertForbidden();
+    }
+
+    #[Test]
+    public function stale_completion_snapshots_cannot_award_points_twice(): void
+    {
+        $chore = MinorChore::create([
+            'guardian_account_uuid' => $this->guardianAccount->uuid,
+            'minor_account_uuid'    => $this->minorAccount->uuid,
+            'title'                 => 'Vacuum the lounge',
+            'payout_points'         => 40,
+            'status'                => 'active',
+            'payout_type'           => 'points',
+        ]);
+
+        $completion = MinorChoreCompletion::create([
+            'chore_id' => $chore->id,
+            'status'   => 'pending_review',
+        ]);
+
+        $firstSnapshot = MinorChoreCompletion::query()->findOrFail($completion->id);
+        $staleSnapshot = MinorChoreCompletion::query()->findOrFail($completion->id);
+        $service = app(MinorChoreService::class);
+
+        $service->approve($firstSnapshot, $this->guardianAccount);
+
+        try {
+            $service->approve($staleSnapshot, $this->guardianAccount);
+            self::fail('Expected duplicate chore approval to be rejected.');
+        } catch (ValidationException $exception) {
+            self::assertArrayHasKey('completion', $exception->errors());
+        }
+
+        self::assertSame(40, (int) MinorPointsLedger::query()
+            ->where('minor_account_uuid', $this->minorAccount->uuid)
+            ->sum('points'));
+
+        self::assertSame(1, MinorPointsLedger::query()
+            ->where('minor_account_uuid', $this->minorAccount->uuid)
+            ->where('source', 'chore')
+            ->where('reference_id', $completion->id)
+            ->count());
     }
 
     private function createOwnedPersonalAccount(User $user): Account

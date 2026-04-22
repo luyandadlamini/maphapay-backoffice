@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountAuditLog;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Models\MinorPointsLedger;
 use App\Domain\Account\Models\MinorReward;
@@ -13,6 +14,9 @@ use App\Domain\Account\Services\MinorNotificationService;
 use App\Domain\Account\Services\MinorRewardService;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\ControllerTestCase;
@@ -21,7 +25,7 @@ class MinorAccountPhase4IntegrationTest extends ControllerTestCase
 {
     protected function connectionsToTransact(): array
     {
-        return ['mysql', 'central'];
+        return ['mysql'];
     }
 
     private MinorChoreService $choreService;
@@ -38,17 +42,43 @@ class MinorAccountPhase4IntegrationTest extends ControllerTestCase
 
     private Account $minorAccount;
 
+    private string $tenantId;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        if (! Schema::hasTable('account_audit_logs')) {
+            Artisan::call('migrate', [
+                '--path'  => 'database/migrations/tenant/2026_04_15_100003_create_account_audit_logs_table.php',
+                '--force' => true,
+            ]);
+        }
 
         $this->choreService = app(MinorChoreService::class);
         $this->rewardService = app(MinorRewardService::class);
         $this->notificationService = app(MinorNotificationService::class);
 
         // Create users
-        $this->guardianUser = User::factory()->create();
-        $this->childUser = User::factory()->create();
+        $this->guardianUser = User::factory()->make();
+        $this->guardianUser->setConnection('central');
+        $this->guardianUser->save();
+
+        $this->childUser = User::factory()->make();
+        $this->childUser->setConnection('central');
+        $this->childUser->save();
+        $this->tenantId = (string) Str::uuid();
+
+        DB::connection('central')->table('tenants')->insert([
+            'id'            => $this->tenantId,
+            'name'          => 'Minor Phase 4 Integration Tenant',
+            'plan'          => 'default',
+            'team_id'       => null,
+            'trial_ends_at' => null,
+            'created_at'    => now(),
+            'updated_at'    => now(),
+            'data'          => json_encode([]),
+        ]);
 
         // Create accounts
         $this->guardianAccount = Account::factory()->create([
@@ -66,8 +96,12 @@ class MinorAccountPhase4IntegrationTest extends ControllerTestCase
         // Create account membership
         AccountMembership::create([
             'user_uuid'    => $this->guardianUser->uuid,
+            'tenant_id'    => $this->tenantId,
             'account_uuid' => $this->minorAccount->uuid,
+            'account_type' => 'minor',
+            'role'         => 'guardian',
             'status'       => 'active',
+            'joined_at'    => now(),
         ]);
     }
 
@@ -115,7 +149,7 @@ class MinorAccountPhase4IntegrationTest extends ControllerTestCase
             ->where('minor_account_uuid', $this->minorAccount->uuid)
             ->sum('points');
 
-        $this->assertSame(100, $totalPoints);
+        $this->assertSame(100, (int) $totalPoints);
 
         // Step 4: Create a reward
         $reward = MinorReward::create([
@@ -123,6 +157,7 @@ class MinorAccountPhase4IntegrationTest extends ControllerTestCase
             'name'                 => 'Amazon Gift Card',
             'description'          => '10 USD gift card',
             'points_cost'          => 100,
+            'price_points'         => 100,
             'type'                 => 'gift_card',
             'metadata'             => ['amount' => '10.00', 'currency' => 'USD'],
             'stock'                => 5,
@@ -135,6 +170,12 @@ class MinorAccountPhase4IntegrationTest extends ControllerTestCase
 
         $this->assertSame('pending', $redemption->status);
         $this->assertSame($reward->points_cost, $redemption->points_cost);
+        $this->assertDatabaseHas('account_audit_logs', [
+            'account_uuid' => $this->minorAccount->uuid,
+            'action'       => 'minor.reward.redeemed',
+            'target_type'  => 'minor_reward_redemption',
+            'target_id'    => (string) $redemption->id,
+        ]);
 
         // Step 6: Verify balance is 0 after redemption
         $finalBalance = MinorPointsLedger::query()
@@ -180,7 +221,7 @@ class MinorAccountPhase4IntegrationTest extends ControllerTestCase
             ->where('minor_account_uuid', $this->minorAccount->uuid)
             ->sum('points');
 
-        $this->assertSame(100, $totalPoints);
+        $this->assertSame(100, (int) $totalPoints);
 
         // Verify both ledger entries exist
         $this->assertDatabaseHas('minor_points_ledger', [
@@ -215,14 +256,12 @@ class MinorAccountPhase4IntegrationTest extends ControllerTestCase
             'title'  => 'Homework',
             'status' => 'active',
         ]);
-
-        // The notification service logs to the logger, so we verify the chore exists
-        // In a full implementation with MinorNotification table, we'd verify:
-        // $this->assertDatabaseHas('minor_notifications', [
-        //     'recipient_account_uuid' => $this->minorAccount->uuid,
-        //     'type' => MinorNotificationService::TYPE_CHORE_ASSIGNED,
-        //     'data' => json_encode(['chore_id' => $chore->id, 'title' => $chore->title, 'payout_points' => $chore->payout_points]),
-        // ]);
+        $this->assertDatabaseHas('account_audit_logs', [
+            'account_uuid' => $this->minorAccount->uuid,
+            'action'       => 'minor.chore.assigned',
+            'target_type'  => 'minor_chore',
+            'target_id'    => (string) $chore->id,
+        ]);
     }
 
     #[Test]
@@ -250,11 +289,52 @@ class MinorAccountPhase4IntegrationTest extends ControllerTestCase
             'source'             => 'chore',
             'reference_id'       => $completion->id,
         ]);
+        $this->assertDatabaseHas('account_audit_logs', [
+            'account_uuid' => $this->minorAccount->uuid,
+            'action'       => 'minor.chore.approved',
+            'target_type'  => 'minor_chore_completion',
+            'target_id'    => (string) $completion->id,
+        ]);
+    }
 
-        // In a full implementation with MinorNotification table:
-        // $this->assertDatabaseHas('minor_notifications', [
-        //     'recipient_account_uuid' => $this->minorAccount->uuid,
-        //     'type' => MinorNotificationService::TYPE_CHORE_APPROVED,
-        // ]);
+    #[Test]
+    public function reward_redemption_creates_a_durable_audit_trace(): void
+    {
+        MinorPointsLedger::query()->create([
+            'minor_account_uuid' => $this->minorAccount->uuid,
+            'points'             => 120,
+            'source'             => 'seed',
+            'description'        => 'Seed balance for reward audit test',
+            'reference_id'       => 'reward-audit-seed',
+        ]);
+
+        $reward = MinorReward::create([
+            'id'                   => Str::uuid(),
+            'name'                 => 'Cinema Ticket',
+            'description'          => 'Weekend reward',
+            'points_cost'          => 100,
+            'price_points'         => 100,
+            'type'                 => 'voucher',
+            'metadata'             => ['amount' => '1'],
+            'stock'                => 3,
+            'is_active'            => true,
+            'min_permission_level' => 1,
+        ]);
+
+        $redemption = $this->rewardService->redeem($this->minorAccount, $reward);
+
+        /** @var AccountAuditLog|null $auditLog */
+        $auditLog = AccountAuditLog::query()
+            ->where('account_uuid', $this->minorAccount->uuid)
+            ->where('action', 'minor.reward.redeemed')
+            ->latest('created_at')
+            ->first();
+
+        self::assertNotNull($auditLog);
+        self::assertSame('minor_reward_redemption', $auditLog->target_type);
+        self::assertSame((string) $redemption->id, $auditLog->target_id);
+        self::assertSame($this->minorAccount->user_uuid, $auditLog->actor_user_uuid);
+        self::assertSame($reward->id, $auditLog->metadata['reward_id'] ?? null);
+        self::assertSame($reward->points_cost, $auditLog->metadata['points_cost'] ?? null);
     }
 }
