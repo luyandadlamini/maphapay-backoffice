@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Domain\Account\Models\AccountMembership;
+use App\Domain\Account\Services\AccountPayloadTransformer;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\IpBlockingService;
@@ -22,7 +23,8 @@ class LoginController extends Controller
     use HasApiScopes;
 
     public function __construct(
-        private readonly IpBlockingService $ipBlockingService
+        private readonly IpBlockingService $ipBlockingService,
+        private readonly AccountPayloadTransformer $accountPayloadTransformer,
     ) {
     }
 
@@ -395,26 +397,7 @@ class LoginController extends Controller
      */
     private function transformAccountMemberships(User $user): array
     {
-        return $user->activeAccountMemberships()
-            ->with('user')
-            ->get()
-            ->map(function (AccountMembership $membership) use ($user): array {
-                return [
-                    'account_uuid' => $membership->account_uuid,
-                    'tenant_id' => $membership->tenant_id,
-                    'account_type' => $membership->account_type,
-                    'display_name' => $membership->account_type === 'personal'
-                        ? ($user->name ?: 'Personal')
-                        : $membership->account_uuid,
-                    'role' => $membership->role,
-                    'capabilities' => [],
-                    'verification_tier' => 'unverified',
-                    'balance_preview' => null,
-                    'currency' => 'SZL',
-                ];
-            })
-            ->values()
-            ->all();
+        return $this->accountPayloadTransformer->transformUserMemberships($user);
     }
 
     private function resolveActiveAccountId(User $user): ?string

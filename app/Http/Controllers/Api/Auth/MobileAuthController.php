@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Domain\Account\Models\AccountMembership;
+use App\Domain\Account\Services\AccountPayloadTransformer;
 use App\Domain\Onboarding\Services\DefaultUserResourceProvisioningService;
 use App\Domain\Shared\Services\OtpService;
 use App\Http\Controllers\Controller;
@@ -26,6 +27,7 @@ class MobileAuthController extends Controller
     public function __construct(
         private readonly OtpService $otpService,
         private readonly DefaultUserResourceProvisioningService $defaultUserResourceProvisioningService,
+        private readonly AccountPayloadTransformer $accountPayloadTransformer,
     ) {
     }
 
@@ -799,30 +801,7 @@ class MobileAuthController extends Controller
      */
     private function transformAccountMemberships(User $user): array
     {
-        return $user->activeAccountMemberships()
-            ->with('user')
-            ->get()
-            ->map(function (AccountMembership $membership) use ($user): array {
-                if ($membership->account_type === 'personal') {
-                    $displayName = $user->name ?: 'Personal';
-                } else {
-                    $displayName = $membership->display_name ?: $membership->account_uuid;
-                }
-
-                return [
-                    'account_uuid' => $membership->account_uuid,
-                    'tenant_id' => $membership->tenant_id,
-                    'account_type' => $membership->account_type,
-                    'display_name' => $displayName,
-                    'role' => $membership->role,
-                    'capabilities' => $membership->capabilities ?? [],
-                    'verification_tier' => $membership->verification_tier ?? 'unverified',
-                    'balance_preview' => null,
-                    'currency' => 'SZL',
-                ];
-            })
-            ->values()
-            ->all();
+        return $this->accountPayloadTransformer->transformUserMemberships($user);
     }
 
     private function resolveActiveAccountId(User $user): ?string

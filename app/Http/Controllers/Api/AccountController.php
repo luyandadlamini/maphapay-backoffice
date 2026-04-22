@@ -9,6 +9,7 @@ use App\Domain\Account\DataObjects\Money;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Services\AccountService;
+use App\Domain\Account\Services\AccountPayloadTransformer;
 use App\Domain\Account\Services\CompanyAccountService;
 use App\Domain\Account\Services\MerchantAccountService;
 use App\Domain\Account\Services\Cache\AccountCacheService;
@@ -34,6 +35,7 @@ class AccountController extends Controller
     public function __construct(
         // @phpstan-ignore-next-line
         private readonly AccountService $accountService,
+        private readonly AccountPayloadTransformer $accountPayloadTransformer,
         private readonly AccountCacheService $accountCache,
         private readonly MerchantAccountService $merchantAccountService,
         private readonly CompanyAccountService $companyAccountService,
@@ -494,26 +496,13 @@ class AccountController extends Controller
      */
     private function transformMemberships($memberships)
     {
-        return $memberships->map(function (AccountMembership $membership): array {
-            if ($membership->account_type === 'personal') {
-                $displayName = $membership->user?->name ?: 'Personal';
-            } else {
-                $displayName = $membership->display_name ?: $membership->account_uuid;
-            }
-
-            return [
-                'account_uuid' => $membership->account_uuid,
-                'tenant_id' => $membership->tenant_id,
-                'account_type' => $membership->account_type,
-                'display_name' => $displayName,
-                'role' => $membership->role,
-                'status' => $membership->status,
-                'capabilities' => $membership->capabilities ?? [],
-                'verification_tier' => $membership->verification_tier ?? 'unverified',
-                'balance_preview' => null,
-                'currency' => 'SZL',
-            ];
-        })->values();
+        return collect(
+            $this->accountPayloadTransformer->transformMemberships(
+                $memberships,
+                null,
+                true,
+            )
+        );
     }
 
         #[OA\Delete(

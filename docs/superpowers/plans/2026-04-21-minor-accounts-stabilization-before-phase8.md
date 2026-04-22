@@ -82,6 +82,24 @@ These are ground-truth constraints discovered while executing the first two stab
 - After Task 2, the controller source of truth is `app/Domain/Account/Services/MinorAccountAccessService.php`.
 - Future tasks must check `AccountPolicy` and `ResolveAccountContext` for drift before adding new access logic elsewhere.
 
+## Execution Lessons From Tasks 6-7
+
+These are follow-on constraints discovered while completing payload and unsupported-flow stabilization. Future agents should treat them as implementation rules.
+
+### Account Payload Contract Rules
+
+- The backend must expose one canonical account summary shape for bootstrap flows and account listing. `MobileAuthController`, `LoginController`, and `AccountController` must not drift on minor-account fields.
+- Minor account summaries must always include `account_uuid`, `account_type`, `role`, `display_name`, `account_tier`, `permission_level`, and `parent_account_uuid`.
+- The account payload should be built from one shared transformer instead of repeated controller-local mapping logic.
+- In this codebase, the minor-account parent link surfaced to mobile is the tenant `accounts.parent_account_id` value, which currently stores the parent account UUID. Do not rename it in the payload contract.
+- Mobile account role typing must be shared with the core account domain types. Do not re-declare a second role union inside permission hooks.
+
+### Unsupported Flow Gating Rules
+
+- If the backend does not publish a minor-account route, the mobile hook must be explicitly gated off rather than left enabled against a nonexistent endpoint.
+- Unsupported phase 6-7 surfaces should show an explicit unavailable state, not task references, placeholder implementation notes, or dead-end interactive affordances.
+- Feature gates for unsupported minor-account flows should live in one domain-level source of truth so hooks and presentation layers cannot drift independently.
+
 ---
 
 ## Execution Order
@@ -515,7 +533,7 @@ git commit -m "fix(minor-accounts): persist child lifecycle notifications and au
 - Modify: `src/features/account/presentation/AccountSwitcherSheet.tsx`
 - Test: `tests/features/minor-accounts/minor-contracts.test.ts`
 
-- [ ] **Step 1: Write failing backend contract tests for account payload shape**
+- [x] **Step 1: Write failing backend contract tests for account payload shape**
 
 Required fields for minor accounts:
 - `account_uuid`
@@ -526,7 +544,7 @@ Required fields for minor accounts:
 - `permission_level`
 - `parent_account_uuid`
 
-- [ ] **Step 2: Run backend contract tests**
+- [x] **Step 2: Run backend contract tests**
 
 Run:
 
@@ -537,11 +555,11 @@ php artisan test tests/Feature/Contracts/MinorAccountMobileContractTest.php
 Expected:
 - FAIL because the payload omits required minor-account fields
 
-- [ ] **Step 3: Fix backend payload transformers**
+- [x] **Step 3: Fix backend payload transformers**
 
-- [ ] **Step 4: Write failing mobile tests to consume the canonical payload without local role duplication**
+- [x] **Step 4: Write failing mobile tests to consume the canonical payload without local role duplication**
 
-- [ ] **Step 5: Run mobile contract tests**
+- [x] **Step 5: Run mobile contract tests**
 
 Run:
 
@@ -552,14 +570,14 @@ npm test -- tests/features/minor-accounts/minor-contracts.test.ts
 Expected:
 - FAIL because mobile currently has split-brain role typing
 
-- [ ] **Step 6: Fix mobile account types and permission consumption**
+- [x] **Step 6: Fix mobile account types and permission consumption**
 
-- [ ] **Step 7: Re-run backend and mobile contract tests**
+- [x] **Step 7: Re-run backend and mobile contract tests**
 
 Expected:
 - PASS
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git -C /Users/Lihle/Development/Coding/maphapay-backoffice add \
@@ -591,13 +609,13 @@ git commit -m "fix(minor-accounts): align account payload contracts across backe
 - Test: `tests/features/minor-accounts/useChoreSubmissions.test.ts`
 - Test: `tests/features/minor-accounts/KidDashboard.test.ts`
 
-- [ ] **Step 1: Write failing tests that prove unsupported flows are either gated or removed**
+- [x] **Step 1: Write failing tests that prove unsupported flows are either gated or removed**
 
 Rules:
 - no hook may call a nonexistent backend route without an explicit feature gate
 - no placeholder text should be treated as completed implementation
 
-- [ ] **Step 2: Run the targeted mobile tests**
+- [x] **Step 2: Run the targeted mobile tests**
 
 Run:
 
@@ -610,19 +628,19 @@ npm test -- tests/features/minor-accounts/useSharedGoals.test.ts \
 Expected:
 - FAIL because unsupported routes and placeholders are still wired as live features
 
-- [ ] **Step 3: Implement one of two strategies per unsupported flow**
+- [x] **Step 3: Implement one of two strategies per unsupported flow**
 
 Allowed strategies:
 - remove the flow from shipping UI
 - feature-gate it behind an explicit “not available yet” state
 - wire it to a real backend API if that API exists by this point
 
-- [ ] **Step 4: Re-run the targeted tests**
+- [x] **Step 4: Re-run the targeted tests**
 
 Expected:
 - PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/features/minor-accounts/hooks/useFamilyMembers.ts \
