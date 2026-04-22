@@ -54,10 +54,10 @@ describe('MobileCommerceController parseQr', function (): void {
             ->with('tokenabc12345')
             ->andReturn([
                 'display_name' => 'Token Requester',
-                'amount' => '125.50',
-                'asset_code' => 'USDC',
-                'currency' => 'SZL',
-                'note' => 'Invoice payment',
+                'amount'       => '125.50',
+                'asset_code'   => 'USDC',
+                'currency'     => 'SZL',
+                'note'         => 'Invoice payment',
             ]);
 
         $request = commerceUserRequest('/api/v1/commerce/parse-qr', 'POST', [
@@ -109,9 +109,9 @@ describe('MobileCommerceController createPaymentRequest', function (): void {
 
         $request = commerceUserRequest('/api/v1/commerce/payment-requests', 'POST', [
             'merchant_id' => 'merchant_001',
-            'amount' => '25.00',
-            'asset' => 'USDC',
-            'network' => 'polygon',
+            'amount'      => '25.00',
+            'asset'       => 'USDC',
+            'network'     => 'polygon',
         ]);
 
         $response = $controller->createPaymentRequest($request);
@@ -138,10 +138,10 @@ describe('MobileCommerceController processPayment', function (): void {
             ->shouldReceive('evaluate')
             ->once()
             ->andReturn([
-                'decision' => 'deny',
-                'reason' => 'attestation_required',
+                'decision'             => 'deny',
+                'reason'               => 'attestation_required',
                 'attestation_verified' => false,
-                'record_id' => 'record-deny-1',
+                'record_id'            => 'record-deny-1',
             ]);
 
         $request = commerceUserRequest('/api/v1/commerce/payments', 'POST', [
@@ -191,10 +191,10 @@ describe('MobileCommerceController processPayment', function (): void {
             ->shouldReceive('evaluate')
             ->once()
             ->andReturn([
-                'decision' => 'allow',
-                'reason' => 'attestation_disabled',
+                'decision'             => 'allow',
+                'reason'               => 'attestation_disabled',
                 'attestation_verified' => false,
-                'record_id' => 'record-allow-1',
+                'record_id'            => 'record-allow-1',
             ]);
 
         $request = commerceUserRequest('/api/v1/commerce/payments', 'POST', [
@@ -233,8 +233,8 @@ describe('MobileCommerceController generateQr', function (): void {
         $controller = makeCommerceController($this);
 
         $request = commerceUserRequest('/api/v1/commerce/generate-qr', 'POST', [
-            'amount' => '100.00',
-            'asset' => 'USDC',
+            'amount'  => '100.00',
+            'asset'   => 'USDC',
             'network' => 'polygon',
         ]);
 

@@ -68,10 +68,10 @@ class ApiRateLimitMiddleware
         }
 
         Log::debug('API Rate Limit check', [
-            'ip' => $request->ip(),
-            'path' => $request->path(),
+            'ip'              => $request->ip(),
+            'path'            => $request->path(),
             'rate_limit_type' => $rateLimitType,
-            'user_id' => $request->user()?->id,
+            'user_id'         => $request->user()?->id,
         ]);
 
         // Check for BaaS partner and apply tier-based limits
@@ -153,10 +153,10 @@ class ApiRateLimitMiddleware
             $blockedUntil = Cache::get($blockKey);
 
             Log::warning('Rate limit: client currently blocked', [
-                'ip' => $request->ip(),
-                'endpoint' => $request->path(),
+                'ip'              => $request->ip(),
+                'endpoint'        => $request->path(),
                 'rate_limit_type' => $rateLimitType,
-                'blocked_until' => $blockedUntil,
+                'blocked_until'   => $blockedUntil,
             ]);
 
             return $this->rateLimitExceededResponse($request, $config, $blockedUntil);
@@ -166,11 +166,11 @@ class ApiRateLimitMiddleware
         $currentCount = (int) Cache::get($key, 0);
 
         Log::debug('Rate limit check', [
-            'ip' => $request->ip(),
-            'endpoint' => $request->path(),
+            'ip'              => $request->ip(),
+            'endpoint'        => $request->path(),
             'rate_limit_type' => $rateLimitType,
-            'current_count' => $currentCount,
-            'limit' => $config['limit'],
+            'current_count'   => $currentCount,
+            'limit'           => $config['limit'],
         ]);
 
         // Check if limit exceeded

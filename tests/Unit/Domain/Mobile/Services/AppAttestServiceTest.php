@@ -31,8 +31,7 @@ class AppAttestServiceTest extends TestCase
             'platform'  => 'ios',
         ]);
 
-        $service = new AppAttestService(new class implements AppAttestVerifierInterface
-        {
+        $service = new AppAttestService(new class () implements AppAttestVerifierInterface {
             public function verifyAttestation(string $attestationObject, string $challenge, string $keyId): AppAttestVerificationResult
             {
                 return AppAttestVerificationResult::success();
@@ -75,8 +74,7 @@ class AppAttestServiceTest extends TestCase
             'platform'  => 'ios',
         ]);
 
-        $service = new AppAttestService(new class implements AppAttestVerifierInterface
-        {
+        $service = new AppAttestService(new class () implements AppAttestVerifierInterface {
             public function verifyAttestation(string $attestationObject, string $challenge, string $keyId): AppAttestVerificationResult
             {
                 return AppAttestVerificationResult::success();
@@ -110,8 +108,7 @@ class AppAttestServiceTest extends TestCase
             'platform'  => 'ios',
         ]);
 
-        $service = new AppAttestService(new class implements AppAttestVerifierInterface
-        {
+        $service = new AppAttestService(new class () implements AppAttestVerifierInterface {
             public function verifyAttestation(string $attestationObject, string $challenge, string $keyId): AppAttestVerificationResult
             {
                 return AppAttestVerificationResult::success([

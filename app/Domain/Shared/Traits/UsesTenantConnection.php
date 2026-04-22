@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Shared\Traits;
 
 use Illuminate\Support\Facades\Config;
+use Throwable;
 
 /**
  * Trait for models that should use the tenant database connection.
@@ -77,7 +78,7 @@ trait UsesTenantConnection
         // unconfigured tenant connection.
         try {
             return ! tenancy()->initialized;
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return true;
         }
     }

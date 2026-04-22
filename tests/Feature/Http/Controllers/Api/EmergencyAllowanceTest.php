@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Tests\Feature\Http\Controllers\Api;
 
 use App\Domain\Account\Models\Account;
@@ -13,11 +15,20 @@ use Tests\TestCase;
 
 class EmergencyAllowanceTest extends TestCase
 {
-    protected function connectionsToTransact(): array { return ['mysql', 'central']; }
-    protected function shouldCreateDefaultAccountsInSetup(): bool { return false; }
+    protected function connectionsToTransact(): array
+    {
+    return ['mysql', 'central'];
+    }
+
+    protected function shouldCreateDefaultAccountsInSetup(): bool
+    {
+    return false;
+    }
 
     private User $guardian;
+
     private User $child;
+
     private Account $minorAccount;
 
     protected function setUp(): void
@@ -28,8 +39,8 @@ class EmergencyAllowanceTest extends TestCase
 
         $tenantId = (string) Str::uuid();
         DB::connection('central')->table('tenants')->insert([
-            'id' => $tenantId, 'name' => 'T', 'plan' => 'default',
-            'team_id' => null, 'trial_ends_at' => null,
+            'id'         => $tenantId, 'name' => 'T', 'plan' => 'default',
+            'team_id'    => null, 'trial_ends_at' => null,
             'created_at' => now(), 'updated_at' => now(), 'data' => json_encode([]),
         ]);
 
@@ -40,7 +51,7 @@ class EmergencyAllowanceTest extends TestCase
         ]);
 
         $this->minorAccount = Account::factory()->create([
-            'user_uuid' => $this->child->uuid, 'type' => 'minor', 'tier' => 'grow',
+            'user_uuid'        => $this->child->uuid, 'type' => 'minor', 'tier' => 'grow',
             'permission_level' => 3, 'parent_account_id' => $guardianAccount->uuid,
         ]);
         AccountMembership::create([
@@ -61,8 +72,8 @@ class EmergencyAllowanceTest extends TestCase
 
         $response->assertOk()->assertJsonPath('data.emergency_allowance_amount', 200);
         $this->assertDatabaseHas('accounts', [
-            'uuid'                      => $this->minorAccount->uuid,
-            'emergency_allowance_amount' => 200,
+            'uuid'                        => $this->minorAccount->uuid,
+            'emergency_allowance_amount'  => 200,
             'emergency_allowance_balance' => 200,
         ]);
     }
@@ -92,7 +103,9 @@ class EmergencyAllowanceTest extends TestCase
 
         $rule = new \App\Rules\ValidateMinorAccountPermission($this->minorAccount, 'general');
         $failed = false;
-        $rule->validate('amount', 150, function () use (&$failed): void { $failed = true; });
+        $rule->validate('amount', 150, function () use (&$failed): void {
+        $failed = true;
+        });
 
         // Emergency transactions on level-1 accounts should be validated separately;
         // the rule itself doesn't handle the emergency path — that's checked upstream.

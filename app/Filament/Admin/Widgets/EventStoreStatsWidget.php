@@ -9,6 +9,7 @@ use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class EventStoreStatsWidget extends BaseWidget
 {
@@ -43,7 +44,7 @@ class EventStoreStatsWidget extends BaseWidget
             $allStats = $service->getAllStats();
 
             return $allStats['summary'] ?? $defaults;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('EventStoreStatsWidget: failed to compute stats', ['error' => $e->getMessage()]);
 
             return $defaults;

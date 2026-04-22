@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use App\Domain\Account\Models\Account;
-use App\Domain\Custodian\Models\ProviderOperation;
 use App\Domain\Custodian\Models\CustodianAccount;
+use App\Domain\Custodian\Models\ProviderOperation;
 use App\Domain\Custodian\Services\CustodianRegistry;
 use App\Domain\Custodian\Services\SettlementService;
 use App\Domain\Custodian\ValueObjects\TransactionReceipt;
@@ -215,17 +215,17 @@ it('normalizes provider operation settlement state from settlement execution res
     $this->service = app()->make(SettlementService::class);
 
     ProviderOperation::query()->create([
-        'provider_family' => 'custodian',
-        'provider_name' => 'paysera',
-        'operation_type' => 'transfer',
-        'operation_key' => 'custodian:paysera:transfer:txn-settle-001',
+        'provider_family'       => 'custodian',
+        'provider_name'         => 'paysera',
+        'operation_type'        => 'transfer',
+        'operation_key'         => 'custodian:paysera:transfer:txn-settle-001',
         'normalized_event_type' => 'payment_succeeded',
-        'provider_reference' => 'txn-settle-001',
-        'internal_reference' => 'txn-settle-001',
-        'finality_status' => 'succeeded',
-        'settlement_status' => 'pending',
+        'provider_reference'    => 'txn-settle-001',
+        'internal_reference'    => 'txn-settle-001',
+        'finality_status'       => 'succeeded',
+        'settlement_status'     => 'pending',
         'reconciliation_status' => 'pending',
-        'metadata' => [
+        'metadata'              => [
             'source' => 'test',
         ],
     ]);
@@ -267,10 +267,10 @@ it('normalizes provider operation settlement state from settlement execution res
     assert($settlement !== null);
 
     $this->assertDatabaseHas('provider_operations', [
-        'provider_family' => 'custodian',
-        'provider_name' => 'paysera',
-        'provider_reference' => 'txn-settle-001',
-        'settlement_status' => 'completed',
+        'provider_family'      => 'custodian',
+        'provider_name'        => 'paysera',
+        'provider_reference'   => 'txn-settle-001',
+        'settlement_status'    => 'completed',
         'settlement_reference' => $settlement->id,
     ]);
 });

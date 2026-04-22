@@ -14,9 +14,10 @@ use App\Models\AdminActionApprovalRequest;
 use App\Models\User;
 use App\Support\Reconciliation\ReconciliationReportRecord;
 use Filament\Facades\Filament;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 use function Pest\Livewire\livewire;
+
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 beforeEach(function (): void {
     $this->artisan('db:seed', ['--class' => 'RolesAndPermissionsSeeder']);
@@ -55,8 +56,8 @@ it('submits account deposit requests for approval instead of mutating the balanc
     $this->actingAs($finance);
 
     Asset::query()->updateOrCreate(['code' => 'USD'], [
-        'name' => 'US Dollar',
-        'type' => 'fiat',
+        'name'      => 'US Dollar',
+        'type'      => 'fiat',
         'precision' => 2,
         'is_active' => true,
     ]);
@@ -97,8 +98,8 @@ it('submits account withdrawal requests for approval instead of mutating the bal
     $this->actingAs($finance);
 
     Asset::query()->updateOrCreate(['code' => 'USD'], [
-        'name' => 'US Dollar',
-        'type' => 'fiat',
+        'name'      => 'US Dollar',
+        'type'      => 'fiat',
         'precision' => 2,
         'is_active' => true,
     ]);
@@ -260,9 +261,9 @@ it('submits account adjustment requests for approval with captured evidence from
 
     livewire(ViewAccount::class, ['record' => $account->getKey()])
         ->callAction('requestAdjustment', data: [
-            'type' => 'credit',
-            'amount' => '75.25',
-            'reason' => 'Controlled finance adjustment request after reconciliation evidence review.',
+            'type'       => 'credit',
+            'amount'     => '75.25',
+            'reason'     => 'Controlled finance adjustment request after reconciliation evidence review.',
             'attachment' => null,
         ])
         ->assertHasNoActionErrors();
@@ -318,12 +319,12 @@ it('records governed reconciliation run and export audits inside the finance wor
     $this->actingAs($finance);
 
     $report = ReconciliationReportRecord::fromArray([
-        'date' => now()->toDateString(),
-        'accounts_checked' => 12,
-        'discrepancies_found' => 1,
+        'date'                     => now()->toDateString(),
+        'accounts_checked'         => 12,
+        'discrepancies_found'      => 1,
         'total_discrepancy_amount' => 5200,
-        'status' => 'completed',
-        'duration_minutes' => 4,
+        'status'                   => 'completed',
+        'duration_minutes'         => 4,
     ]);
 
     ReconciliationReportResource::runReconciliation('Trigger a governed reconciliation rerun after treasury review.');
@@ -351,8 +352,8 @@ it('submits account funding requests for approval instead of executing immediate
     $this->actingAs($finance);
 
     $asset = Asset::query()->updateOrCreate(['code' => 'USD'], [
-        'name' => 'US Dollar',
-        'type' => 'fiat',
+        'name'      => 'US Dollar',
+        'type'      => 'fiat',
         'precision' => 2,
         'is_active' => true,
     ]);
@@ -364,10 +365,10 @@ it('submits account funding requests for approval instead of executing immediate
     $page->selectedAccount = $account->fresh(['user']);
     $page->requestFundingApproval([
         'account_uuid' => $account->uuid,
-        'asset_code' => $asset->code,
-        'amount' => '210.45',
-        'reason' => 'refund',
-        'notes' => 'Controlled treasury funding request after exception handling review.',
+        'asset_code'   => $asset->code,
+        'amount'       => '210.45',
+        'reason'       => 'refund',
+        'notes'        => 'Controlled treasury funding request after exception handling review.',
     ]);
 
     expect($account->fresh()?->getBalance('USD'))->toBe(0);
@@ -394,20 +395,20 @@ it('enforces finance workspace authorization on direct finance high-risk action 
     $this->actingAs($support);
 
     Asset::query()->updateOrCreate(['code' => 'USD'], [
-        'name' => 'US Dollar',
-        'type' => 'fiat',
+        'name'      => 'US Dollar',
+        'type'      => 'fiat',
         'precision' => 2,
         'is_active' => true,
     ]);
 
     $account = Account::factory()->create();
     $report = ReconciliationReportRecord::fromArray([
-        'date' => now()->toDateString(),
-        'accounts_checked' => 4,
-        'discrepancies_found' => 0,
+        'date'                     => now()->toDateString(),
+        'accounts_checked'         => 4,
+        'discrepancies_found'      => 0,
         'total_discrepancy_amount' => 0,
-        'status' => 'completed',
-        'duration_minutes' => 2,
+        'status'                   => 'completed',
+        'duration_minutes'         => 2,
     ]);
 
     $page = app(FundAccountPage::class);
@@ -418,9 +419,9 @@ it('enforces finance workspace authorization on direct finance high-risk action 
     expect(fn () => ReconciliationReportResource::downloadReport($report, 'Support cannot export governed reconciliation reports.'))->toThrow(HttpException::class);
     expect(fn () => $page->requestFundingApproval([
         'account_uuid' => $account->uuid,
-        'asset_code' => 'USD',
-        'amount' => '10.00',
-        'reason' => 'testing',
-        'notes' => 'Blocked support invocation.',
+        'asset_code'   => 'USD',
+        'amount'       => '10.00',
+        'reason'       => 'testing',
+        'notes'        => 'Blocked support invocation.',
     ]))->toThrow(HttpException::class);
 });

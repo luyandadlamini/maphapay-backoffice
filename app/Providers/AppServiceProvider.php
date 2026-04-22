@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Domain\Mobile\Contracts\AppAttestVerifierInterface;
-use App\Domain\Mobile\Services\AppAttestVerifier;
 use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderInterface;
 use App\Domain\AuthorizedTransaction\Services\DatabaseMoneyMovementRiskSignalProvider;
+use App\Domain\Mobile\Contracts\AppAttestVerifierInterface;
+use App\Domain\Mobile\Services\AppAttestVerifier;
 use App\Models\Thread;
 use App\Observers\ThreadGroupSavingsObserver;
 use Illuminate\Cache\RateLimiting\Limit;

@@ -8,11 +8,11 @@ use App\Domain\Account\DataObjects\AccountUuid;
 use App\Domain\Account\DataObjects\Money;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
-use App\Domain\Account\Services\AccountService;
 use App\Domain\Account\Services\AccountPayloadTransformer;
+use App\Domain\Account\Services\AccountService;
+use App\Domain\Account\Services\Cache\AccountCacheService;
 use App\Domain\Account\Services\CompanyAccountService;
 use App\Domain\Account\Services\MerchantAccountService;
-use App\Domain\Account\Services\Cache\AccountCacheService;
 use App\Domain\Account\Workflows\CreateAccountWorkflow;
 use App\Domain\Account\Workflows\DepositAccountWorkflow;
 use App\Domain\Account\Workflows\DestroyAccountWorkflow;
@@ -70,7 +70,7 @@ class AccountController extends Controller
         if ($memberships->isNotEmpty()) {
             return response()->json([
                 'success' => true,
-                'data' => $this->transformMemberships($memberships),
+                'data'    => $this->transformMemberships($memberships),
             ]);
         }
 
@@ -102,12 +102,12 @@ class AccountController extends Controller
     public function createMerchant(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'trade_name' => ['required', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
+            'trade_name'        => ['required', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
             'merchant_category' => ['required', 'string', 'max:100', new NoControlCharacters(), new NoSqlInjection()],
-            'classification' => 'required|in:informal,sole_proprietor,registered_business',
+            'classification'    => 'required|in:informal,sole_proprietor,registered_business',
             'settlement_method' => 'required|in:maphapay_wallet,mobile_money,bank',
-            'location' => ['nullable', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
-            'description' => ['nullable', 'string', 'max:1000', new NoControlCharacters(), new NoSqlInjection()],
+            'location'          => ['nullable', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
+            'description'       => ['nullable', 'string', 'max:1000', new NoControlCharacters(), new NoSqlInjection()],
         ]);
 
         /** @var \App\Models\User $user */
@@ -136,7 +136,7 @@ class AccountController extends Controller
         }
 
         // KYC gate — only approved users may create a merchant account
-        if (!in_array($user->kyc_status, ['approved'], true)) {
+        if (! in_array($user->kyc_status, ['approved'], true)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Identity verification is required before creating a merchant account.',
@@ -149,12 +149,12 @@ class AccountController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
-                'errors' => $e->errors(),
+                'errors'  => $e->errors(),
             ], 422);
         } catch (Throwable $e) {
             Log::error('AccountController: createMerchant failed', [
                 'user_uuid' => $user->uuid,
-                'error' => $e->getMessage(),
+                'error'     => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -165,12 +165,12 @@ class AccountController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
+            'data'    => [
                 'account_uuid' => $result['account']->uuid,
-                'tenant_id' => $tenantId,
+                'tenant_id'    => $tenantId,
                 'account_type' => 'merchant',
                 'display_name' => $result['account']->display_name,
-                'role' => $result['membership']->role,
+                'role'         => $result['membership']->role,
             ],
         ], 201);
     }
@@ -178,15 +178,15 @@ class AccountController extends Controller
     public function createCompany(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'company_name' => ['required', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
-            'business_type' => 'required|in:pty_ltd,public,sole_trader,informal',
+            'company_name'        => ['required', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
+            'business_type'       => 'required|in:pty_ltd,public,sole_trader,informal',
             'registration_number' => ['nullable', 'string', 'max:20', 'regex:/^R7\/\d{5}$/'],
-            'tin_number' => ['nullable', 'string', 'max:20', 'regex:/^\d{10}$/'],
-            'industry' => ['nullable', 'string', 'max:100', new NoControlCharacters(), new NoSqlInjection()],
-            'company_size' => ['nullable', 'string', 'in:small,medium,large,enterprise'],
-            'settlement_method' => 'required|in:maphapay_wallet,mobile_money,bank',
-            'address' => ['nullable', 'string', 'max:500', new NoControlCharacters(), new NoSqlInjection()],
-            'description' => ['nullable', 'string', 'max:1000', new NoControlCharacters(), new NoSqlInjection()],
+            'tin_number'          => ['nullable', 'string', 'max:20', 'regex:/^\d{10}$/'],
+            'industry'            => ['nullable', 'string', 'max:100', new NoControlCharacters(), new NoSqlInjection()],
+            'company_size'        => ['nullable', 'string', 'in:small,medium,large,enterprise'],
+            'settlement_method'   => 'required|in:maphapay_wallet,mobile_money,bank',
+            'address'             => ['nullable', 'string', 'max:500', new NoControlCharacters(), new NoSqlInjection()],
+            'description'         => ['nullable', 'string', 'max:1000', new NoControlCharacters(), new NoSqlInjection()],
         ]);
 
         // Conditional validation: formal businesses require industry and company_size
@@ -195,14 +195,14 @@ class AccountController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'Industry is required for formal business types.',
-                    'errors' => ['industry' => ['Industry is required for formal business types.']],
+                    'errors'  => ['industry' => ['Industry is required for formal business types.']],
                 ], 422);
             }
             if (empty($validated['company_size'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Company size is required for formal business types.',
-                    'errors' => ['company_size' => ['Company size is required for formal business types.']],
+                    'errors'  => ['company_size' => ['Company size is required for formal business types.']],
                 ], 422);
             }
         }
@@ -231,7 +231,7 @@ class AccountController extends Controller
             ], 403);
         }
 
-        if (!in_array($user->kyc_status, ['approved'], true)) {
+        if (! in_array($user->kyc_status, ['approved'], true)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Identity verification is required before creating a company account.',
@@ -244,12 +244,12 @@ class AccountController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
-                'errors' => $e->errors(),
+                'errors'  => $e->errors(),
             ], 422);
         } catch (Throwable $e) {
             Log::error('CompanyController: createCompany failed', [
                 'user_uuid' => $user->uuid,
-                'error' => $e->getMessage(),
+                'error'     => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -260,31 +260,31 @@ class AccountController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'account_uuid' => $result['account']->uuid,
-                'tenant_id' => $tenantId,
-                'account_type' => 'company',
-                'display_name' => $result['account']->display_name,
-                'role' => $result['membership']->role,
+            'data'    => [
+                'account_uuid'      => $result['account']->uuid,
+                'tenant_id'         => $tenantId,
+                'account_type'      => 'company',
+                'display_name'      => $result['account']->display_name,
+                'role'              => $result['membership']->role,
                 'verification_tier' => $result['membership']->verification_tier,
-                'capabilities' => $result['membership']->capabilities ?? [],
+                'capabilities'      => $result['membership']->capabilities ?? [],
             ],
         ], 201);
     }
 
     #[OA\Post(
-            path: '/api/accounts',
-            operationId: 'createAccount',
-            tags: ['Accounts'],
-            summary: 'Create a new account',
-            description: 'Creates a new bank account for a user with an optional initial balance',
-            security: [['sanctum' => []]],
-            requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(required: ['user_uuid', 'name'], properties: [
+        path: '/api/accounts',
+        operationId: 'createAccount',
+        tags: ['Accounts'],
+        summary: 'Create a new account',
+        description: 'Creates a new bank account for a user with an optional initial balance',
+        security: [['sanctum' => []]],
+        requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(required: ['user_uuid', 'name'], properties: [
             new OA\Property(property: 'user_uuid', type: 'string', format: 'uuid', example: '660e8400-e29b-41d4-a716-446655440000'),
             new OA\Property(property: 'name', type: 'string', example: 'Savings Account', maxLength: 255),
             new OA\Property(property: 'initial_balance', type: 'integer', example: 10000, minimum: 0, description: 'Initial balance in cents'),
             ]))
-        )]
+    )]
     #[OA\Response(
         response: 201,
         description: 'Account created successfully',
@@ -484,7 +484,7 @@ class AccountController extends Controller
 
         return response()->json([
             'data' => [
-                'uuid' => $membership->account_uuid,
+                'uuid'         => $membership->account_uuid,
                 'display_name' => $membership->display_name,
             ],
         ]);

@@ -90,13 +90,13 @@ class Team extends JetstreamTeam
         $profile = CorporateProfile::query()->firstOrCreate(
             ['team_id' => $this->id],
             [
-                'legal_name' => (string) data_get($this->business_details, 'legal_name', $this->name),
+                'legal_name'          => (string) data_get($this->business_details, 'legal_name', $this->name),
                 'registration_number' => $this->business_registration_number,
-                'tax_id' => $this->tax_id,
-                'organization_type' => $this->organization_type,
-                'kyb_status' => 'not_started',
-                'operating_status' => 'pending',
-                'metadata' => $this->business_details,
+                'tax_id'              => $this->tax_id,
+                'organization_type'   => $this->organization_type,
+                'kyb_status'          => 'not_started',
+                'operating_status'    => 'pending',
+                'metadata'            => $this->business_details,
             ],
         );
 

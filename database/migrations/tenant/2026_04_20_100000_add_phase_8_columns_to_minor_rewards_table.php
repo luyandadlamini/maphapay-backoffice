@@ -1,12 +1,12 @@
 <?php
+
 declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     public function up(): void
     {
         // Alter the existing minor_rewards table to add Phase 8 columns
@@ -47,7 +47,7 @@ return new class extends Migration
                     ->on('merchant_partners')
                     ->onDelete('set null');
             });
-        } catch (\Exception) {
+        } catch (Exception) {
             // Foreign key constraint may already exist, which is fine
         }
 
@@ -71,26 +71,26 @@ return new class extends Migration
             // Drop foreign key if exists
             try {
                 $table->dropForeign(['partner_id']);
-            } catch (\Exception) {
+            } catch (Exception) {
                 // Foreign key doesn't exist, which is fine
             }
 
             // Drop indices
             try {
                 $table->dropIndex('minor_rewards_category_index');
-            } catch (\Exception) {
+            } catch (Exception) {
                 // Index doesn't exist, which is fine
             }
 
             try {
                 $table->dropIndex('minor_rewards_is_featured_index');
-            } catch (\Exception) {
+            } catch (Exception) {
                 // Index doesn't exist, which is fine
             }
 
             try {
                 $table->dropIndex('minor_rewards_stock_index');
-            } catch (\Exception) {
+            } catch (Exception) {
                 // Index doesn't exist, which is fine
             }
 

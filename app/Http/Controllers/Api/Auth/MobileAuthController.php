@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Auth;
 
-use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Services\AccountPayloadTransformer;
 use App\Domain\Onboarding\Services\DefaultUserResourceProvisioningService;
 use App\Domain\Shared\Services\OtpService;
@@ -81,9 +80,9 @@ class MobileAuthController extends Controller
 
         Log::info('Mobile login attempt', [
             'dial_code' => $dialCode,
-            'mobile' => $mobile,
-            'has_pin' => !empty($pin),
-            'ip' => $request->ip(),
+            'mobile'    => $mobile,
+            'has_pin'   => ! empty($pin),
+            'ip'        => $request->ip(),
         ]);
 
         $user = User::where('dial_code', $dialCode)
@@ -91,12 +90,12 @@ class MobileAuthController extends Controller
             ->first();
 
         Log::info('Mobile login user lookup', [
-            'dial_code' => $dialCode,
-            'mobile' => $mobile,
-            'user_found' => $user !== null,
-            'user_id' => $user?->id,
-            'has_transaction_pin' => !empty($user?->transaction_pin),
-            'has_password' => !empty($user?->password),
+            'dial_code'           => $dialCode,
+            'mobile'              => $mobile,
+            'user_found'          => $user !== null,
+            'user_id'             => $user?->id,
+            'has_transaction_pin' => ! empty($user?->transaction_pin),
+            'has_password'        => ! empty($user?->password),
         ]);
 
         if ($pin !== '') {
@@ -114,7 +113,7 @@ class MobileAuthController extends Controller
                 && Hash::check($pin, $user->password);
 
             Log::info('Mobile login PIN check', [
-                'user_id' => $user?->id,
+                'user_id'                     => $user?->id,
                 'pin_matches_transaction_pin' => $pinMatchesTransactionPin,
                 'pin_matches_legacy_password' => $pinMatchesLegacyPassword,
             ]);
@@ -124,10 +123,11 @@ class MobileAuthController extends Controller
                 || (! $pinMatchesTransactionPin && ! $pinMatchesLegacyPassword)
             ) {
                 Log::warning('Mobile login failed - invalid credentials', [
-                    'dial_code' => $dialCode,
-                    'mobile' => $mobile,
+                    'dial_code'   => $dialCode,
+                    'mobile'      => $mobile,
                     'user_exists' => $user !== null,
                 ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'The provided credentials are incorrect.',
@@ -332,12 +332,12 @@ class MobileAuthController extends Controller
         return response()->json([
             'success' => true,
             'data'    => [
-                'user'          => $this->transformUser($user),
-                'accounts'      => $this->transformAccountMemberships($user),
+                'user'              => $this->transformUser($user),
+                'accounts'          => $this->transformAccountMemberships($user),
                 'active_account_id' => $this->resolveActiveAccountId($user),
-                'access_token'  => $tokenPair['access_token'],
-                'refresh_token' => $tokenPair['refresh_token'],
-                'token_type'    => 'Bearer',
+                'access_token'      => $tokenPair['access_token'],
+                'refresh_token'     => $tokenPair['refresh_token'],
+                'token_type'        => 'Bearer',
             ],
         ]);
     }
@@ -457,8 +457,8 @@ class MobileAuthController extends Controller
 
         Log::info('Forgot PIN request', [
             'dial_code' => $dialCode,
-            'mobile' => $mobile,
-            'ip' => $request->ip(),
+            'mobile'    => $mobile,
+            'ip'        => $request->ip(),
         ]);
 
         $user = User::where('dial_code', $dialCode)
@@ -466,17 +466,18 @@ class MobileAuthController extends Controller
             ->first();
 
         Log::info('Forgot PIN user lookup', [
-            'dial_code' => $dialCode,
-            'mobile' => $mobile,
+            'dial_code'  => $dialCode,
+            'mobile'     => $mobile,
             'user_found' => $user !== null,
-            'user_id' => $user?->id,
+            'user_id'    => $user?->id,
         ]);
 
         if (! $user) {
             Log::info('Forgot PIN - user not found (returns generic message)', [
                 'dial_code' => $dialCode,
-                'mobile' => $mobile,
+                'mobile'    => $mobile,
             ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'If the account exists, a reset code has been sent to the mobile number.',

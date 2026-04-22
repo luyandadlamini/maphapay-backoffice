@@ -6,16 +6,16 @@ namespace App\Domain\Custodian\Services;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Custodian\Enums\ProviderReconciliationStatus;
-use App\Domain\Custodian\Models\CustodianWebhook;
-use App\Domain\Custodian\Models\ProviderOperation;
 use App\Domain\Custodian\Events\ReconciliationCompleted;
 use App\Domain\Custodian\Events\ReconciliationDiscrepancyFound;
 use App\Domain\Custodian\Mail\ReconciliationReport;
+use App\Domain\Custodian\Models\CustodianWebhook;
+use App\Domain\Custodian\Models\ProviderOperation;
 use App\Domain\Ledger\Models\LedgerPosting;
 use App\Support\Reconciliation\ReconciliationReferenceBuilder;
 use Exception;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -273,12 +273,12 @@ class DailyReconciliationService
     private function generateReconciliationReport(): array
     {
         $report = [
-            'summary'         => $this->reconciliationResults,
-            'discrepancies'   => $this->discrepancies,
-            'settlement_summary' => $this->buildSettlementSummary(),
+            'summary'                   => $this->reconciliationResults,
+            'discrepancies'             => $this->discrepancies,
+            'settlement_summary'        => $this->buildSettlementSummary(),
             'recent_provider_callbacks' => $this->getRecentProviderCallbacks(),
-            'recommendations' => $this->generateRecommendations(),
-            'generated_at'    => now(),
+            'recommendations'           => $this->generateRecommendations(),
+            'generated_at'              => now(),
         ];
 
         // Store report in database or file system
@@ -357,9 +357,9 @@ class DailyReconciliationService
 
         return [
             ...$references,
-            'provider_operation' => $providerOperation,
-            'provider_reference' => $references['provider_reference'] ?? $providerOperation['provider_reference'] ?? null,
-            'settlement_reference' => $references['settlement_reference'] ?? $providerOperation['settlement_reference'] ?? null,
+            'provider_operation'       => $providerOperation,
+            'provider_reference'       => $references['provider_reference'] ?? $providerOperation['provider_reference'] ?? null,
+            'settlement_reference'     => $references['settlement_reference'] ?? $providerOperation['settlement_reference'] ?? null,
             'ledger_posting_reference' => $references['ledger_posting_reference'] ?? $providerOperation['ledger_posting_reference'] ?? null,
         ];
     }
@@ -386,12 +386,12 @@ class DailyReconciliationService
         $metadata = is_array($posting->metadata) ? $posting->metadata : [];
 
         return array_filter([
-            'id' => $posting->id,
-            'posting_type' => $posting->posting_type,
-            'status' => $posting->status,
+            'id'                 => $posting->id,
+            'posting_type'       => $posting->posting_type,
+            'status'             => $posting->status,
             'transfer_reference' => $posting->transfer_reference,
             'related_posting_id' => $metadata['related_posting_id'] ?? null,
-            'money_request_id' => $posting->money_request_id,
+            'money_request_id'   => $posting->money_request_id,
         ], static fn (mixed $value): bool => $value !== null && $value !== '');
     }
 
@@ -406,10 +406,10 @@ class DailyReconciliationService
             ->get();
 
         $summary = [
-            'pending' => 0,
+            'pending'    => 0,
             'processing' => 0,
-            'completed' => 0,
-            'failed' => 0,
+            'completed'  => 0,
+            'failed'     => 0,
         ];
 
         foreach ($rows as $row) {
@@ -450,16 +450,16 @@ class DailyReconciliationService
                 );
 
                 return array_filter([
-                    'custodian_name' => $webhook->custodian_name,
-                    'event_type' => $webhook->event_type,
+                    'custodian_name'        => $webhook->custodian_name,
+                    'event_type'            => $webhook->event_type,
                     'normalized_event_type' => $webhook->normalized_event_type,
-                    'provider_reference' => $webhook->provider_reference,
-                    'finality_status' => $webhook->finality_status,
-                    'settlement_status' => $webhook->settlement_status,
+                    'provider_reference'    => $webhook->provider_reference,
+                    'finality_status'       => $webhook->finality_status,
+                    'settlement_status'     => $webhook->settlement_status,
                     'reconciliation_status' => $webhook->reconciliation_status,
-                    'status' => $webhook->status,
-                    'processed_at' => $webhook->processed_at?->toDateTimeString(),
-                    'provider_operation' => $providerOperation,
+                    'status'                => $webhook->status,
+                    'processed_at'          => $webhook->processed_at?->toDateTimeString(),
+                    'provider_operation'    => $providerOperation,
                 ], static fn (mixed $value): bool => $value !== null);
             })
             ->all();
@@ -621,17 +621,17 @@ class DailyReconciliationService
         }
 
         return array_filter([
-            'id' => $providerOperation->id,
-            'provider_family' => $providerOperation->provider_family,
-            'provider_name' => $providerOperation->provider_name,
-            'operation_type' => $providerOperation->operation_type->value,
-            'normalized_event_type' => $providerOperation->normalized_event_type,
-            'provider_reference' => $providerOperation->provider_reference,
-            'internal_reference' => $providerOperation->internal_reference,
-            'finality_status' => $providerOperation->finality_status->value,
-            'settlement_status' => $providerOperation->settlement_status->value,
-            'reconciliation_status' => $providerOperation->reconciliation_status->value,
-            'settlement_reference' => $providerOperation->settlement_reference,
+            'id'                       => $providerOperation->id,
+            'provider_family'          => $providerOperation->provider_family,
+            'provider_name'            => $providerOperation->provider_name,
+            'operation_type'           => $providerOperation->operation_type->value,
+            'normalized_event_type'    => $providerOperation->normalized_event_type,
+            'provider_reference'       => $providerOperation->provider_reference,
+            'internal_reference'       => $providerOperation->internal_reference,
+            'finality_status'          => $providerOperation->finality_status->value,
+            'settlement_status'        => $providerOperation->settlement_status->value,
+            'reconciliation_status'    => $providerOperation->reconciliation_status->value,
+            'settlement_reference'     => $providerOperation->settlement_reference,
             'reconciliation_reference' => $providerOperation->reconciliation_reference,
             'ledger_posting_reference' => $providerOperation->ledger_posting_reference,
         ], static fn (mixed $value): bool => $value !== null && $value !== '');

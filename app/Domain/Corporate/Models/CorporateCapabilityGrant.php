@@ -24,9 +24,9 @@ class CorporateCapabilityGrant extends Model
     ];
 
     protected $casts = [
-        'capability' => CorporateCapability::class,
+        'capability'                => CorporateCapability::class,
         'approval_threshold_amount' => 'decimal:2',
-        'metadata' => 'array',
+        'metadata'                  => 'array',
     ];
 
     /**

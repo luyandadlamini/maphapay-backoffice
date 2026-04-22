@@ -22,12 +22,19 @@ class MinorRewardTest extends BaseTestCase
     use CreatesApplication;
 
     private string $tenantId;
+
     private User $guardianUser;
+
     private User $coGuardianUser;
+
     private User $childUser;
+
     private User $strangerUser;
+
     private Account $guardianAccount;
+
     private Account $coGuardianAccount;
+
     private Account $minorAccount;
 
     protected function setUp(): void
@@ -70,9 +77,9 @@ class MinorRewardTest extends BaseTestCase
         $this->coGuardianAccount = $this->createOwnedPersonalAccount($this->coGuardianUser);
 
         $this->minorAccount = Account::factory()->create([
-            'user_uuid'        => $this->childUser->uuid,
-            'type'             => 'minor',
-            'permission_level' => 3,
+            'user_uuid'         => $this->childUser->uuid,
+            'type'              => 'minor',
+            'permission_level'  => 3,
             'parent_account_id' => $this->guardianAccount->id,
         ]);
 
@@ -139,9 +146,9 @@ class MinorRewardTest extends BaseTestCase
     {
         $orphanChild = User::factory()->create();
         $orphanMinorAccount = Account::factory()->create([
-            'user_uuid'        => $orphanChild->uuid,
-            'type'             => 'minor',
-            'permission_level' => 3,
+            'user_uuid'         => $orphanChild->uuid,
+            'type'              => 'minor',
+            'permission_level'  => 3,
             'parent_account_id' => $this->guardianAccount->id,
         ]);
 

@@ -41,13 +41,13 @@ class BusinessOnboardingCase extends Model
     ];
 
     protected $casts = [
-        'requested_capabilities' => 'array',
-        'business_details' => 'array',
-        'evidence' => 'array',
-        'risk_assessment' => 'array',
+        'requested_capabilities'  => 'array',
+        'business_details'        => 'array',
+        'evidence'                => 'array',
+        'risk_assessment'         => 'array',
         'activation_requirements' => 'array',
-        'metadata' => 'array',
-        'approved_at' => 'datetime',
+        'metadata'                => 'array',
+        'approved_at'             => 'datetime',
     ];
 
     /**

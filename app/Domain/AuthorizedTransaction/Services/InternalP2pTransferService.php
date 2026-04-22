@@ -38,11 +38,11 @@ class InternalP2pTransferService
         $sender = $this->resolveAccountOwner($fromAccountUuid);
         $recipient = $this->resolveAccountOwner($toAccountUuid);
         $metadata = array_filter([
-            'source'         => 'p2p',
-            'operation_type' => $operationType,
+            'source'             => 'p2p',
+            'operation_type'     => $operationType,
             'money_state_anchor' => 'ledger_posting',
-            'note'           => $note,
-            'p2p_display'    => [
+            'note'               => $note,
+            'p2p_display'        => [
                 'sender_label'    => $this->userLabel($sender),
                 'recipient_label' => $this->userLabel($recipient),
                 'note_preview'    => $note,

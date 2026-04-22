@@ -6,11 +6,10 @@ namespace Tests\Feature\Http\Controllers\Api;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
-use App\Domain\Account\Models\TransactionProjection;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\Mobile\Models\MobileDevice;
 use App\Models\User;
-use Illuminate\Support\Facades\Artisan;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -20,12 +19,22 @@ use Tests\TestCase;
 
 class MinorSpendEnforcementTest extends TestCase
 {
-    protected function connectionsToTransact(): array { return ['mysql', 'central']; }
-    protected function shouldCreateDefaultAccountsInSetup(): bool { return false; }
+    protected function connectionsToTransact(): array
+    {
+    return ['mysql', 'central'];
+    }
+
+    protected function shouldCreateDefaultAccountsInSetup(): bool
+    {
+    return false;
+    }
 
     private User $parent;
+
     private User $child;
+
     private Account $minorAccount;
+
     private string $tenantId;
 
     protected function setUp(): void
@@ -35,20 +44,20 @@ class MinorSpendEnforcementTest extends TestCase
         $this->withoutMiddleware();
 
         // Ensure accounts table has type column for minor account testing
-        if (!Schema::hasColumn('accounts', 'type')) {
+        if (! Schema::hasColumn('accounts', 'type')) {
             DB::statement('ALTER TABLE accounts ADD COLUMN type VARCHAR(255) DEFAULT "personal"');
         }
-        if (!Schema::hasColumn('accounts', 'permission_level')) {
+        if (! Schema::hasColumn('accounts', 'permission_level')) {
             DB::statement('ALTER TABLE accounts ADD COLUMN permission_level INT NULL');
         }
-        if (!Schema::hasColumn('accounts', 'parent_account_id')) {
+        if (! Schema::hasColumn('accounts', 'parent_account_id')) {
             DB::statement('ALTER TABLE accounts ADD COLUMN parent_account_id CHAR(36) NULL');
         }
 
         // Disable mobile trust policy constraints for testing
         config([
             'maphapay_migration.enable_send_money' => true,
-            'mobile.attestation.enabled' => false,
+            'mobile.attestation.enabled'           => false,
         ]);
 
         // Create SZL asset if it doesn't exist
@@ -58,29 +67,29 @@ class MinorSpendEnforcementTest extends TestCase
         );
 
         $this->parent = User::factory()->create();
-        $this->child  = User::factory()->create();
+        $this->child = User::factory()->create();
 
         $parentAccountUuid = Str::uuid();
         $minorAccountUuid = Str::uuid();
 
         // Create parent account - use raw insert with only basic columns
         DB::table('accounts')->insert([
-            'uuid' => $parentAccountUuid,
-            'name' => 'Parent Account',
-            'user_uuid' => $this->parent->uuid,
-            'balance' => 0,
-            'frozen' => false,
+            'uuid'       => $parentAccountUuid,
+            'name'       => 'Parent Account',
+            'user_uuid'  => $this->parent->uuid,
+            'balance'    => 0,
+            'frozen'     => false,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
         // Create minor account - use raw insert with only columns that exist
         $minorData = [
-            'uuid' => $minorAccountUuid,
-            'name' => 'Minor Account',
-            'user_uuid' => $this->child->uuid,
-            'balance' => 0,
-            'frozen' => false,
+            'uuid'       => $minorAccountUuid,
+            'name'       => 'Minor Account',
+            'user_uuid'  => $this->child->uuid,
+            'balance'    => 0,
+            'frozen'     => false,
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -106,8 +115,8 @@ class MinorSpendEnforcementTest extends TestCase
 
         $this->tenantId = (string) Str::uuid();
         DB::connection('central')->table('tenants')->insert([
-            'id' => $this->tenantId, 'name' => 'Test', 'plan' => 'default',
-            'team_id' => null, 'trial_ends_at' => null,
+            'id'         => $this->tenantId, 'name' => 'Test', 'plan' => 'default',
+            'team_id'    => null, 'trial_ends_at' => null,
             'created_at' => now(), 'updated_at' => now(), 'data' => json_encode([]),
         ]);
         // Create a trusted device for the child to bypass device trust policy
@@ -116,7 +125,7 @@ class MinorSpendEnforcementTest extends TestCase
             ->trusted()
             ->ios()
             ->create([
-                'user_id' => $this->child->id,
+                'user_id'   => $this->child->id,
                 'device_id' => $deviceId,
             ]);
 
@@ -136,7 +145,7 @@ class MinorSpendEnforcementTest extends TestCase
                 'user_uuid' => $this->parent->uuid, 'account_uuid' => $this->minorAccount->uuid,
                 'tenant_id' => $this->tenantId, 'account_type' => 'minor', 'role' => 'guardian', 'status' => 'active',
             ]);
-        } catch (\Exception) {
+        } catch (Exception) {
             // Account memberships table may not exist in test env
         }
     }
@@ -153,11 +162,11 @@ class MinorSpendEnforcementTest extends TestCase
 
         // Create recipient account
         DB::table('accounts')->insert([
-            'uuid' => Str::uuid(),
-            'name' => 'Recipient Account',
-            'user_uuid' => $recipient->uuid,
-            'balance' => 1000,
-            'frozen' => false,
+            'uuid'       => Str::uuid(),
+            'name'       => 'Recipient Account',
+            'user_uuid'  => $recipient->uuid,
+            'balance'    => 1000,
+            'frozen'     => false,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -179,11 +188,11 @@ class MinorSpendEnforcementTest extends TestCase
 
         // Create recipient account
         DB::table('accounts')->insert([
-            'uuid' => Str::uuid(),
-            'name' => 'Recipient Account',
-            'user_uuid' => $recipient->uuid,
-            'balance' => 1000,
-            'frozen' => false,
+            'uuid'       => Str::uuid(),
+            'name'       => 'Recipient Account',
+            'user_uuid'  => $recipient->uuid,
+            'balance'    => 1000,
+            'frozen'     => false,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -209,11 +218,11 @@ class MinorSpendEnforcementTest extends TestCase
 
         // Create recipient account
         DB::table('accounts')->insert([
-            'uuid' => Str::uuid(),
-            'name' => 'Recipient Account',
-            'user_uuid' => $recipient->uuid,
-            'balance' => 1000,
-            'frozen' => false,
+            'uuid'       => Str::uuid(),
+            'name'       => 'Recipient Account',
+            'user_uuid'  => $recipient->uuid,
+            'balance'    => 1000,
+            'frozen'     => false,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -235,11 +244,11 @@ class MinorSpendEnforcementTest extends TestCase
 
         // Create recipient account
         DB::table('accounts')->insert([
-            'uuid' => Str::uuid(),
-            'name' => 'Recipient Account',
-            'user_uuid' => $recipient->uuid,
-            'balance' => 1000,
-            'frozen' => false,
+            'uuid'       => Str::uuid(),
+            'name'       => 'Recipient Account',
+            'user_uuid'  => $recipient->uuid,
+            'balance'    => 1000,
+            'frozen'     => false,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -267,11 +276,11 @@ class MinorSpendEnforcementTest extends TestCase
 
         // Create recipient account
         DB::table('accounts')->insert([
-            'uuid' => Str::uuid(),
-            'name' => 'Recipient Account',
-            'user_uuid' => $recipient->uuid,
-            'balance' => 1000,
-            'frozen' => false,
+            'uuid'       => Str::uuid(),
+            'name'       => 'Recipient Account',
+            'user_uuid'  => $recipient->uuid,
+            'balance'    => 1000,
+            'frozen'     => false,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -301,11 +310,11 @@ class MinorSpendEnforcementTest extends TestCase
 
         // Create recipient account
         DB::table('accounts')->insert([
-            'uuid' => Str::uuid(),
-            'name' => 'Recipient Account',
-            'user_uuid' => $recipient->uuid,
-            'balance' => 1000,
-            'frozen' => false,
+            'uuid'       => Str::uuid(),
+            'name'       => 'Recipient Account',
+            'user_uuid'  => $recipient->uuid,
+            'balance'    => 1000,
+            'frozen'     => false,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

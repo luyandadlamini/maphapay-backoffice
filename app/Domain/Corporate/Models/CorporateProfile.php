@@ -65,13 +65,13 @@ class CorporateProfile extends Model
         $grant = CorporateCapabilityGrant::query()->updateOrCreate(
             [
                 'corporate_profile_id' => $this->id,
-                'user_id' => $user->id,
-                'capability' => $capabilityValue,
+                'user_id'              => $user->id,
+                'capability'           => $capabilityValue,
             ],
             [
-                'granted_by_user_id' => $grantedBy?->id,
+                'granted_by_user_id'        => $grantedBy?->id,
                 'approval_threshold_amount' => $approvalThresholdAmount,
-                'metadata' => $metadata === [] ? null : $metadata,
+                'metadata'                  => $metadata === [] ? null : $metadata,
             ],
         );
 

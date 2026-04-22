@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\CreatesApplication;
+use Throwable;
 
 #[Large]
 class BackfillAccountMembershipsForExistingUsersMigrationTest extends BaseTestCase
@@ -27,14 +28,14 @@ class BackfillAccountMembershipsForExistingUsersMigrationTest extends BaseTestCa
 
         try {
             DB::connection('central')->getPdo();
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->markTestSkipped('Central database connection not available: ' . $exception->getMessage());
         }
 
         if (! Schema::connection('central')->hasTable('account_memberships')) {
             Artisan::call('migrate', [
                 '--database' => 'central',
-                '--force' => true,
+                '--force'    => true,
             ]);
         }
     }
@@ -46,7 +47,7 @@ class BackfillAccountMembershipsForExistingUsersMigrationTest extends BaseTestCa
         $user = User::factory()->create();
         $team = Team::factory()->create([
             'user_id' => $user->id,
-            'name' => 'Backfill Owner Team',
+            'name'    => 'Backfill Owner Team',
         ]);
         $tenant = Tenant::createFromTeam($team);
 
@@ -55,48 +56,48 @@ class BackfillAccountMembershipsForExistingUsersMigrationTest extends BaseTestCa
         $tenant->run(function () use ($user): void {
             DB::connection('tenant')->table('accounts')->insert([
                 [
-                    'uuid' => 'acc-personal-backfill',
-                    'user_uuid' => $user->uuid,
+                    'uuid'                => 'acc-personal-backfill',
+                    'user_uuid'           => $user->uuid,
                     'account_holder_uuid' => null,
-                    'name' => 'Personal Account',
-                    'account_number' => '8000000001',
-                    'type' => 'standard',
-                    'currency' => 'SZL',
-                    'balance' => 0,
-                    'available_balance' => 0,
-                    'reserved_balance' => 0,
-                    'is_active' => true,
-                    'is_frozen' => false,
-                    'status' => 'active',
-                    'metadata' => null,
-                    'created_by' => null,
-                    'updated_by' => null,
-                    'frozen_by' => null,
-                    'created_at' => now()->subDay(),
-                    'updated_at' => now()->subDay(),
-                    'deleted_at' => null,
+                    'name'                => 'Personal Account',
+                    'account_number'      => '8000000001',
+                    'type'                => 'standard',
+                    'currency'            => 'SZL',
+                    'balance'             => 0,
+                    'available_balance'   => 0,
+                    'reserved_balance'    => 0,
+                    'is_active'           => true,
+                    'is_frozen'           => false,
+                    'status'              => 'active',
+                    'metadata'            => null,
+                    'created_by'          => null,
+                    'updated_by'          => null,
+                    'frozen_by'           => null,
+                    'created_at'          => now()->subDay(),
+                    'updated_at'          => now()->subDay(),
+                    'deleted_at'          => null,
                 ],
                 [
-                    'uuid' => 'acc-merchant-existing',
-                    'user_uuid' => $user->uuid,
+                    'uuid'                => 'acc-merchant-existing',
+                    'user_uuid'           => $user->uuid,
                     'account_holder_uuid' => null,
-                    'name' => 'Merchant Account',
-                    'account_number' => '8000000002',
-                    'type' => 'merchant',
-                    'currency' => 'SZL',
-                    'balance' => 0,
-                    'available_balance' => 0,
-                    'reserved_balance' => 0,
-                    'is_active' => true,
-                    'is_frozen' => false,
-                    'status' => 'active',
-                    'metadata' => null,
-                    'created_by' => null,
-                    'updated_by' => null,
-                    'frozen_by' => null,
-                    'created_at' => now()->subDay(),
-                    'updated_at' => now()->subDay(),
-                    'deleted_at' => null,
+                    'name'                => 'Merchant Account',
+                    'account_number'      => '8000000002',
+                    'type'                => 'merchant',
+                    'currency'            => 'SZL',
+                    'balance'             => 0,
+                    'available_balance'   => 0,
+                    'reserved_balance'    => 0,
+                    'is_active'           => true,
+                    'is_frozen'           => false,
+                    'status'              => 'active',
+                    'metadata'            => null,
+                    'created_by'          => null,
+                    'updated_by'          => null,
+                    'frozen_by'           => null,
+                    'created_at'          => now()->subDay(),
+                    'updated_at'          => now()->subDay(),
+                    'deleted_at'          => null,
                 ],
             ]);
         });

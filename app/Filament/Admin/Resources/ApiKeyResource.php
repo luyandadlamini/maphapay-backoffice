@@ -196,8 +196,8 @@ class ApiKeyResource extends Resource
                                 newValues: ['is_active' => $record->fresh()?->is_active],
                                 metadata: [
                                     'api_key_name' => $record->name,
-                                    'key_prefix' => $record->key_prefix,
-                                    'actor_email' => auth()->user()->email ?? 'system',
+                                    'key_prefix'   => $record->key_prefix,
+                                    'actor_email'  => auth()->user()->email ?? 'system',
                                 ],
                                 tags: 'backoffice,platform,api-keys'
                             );

@@ -12,9 +12,10 @@ use App\Models\AdminActionApprovalRequest;
 use App\Models\DataSubjectRequest;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 use function Pest\Livewire\livewire;
+
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * @param  array<string, mixed>  $overrides
@@ -24,21 +25,21 @@ function createAmlScreeningRecord(array $overrides = []): AmlScreening
     $subject = User::factory()->create();
 
     return AmlScreening::query()->create(array_merge([
-        'entity_id' => $subject->uuid,
-        'entity_type' => User::class,
-        'screening_number' => 'AML-' . now()->format('Y') . '-' . str_pad((string) random_int(1, 99999), 5, '0', STR_PAD_LEFT),
-        'type' => AmlScreening::TYPE_SANCTIONS,
-        'status' => AmlScreening::STATUS_COMPLETED,
-        'provider' => 'manual',
+        'entity_id'          => $subject->uuid,
+        'entity_type'        => User::class,
+        'screening_number'   => 'AML-' . now()->format('Y') . '-' . str_pad((string) random_int(1, 99999), 5, '0', STR_PAD_LEFT),
+        'type'               => AmlScreening::TYPE_SANCTIONS,
+        'status'             => AmlScreening::STATUS_COMPLETED,
+        'provider'           => 'manual',
         'provider_reference' => (string) str()->uuid(),
-        'search_parameters' => ['name' => $subject->name],
-        'screening_config' => [],
-        'fuzzy_matching' => true,
-        'match_threshold' => 85,
-        'total_matches' => 2,
-        'confirmed_matches' => 1,
-        'false_positives' => 0,
-        'overall_risk' => AmlScreening::RISK_HIGH,
+        'search_parameters'  => ['name' => $subject->name],
+        'screening_config'   => [],
+        'fuzzy_matching'     => true,
+        'match_threshold'    => 85,
+        'total_matches'      => 2,
+        'confirmed_matches'  => 1,
+        'false_positives'    => 0,
+        'overall_risk'       => AmlScreening::RISK_HIGH,
     ], $overrides));
 }
 
@@ -86,19 +87,19 @@ it('submits aml sar actions for approval with captured evidence', function (): v
     $this->actingAs($compliance);
 
     $screening = createAmlScreeningRecord([
-        'total_matches' => 3,
+        'total_matches'     => 3,
         'confirmed_matches' => 2,
-        'overall_risk' => AmlScreening::RISK_CRITICAL,
-        'reviewed_by' => null,
-        'reviewed_at' => null,
-        'review_decision' => null,
-        'review_notes' => null,
+        'overall_risk'      => AmlScreening::RISK_CRITICAL,
+        'reviewed_by'       => null,
+        'reviewed_at'       => null,
+        'review_decision'   => null,
+        'review_notes'      => null,
     ]);
 
     livewire(ListAmlScreenings::class)
         ->callTableAction('submitSar', $screening, data: [
             'description' => 'Escalate this critical sanctions match into a formal suspicious activity report filing.',
-            'reference' => 'SAR-CASE-2026-0007',
+            'reference'   => 'SAR-CASE-2026-0007',
         ])
         ->assertHasNoTableActionErrors();
 
@@ -132,10 +133,10 @@ it('records governed audit metadata when clearing an aml flag directly', functio
     $this->actingAs($compliance);
 
     $screening = createAmlScreeningRecord([
-        'reviewed_by' => null,
-        'reviewed_at' => null,
+        'reviewed_by'     => null,
+        'reviewed_at'     => null,
         'review_decision' => null,
-        'review_notes' => null,
+        'review_notes'    => null,
     ]);
 
     livewire(ListAmlScreenings::class)
@@ -173,10 +174,10 @@ it('records governed audit metadata when escalating an aml screening directly', 
     $this->actingAs($compliance);
 
     $screening = createAmlScreeningRecord([
-        'reviewed_by' => null,
-        'reviewed_at' => null,
+        'reviewed_by'     => null,
+        'reviewed_at'     => null,
         'review_decision' => null,
-        'review_notes' => null,
+        'review_notes'    => null,
     ]);
 
     livewire(ListAmlScreenings::class)
@@ -212,9 +213,9 @@ it('submits data deletion fulfillment for approval with evidence capture', funct
 
     $requestRecord = DataSubjectRequest::query()->create([
         'user_id' => $subject->id,
-        'type' => DataSubjectRequest::TYPE_DELETION,
-        'status' => DataSubjectRequest::STATUS_IN_REVIEW,
-        'reason' => 'Customer requested account erasure after relationship closure.',
+        'type'    => DataSubjectRequest::TYPE_DELETION,
+        'status'  => DataSubjectRequest::STATUS_IN_REVIEW,
+        'reason'  => 'Customer requested account erasure after relationship closure.',
     ]);
 
     livewire(ListDataSubjectRequests::class)
@@ -257,9 +258,9 @@ it('records governed audit metadata when fulfilling a data export directly', fun
 
     $requestRecord = DataSubjectRequest::query()->create([
         'user_id' => $subject->id,
-        'type' => DataSubjectRequest::TYPE_EXPORT,
-        'status' => DataSubjectRequest::STATUS_RECEIVED,
-        'reason' => 'Customer requested a portable export of retained personal data.',
+        'type'    => DataSubjectRequest::TYPE_EXPORT,
+        'status'  => DataSubjectRequest::STATUS_RECEIVED,
+        'reason'  => 'Customer requested a portable export of retained personal data.',
     ]);
 
     livewire(ListDataSubjectRequests::class)
@@ -298,9 +299,9 @@ it('records governed audit metadata when rejecting a data subject request direct
 
     $requestRecord = DataSubjectRequest::query()->create([
         'user_id' => $subject->id,
-        'type' => DataSubjectRequest::TYPE_ACCESS,
-        'status' => DataSubjectRequest::STATUS_IN_REVIEW,
-        'reason' => 'Customer requested access outside the supported statutory window.',
+        'type'    => DataSubjectRequest::TYPE_ACCESS,
+        'status'  => DataSubjectRequest::STATUS_IN_REVIEW,
+        'reason'  => 'Customer requested access outside the supported statutory window.',
     ]);
 
     livewire(ListDataSubjectRequests::class)
@@ -338,8 +339,8 @@ it('enforces compliance-only action helpers and closes direct mutation bypasses'
 
     $requestRecord = DataSubjectRequest::query()->create([
         'user_id' => $subject->id,
-        'type' => DataSubjectRequest::TYPE_EXPORT,
-        'status' => DataSubjectRequest::STATUS_RECEIVED,
+        'type'    => DataSubjectRequest::TYPE_EXPORT,
+        'status'  => DataSubjectRequest::STATUS_RECEIVED,
     ]);
 
     expect(AmlScreeningResource::canCreate())->toBeFalse()
@@ -357,7 +358,7 @@ it('enforces compliance-only action helpers and closes direct mutation bypasses'
 
     expect(fn () => AmlScreeningResource::requestSarApproval($screening, [
         'description' => 'Unauthorized SAR request attempt from finance workspace.',
-        'reference' => 'SAR-UNAUTH-1',
+        'reference'   => 'SAR-UNAUTH-1',
     ]))->toThrow(HttpException::class, 'This action is outside your workspace.');
 
     expect(fn () => DataSubjectRequestResource::fulfillExportRequest(

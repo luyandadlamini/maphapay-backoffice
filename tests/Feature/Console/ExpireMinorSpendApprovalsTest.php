@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\MinorSpendApproval;
 use App\Models\User;
-use Carbon\Carbon;
 
 beforeEach(function () {
     $this->seed();
@@ -24,30 +23,30 @@ it('cancels expired pending approvals', function () {
 
     // Create pending approval that expired 1 hour ago
     $expiredApproval = MinorSpendApproval::create([
-        'minor_account_uuid'     => $minorAccount->uuid,
-        'guardian_account_uuid'  => $guardianAccount->uuid,
-        'from_account_uuid'      => $fromAccount->uuid,
-        'to_account_uuid'        => $toAccount->uuid,
-        'amount'                 => '100.00',
-        'asset_code'             => 'USD',
-        'merchant_category'      => 'groceries',
-        'status'                 => 'pending',
-        'expires_at'             => now()->subHour(),
-        'decided_at'             => null,
+        'minor_account_uuid'    => $minorAccount->uuid,
+        'guardian_account_uuid' => $guardianAccount->uuid,
+        'from_account_uuid'     => $fromAccount->uuid,
+        'to_account_uuid'       => $toAccount->uuid,
+        'amount'                => '100.00',
+        'asset_code'            => 'USD',
+        'merchant_category'     => 'groceries',
+        'status'                => 'pending',
+        'expires_at'            => now()->subHour(),
+        'decided_at'            => null,
     ]);
 
     // Create pending approval that hasn't expired yet
     $validApproval = MinorSpendApproval::create([
-        'minor_account_uuid'     => $minorAccount->uuid,
-        'guardian_account_uuid'  => $guardianAccount->uuid,
-        'from_account_uuid'      => $fromAccount->uuid,
-        'to_account_uuid'        => $toAccount->uuid,
-        'amount'                 => '50.00',
-        'asset_code'             => 'USD',
-        'merchant_category'      => 'entertainment',
-        'status'                 => 'pending',
-        'expires_at'             => now()->addHour(),
-        'decided_at'             => null,
+        'minor_account_uuid'    => $minorAccount->uuid,
+        'guardian_account_uuid' => $guardianAccount->uuid,
+        'from_account_uuid'     => $fromAccount->uuid,
+        'to_account_uuid'       => $toAccount->uuid,
+        'amount'                => '50.00',
+        'asset_code'            => 'USD',
+        'merchant_category'     => 'entertainment',
+        'status'                => 'pending',
+        'expires_at'            => now()->addHour(),
+        'decided_at'            => null,
     ]);
 
     // Run the command
@@ -79,30 +78,30 @@ it('does not touch already decided approvals', function () {
 
     // Create already-approved approval that has expired
     $approvedApproval = MinorSpendApproval::create([
-        'minor_account_uuid'     => $minorAccount->uuid,
-        'guardian_account_uuid'  => $guardianAccount->uuid,
-        'from_account_uuid'      => $fromAccount->uuid,
-        'to_account_uuid'        => $toAccount->uuid,
-        'amount'                 => '100.00',
-        'asset_code'             => 'USD',
-        'merchant_category'      => 'groceries',
-        'status'                 => 'approved',
-        'expires_at'             => now()->subHour(),
-        'decided_at'             => now()->subHour(),
+        'minor_account_uuid'    => $minorAccount->uuid,
+        'guardian_account_uuid' => $guardianAccount->uuid,
+        'from_account_uuid'     => $fromAccount->uuid,
+        'to_account_uuid'       => $toAccount->uuid,
+        'amount'                => '100.00',
+        'asset_code'            => 'USD',
+        'merchant_category'     => 'groceries',
+        'status'                => 'approved',
+        'expires_at'            => now()->subHour(),
+        'decided_at'            => now()->subHour(),
     ]);
 
     // Create already-declined approval that has expired
     $declinedApproval = MinorSpendApproval::create([
-        'minor_account_uuid'     => $minorAccount->uuid,
-        'guardian_account_uuid'  => $guardianAccount->uuid,
-        'from_account_uuid'      => $fromAccount->uuid,
-        'to_account_uuid'        => $toAccount->uuid,
-        'amount'                 => '75.00',
-        'asset_code'             => 'USD',
-        'merchant_category'      => 'dining',
-        'status'                 => 'declined',
-        'expires_at'             => now()->subHour(),
-        'decided_at'             => now()->subHour(),
+        'minor_account_uuid'    => $minorAccount->uuid,
+        'guardian_account_uuid' => $guardianAccount->uuid,
+        'from_account_uuid'     => $fromAccount->uuid,
+        'to_account_uuid'       => $toAccount->uuid,
+        'amount'                => '75.00',
+        'asset_code'            => 'USD',
+        'merchant_category'     => 'dining',
+        'status'                => 'declined',
+        'expires_at'            => now()->subHour(),
+        'decided_at'            => now()->subHour(),
     ]);
 
     // Run the command
@@ -130,16 +129,16 @@ it('is idempotent', function () {
 
     // Create pending approval that expired 1 hour ago
     $expiredApproval = MinorSpendApproval::create([
-        'minor_account_uuid'     => $minorAccount->uuid,
-        'guardian_account_uuid'  => $guardianAccount->uuid,
-        'from_account_uuid'      => $fromAccount->uuid,
-        'to_account_uuid'        => $toAccount->uuid,
-        'amount'                 => '100.00',
-        'asset_code'             => 'USD',
-        'merchant_category'      => 'groceries',
-        'status'                 => 'pending',
-        'expires_at'             => now()->subHour(),
-        'decided_at'             => null,
+        'minor_account_uuid'    => $minorAccount->uuid,
+        'guardian_account_uuid' => $guardianAccount->uuid,
+        'from_account_uuid'     => $fromAccount->uuid,
+        'to_account_uuid'       => $toAccount->uuid,
+        'amount'                => '100.00',
+        'asset_code'            => 'USD',
+        'merchant_category'     => 'groceries',
+        'status'                => 'pending',
+        'expires_at'            => now()->subHour(),
+        'decided_at'            => null,
     ]);
 
     // Run the command first time

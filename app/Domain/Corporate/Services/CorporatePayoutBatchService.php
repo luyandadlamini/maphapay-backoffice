@@ -8,9 +8,10 @@ use App\Domain\Corporate\Models\CorporatePayoutBatch;
 use App\Domain\Corporate\Models\CorporatePayoutBatchItem;
 use App\Domain\Corporate\Models\CorporateProfile;
 use App\Models\User;
-use InvalidArgumentException;
+use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 class CorporatePayoutBatchService
 {
@@ -26,7 +27,7 @@ class CorporatePayoutBatchService
         CorporateProfile $profile,
         string $assetCode,
         ?string $label = null,
-        ?\DateTimeInterface $cutOffAt = null,
+        ?DateTimeInterface $cutOffAt = null,
     ): CorporatePayoutBatch {
         /** @var CorporatePayoutBatch $batch */
         $batch = CorporatePayoutBatch::query()->create([
@@ -137,9 +138,9 @@ class CorporatePayoutBatchService
                 targetType: 'payout_batch',
                 targetIdentifier: $batch->public_id,
                 evidence: [
-                    'item_count'          => $itemCount,
-                    'total_amount_minor'  => $batch->total_amount_minor,
-                    'asset_code'          => $batch->asset_code,
+                    'item_count'         => $itemCount,
+                    'total_amount_minor' => $batch->total_amount_minor,
+                    'asset_code'         => $batch->asset_code,
                 ],
             );
 

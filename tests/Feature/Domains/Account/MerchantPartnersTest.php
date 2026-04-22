@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Tests\Feature\Domains\Account;
@@ -8,7 +9,6 @@ use Tests\DomainTestCase;
 
 class MerchantPartnersTest extends DomainTestCase
 {
-
     public function test_merchant_partners_table_exists(): void
     {
         $schema = \Illuminate\Support\Facades\Schema::connection('mysql');
@@ -37,11 +37,11 @@ class MerchantPartnersTest extends DomainTestCase
     public function test_merchant_partner_can_be_created(): void
     {
         $partner = MerchantPartner::create([
-            'name' => 'MTN Eswatini',
-            'category' => 'telecom',
+            'name'            => 'MTN Eswatini',
+            'category'        => 'telecom',
             'commission_rate' => 30.00,
             'payout_schedule' => 'weekly',
-            'is_active' => true,
+            'is_active'       => true,
         ]);
 
         $this->assertNotNull($partner->id);

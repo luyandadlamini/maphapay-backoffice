@@ -31,7 +31,8 @@ class RequestMoneyReceivedStoreController extends Controller
         private readonly MoneyMovementVerificationPolicyResolver $verificationPolicyResolver,
         private readonly MaphaPayMoneyMovementTelemetry $telemetry,
         private readonly HighRiskActionTrustPolicy $trustPolicy,
-    ) {}
+    ) {
+    }
 
     public function __invoke(Request $request, MoneyRequest $moneyRequest): JsonResponse
     {
@@ -91,10 +92,10 @@ class RequestMoneyReceivedStoreController extends Controller
             operationType: AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
             clientHint: isset($validated['verification_type']) ? (string) $validated['verification_type'] : null,
             context: [
-                'money_request_id' => $moneyRequest->id,
-                'sender_account_uuid' => $fromAccount->uuid,
+                'money_request_id'       => $moneyRequest->id,
+                'sender_account_uuid'    => $fromAccount->uuid,
                 'recipient_account_uuid' => $toAccount->uuid,
-                'requester_user_id' => $requester->id,
+                'requester_user_id'      => $requester->id,
             ],
         );
         $verificationType = $policy['verification_type'];
@@ -104,11 +105,11 @@ class RequestMoneyReceivedStoreController extends Controller
         if (($trust['decision'] ?? 'allow') === 'deny') {
             return response()->json([
                 'success' => false,
-                'error' => [
-                    'code' => 'TRUST_POLICY_DENY',
-                    'message' => 'Request denied by mobile trust policy.',
-                    'trust_decision' => $trust['decision'] ?? 'deny',
-                    'trust_reason' => $trust['reason'] ?? 'policy',
+                'error'   => [
+                    'code'            => 'TRUST_POLICY_DENY',
+                    'message'         => 'Request denied by mobile trust policy.',
+                    'trust_decision'  => $trust['decision'] ?? 'deny',
+                    'trust_reason'    => $trust['reason'] ?? 'policy',
                     'trust_record_id' => $trust['record_id'] ?? null,
                 ],
             ], 403);
@@ -117,29 +118,29 @@ class RequestMoneyReceivedStoreController extends Controller
         if (in_array(($trust['decision'] ?? ''), ['step_up', 'degrade'], true)) {
             return response()->json([
                 'success' => false,
-                'error' => [
-                    'code' => 'TRUST_POLICY_STEP_UP',
-                    'message' => 'Additional verification is required by mobile trust policy.',
-                    'trust_decision' => $trust['decision'],
-                    'trust_reason' => $trust['reason'] ?? 'policy',
+                'error'   => [
+                    'code'            => 'TRUST_POLICY_STEP_UP',
+                    'message'         => 'Additional verification is required by mobile trust policy.',
+                    'trust_decision'  => $trust['decision'],
+                    'trust_reason'    => $trust['reason'] ?? 'policy',
                     'trust_record_id' => $trust['record_id'] ?? null,
                 ],
             ], 428);
         }
 
         $this->telemetry->logEvent('request_money_accept_initiation_started', $this->telemetry->requestContext($request, [
-            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
-            'money_request_id' => $moneyRequest->id,
-            'money_request_status' => $moneyRequest->status,
-            'sender_account_uuid' => $fromAccount->uuid,
+            'remark'                 => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+            'money_request_id'       => $moneyRequest->id,
+            'money_request_status'   => $moneyRequest->status,
+            'sender_account_uuid'    => $fromAccount->uuid,
             'recipient_account_uuid' => $toAccount->uuid,
-            'sender_user_id' => $authUser->id,
-            'recipient_user_id' => $requester->id,
-            'amount' => $moneyRequest->amount,
-            'asset_code' => $moneyRequest->asset_code,
-            'status' => AuthorizedTransaction::STATUS_PENDING,
-            'verification_policy' => $policy['verification_type'],
-            'risk_reason' => $policy['risk_reason'],
+            'sender_user_id'         => $authUser->id,
+            'recipient_user_id'      => $requester->id,
+            'amount'                 => $moneyRequest->amount,
+            'asset_code'             => $moneyRequest->asset_code,
+            'status'                 => AuthorizedTransaction::STATUS_PENDING,
+            'verification_policy'    => $policy['verification_type'],
+            'risk_reason'            => $policy['risk_reason'],
             'idempotency_key_suffix' => $this->telemetry->maskIdempotencyKey($idempotencyKey),
         ]));
 
@@ -184,7 +185,7 @@ class RequestMoneyReceivedStoreController extends Controller
                     ) {
                         $this->telemetry->logIdempotencyReplay($request, $idempotencyKey, [
                             'status_code' => 200,
-                            'source' => 'authorized_transaction',
+                            'source'      => 'authorized_transaction',
                         ]);
 
                         $codeSentMessage = null;
@@ -209,15 +210,15 @@ class RequestMoneyReceivedStoreController extends Controller
                 }
 
                 $payload = [
-                    'money_request_id' => $lockedMoneyRequest->id,
-                    'requester_user_id' => (int) $lockedMoneyRequest->requester_user_id,
-                    'amount' => $lockedMoneyRequest->amount,
-                    'asset_code' => $lockedMoneyRequest->asset_code,
-                    'from_account_uuid' => $fromAccount->uuid,
-                    'to_account_uuid' => $toAccount->uuid,
+                    'money_request_id'     => $lockedMoneyRequest->id,
+                    'requester_user_id'    => (int) $lockedMoneyRequest->requester_user_id,
+                    'amount'               => $lockedMoneyRequest->amount,
+                    'asset_code'           => $lockedMoneyRequest->asset_code,
+                    'from_account_uuid'    => $fromAccount->uuid,
+                    'to_account_uuid'      => $toAccount->uuid,
                     '_verification_policy' => $policy,
-                    '_trust_record_id' => $trust['record_id'] ?? null,
-                    '_trust_decision' => $trust['decision'] ?? 'allow',
+                    '_trust_record_id'     => $trust['record_id'] ?? null,
+                    '_trust_decision'      => $trust['decision'] ?? 'allow',
                 ];
 
                 $txn = $this->authorizedTransactionManager->initiate(
@@ -245,47 +246,47 @@ class RequestMoneyReceivedStoreController extends Controller
             ]);
         } catch (Throwable $throwable) {
             $this->telemetry->logEvent('request_money_accept_initiation_failed', $this->telemetry->requestContext($request, [
-                'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
-                'money_request_id' => $moneyRequest->id,
-                'sender_account_uuid' => $fromAccount->uuid,
+                'remark'                 => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+                'money_request_id'       => $moneyRequest->id,
+                'sender_account_uuid'    => $fromAccount->uuid,
                 'recipient_account_uuid' => $toAccount->uuid,
-                'sender_user_id' => $authUser->id,
-                'recipient_user_id' => $requester->id,
-                'amount' => $moneyRequest->amount,
-                'asset_code' => $moneyRequest->asset_code,
-                'status' => AuthorizedTransaction::STATUS_PENDING,
-                'verification_policy' => $policy['verification_type'],
-                'risk_reason' => $policy['risk_reason'],
+                'sender_user_id'         => $authUser->id,
+                'recipient_user_id'      => $requester->id,
+                'amount'                 => $moneyRequest->amount,
+                'asset_code'             => $moneyRequest->asset_code,
+                'status'                 => AuthorizedTransaction::STATUS_PENDING,
+                'verification_policy'    => $policy['verification_type'],
+                'risk_reason'            => $policy['risk_reason'],
                 'idempotency_key_suffix' => $this->telemetry->maskIdempotencyKey($idempotencyKey),
-                'message' => $this->telemetry->exceptionMessage($throwable),
+                'message'                => $this->telemetry->exceptionMessage($throwable),
             ]), 'error');
 
             throw $throwable;
         }
 
         $this->telemetry->logEvent('request_money_accept_initiation_succeeded', $this->telemetry->requestContext($request, [
-            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
-            'money_request_id' => $moneyRequest->id,
-            'trx' => $txn->trx,
-            'sender_account_uuid' => $fromAccount->uuid,
+            'remark'                 => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+            'money_request_id'       => $moneyRequest->id,
+            'trx'                    => $txn->trx,
+            'sender_account_uuid'    => $fromAccount->uuid,
             'recipient_account_uuid' => $toAccount->uuid,
-            'sender_user_id' => $authUser->id,
-            'recipient_user_id' => $requester->id,
-            'amount' => $moneyRequest->amount,
-            'asset_code' => $moneyRequest->asset_code,
-            'next_step' => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
-            'status' => AuthorizedTransaction::STATUS_PENDING,
-            'verification_policy' => $policy['verification_type'],
-            'risk_reason' => $policy['risk_reason'],
+            'sender_user_id'         => $authUser->id,
+            'recipient_user_id'      => $requester->id,
+            'amount'                 => $moneyRequest->amount,
+            'asset_code'             => $moneyRequest->asset_code,
+            'next_step'              => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
+            'status'                 => AuthorizedTransaction::STATUS_PENDING,
+            'verification_policy'    => $policy['verification_type'],
+            'risk_reason'            => $policy['risk_reason'],
             'idempotency_key_suffix' => $this->telemetry->maskIdempotencyKey($idempotencyKey),
         ]));
 
         return response()->json([
             'status' => 'success',
             'remark' => 'request_money_received',
-            'data' => [
-                'next_step' => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
-                'trx' => $txn->trx,
+            'data'   => [
+                'next_step'         => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
+                'trx'               => $txn->trx,
                 'code_sent_message' => $codeSentMessage,
             ],
         ]);
@@ -297,8 +298,8 @@ class RequestMoneyReceivedStoreController extends Controller
     private function errorPayload(string $message): array
     {
         return [
-            'status' => 'error',
-            'remark' => 'request_money_received',
+            'status'  => 'error',
+            'remark'  => 'request_money_received',
             'message' => [$message],
         ];
     }
@@ -314,11 +315,11 @@ class RequestMoneyReceivedStoreController extends Controller
         array $context = [],
     ): JsonResponse {
         $this->telemetry->logEvent('request_money_accept_initiation_failed', $this->telemetry->requestContext($request, array_merge($context, [
-            'remark' => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
-            'money_request_id' => $moneyRequest->id,
+            'remark'               => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
+            'money_request_id'     => $moneyRequest->id,
             'money_request_status' => $moneyRequest->status,
-            'message' => $message,
-            'status_code' => $status,
+            'message'              => $message,
+            'status_code'          => $status,
         ])), 'warning');
 
         return response()->json($this->errorPayload($message), $status);

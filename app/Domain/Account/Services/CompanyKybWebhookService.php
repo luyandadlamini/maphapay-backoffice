@@ -13,12 +13,14 @@ use Throwable;
 class CompanyKybWebhookService
 {
     private const MAX_RETRIES = 3;
+
     private const TIMEOUT = 30;
 
     public function __construct(
         private readonly string $webhookUrl,
         private readonly ?string $webhookSecret = null,
-    ) {}
+    ) {
+    }
 
     public static function forCompany(AccountProfileCompany $company): ?self
     {
@@ -36,16 +38,16 @@ class CompanyKybWebhookService
         ?string $verifiedBy = null
     ): void {
         $payload = [
-            'event' => 'kyb.document.status_changed',
+            'event'     => 'kyb.document.status_changed',
             'timestamp' => now()->toISOString(),
-            'data' => [
-                'company_uuid' => $document->companyProfile?->account_uuid,
-                'company_name' => $document->companyProfile?->company_name,
-                'document_id' => $document->id,
-                'document_type' => $document->document_type,
-                'old_status' => $oldStatus,
-                'new_status' => $newStatus,
-                'verified_by' => $verifiedBy,
+            'data'      => [
+                'company_uuid'     => $document->companyProfile?->account_uuid,
+                'company_name'     => $document->companyProfile?->company_name,
+                'document_id'      => $document->id,
+                'document_type'    => $document->document_type,
+                'old_status'       => $oldStatus,
+                'new_status'       => $newStatus,
+                'verified_by'      => $verifiedBy,
                 'rejection_reason' => $document->rejection_reason,
             ],
         ];
@@ -61,7 +63,7 @@ class CompanyKybWebhookService
 
         $headers = [
             'Content-Type' => 'application/json',
-            'User-Agent' => 'MaphaPay-KYB/1.0',
+            'User-Agent'   => 'MaphaPay-KYB/1.0',
         ];
 
         if ($this->webhookSecret) {
@@ -76,12 +78,12 @@ class CompanyKybWebhookService
 
             Log::info('KYB webhook sent successfully', [
                 'event' => $payload['event'],
-                'url' => $this->webhookUrl,
+                'url'   => $this->webhookUrl,
             ]);
         } catch (Throwable $e) {
             Log::error('KYB webhook failed', [
                 'event' => $payload['event'],
-                'url' => $this->webhookUrl,
+                'url'   => $this->webhookUrl,
                 'error' => $e->getMessage(),
             ]);
         }
@@ -90,6 +92,7 @@ class CompanyKybWebhookService
     private function generateSignature(array $payload): string
     {
         $json = json_encode($payload);
+
         return 'sha256=' . hash_hmac('sha256', $json, $this->webhookSecret);
     }
 }

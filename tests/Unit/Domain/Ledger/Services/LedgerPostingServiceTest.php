@@ -35,23 +35,23 @@ class LedgerPostingServiceTest extends DomainTestCase
 
         $transaction = AuthorizedTransaction::query()->create([
             'user_id' => $sender->id,
-            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx' => 'TRX-' . Str::upper(Str::random(10)),
+            'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'     => 'TRX-' . Str::upper(Str::random(10)),
             'payload' => [
                 'from_account_uuid' => $fromAccount->uuid,
-                'to_account_uuid' => $toAccount->uuid,
-                'amount' => '10.00',
-                'asset_code' => 'SZL',
-                'reference' => $reference,
+                'to_account_uuid'   => $toAccount->uuid,
+                'amount'            => '10.00',
+                'asset_code'        => 'SZL',
+                'reference'         => $reference,
             ],
-            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
             'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
         ]);
 
         app(LedgerPostingService::class)->createForAuthorizedTransaction($transaction, [
-            'amount' => '10.00',
+            'amount'     => '10.00',
             'asset_code' => 'SZL',
-            'reference' => $reference,
+            'reference'  => $reference,
         ]);
 
         $originalPosting = LedgerPosting::query()->where('transfer_reference', $reference)->firstOrFail();
@@ -128,23 +128,23 @@ class LedgerPostingServiceTest extends DomainTestCase
 
         $transaction = AuthorizedTransaction::query()->create([
             'user_id' => $sender->id,
-            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx' => 'TRX-' . Str::upper(Str::random(10)),
+            'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'     => 'TRX-' . Str::upper(Str::random(10)),
             'payload' => [
                 'from_account_uuid' => $fromAccount->uuid,
-                'to_account_uuid' => $toAccount->uuid,
-                'amount' => '10.00',
-                'asset_code' => 'SZL',
-                'reference' => $reference,
+                'to_account_uuid'   => $toAccount->uuid,
+                'amount'            => '10.00',
+                'asset_code'        => 'SZL',
+                'reference'         => $reference,
             ],
-            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
             'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
         ]);
 
         app(LedgerPostingService::class)->createForAuthorizedTransaction($transaction, [
-            'amount' => '10.00',
+            'amount'     => '10.00',
             'asset_code' => 'SZL',
-            'reference' => $reference,
+            'reference'  => $reference,
         ]);
 
         $originalPosting = LedgerPosting::query()->where('transfer_reference', $reference)->firstOrFail();
@@ -202,23 +202,23 @@ class LedgerPostingServiceTest extends DomainTestCase
 
         $transaction = AuthorizedTransaction::query()->create([
             'user_id' => $sender->id,
-            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx' => 'TRX-' . Str::upper(Str::random(10)),
+            'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'     => 'TRX-' . Str::upper(Str::random(10)),
             'payload' => [
                 'from_account_uuid' => $fromAccount->uuid,
-                'to_account_uuid' => $toAccount->uuid,
-                'amount' => '10.00',
-                'asset_code' => 'SZL',
-                'reference' => 'REF-' . Str::upper(Str::random(10)),
+                'to_account_uuid'   => $toAccount->uuid,
+                'amount'            => '10.00',
+                'asset_code'        => 'SZL',
+                'reference'         => 'REF-' . Str::upper(Str::random(10)),
             ],
-            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
             'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
         ]);
 
         $result = app(LedgerPostingService::class)->createForAuthorizedTransaction($transaction, [
-            'amount' => '10.00',
+            'amount'     => '10.00',
             'asset_code' => 'SZL',
-            'reference' => $transaction->payload['reference'],
+            'reference'  => $transaction->payload['reference'],
         ]);
 
         $this->assertNotNull($result);
@@ -247,24 +247,24 @@ class LedgerPostingServiceTest extends DomainTestCase
 
         $transaction = AuthorizedTransaction::query()->create([
             'user_id' => $sender->id,
-            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx' => 'TRX-' . Str::upper(Str::random(10)),
+            'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'     => 'TRX-' . Str::upper(Str::random(10)),
             'payload' => [
                 'from_account_uuid' => $fromAccount->uuid,
-                'to_account_uuid' => $toAccount->uuid,
-                'amount' => '10.00',
-                'asset_code' => 'SZL',
-                'reference' => $reference,
-                'note' => 'Lunch',
+                'to_account_uuid'   => $toAccount->uuid,
+                'amount'            => '10.00',
+                'asset_code'        => 'SZL',
+                'reference'         => $reference,
+                'note'              => 'Lunch',
             ],
-            'status' => AuthorizedTransaction::STATUS_COMPLETED,
+            'status'            => AuthorizedTransaction::STATUS_COMPLETED,
             'verification_type' => AuthorizedTransaction::VERIFICATION_NONE,
         ]);
 
         app(LedgerPostingService::class)->createForAuthorizedTransaction($transaction, [
-            'amount' => '10.00',
+            'amount'     => '10.00',
             'asset_code' => 'SZL',
-            'reference' => $reference,
+            'reference'  => $reference,
         ]);
 
         $projections = TransactionProjection::query()

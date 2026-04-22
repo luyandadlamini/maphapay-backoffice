@@ -44,7 +44,7 @@ describe('HighRiskActionTrustPolicy', function (): void {
         $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
         $policy = new HighRiskActionTrustPolicy($biometricJwtService);
 
-        $user = new User;
+        $user = new User();
         $user->id = 1001;
 
         $request = Request::create('/api/v1/commerce/payments', 'POST', [
@@ -72,12 +72,12 @@ describe('HighRiskActionTrustPolicy', function (): void {
         $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
         $policy = new HighRiskActionTrustPolicy($biometricJwtService);
 
-        $user = new User;
+        $user = new User();
         $user->id = 1004;
 
         $request = Request::create('/api/v1/commerce/payments', 'POST', [
-            'payment_link_token' => 'good-token',
-            'device_type' => 'ios',
+            'payment_link_token'    => 'good-token',
+            'device_type'           => 'ios',
             'device_posture_source' => 'runtime-observed',
             'device_posture_status' => 'simulator_or_emulator',
             'device_posture_reason' => 'non_physical_device',
@@ -111,20 +111,20 @@ describe('HighRiskActionTrustPolicy', function (): void {
         $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
         $policy = new HighRiskActionTrustPolicy($biometricJwtService);
 
-        $user = new User;
+        $user = new User();
         $user->id = 1005;
 
         $request = Request::create('/api/v1/commerce/payments', 'POST', [
-            'payment_link_token' => 'good-token',
-            'device_type' => 'ios',
-            'attestation' => 'expo-runtime-attestation:{"mode":"runtime-posture"}',
-            'attestation_status' => 'collected',
-            'attestation_capability_mode' => 'runtime-posture',
-            'attestation_capability_reason' => 'ios_app_attest_native_collection_unimplemented',
+            'payment_link_token'               => 'good-token',
+            'device_type'                      => 'ios',
+            'attestation'                      => 'expo-runtime-attestation:{"mode":"runtime-posture"}',
+            'attestation_status'               => 'collected',
+            'attestation_capability_mode'      => 'runtime-posture',
+            'attestation_capability_reason'    => 'ios_app_attest_native_collection_unimplemented',
             'attestation_capability_available' => false,
-            'device_posture_source' => 'runtime-observed',
-            'device_posture_status' => 'physical_device',
-            'device_posture_reason' => 'physical_device_confirmed',
+            'device_posture_source'            => 'runtime-observed',
+            'device_posture_status'            => 'physical_device',
+            'device_posture_reason'            => 'physical_device_confirmed',
         ]);
 
         $result = $policy->evaluate($user, $request, 'commerce.payment.process');
@@ -140,12 +140,12 @@ describe('HighRiskActionTrustPolicy', function (): void {
 
         expect($metadata)
             ->toMatchArray([
-                'attestation_present' => true,
-                'attestation_status' => 'collected',
+                'attestation_present'    => true,
+                'attestation_status'     => 'collected',
                 'attestation_capability' => [
                     'available' => false,
-                    'mode' => 'runtime-posture',
-                    'reason' => 'ios_app_attest_native_collection_unimplemented',
+                    'mode'      => 'runtime-posture',
+                    'reason'    => 'ios_app_attest_native_collection_unimplemented',
                 ],
             ]);
     });
@@ -157,19 +157,19 @@ describe('HighRiskActionTrustPolicy', function (): void {
         $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
         $policy = new HighRiskActionTrustPolicy($biometricJwtService);
 
-        $user = new User;
+        $user = new User();
         $user->id = 1006;
 
         $request = Request::create('/api/v1/commerce/payments', 'POST', [
-            'payment_link_token' => 'good-token',
-            'device_type' => 'ios',
-            'attestation' => 'ios-app-attest:verified-payload',
-            'attestation_status' => 'collected',
-            'attestation_capability_mode' => 'app-attest',
+            'payment_link_token'               => 'good-token',
+            'device_type'                      => 'ios',
+            'attestation'                      => 'ios-app-attest:verified-payload',
+            'attestation_status'               => 'collected',
+            'attestation_capability_mode'      => 'app-attest',
             'attestation_capability_available' => true,
-            'device_posture_source' => 'runtime-observed',
-            'device_posture_status' => 'physical_device',
-            'device_posture_reason' => 'physical_device_confirmed',
+            'device_posture_source'            => 'runtime-observed',
+            'device_posture_status'            => 'physical_device',
+            'device_posture_reason'            => 'physical_device_confirmed',
         ]);
 
         $result = $policy->evaluate($user, $request, 'commerce.payment.process');
@@ -185,12 +185,12 @@ describe('HighRiskActionTrustPolicy', function (): void {
         $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
         $policy = new HighRiskActionTrustPolicy($biometricJwtService);
 
-        $user = new User;
+        $user = new User();
         $user->id = 1002;
 
         $request = Request::create('/api/v1/commerce/payments', 'POST', [
             'payment_link_token' => 'good-token',
-            'device_type' => 'ios',
+            'device_type'        => 'ios',
         ]);
 
         $result = $policy->evaluate($user, $request, 'commerce.payment.process');
@@ -214,15 +214,15 @@ describe('HighRiskActionTrustPolicy', function (): void {
         $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
         $policy = new HighRiskActionTrustPolicy($biometricJwtService);
 
-        $user = new User;
+        $user = new User();
         $user->id = 1003;
 
         $request = Request::create('/api/v1/commerce/payments', 'POST', [
-            'payment_link_token' => 'good-token',
-            'device_type' => 'ios',
-            'attestation_status' => 'error',
-            'attestation_capability_mode' => 'none',
-            'attestation_capability_reason' => 'provider_error',
+            'payment_link_token'               => 'good-token',
+            'device_type'                      => 'ios',
+            'attestation_status'               => 'error',
+            'attestation_capability_mode'      => 'none',
+            'attestation_capability_reason'    => 'provider_error',
             'attestation_capability_available' => false,
         ]);
 
@@ -242,12 +242,12 @@ describe('HighRiskActionTrustPolicy', function (): void {
 
         expect($metadata)
             ->toMatchArray([
-                'attestation_present' => false,
-                'attestation_status' => 'error',
+                'attestation_present'    => false,
+                'attestation_status'     => 'error',
                 'attestation_capability' => [
                     'available' => false,
-                    'mode' => 'none',
-                    'reason' => 'provider_error',
+                    'mode'      => 'none',
+                    'reason'    => 'provider_error',
                 ],
             ]);
     });

@@ -6,7 +6,6 @@ namespace App\Filament\Admin\Pages\FundManagement;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Asset\Models\Asset;
-use App\Domain\FundManagement\Services\FundManagementService;
 use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Support\Backoffice\AdminActionGovernance;
 use App\Support\Backoffice\BackofficeWorkspaceAccess;

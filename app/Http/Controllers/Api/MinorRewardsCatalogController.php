@@ -33,11 +33,11 @@ class MinorRewardsCatalogController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
+            'data'    => [
                 'minor_account_uuid' => $minorAccount->uuid,
-                'points_balance' => $this->pointsService->getBalance($minorAccount),
+                'points_balance'     => $this->pointsService->getBalance($minorAccount),
                 'approval_threshold' => $this->rewardService->approvalThreshold(),
-                'rewards' => $rewards,
+                'rewards'            => $rewards,
             ],
         ]);
     }
@@ -52,11 +52,11 @@ class MinorRewardsCatalogController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
+            'data'    => [
                 'minor_account_uuid' => $minorAccount->uuid,
-                'points_balance' => $this->pointsService->getBalance($minorAccount),
+                'points_balance'     => $this->pointsService->getBalance($minorAccount),
                 'approval_threshold' => $this->rewardService->approvalThreshold(),
-                'reward' => $this->rewardService->catalogPayload($minorAccount, $reward),
+                'reward'             => $this->rewardService->catalogPayload($minorAccount, $reward),
             ],
         ]);
     }

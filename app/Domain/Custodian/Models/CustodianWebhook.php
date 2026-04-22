@@ -112,9 +112,9 @@ class CustodianWebhook extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
-        'attempts' => 0,
-        'finality_status' => 'pending',
-        'settlement_status' => 'pending',
+        'attempts'              => 0,
+        'finality_status'       => 'pending',
+        'settlement_status'     => 'pending',
         'reconciliation_status' => 'pending',
     ];
 

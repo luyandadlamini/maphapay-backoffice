@@ -157,13 +157,13 @@ class Modules extends Page
             targetType: 'domain_module',
             targetIdentifier: $domain,
             payload: [
-                'module' => $domain,
+                'module'          => $domain,
                 'requested_state' => 'enabled',
-                'current_status' => $module->status->value,
+                'current_status'  => $module->status->value,
             ],
             metadata: [
                 'dependencies' => $module->dependencies,
-                'actor_email' => auth()->user()->email ?? 'system',
+                'actor_email'  => auth()->user()->email ?? 'system',
             ],
         );
 
@@ -191,12 +191,12 @@ class Modules extends Page
             targetType: 'domain_module',
             targetIdentifier: $domain,
             payload: [
-                'module' => $domain,
+                'module'          => $domain,
                 'requested_state' => 'disabled',
-                'current_status' => $module->status->value,
+                'current_status'  => $module->status->value,
             ],
             metadata: [
-                'dependents' => $module->dependents,
+                'dependents'  => $module->dependents,
                 'actor_email' => auth()->user()->email ?? 'system',
             ],
         );
@@ -224,14 +224,14 @@ class Modules extends Page
                 action: 'backoffice.modules.verified',
                 reason: $reason,
                 metadata: [
-                    'module' => $domain,
-                    'valid' => $result->valid,
-                    'checks' => Arr::sort($result->checks),
-                    'errors' => $result->errors,
-                    'warnings' => $result->warnings,
+                    'module'        => $domain,
+                    'valid'         => $result->valid,
+                    'checks'        => Arr::sort($result->checks),
+                    'errors'        => $result->errors,
+                    'warnings'      => $result->warnings,
                     'passed_checks' => $result->getPassedCount(),
                     'failed_checks' => $result->getFailedCount(),
-                    'actor_email' => auth()->user()->email ?? 'system',
+                    'actor_email'   => auth()->user()->email ?? 'system',
                 ],
                 tags: 'backoffice,platform,module-verification'
             );

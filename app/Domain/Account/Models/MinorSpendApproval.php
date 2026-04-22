@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Domain\Account\Models;
 
 use App\Domain\Shared\Traits\UsesTenantConnection;
@@ -32,8 +34,8 @@ class MinorSpendApproval extends Model
     public $guarded = [];
 
     protected $casts = [
-        'expires_at'  => 'datetime',
-        'decided_at'  => 'datetime',
+        'expires_at' => 'datetime',
+        'decided_at' => 'datetime',
     ];
 
     public function isPending(): bool

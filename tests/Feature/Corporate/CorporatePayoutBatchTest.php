@@ -208,6 +208,7 @@ class CorporatePayoutBatchTest extends TestCase
     private function makeCorporateProfile(): CorporateProfile
     {
         $owner = User::factory()->create();
+
         return $this->makeCorporateProfileForOwner($owner);
     }
 

@@ -588,14 +588,14 @@ class ExchangeRateResource extends Resource
             targetType: ExchangeRate::class,
             targetIdentifier: (string) $record->getKey(),
             payload: [
-                'pair' => static::exchangeRatePair($record),
-                'source' => $record->source,
-                'old_rate' => static::formatRateValue($record->rate),
+                'pair'           => static::exchangeRatePair($record),
+                'source'         => $record->source,
+                'old_rate'       => static::formatRateValue($record->rate),
                 'requested_rate' => static::formatRateValue($requestedRate),
             ],
             metadata: [
                 'from_asset_code' => $record->from_asset_code,
-                'to_asset_code' => $record->to_asset_code,
+                'to_asset_code'   => $record->to_asset_code,
             ],
         );
     }
@@ -611,9 +611,9 @@ class ExchangeRateResource extends Resource
             targetType: ExchangeRate::class,
             targetIdentifier: (string) $record->getKey(),
             payload: [
-                'pair' => static::exchangeRatePair($record),
-                'source' => $record->source,
-                'rate' => static::formatRateValue($record->rate),
+                'pair'            => static::exchangeRatePair($record),
+                'source'          => $record->source,
+                'rate'            => static::formatRateValue($record->rate),
                 'requested_state' => 'deleted',
             ],
         );
@@ -630,9 +630,9 @@ class ExchangeRateResource extends Resource
             targetType: ExchangeRate::class,
             targetIdentifier: (string) $record->getKey(),
             payload: [
-                'pair' => static::exchangeRatePair($record),
-                'source' => $record->source,
-                'current_state' => $record->is_active ? 'active' : 'inactive',
+                'pair'            => static::exchangeRatePair($record),
+                'source'          => $record->source,
+                'current_state'   => $record->is_active ? 'active' : 'inactive',
                 'requested_state' => $requestedState,
             ],
         );
@@ -651,8 +651,8 @@ class ExchangeRateResource extends Resource
             reason: $reason,
             payload: [
                 'requested_state' => $requestedState,
-                'record_count' => $records->count(),
-                'pairs' => $records
+                'record_count'    => $records->count(),
+                'pairs'           => $records
                     ->map(fn (Model $record): string => static::exchangeRatePair($record))
                     ->values()
                     ->all(),
@@ -680,7 +680,7 @@ class ExchangeRateResource extends Resource
             oldValues: ['valid_at' => $previousValidAt],
             newValues: ['valid_at' => $record->valid_at->toIso8601String()],
             metadata: [
-                'pair' => static::exchangeRatePair($record),
+                'pair'   => static::exchangeRatePair($record),
                 'source' => $record->source,
             ],
             tags: 'backoffice,finance,exchange-rates'
@@ -710,7 +710,7 @@ class ExchangeRateResource extends Resource
             reason: $reason,
             metadata: [
                 'record_count' => $records->count(),
-                'pairs' => $records
+                'pairs'        => $records
                     ->map(fn (Model $record): string => static::exchangeRatePair($record))
                     ->values()
                     ->all(),

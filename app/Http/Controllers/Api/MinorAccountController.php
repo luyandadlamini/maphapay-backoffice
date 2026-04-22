@@ -38,7 +38,7 @@ class MinorAccountController extends Controller
             'photo_id_path' => ['nullable', 'string', 'max:255'],
         ]);
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = $request->user();
 
         abort_unless($this->accountPolicy->createMinor($user), 403);
@@ -137,7 +137,7 @@ class MinorAccountController extends Controller
 
     public function updatePermissionLevel(Request $request, string $uuid): JsonResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = $request->user();
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
@@ -192,7 +192,7 @@ class MinorAccountController extends Controller
                     "Unlocked Level {$newPermissionLevel}",
                     "level_{$newPermissionLevel}"
                 );
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // Points are a bonus feature; never fail the level update.
             }
         }
@@ -210,14 +210,14 @@ class MinorAccountController extends Controller
     }
 
     /**
-     * PUT /api/accounts/minor/{uuid}/emergency-allowance
+     * PUT /api/accounts/minor/{uuid}/emergency-allowance.
      *
      * Guardian pre-sets an emergency reserve (SZL integer).
      * Setting to 0 disables emergency allowance.
      */
     public function setEmergencyAllowance(Request $request, string $uuid): JsonResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = $request->user();
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 

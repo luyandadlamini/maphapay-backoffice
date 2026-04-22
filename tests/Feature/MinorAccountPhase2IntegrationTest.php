@@ -8,6 +8,7 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Models\MinorSpendApproval;
 use App\Models\User;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
@@ -15,7 +16,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * Phase 2 Integration Test: Full Spend Enforcement Workflow
+ * Phase 2 Integration Test: Full Spend Enforcement Workflow.
  *
  * Exercises the complete lifecycle:
  * 1. Child tries blocked category → 422
@@ -27,17 +28,32 @@ use Tests\TestCase;
  */
 class MinorAccountPhase2IntegrationTest extends TestCase
 {
-    protected function connectionsToTransact(): array { return ['mysql', 'central']; }
-    protected function shouldCreateDefaultAccountsInSetup(): bool { return false; }
+    protected function connectionsToTransact(): array
+    {
+    return ['mysql', 'central'];
+    }
+
+    protected function shouldCreateDefaultAccountsInSetup(): bool
+    {
+    return false;
+    }
 
     private User $parent;
+
     private User $child;
+
     private User $guardian;
+
     private User $recipient;
+
     private Account $parentAccount;
+
     private Account $minorAccount;
+
     private Account $recipientAccount;
+
     private Account $guardianAccount;
+
     private string $tenantId;
 
     protected function setUp(): void
@@ -48,20 +64,20 @@ class MinorAccountPhase2IntegrationTest extends TestCase
 
         config([
             'maphapay_migration.enable_send_money' => true,
-            'mobile.attestation.enabled' => false,
+            'mobile.attestation.enabled'           => false,
         ]);
 
         // Create tenant
         $this->tenantId = (string) Str::uuid();
         DB::connection('central')->table('tenants')->insert([
-            'id' => $this->tenantId,
-            'name' => 'Test Tenant',
-            'plan' => 'default',
-            'team_id' => null,
+            'id'            => $this->tenantId,
+            'name'          => 'Test Tenant',
+            'plan'          => 'default',
+            'team_id'       => null,
             'trial_ends_at' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-            'data' => json_encode([]),
+            'created_at'    => now(),
+            'updated_at'    => now(),
+            'data'          => json_encode([]),
         ]);
 
         // Create users
@@ -73,64 +89,64 @@ class MinorAccountPhase2IntegrationTest extends TestCase
         // Create parent account
         $this->parentAccount = Account::factory()->create([
             'user_uuid' => $this->parent->uuid,
-            'type' => 'personal',
-            'balance' => 5000,
+            'type'      => 'personal',
+            'balance'   => 5000,
         ]);
         AccountMembership::create([
-            'user_uuid' => $this->parent->uuid,
+            'user_uuid'    => $this->parent->uuid,
             'account_uuid' => $this->parentAccount->uuid,
-            'tenant_id' => $this->tenantId,
+            'tenant_id'    => $this->tenantId,
             'account_type' => 'personal',
-            'role' => 'owner',
-            'status' => 'active',
+            'role'         => 'owner',
+            'status'       => 'active',
         ]);
 
         // Create guardian account (co-guardian scenario)
         $this->guardianAccount = Account::factory()->create([
             'user_uuid' => $this->guardian->uuid,
-            'type' => 'personal',
-            'balance' => 1000,
+            'type'      => 'personal',
+            'balance'   => 1000,
         ]);
         AccountMembership::create([
-            'user_uuid' => $this->guardian->uuid,
+            'user_uuid'    => $this->guardian->uuid,
             'account_uuid' => $this->guardianAccount->uuid,
-            'tenant_id' => $this->tenantId,
+            'tenant_id'    => $this->tenantId,
             'account_type' => 'personal',
-            'role' => 'owner',
-            'status' => 'active',
+            'role'         => 'owner',
+            'status'       => 'active',
         ]);
 
         // Create minor account (permission level 3 = can spend 500 SZL daily, 5000 SZL monthly)
         $this->minorAccount = Account::factory()->create([
-            'user_uuid' => $this->child->uuid,
-            'type' => 'minor',
-            'tier' => 'grow',
-            'permission_level' => 3,
-            'parent_account_id' => $this->parentAccount->uuid,
-            'balance' => 1000,
-            'daily_limit' => 500,
-            'monthly_limit' => 5000,
+            'user_uuid'          => $this->child->uuid,
+            'type'               => 'minor',
+            'tier'               => 'grow',
+            'permission_level'   => 3,
+            'parent_account_id'  => $this->parentAccount->uuid,
+            'balance'            => 1000,
+            'daily_limit'        => 500,
+            'monthly_limit'      => 5000,
             'approval_threshold' => 100,
         ]);
 
         // Register parent as primary guardian
         AccountMembership::create([
-            'user_uuid' => $this->parent->uuid,
+            'user_uuid'    => $this->parent->uuid,
             'account_uuid' => $this->minorAccount->uuid,
-            'tenant_id' => $this->tenantId,
+            'tenant_id'    => $this->tenantId,
             'account_type' => 'minor',
-            'role' => 'guardian',
-            'status' => 'active',
+            'role'         => 'guardian',
+            'status'       => 'active',
         ]);
 
         // Register guardian as co-guardian
         AccountMembership::create([
-            'user_uuid' => $this->guardian->uuid,
+            'user_uuid'    => $this->guardian->uuid,
             'account_uuid' => $this->minorAccount->uuid,
-            'tenant_id' => $this->tenantId,
+            'tenant_id'    => $this->tenantId,
             'account_type' => 'minor',
-            'role' => 'guardian',
-            'status' => 'active',
+            'role'         => 'guardian',
+            'status'       => 'active',
         ]);
 
         // Create trusted device for child to bypass device trust policy
@@ -140,31 +156,31 @@ class MinorAccountPhase2IntegrationTest extends TestCase
                 ->trusted()
                 ->ios()
                 ->create([
-                    'user_id' => $this->child->id,
+                    'user_id'   => $this->child->id,
                     'device_id' => $deviceId,
                 ]);
-        } catch (\Exception) {
+        } catch (Exception) {
             // Device creation may fail if table doesn't exist, that's OK
         }
 
         // Create recipient account
         $this->recipientAccount = Account::factory()->create([
             'user_uuid' => $this->recipient->uuid,
-            'type' => 'personal',
-            'balance' => 0,
+            'type'      => 'personal',
+            'balance'   => 0,
         ]);
         AccountMembership::create([
-            'user_uuid' => $this->recipient->uuid,
+            'user_uuid'    => $this->recipient->uuid,
             'account_uuid' => $this->recipientAccount->uuid,
-            'tenant_id' => $this->tenantId,
+            'tenant_id'    => $this->tenantId,
             'account_type' => 'personal',
-            'role' => 'owner',
-            'status' => 'active',
+            'role'         => 'owner',
+            'status'       => 'active',
         ]);
     }
 
     /**
-     * Full spend enforcement workflow
+     * Full spend enforcement workflow.
      *
      * 1. Child tries blocked category (alcohol) → 422
      * 2. Child spends above approval threshold → 202 with approval ID
@@ -183,8 +199,8 @@ class MinorAccountPhase2IntegrationTest extends TestCase
         $blockedResponse = $this->postJson(
             '/api/send-money/store',
             [
-                'user' => $this->recipient->mobile ?? $this->recipient->email,
-                'amount' => 50,
+                'user'              => $this->recipient->mobile ?? $this->recipient->email,
+                'amount'            => 50,
                 'merchant_category' => 'alcohol',
             ]
         );
@@ -201,7 +217,7 @@ class MinorAccountPhase2IntegrationTest extends TestCase
         ])->postJson(
             '/api/send-money/store',
             [
-                'user' => $this->recipient->mobile ?? $this->recipient->email,
+                'user'   => $this->recipient->mobile ?? $this->recipient->email,
                 'amount' => 150.00,
             ]
         );
@@ -213,10 +229,10 @@ class MinorAccountPhase2IntegrationTest extends TestCase
 
         // Verify approval was created in database
         $this->assertDatabaseHas('minor_spend_approvals', [
-            'id' => $approvalId,
+            'id'                 => $approvalId,
             'minor_account_uuid' => $this->minorAccount->uuid,
-            'amount' => '150.00',
-            'status' => 'pending',
+            'amount'             => '150.00',
+            'status'             => 'pending',
         ]);
 
         // === SCENARIO 3: Guardian lists pending approvals ===
@@ -239,28 +255,28 @@ class MinorAccountPhase2IntegrationTest extends TestCase
 
         $declineResponse->assertOk();
         $this->assertDatabaseHas('minor_spend_approvals', [
-            'id' => $approvalId,
+            'id'     => $approvalId,
             'status' => 'declined',
         ]);
 
         // Verify transfer was not executed (child balance unchanged)
         $this->assertDatabaseHas('accounts', [
-            'uuid' => $this->minorAccount->uuid,
+            'uuid'    => $this->minorAccount->uuid,
             'balance' => 1000, // Balance should remain unchanged
         ]);
 
         // === SCENARIO 5: Run expiry command (idempotent) ===
         // Create another approval that will expire
         $expiringApproval = MinorSpendApproval::create([
-            'minor_account_uuid' => $this->minorAccount->uuid,
+            'minor_account_uuid'    => $this->minorAccount->uuid,
             'guardian_account_uuid' => $this->parentAccount->uuid,
-            'from_account_uuid' => $this->minorAccount->uuid,
-            'to_account_uuid' => $this->recipientAccount->uuid,
-            'amount' => '200.00',
-            'asset_code' => 'SZL',
-            'merchant_category' => 'general',
-            'status' => 'pending',
-            'expires_at' => now()->subHour(), // Already expired
+            'from_account_uuid'     => $this->minorAccount->uuid,
+            'to_account_uuid'       => $this->recipientAccount->uuid,
+            'amount'                => '200.00',
+            'asset_code'            => 'SZL',
+            'merchant_category'     => 'general',
+            'status'                => 'pending',
+            'expires_at'            => now()->subHour(), // Already expired
         ]);
 
         // Run the expiry command
@@ -269,7 +285,7 @@ class MinorAccountPhase2IntegrationTest extends TestCase
 
         // Verify expired approval was marked as expired
         $this->assertDatabaseHas('minor_spend_approvals', [
-            'id' => $expiringApproval->id,
+            'id'     => $expiringApproval->id,
             'status' => 'expired',
         ]);
 
@@ -279,7 +295,7 @@ class MinorAccountPhase2IntegrationTest extends TestCase
 
         // Verify status hasn't changed again
         $this->assertDatabaseHas('minor_spend_approvals', [
-            'id' => $expiringApproval->id,
+            'id'     => $expiringApproval->id,
             'status' => 'expired',
         ]);
 
@@ -291,8 +307,8 @@ class MinorAccountPhase2IntegrationTest extends TestCase
 
         $emergencyResponse->assertOk();
         $this->assertDatabaseHas('accounts', [
-            'uuid' => $this->minorAccount->uuid,
-            'emergency_allowance_amount' => 200,
+            'uuid'                        => $this->minorAccount->uuid,
+            'emergency_allowance_amount'  => 200,
             'emergency_allowance_balance' => 200,
         ]);
 
@@ -309,13 +325,13 @@ class MinorAccountPhase2IntegrationTest extends TestCase
 
         // Final verification: emergency allowance balance unchanged
         $this->assertDatabaseHas('accounts', [
-            'uuid' => $this->minorAccount->uuid,
+            'uuid'                        => $this->minorAccount->uuid,
             'emergency_allowance_balance' => 200,
         ]);
     }
 
     /**
-     * Verify that parent and co-guardian can both list and manage approvals
+     * Verify that parent and co-guardian can both list and manage approvals.
      */
     #[Test]
     public function both_primary_and_co_guardian_can_manage_approvals(): void
@@ -328,7 +344,7 @@ class MinorAccountPhase2IntegrationTest extends TestCase
         ])->postJson(
             '/api/send-money/store',
             [
-                'user' => $this->recipient->mobile ?? $this->recipient->email,
+                'user'   => $this->recipient->mobile ?? $this->recipient->email,
                 'amount' => 150.00,
             ]
         );
@@ -363,7 +379,7 @@ class MinorAccountPhase2IntegrationTest extends TestCase
     }
 
     /**
-     * Verify that child cannot access the approval management endpoints
+     * Verify that child cannot access the approval management endpoints.
      */
     #[Test]
     public function child_cannot_access_approval_management(): void
@@ -375,15 +391,15 @@ class MinorAccountPhase2IntegrationTest extends TestCase
 
         // Create an approval
         $approval = MinorSpendApproval::create([
-            'minor_account_uuid' => $this->minorAccount->uuid,
+            'minor_account_uuid'    => $this->minorAccount->uuid,
             'guardian_account_uuid' => $this->parentAccount->uuid,
-            'from_account_uuid' => $this->minorAccount->uuid,
-            'to_account_uuid' => $this->recipientAccount->uuid,
-            'amount' => '150.00',
-            'asset_code' => 'SZL',
-            'merchant_category' => 'general',
-            'status' => 'pending',
-            'expires_at' => now()->addHours(24),
+            'from_account_uuid'     => $this->minorAccount->uuid,
+            'to_account_uuid'       => $this->recipientAccount->uuid,
+            'amount'                => '150.00',
+            'asset_code'            => 'SZL',
+            'merchant_category'     => 'general',
+            'status'                => 'pending',
+            'expires_at'            => now()->addHours(24),
         ]);
 
         // Child cannot decline

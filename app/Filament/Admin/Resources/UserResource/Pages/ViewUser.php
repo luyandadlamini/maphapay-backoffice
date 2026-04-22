@@ -48,8 +48,8 @@ class ViewUser extends ViewRecord
                         reason: (string) $data['reason'],
                         auditable: $record,
                         metadata: [
-                            'user_uuid' => $record->uuid,
-                            'user_email' => $record->email,
+                            'user_uuid'   => $record->uuid,
+                            'user_email'  => $record->email,
                             'actor_email' => $actorEmail,
                         ],
                         tags: 'backoffice,support,users'
@@ -83,8 +83,8 @@ class ViewUser extends ViewRecord
                         reason: (string) $data['reason'],
                         auditable: $record,
                         metadata: [
-                            'user_uuid' => $record->uuid,
-                            'user_email' => $record->email,
+                            'user_uuid'   => $record->uuid,
+                            'user_email'  => $record->email,
                             'actor_email' => $actorEmail,
                         ],
                         tags: 'backoffice,support,users'

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Tests\Feature\Domains\Account;
@@ -57,13 +58,13 @@ class MinorRewardsTableTest extends TestCase
     public function test_reward_with_unlimited_stock(): void
     {
         $reward = MinorReward::create([
-            'name' => 'MTN 50 SZL Airtime',
-            'category' => 'airtime',
+            'name'         => 'MTN 50 SZL Airtime',
+            'category'     => 'airtime',
             'price_points' => 100,
-            'stock' => -1, // unlimited
-            'is_featured' => true,
-            'description' => 'Instant airtime credit',
-            'image_url' => 'https://example.com/mtn-50.jpg',
+            'stock'        => -1, // unlimited
+            'is_featured'  => true,
+            'description'  => 'Instant airtime credit',
+            'image_url'    => 'https://example.com/mtn-50.jpg',
         ]);
 
         $this->assertEquals(-1, $reward->stock);
@@ -72,12 +73,12 @@ class MinorRewardsTableTest extends TestCase
     public function test_reward_with_limited_stock(): void
     {
         $reward = MinorReward::create([
-            'name' => 'Voucher',
-            'category' => 'voucher',
+            'name'         => 'Voucher',
+            'category'     => 'voucher',
             'price_points' => 200,
-            'stock' => 25,
-            'description' => 'Limited voucher',
-            'image_url' => 'https://example.com/voucher.jpg',
+            'stock'        => 25,
+            'description'  => 'Limited voucher',
+            'image_url'    => 'https://example.com/voucher.jpg',
         ]);
 
         $this->assertEquals(25, $reward->stock);
@@ -86,12 +87,12 @@ class MinorRewardsTableTest extends TestCase
     public function test_reward_with_zero_stock_is_sold_out(): void
     {
         $reward = MinorReward::create([
-            'name' => 'Sold Out Reward',
-            'category' => 'experience',
+            'name'         => 'Sold Out Reward',
+            'category'     => 'experience',
             'price_points' => 500,
-            'stock' => 0,
-            'description' => 'No longer available',
-            'image_url' => 'https://example.com/sold-out.jpg',
+            'stock'        => 0,
+            'description'  => 'No longer available',
+            'image_url'    => 'https://example.com/sold-out.jpg',
         ]);
 
         $this->assertEquals(0, $reward->stock);

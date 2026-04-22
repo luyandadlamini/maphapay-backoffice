@@ -1,13 +1,19 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Tests\Feature;
+
 use App\Domain\Account\Models\MinorSpendApproval;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class MinorSpendApprovalModelTest extends TestCase
 {
-    protected function shouldCreateDefaultAccountsInSetup(): bool { return false; }
+    protected function shouldCreateDefaultAccountsInSetup(): bool
+    {
+    return false;
+    }
 
     #[Test]
     public function minor_spend_approval_table_has_expected_columns(): void

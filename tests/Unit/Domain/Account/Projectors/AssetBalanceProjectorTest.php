@@ -6,12 +6,12 @@ namespace Tests\Unit\Domain\Account\Projectors;
 
 use App\Domain\Account\DataObjects\AccountUuid;
 use App\Domain\Account\DataObjects\Hash;
-use App\Domain\Account\Models\Account;
 use App\Domain\Account\DataObjects\Money;
+use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Account\Projectors\AssetBalanceProjector;
-use App\Domain\Asset\Models\Asset;
 use App\Domain\Asset\Events\AssetTransferCompleted;
+use App\Domain\Asset\Models\Asset;
 use App\Models\User;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
@@ -38,14 +38,14 @@ class AssetBalanceProjectorTest extends DomainTestCase
 
         AccountBalance::query()->create([
             'account_uuid' => $fromAccountUuid,
-            'asset_code' => 'SZL',
-            'balance' => 500_000,
+            'asset_code'   => 'SZL',
+            'balance'      => 500_000,
         ]);
 
         AccountBalance::query()->create([
             'account_uuid' => $toAccountUuid,
-            'asset_code' => 'SZL',
-            'balance' => 0,
+            'asset_code'   => 'SZL',
+            'balance'      => 0,
         ]);
 
         $event = new AssetTransferCompleted(
@@ -59,8 +59,8 @@ class AssetBalanceProjectorTest extends DomainTestCase
             description: 'Posting-anchored transfer',
             transferId: 'REF-' . Str::upper(Str::random(10)),
             metadata: [
-                'source' => 'p2p',
-                'operation_type' => 'send_money',
+                'source'             => 'p2p',
+                'operation_type'     => 'send_money',
                 'money_state_anchor' => 'ledger_posting',
             ],
         );

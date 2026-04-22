@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\Asset\Models\ExchangeRate;
 use App\Domain\Compliance\Models\AuditLog;
@@ -48,23 +48,23 @@ it('submits asset edit requests for approval instead of mutating immediately', f
     $this->actingAs($finance);
 
     $asset = Asset::query()->updateOrCreate(['code' => 'SZL'], [
-        'code' => 'SZL',
-        'name' => 'Swazi Lilangeni',
+        'code'      => 'SZL',
+        'name'      => 'Swazi Lilangeni',
         'precision' => 2,
-        'type' => 'fiat',
+        'type'      => 'fiat',
         'is_active' => true,
-        'metadata' => ['symbol' => 'E'],
+        'metadata'  => ['symbol' => 'E'],
     ]);
 
     livewire(ListAssets::class)
         ->callTableAction('requestEdit', $asset, data: [
-            'name' => 'Swazi Lilangeni Treasury Unit',
-            'type' => 'fiat',
-            'symbol' => 'SZL$',
+            'name'      => 'Swazi Lilangeni Treasury Unit',
+            'type'      => 'fiat',
+            'symbol'    => 'SZL$',
             'precision' => 4,
             'is_active' => false,
-            'metadata' => [
-                'symbol' => 'SZL$',
+            'metadata'  => [
+                'symbol'    => 'SZL$',
                 'regulated' => true,
             ],
             'reason' => 'Treasury requested a controlled asset metadata update after policy review.',
@@ -100,12 +100,12 @@ it('submits asset status changes for approval from the view page', function (): 
     $this->actingAs($finance);
 
     $asset = Asset::query()->updateOrCreate(['code' => 'XSZ'], [
-        'code' => 'XSZ',
-        'name' => 'Experimental Stable Zone',
-        'type' => 'crypto',
+        'code'      => 'XSZ',
+        'name'      => 'Experimental Stable Zone',
+        'type'      => 'crypto',
         'precision' => 8,
         'is_active' => true,
-        'metadata' => ['symbol' => 'XSZ'],
+        'metadata'  => ['symbol' => 'XSZ'],
     ]);
 
     livewire(ViewAsset::class, ['record' => $asset->getKey()])
@@ -163,34 +163,34 @@ it('applies exchange-rate relation-manager governance under the finance workspac
     $this->actingAs($finance);
 
     $asset = Asset::query()->updateOrCreate(['code' => 'USD'], [
-        'code' => 'USD',
-        'name' => 'US Dollar',
-        'type' => 'fiat',
+        'code'      => 'USD',
+        'name'      => 'US Dollar',
+        'type'      => 'fiat',
         'precision' => 2,
         'is_active' => true,
-        'metadata' => ['symbol' => '$'],
+        'metadata'  => ['symbol' => '$'],
     ]);
 
     Asset::query()->updateOrCreate(['code' => 'EUR'], [
-        'name' => 'Euro',
-        'type' => 'fiat',
+        'name'      => 'Euro',
+        'type'      => 'fiat',
         'precision' => 2,
         'is_active' => true,
     ]);
 
     $rate = ExchangeRate::factory()->create([
         'from_asset_code' => 'USD',
-        'to_asset_code' => 'EUR',
-        'source' => ExchangeRate::SOURCE_API,
-        'valid_at' => now()->subDay(),
-        'is_active' => true,
+        'to_asset_code'   => 'EUR',
+        'source'          => ExchangeRate::SOURCE_API,
+        'valid_at'        => now()->subDay(),
+        'is_active'       => true,
     ]);
 
     $previousValidAt = $rate->valid_at;
 
     livewire(ExchangeRatesRelationManager::class, [
         'ownerRecord' => $asset,
-        'pageClass' => ViewAsset::class,
+        'pageClass'   => ViewAsset::class,
     ])
         ->callTableAction('refresh', $rate, data: [
             'reason' => 'Refresh the stale related FX quote after upstream feed recovery.',
@@ -246,7 +246,7 @@ it('blocks direct asset and account-balance mutation bypasses', function (): voi
 
     livewire(AccountBalancesRelationManager::class, [
         'ownerRecord' => $asset,
-        'pageClass' => ViewAsset::class,
+        'pageClass'   => ViewAsset::class,
     ])
         ->assertSuccessful()
         ->assertTableActionDoesNotExist('edit')

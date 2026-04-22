@@ -35,11 +35,11 @@ class CorporateTreasuryOperationsService
         }
 
         return [
-            'authorized'     => true,
-            'reference'      => $allocationReference,
-            'amount'         => $amountMinorUnits,
-            'asset'          => $assetCode,
-            'authorized_by'  => $actingUser->id,
+            'authorized'    => true,
+            'reference'     => $allocationReference,
+            'amount'        => $amountMinorUnits,
+            'asset'         => $assetCode,
+            'authorized_by' => $actingUser->id,
         ];
     }
 }

@@ -257,8 +257,8 @@ class PaymentIntent extends Model
         return $response;
     }
 
-    protected static function newFactory(): \Database\Factories\PaymentIntentFactory
+    protected static function newFactory(): PaymentIntentFactory
     {
-        return \Database\Factories\PaymentIntentFactory::new();
+        return PaymentIntentFactory::new();
     }
 }

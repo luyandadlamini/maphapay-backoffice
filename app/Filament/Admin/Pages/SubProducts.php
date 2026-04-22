@@ -8,12 +8,12 @@ use App\Domain\Product\Services\SubProductService;
 use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Support\Backoffice\AdminActionGovernance;
 use App\Support\Backoffice\BackofficeWorkspaceAccess;
-use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Log;
@@ -181,9 +181,9 @@ class SubProducts extends Page implements HasForms, HasActions
 
             if ($requestedEnabled !== $currentEnabled) {
                 $changes[] = [
-                    'type' => 'sub_product',
-                    'sub_product' => $key,
-                    'current_enabled' => $currentEnabled,
+                    'type'              => 'sub_product',
+                    'sub_product'       => $key,
+                    'current_enabled'   => $currentEnabled,
                     'requested_enabled' => $requestedEnabled,
                 ];
             }
@@ -194,10 +194,10 @@ class SubProducts extends Page implements HasForms, HasActions
 
                 if ($requestedFeatureEnabled !== $currentFeatureEnabled) {
                     $changes[] = [
-                        'type' => 'feature',
-                        'sub_product' => $key,
-                        'feature' => $feature,
-                        'current_enabled' => $currentFeatureEnabled,
+                        'type'              => 'feature',
+                        'sub_product'       => $key,
+                        'feature'           => $feature,
+                        'current_enabled'   => $currentFeatureEnabled,
                         'requested_enabled' => $requestedFeatureEnabled,
                     ];
                 }
@@ -221,10 +221,10 @@ class SubProducts extends Page implements HasForms, HasActions
             targetIdentifier: 'all',
             payload: [
                 'change_count' => count($changes),
-                'changes' => $changes,
+                'changes'      => $changes,
             ],
             metadata: [
-                'actor_email' => auth()->user()->email ?? 'system',
+                'actor_email'  => auth()->user()->email ?? 'system',
                 'sub_products' => array_values(array_unique(array_column($changes, 'sub_product'))),
             ],
         );
@@ -238,7 +238,7 @@ class SubProducts extends Page implements HasForms, HasActions
         Log::info(
             'Sub-product configuration change requested',
             [
-                'user' => auth()->user()->email ?? 'system',
+                'user'    => auth()->user()->email ?? 'system',
                 'changes' => $changes,
             ]
         );

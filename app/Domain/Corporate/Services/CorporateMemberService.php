@@ -13,7 +13,8 @@ class CorporateMemberService
 {
     public function __construct(
         private readonly CorporateCapabilityGate $gate,
-    ) {}
+    ) {
+    }
 
     /**
      * Assign a role to a team member, enforcing MEMBER_ADMINISTRATION capability

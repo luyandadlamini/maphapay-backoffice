@@ -74,9 +74,9 @@ final class ReconciliationReportDataLoader
         }
 
         return array_merge($payload, [
-            'provider_operation' => $providerOperation,
-            'provider_reference' => $payload['provider_reference'] ?? $providerOperation['provider_reference'] ?? null,
-            'settlement_reference' => $payload['settlement_reference'] ?? $providerOperation['settlement_reference'] ?? null,
+            'provider_operation'       => $providerOperation,
+            'provider_reference'       => $payload['provider_reference'] ?? $providerOperation['provider_reference'] ?? null,
+            'settlement_reference'     => $payload['settlement_reference'] ?? $providerOperation['settlement_reference'] ?? null,
             'reconciliation_reference' => $payload['reconciliation_reference'] ?? $providerOperation['reconciliation_reference'] ?? null,
             'ledger_posting_reference' => $payload['ledger_posting_reference'] ?? $providerOperation['ledger_posting_reference'] ?? null,
         ]);
@@ -127,17 +127,17 @@ final class ReconciliationReportDataLoader
         }
 
         return array_filter([
-            'id' => $providerOperation->id,
-            'provider_family' => $providerOperation->provider_family,
-            'provider_name' => $providerOperation->provider_name,
-            'operation_type' => $providerOperation->operation_type->value,
-            'normalized_event_type' => $providerOperation->normalized_event_type,
-            'provider_reference' => $providerOperation->provider_reference,
-            'internal_reference' => $providerOperation->internal_reference,
-            'finality_status' => $providerOperation->finality_status->value,
-            'settlement_status' => $providerOperation->settlement_status->value,
-            'reconciliation_status' => $providerOperation->reconciliation_status->value,
-            'settlement_reference' => $providerOperation->settlement_reference,
+            'id'                       => $providerOperation->id,
+            'provider_family'          => $providerOperation->provider_family,
+            'provider_name'            => $providerOperation->provider_name,
+            'operation_type'           => $providerOperation->operation_type->value,
+            'normalized_event_type'    => $providerOperation->normalized_event_type,
+            'provider_reference'       => $providerOperation->provider_reference,
+            'internal_reference'       => $providerOperation->internal_reference,
+            'finality_status'          => $providerOperation->finality_status->value,
+            'settlement_status'        => $providerOperation->settlement_status->value,
+            'reconciliation_status'    => $providerOperation->reconciliation_status->value,
+            'settlement_reference'     => $providerOperation->settlement_reference,
             'reconciliation_reference' => $providerOperation->reconciliation_reference,
             'ledger_posting_reference' => $providerOperation->ledger_posting_reference,
         ], static fn (mixed $value): bool => $value !== null && $value !== '');

@@ -41,8 +41,8 @@ final class ProviderOperationService
         $latestWebhookId = $webhook->id;
         $operation->latest_webhook_id = $latestWebhookId;
         $operation->metadata = array_filter([
-            'event_type' => $webhook->event_type,
-            'event_id' => $webhook->event_id,
+            'event_type'     => $webhook->event_type,
+            'event_id'       => $webhook->event_id,
             'webhook_status' => $webhook->status,
         ], static fn (mixed $value): bool => $value !== null && $value !== '');
         $operation->save();
@@ -61,7 +61,7 @@ final class ProviderOperationService
         return match ($webhook->normalized_event_type ?? $webhook->event_type) {
             'payment_succeeded', 'payment_failed' => ProviderOperationType::TRANSFER,
             'balance_changed' => ProviderOperationType::BALANCE_SYNC,
-            default => str_contains($webhook->event_type, 'status')
+            default           => str_contains($webhook->event_type, 'status')
                 ? ProviderOperationType::ACCOUNT_STATUS
                 : ProviderOperationType::UNKNOWN,
         };

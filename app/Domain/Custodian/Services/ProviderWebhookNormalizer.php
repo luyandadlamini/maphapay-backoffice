@@ -29,15 +29,15 @@ final class ProviderWebhookNormalizer
 
         return [
             'normalized_event_type' => $normalizedEventType,
-            'provider_reference' => $providerReference,
-            'payload_hash' => $payloadHash,
-            'dedupe_key' => $eventId !== null && $eventId !== ''
+            'provider_reference'    => $providerReference,
+            'payload_hash'          => $payloadHash,
+            'dedupe_key'            => $eventId !== null && $eventId !== ''
                 ? sprintf('%s:event:%s', $custodianName, $eventId)
                 : sprintf('%s:fallback:%s:%s:%s', $custodianName, $providerReference ?? 'unknown', $normalizedEventType, $payloadHash),
-            'finality_status' => $this->mapFinalityStatus($normalizedEventType),
-            'settlement_status' => $this->mapSettlementStatus($normalizedEventType),
-            'reconciliation_status' => 'pending',
-            'settlement_reference' => null,
+            'finality_status'          => $this->mapFinalityStatus($normalizedEventType),
+            'settlement_status'        => $this->mapSettlementStatus($normalizedEventType),
+            'reconciliation_status'    => 'pending',
+            'settlement_reference'     => null,
             'reconciliation_reference' => null,
             'ledger_posting_reference' => null,
         ];
@@ -64,10 +64,10 @@ final class ProviderWebhookNormalizer
     private function extractProviderReference(string $custodianName, array $payload): ?string
     {
         return match ($custodianName) {
-            'paysera' => $payload['payment_id'] ?? $payload['account_id'] ?? null,
+            'paysera'   => $payload['payment_id'] ?? $payload['account_id'] ?? null,
             'santander' => $payload['transfer_id'] ?? $payload['account_number'] ?? null,
-            'mock' => $payload['transaction_id'] ?? $payload['account'] ?? null,
-            default => null,
+            'mock'      => $payload['transaction_id'] ?? $payload['account'] ?? null,
+            default     => null,
         };
     }
 
@@ -75,8 +75,8 @@ final class ProviderWebhookNormalizer
     {
         return match ($normalizedEventType) {
             'payment_succeeded' => 'succeeded',
-            'payment_failed' => 'failed',
-            default => 'pending',
+            'payment_failed'    => 'failed',
+            default             => 'pending',
         };
     }
 
@@ -84,8 +84,8 @@ final class ProviderWebhookNormalizer
     {
         return match ($normalizedEventType) {
             'settlement_completed' => 'completed',
-            'settlement_failed' => 'failed',
-            default => 'pending',
+            'settlement_failed'    => 'failed',
+            default                => 'pending',
         };
     }
 }

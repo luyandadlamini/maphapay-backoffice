@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Domain\Account\Models\MinorSpendApproval;
 use Illuminate\Console\Command;
+use Throwable;
 
 class ExpireMinorSpendApprovals extends Command
 {
@@ -26,7 +27,7 @@ class ExpireMinorSpendApprovals extends Command
             $this->info("Expired {$count} pending minor spend approval(s).");
 
             return self::SUCCESS;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->error("Failed to expire minor spend approvals: {$e->getMessage()}");
 
             return self::FAILURE;

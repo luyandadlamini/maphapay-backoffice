@@ -398,7 +398,7 @@ class AssetResource extends Resource
     }
 
     /**
-     * @return array<int, \Filament\Forms\Components\Component>
+     * @return array<int, Forms\Components\Component>
      */
     public static function assetChangeRequestSchema(): array
     {
@@ -411,10 +411,10 @@ class AssetResource extends Resource
                 ->label('Asset Type')
                 ->required()
                 ->options([
-                    'fiat' => 'Fiat Currency',
-                    'crypto' => 'Cryptocurrency',
+                    'fiat'      => 'Fiat Currency',
+                    'crypto'    => 'Cryptocurrency',
                     'commodity' => 'Commodity',
-                    'custom' => 'Custom Asset',
+                    'custom'    => 'Custom Asset',
                 ]),
             Forms\Components\TextInput::make('symbol')
                 ->label('Symbol')
@@ -441,7 +441,7 @@ class AssetResource extends Resource
     }
 
     /**
-     * @return array<int, \Filament\Forms\Components\Component>
+     * @return array<int, Forms\Components\Component>
      */
     public static function reasonSchema(): array
     {
@@ -459,12 +459,12 @@ class AssetResource extends Resource
     public static function assetFormData(Asset $record): array
     {
         return [
-            'name' => $record->name,
-            'type' => $record->type,
-            'symbol' => $record->symbol,
+            'name'      => $record->name,
+            'type'      => $record->type,
+            'symbol'    => $record->symbol,
             'precision' => $record->precision,
             'is_active' => $record->is_active,
-            'metadata' => $record->metadata ?? [],
+            'metadata'  => $record->metadata ?? [],
         ];
     }
 
@@ -476,12 +476,12 @@ class AssetResource extends Resource
         static::authorizeWorkspace();
 
         $requestedValues = [
-            'name' => (string) $data['name'],
-            'type' => (string) $data['type'],
-            'symbol' => $data['symbol'] !== null ? (string) $data['symbol'] : null,
+            'name'      => (string) $data['name'],
+            'type'      => (string) $data['type'],
+            'symbol'    => $data['symbol'] !== null ? (string) $data['symbol'] : null,
             'precision' => (int) $data['precision'],
             'is_active' => (bool) $data['is_active'],
-            'metadata' => $data['metadata'] ?? [],
+            'metadata'  => $data['metadata'] ?? [],
         ];
 
         static::adminActionGovernance()->submitApprovalRequest(
@@ -491,8 +491,8 @@ class AssetResource extends Resource
             targetType: Asset::class,
             targetIdentifier: (string) $record->getKey(),
             payload: [
-                'asset_code' => $record->code,
-                'old_values' => static::assetFormData($record),
+                'asset_code'       => $record->code,
+                'old_values'       => static::assetFormData($record),
                 'requested_values' => $requestedValues,
             ],
         );
@@ -509,8 +509,8 @@ class AssetResource extends Resource
             targetType: Asset::class,
             targetIdentifier: (string) $record->getKey(),
             payload: [
-                'asset_code' => $record->code,
-                'asset_name' => $record->name,
+                'asset_code'      => $record->code,
+                'asset_name'      => $record->name,
                 'requested_state' => 'deleted',
             ],
         );
@@ -527,9 +527,9 @@ class AssetResource extends Resource
             targetType: Asset::class,
             targetIdentifier: (string) $record->getKey(),
             payload: [
-                'asset_code' => $record->code,
-                'asset_name' => $record->name,
-                'current_state' => $record->is_active ? 'active' : 'inactive',
+                'asset_code'      => $record->code,
+                'asset_name'      => $record->name,
+                'current_state'   => $record->is_active ? 'active' : 'inactive',
                 'requested_state' => $requestedState,
             ],
         );
@@ -548,8 +548,8 @@ class AssetResource extends Resource
             reason: $reason,
             payload: [
                 'requested_state' => $requestedState,
-                'record_count' => $records->count(),
-                'asset_codes' => $records
+                'record_count'    => $records->count(),
+                'asset_codes'     => $records
                     ->map(fn (Asset $record): string => (string) $record->getKey())
                     ->values()
                     ->all(),
@@ -568,11 +568,11 @@ class AssetResource extends Resource
             targetType: ExchangeRate::class,
             targetIdentifier: (string) $record->getKey(),
             payload: [
-                'pair' => ExchangeRateResource::exchangeRatePair($record),
-                'source' => $record->source,
-                'rate' => ExchangeRateResource::formatRateValue($record->rate),
+                'pair'            => ExchangeRateResource::exchangeRatePair($record),
+                'source'          => $record->source,
+                'rate'            => ExchangeRateResource::formatRateValue($record->rate),
                 'requested_state' => 'deleted',
-                'context' => 'asset_relation_manager',
+                'context'         => 'asset_relation_manager',
             ],
         );
     }
@@ -588,11 +588,11 @@ class AssetResource extends Resource
             targetType: ExchangeRate::class,
             targetIdentifier: (string) $record->getKey(),
             payload: [
-                'pair' => ExchangeRateResource::exchangeRatePair($record),
-                'source' => $record->source,
-                'current_state' => $record->is_active ? 'active' : 'inactive',
+                'pair'            => ExchangeRateResource::exchangeRatePair($record),
+                'source'          => $record->source,
+                'current_state'   => $record->is_active ? 'active' : 'inactive',
                 'requested_state' => $requestedState,
-                'context' => 'asset_relation_manager',
+                'context'         => 'asset_relation_manager',
             ],
         );
     }
@@ -610,8 +610,8 @@ class AssetResource extends Resource
             reason: $reason,
             payload: [
                 'requested_state' => $requestedState,
-                'record_count' => $records->count(),
-                'pairs' => $records
+                'record_count'    => $records->count(),
+                'pairs'           => $records
                     ->map(fn (ExchangeRate $record): string => ExchangeRateResource::exchangeRatePair($record))
                     ->values()
                     ->all(),
@@ -640,8 +640,8 @@ class AssetResource extends Resource
             oldValues: ['valid_at' => $previousValidAt],
             newValues: ['valid_at' => $record->valid_at->toIso8601String()],
             metadata: [
-                'pair' => ExchangeRateResource::exchangeRatePair($record),
-                'source' => $record->source,
+                'pair'    => ExchangeRateResource::exchangeRatePair($record),
+                'source'  => $record->source,
                 'context' => 'asset_relation_manager',
             ],
             tags: 'backoffice,finance,exchange-rates'

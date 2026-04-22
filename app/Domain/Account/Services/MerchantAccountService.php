@@ -58,23 +58,23 @@ class MerchantAccountService
 
                 // Set merchant-specific fields not covered by the base AccountDTO
                 $account->update([
-                    'display_name' => $profileData['trade_name'],
-                    'type' => 'merchant',
+                    'display_name'      => $profileData['trade_name'],
+                    'type'              => 'merchant',
                     'verification_tier' => 'unverified',
-                    'capabilities' => ['can_receive_payments'],
+                    'capabilities'      => ['can_receive_payments'],
                 ]);
 
                 $account = $account->fresh();
 
                 $profile = AccountProfileMerchant::query()->create([
-                    'account_uuid' => $account->uuid,
-                    'trade_name' => $profileData['trade_name'],
+                    'account_uuid'      => $account->uuid,
+                    'trade_name'        => $profileData['trade_name'],
                     'merchant_category' => $profileData['merchant_category'],
-                    'classification' => $profileData['classification'],
+                    'classification'    => $profileData['classification'],
                     'settlement_method' => $profileData['settlement_method'],
-                    'location' => $profileData['location'] ?? null,
-                    'description' => $profileData['description'] ?? null,
-                    'qr_code_payload' => $profileData['qr_code_payload'] ?? null,
+                    'location'          => $profileData['location'] ?? null,
+                    'description'       => $profileData['description'] ?? null,
+                    'qr_code_payload'   => $profileData['qr_code_payload'] ?? null,
                 ]);
             });
 
@@ -86,22 +86,22 @@ class MerchantAccountService
                 $profileData['trade_name'],
                 [
                     'verification_tier' => 'unverified',
-                    'capabilities' => ['can_receive_payments'],
+                    'capabilities'      => ['can_receive_payments'],
                 ],
             );
 
             // Audit log — written in the tenant DB context (already initialized)
             AccountAuditLog::create([
-                'account_uuid' => $account->uuid,
+                'account_uuid'    => $account->uuid,
                 'actor_user_uuid' => $user->uuid,
-                'action' => 'account.created',
-                'metadata' => ['trade_name' => $profileData['trade_name'], 'type' => 'merchant'],
-                'created_at' => now(),
+                'action'          => 'account.created',
+                'metadata'        => ['trade_name' => $profileData['trade_name'], 'type' => 'merchant'],
+                'created_at'      => now(),
             ]);
 
             return [
-                'account' => $account->fresh(),
-                'profile' => $profile->fresh(),
+                'account'    => $account->fresh(),
+                'profile'    => $profile->fresh(),
                 'membership' => $membership,
             ];
         } catch (Throwable $e) {
@@ -113,10 +113,10 @@ class MerchantAccountService
                     $account->forceDelete();
                 } catch (Throwable $cleanupException) {
                     Log::error('MerchantAccountService: cleanup failed after creation error', [
-                        'user_uuid' => $user->uuid,
-                        'account_uuid' => $account->uuid ?? null,
+                        'user_uuid'      => $user->uuid,
+                        'account_uuid'   => $account->uuid ?? null,
                         'creation_error' => $e->getMessage(),
-                        'cleanup_error' => $cleanupException->getMessage(),
+                        'cleanup_error'  => $cleanupException->getMessage(),
                     ]);
                 }
             }

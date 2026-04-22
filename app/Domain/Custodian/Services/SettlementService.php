@@ -551,9 +551,9 @@ class SettlementService
             ->where('operation_type', ProviderOperationType::TRANSFER->value)
             ->whereIn('provider_reference', $references->all())
             ->update([
-                'settlement_status' => $settlementStatus->value,
+                'settlement_status'    => $settlementStatus->value,
                 'settlement_reference' => $settlementId,
-                'updated_at' => now(),
+                'updated_at'           => now(),
             ]);
     }
 

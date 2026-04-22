@@ -135,7 +135,7 @@ class UserInvitationResource extends Resource
                             /** @var \App\Models\User $inviter */
                             $inviter = auth()->user();
                             $oldValues = [
-                                'token' => $record->token,
+                                'token'      => $record->token,
                                 'expires_at' => $record->expires_at->toIso8601String(),
                             ];
                             app(UserInvitationService::class)->resend($record->id, $inviter);
@@ -149,12 +149,12 @@ class UserInvitationResource extends Resource
                                 auditable: $record,
                                 oldValues: $oldValues,
                                 newValues: [
-                                    'token' => $record->token,
+                                    'token'      => $record->token,
                                     'expires_at' => $record->expires_at->toIso8601String(),
                                 ],
                                 metadata: [
-                                    'email' => $record->email,
-                                    'role' => $record->role,
+                                    'email'       => $record->email,
+                                    'role'        => $record->role,
                                     'actor_email' => $inviter->email,
                                 ],
                                 tags: 'backoffice,platform,user-invitations'
@@ -199,8 +199,8 @@ class UserInvitationResource extends Resource
                                     'expires_at' => $record->expires_at->toIso8601String(),
                                 ],
                                 metadata: [
-                                    'email' => $record->email,
-                                    'role' => $record->role,
+                                    'email'       => $record->email,
+                                    'role'        => $record->role,
                                     'actor_email' => $actor instanceof \App\Models\User ? $actor->email : 'system',
                                 ],
                                 tags: 'backoffice,platform,user-invitations'
@@ -233,10 +233,10 @@ class UserInvitationResource extends Resource
                             reason: (string) $data['reason'],
                             auditable: $record,
                             metadata: [
-                                'email' => $record->email,
-                                'role' => $record->role,
+                                'email'          => $record->email,
+                                'role'           => $record->role,
                                 'invitation_url' => $url,
-                                'actor_email' => $actor instanceof \App\Models\User ? $actor->email : 'system',
+                                'actor_email'    => $actor instanceof \App\Models\User ? $actor->email : 'system',
                             ],
                             tags: 'backoffice,platform,user-invitations'
                         );

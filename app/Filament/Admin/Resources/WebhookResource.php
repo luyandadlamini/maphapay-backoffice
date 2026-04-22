@@ -212,8 +212,8 @@ class WebhookResource extends Resource
                                 reason: (string) $data['reason'],
                                 auditable: $record,
                                 metadata: [
-                                        'webhook' => $record->name,
-                                        'url' => $record->url,
+                                        'webhook'     => $record->name,
+                                        'url'         => $record->url,
                                         'actor_email' => $actor instanceof \App\Models\User ? $actor->email : 'system',
                                 ],
                                 tags: 'backoffice,platform,webhooks'
@@ -244,13 +244,13 @@ class WebhookResource extends Resource
 
                             $oldValues = [
                                 'consecutive_failures' => $record->consecutive_failures,
-                                'is_active' => $record->is_active,
+                                'is_active'            => $record->is_active,
                             ];
 
                             $record->update(
                                 [
                                     'consecutive_failures' => 0,
-                                    'is_active' => true,
+                                    'is_active'            => true,
                                 ]
                             );
 
@@ -262,10 +262,10 @@ class WebhookResource extends Resource
                                 oldValues: $oldValues,
                                 newValues: [
                                     'consecutive_failures' => $record->fresh()?->consecutive_failures,
-                                    'is_active' => $record->fresh()?->is_active,
+                                    'is_active'            => $record->fresh()?->is_active,
                                 ],
                                 metadata: [
-                                    'webhook' => $record->name,
+                                    'webhook'     => $record->name,
                                     'actor_email' => $actor instanceof \App\Models\User ? $actor->email : 'system',
                                 ],
                                 tags: 'backoffice,platform,webhooks'
@@ -373,7 +373,7 @@ class WebhookResource extends Resource
                                         action: 'backoffice.webhooks.activate.bulk',
                                         reason: (string) $data['reason'],
                                         payload: [
-                                            'webhook_ids' => $records->map(fn (Webhook $record) => (string) $record->getKey())->values()->all(),
+                                            'webhook_ids'     => $records->map(fn (Webhook $record) => (string) $record->getKey())->values()->all(),
                                             'requested_state' => 'active',
                                         ],
                                         metadata: [
@@ -399,7 +399,7 @@ class WebhookResource extends Resource
                                         action: 'backoffice.webhooks.deactivate.bulk',
                                         reason: (string) $data['reason'],
                                         payload: [
-                                            'webhook_ids' => $records->map(fn (Webhook $record) => (string) $record->getKey())->values()->all(),
+                                            'webhook_ids'     => $records->map(fn (Webhook $record) => (string) $record->getKey())->values()->all(),
                                             'requested_state' => 'inactive',
                                         ],
                                         metadata: [
@@ -462,12 +462,12 @@ class WebhookResource extends Resource
             targetType: Webhook::class,
             targetIdentifier: (string) $record->getKey(),
             payload: [
-                'webhook_uuid' => (string) $record->getKey(),
+                'webhook_uuid'    => (string) $record->getKey(),
                 'requested_state' => $requestedState,
             ],
             metadata: [
                 'webhook' => $record->name,
-                'url' => $record->url,
+                'url'     => $record->url,
             ],
         );
 
@@ -492,7 +492,7 @@ class WebhookResource extends Resource
             ],
             metadata: [
                 'webhook' => $record->name,
-                'url' => $record->url,
+                'url'     => $record->url,
             ],
         );
 

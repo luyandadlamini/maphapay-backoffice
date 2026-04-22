@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Mobile\Exceptions\AppAttestException;
 use App\Domain\Mobile\Models\MobileDevice;
 use App\Domain\Mobile\Models\MobileDeviceSession;
 use App\Domain\Mobile\Models\MobileNotificationPreference;
 use App\Domain\Mobile\Models\MobilePushNotification;
-use App\Domain\Mobile\Exceptions\AppAttestException;
 use App\Domain\Mobile\Services\AppAttestService;
 use App\Domain\Mobile\Services\BiometricAuthenticationService;
 use App\Domain\Mobile\Services\MobileDeviceService;

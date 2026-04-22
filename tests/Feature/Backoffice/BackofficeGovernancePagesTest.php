@@ -12,12 +12,10 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\SettingsService;
 use Filament\Facades\Filament;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Tests\TestCase;
-
-use function Pest\Livewire\livewire;
 
 final class BackofficeGovernancePagesTest extends TestCase
 {

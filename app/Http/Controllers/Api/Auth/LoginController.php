@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Auth;
 
-use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Services\AccountPayloadTransformer;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -378,15 +377,15 @@ class LoginController extends Controller
         $accounts = $this->transformAccountMemberships($user);
         $activeAccountId = (string) ($request->attributes->get('account_uuid') ?? $this->resolveActiveAccountId($user));
         $payload = array_merge($user->toArray(), [
-            'accounts' => $accounts,
+            'accounts'          => $accounts,
             'active_account_id' => $activeAccountId,
         ]);
 
         return response()->json(
             [
-                'success' => true,
-                'data'    => $payload,
-                'accounts' => $accounts,
+                'success'           => true,
+                'data'              => $payload,
+                'accounts'          => $accounts,
                 'active_account_id' => $activeAccountId,
             ]
         );

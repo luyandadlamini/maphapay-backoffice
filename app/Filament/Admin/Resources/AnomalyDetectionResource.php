@@ -265,11 +265,11 @@ class AnomalyDetectionResource extends Resource
                             /** @var \App\Models\User $admin */
                             $admin = auth()->user();
                             \App\Domain\Support\Models\SupportCase::create([
-                                'subject'               => 'Escalated anomaly: ' . $record->id,
-                                'description'           => $data['escalation_note'],
-                                'status'                => 'open',
-                                'priority'              => 'urgent',
-                                'reported_by'           => $admin->uuid,
+                                'subject'     => 'Escalated anomaly: ' . $record->id,
+                                'description' => $data['escalation_note'],
+                                'status'      => 'open',
+                                'priority'    => 'urgent',
+                                'reported_by' => $admin->uuid,
                             ]);
                         }),
                     Tables\Actions\Action::make('resolve')

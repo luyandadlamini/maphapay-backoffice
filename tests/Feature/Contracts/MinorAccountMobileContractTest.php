@@ -72,29 +72,29 @@ class MinorAccountMobileContractTest extends BaseTestCase
         ]);
 
         AccountMembership::query()->create([
-            'user_uuid'          => $this->guardian->uuid,
-            'tenant_id'          => $tenantId,
-            'account_uuid'       => $this->personalAccount->uuid,
-            'account_type'       => 'personal',
-            'role'               => 'owner',
-            'status'             => 'active',
-            'display_name'       => 'Parent Personal',
-            'verification_tier'  => 'verified',
-            'capabilities'       => [],
-            'joined_at'          => now(),
+            'user_uuid'         => $this->guardian->uuid,
+            'tenant_id'         => $tenantId,
+            'account_uuid'      => $this->personalAccount->uuid,
+            'account_type'      => 'personal',
+            'role'              => 'owner',
+            'status'            => 'active',
+            'display_name'      => 'Parent Personal',
+            'verification_tier' => 'verified',
+            'capabilities'      => [],
+            'joined_at'         => now(),
         ]);
 
         AccountMembership::query()->create([
-            'user_uuid'          => $this->guardian->uuid,
-            'tenant_id'          => $tenantId,
-            'account_uuid'       => $this->minorAccount->uuid,
-            'account_type'       => 'minor',
-            'role'               => 'guardian',
-            'status'             => 'active',
-            'display_name'       => 'Jamie',
-            'verification_tier'  => 'basic',
-            'capabilities'       => [],
-            'joined_at'          => now(),
+            'user_uuid'         => $this->guardian->uuid,
+            'tenant_id'         => $tenantId,
+            'account_uuid'      => $this->minorAccount->uuid,
+            'account_type'      => 'minor',
+            'role'              => 'guardian',
+            'status'            => 'active',
+            'display_name'      => 'Jamie',
+            'verification_tier' => 'basic',
+            'capabilities'      => [],
+            'joined_at'         => now(),
         ]);
     }
 
@@ -113,13 +113,13 @@ class MinorAccountMobileContractTest extends BaseTestCase
             ->firstWhere('account_uuid', $this->minorAccount->uuid);
 
         $this->assertEquals([
-            'account_uuid'       => $this->minorAccount->uuid,
-            'account_type'       => 'minor',
-            'role'               => 'guardian',
-            'display_name'       => 'Jamie',
-            'account_tier'       => 'grow',
-            'permission_level'   => 3,
-            'parent_account_uuid'=> $this->personalAccount->uuid,
+            'account_uuid'        => $this->minorAccount->uuid,
+            'account_type'        => 'minor',
+            'role'                => 'guardian',
+            'display_name'        => 'Jamie',
+            'account_tier'        => 'grow',
+            'permission_level'    => 3,
+            'parent_account_uuid' => $this->personalAccount->uuid,
         ], array_intersect_key($minorAccount, array_flip([
             'account_uuid',
             'account_type',

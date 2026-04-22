@@ -9,8 +9,8 @@ use App\Domain\Asset\Models\AssetTransfer;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Ledger\Models\LedgerEntry;
 use App\Domain\Ledger\Models\LedgerPosting;
-use App\Support\Reconciliation\ReconciliationReportDataLoader;
 use App\Models\MoneyRequest;
+use App\Support\Reconciliation\ReconciliationReportDataLoader;
 use Illuminate\Support\Collection;
 
 class MoneyMovementTransactionInspector
@@ -53,20 +53,20 @@ class MoneyMovementTransactionInspector
                 ->orderBy('created_at')
                 ->get()
                 ->map(fn (TransactionProjection $projection): array => [
-                    'uuid'                     => $projection->uuid,
-                    'account_uuid'             => $projection->account_uuid,
-                    'type'                     => $projection->type,
-                    'subtype'                  => $projection->subtype,
-                    'status'                   => $projection->status,
-                    'amount'                   => $projection->formatted_amount,
-                    'asset_code'               => $projection->asset_code,
-                    'description'              => $projection->description,
-                    'reference'                => $projection->reference,
-                    'ledger_posting_id'        => $projection->metadata['ledger_posting_id'] ?? null,
-                    'ledger_posting_status'    => $projection->metadata['ledger_posting_status'] ?? null,
+                    'uuid'                      => $projection->uuid,
+                    'account_uuid'              => $projection->account_uuid,
+                    'type'                      => $projection->type,
+                    'subtype'                   => $projection->subtype,
+                    'status'                    => $projection->status,
+                    'amount'                    => $projection->formatted_amount,
+                    'asset_code'                => $projection->asset_code,
+                    'description'               => $projection->description,
+                    'reference'                 => $projection->reference,
+                    'ledger_posting_id'         => $projection->metadata['ledger_posting_id'] ?? null,
+                    'ledger_posting_status'     => $projection->metadata['ledger_posting_status'] ?? null,
                     'ledger_transfer_reference' => $projection->metadata['ledger_transfer_reference'] ?? null,
-                    'projection_anchor'        => $projection->metadata['projection_anchor'] ?? null,
-                    'created_at'               => $projection->created_at?->toIso8601String(),
+                    'projection_anchor'         => $projection->metadata['projection_anchor'] ?? null,
+                    'created_at'                => $projection->created_at?->toIso8601String(),
                 ])
                 ->all()
             : [];
@@ -217,8 +217,8 @@ class MoneyMovementTransactionInspector
                     ])
                     ->all(),
             ] : [],
-            'related_ledger_postings'  => $relatedLedgerPostings,
-            'asset_transfer' => $assetTransfer !== null ? [
+            'related_ledger_postings' => $relatedLedgerPostings,
+            'asset_transfer'          => $assetTransfer !== null ? [
                 'reference'         => $assetTransfer->reference,
                 'transfer_id'       => $assetTransfer->transfer_id,
                 'status'            => $assetTransfer->status,
@@ -230,10 +230,10 @@ class MoneyMovementTransactionInspector
                 'to_amount'         => $assetTransfer->to_amount,
                 'failure_reason'    => $assetTransfer->failure_reason,
             ] : null,
-            'projection_state'        => $projectionState,
+            'projection_state'          => $projectionState,
             'reconciliation_exceptions' => $reconciliationExceptions,
-            'transaction_projections' => $projections,
-            'money_request'           => $moneyRequest !== null ? [
+            'transaction_projections'   => $projections,
+            'money_request'             => $moneyRequest !== null ? [
                 'id'                => $moneyRequest->id,
                 'status'            => $moneyRequest->status,
                 'requester_user_id' => $moneyRequest->requester_user_id,
@@ -262,32 +262,32 @@ class MoneyMovementTransactionInspector
 
         if ($ledgerPosting !== null) {
             return [
-                'status'            => $projectionCount === 0 ? 'lagging' : 'projected',
-                'anchor'            => 'ledger_posting',
-                'count'             => $projectionCount,
-                'expected_count'    => $expectedCount,
-                'ledger_posting_id' => $ledgerPosting->id,
+                'status'             => $projectionCount === 0 ? 'lagging' : 'projected',
+                'anchor'             => 'ledger_posting',
+                'count'              => $projectionCount,
+                'expected_count'     => $expectedCount,
+                'ledger_posting_id'  => $ledgerPosting->id,
                 'transfer_reference' => $ledgerPosting->transfer_reference,
             ];
         }
 
         if ($projectionCount > 0) {
             return [
-                'status'            => 'legacy_projection_only',
-                'anchor'            => 'projection_only',
-                'count'             => $projectionCount,
-                'expected_count'    => $expectedCount,
-                'ledger_posting_id' => null,
+                'status'             => 'legacy_projection_only',
+                'anchor'             => 'projection_only',
+                'count'              => $projectionCount,
+                'expected_count'     => $expectedCount,
+                'ledger_posting_id'  => null,
                 'transfer_reference' => $assetTransfer?->reference,
             ];
         }
 
         return [
-            'status'            => 'not_projected',
-            'anchor'            => 'none',
-            'count'             => $projectionCount,
-            'expected_count'    => $expectedCount,
-            'ledger_posting_id' => null,
+            'status'             => 'not_projected',
+            'anchor'             => 'none',
+            'count'              => $projectionCount,
+            'expected_count'     => $expectedCount,
+            'ledger_posting_id'  => null,
             'transfer_reference' => $assetTransfer?->reference,
         ];
     }
@@ -360,14 +360,14 @@ class MoneyMovementTransactionInspector
             ->orderBy('created_at')
             ->get()
             ->map(fn (LedgerPosting $posting): array => [
-                'id' => $posting->id,
-                'posting_type' => $posting->posting_type,
-                'status' => $posting->status,
+                'id'                 => $posting->id,
+                'posting_type'       => $posting->posting_type,
+                'status'             => $posting->status,
                 'transfer_reference' => $posting->transfer_reference,
                 'related_posting_id' => $posting->metadata['related_posting_id'] ?? null,
-                'adjustment_reason' => $posting->metadata['adjustment_reason'] ?? null,
-                'reversal_reason' => $posting->metadata['reversal_reason'] ?? null,
-                'posted_at' => $posting->posted_at?->toIso8601String(),
+                'adjustment_reason'  => $posting->metadata['adjustment_reason'] ?? null,
+                'reversal_reason'    => $posting->metadata['reversal_reason'] ?? null,
+                'posted_at'          => $posting->posted_at?->toIso8601String(),
             ])
             ->all());
     }

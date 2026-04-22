@@ -8,8 +8,8 @@ use App\Domain\Commerce\Models\Merchant;
 use App\Domain\Commerce\Services\MerchantOnboardingService;
 use App\Domain\Corporate\Enums\CorporateCapability;
 use App\Domain\Corporate\Services\CorporateCapabilityGate;
-use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\Auth;
 
 final class ApproveMerchantMutation

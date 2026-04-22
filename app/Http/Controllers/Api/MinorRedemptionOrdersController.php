@@ -13,7 +13,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
-use Throwable;
 
 class MinorRedemptionOrdersController extends Controller
 {
@@ -32,7 +31,7 @@ class MinorRedemptionOrdersController extends Controller
 
         $validated = $request->validate([
             'reward_id' => ['required', 'string'],
-            'quantity' => ['sometimes', 'integer', 'min:1'],
+            'quantity'  => ['sometimes', 'integer', 'min:1'],
         ]);
 
         $reward = $this->rewardService->findCatalogReward($minorAccount, (string) $validated['reward_id']);
@@ -43,13 +42,13 @@ class MinorRedemptionOrdersController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $this->transformRedemption($redemption),
+                'data'    => $this->transformRedemption($redemption),
             ], 201);
         } catch (ValidationException $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'Redemption submission failed.',
-                'errors' => $exception->errors(),
+                'errors'  => $exception->errors(),
             ], 422);
         }
     }
@@ -67,15 +66,15 @@ class MinorRedemptionOrdersController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
+            'data'    => [
                 'minor_account_uuid' => $minorAccount->uuid,
-                'redemptions' => $orders,
+                'redemptions'        => $orders,
             ],
             'meta' => [
                 'current_page' => $paginated->currentPage(),
-                'last_page' => $paginated->lastPage(),
-                'per_page' => $paginated->perPage(),
-                'total' => $paginated->total(),
+                'last_page'    => $paginated->lastPage(),
+                'per_page'     => $paginated->perPage(),
+                'total'        => $paginated->total(),
             ],
         ]);
     }
@@ -94,13 +93,13 @@ class MinorRedemptionOrdersController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $this->transformRedemption($redemption),
+                'data'    => $this->transformRedemption($redemption),
             ]);
         } catch (ValidationException $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'Redemption approval failed.',
-                'errors' => $exception->errors(),
+                'errors'  => $exception->errors(),
             ], 422);
         }
     }
@@ -119,13 +118,13 @@ class MinorRedemptionOrdersController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $this->transformRedemption($redemption),
+                'data'    => $this->transformRedemption($redemption),
             ]);
         } catch (ValidationException $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'Redemption decline failed.',
-                'errors' => $exception->errors(),
+                'errors'  => $exception->errors(),
             ], 422);
         }
     }
@@ -139,16 +138,16 @@ class MinorRedemptionOrdersController extends Controller
         $quantity = $this->rewardService->quantityForRedemption($redemption->setRelation('reward', $reward));
 
         return [
-            'id' => $redemption->id,
+            'id'                 => $redemption->id,
             'minor_account_uuid' => $redemption->minor_account_uuid,
-            'reward_id' => $redemption->minor_reward_id,
-            'reward_name' => $reward?->name,
-            'quantity' => $quantity,
-            'points_cost' => $redemption->points_cost,
-            'status' => $redemption->status,
-            'requires_approval' => $redemption->status === 'awaiting_approval' || $redemption->points_cost > $this->rewardService->approvalThreshold(),
-            'fulfilled_at' => $redemption->fulfilled_at?->toIso8601String(),
-            'created_at' => $redemption->created_at?->toIso8601String(),
+            'reward_id'          => $redemption->minor_reward_id,
+            'reward_name'        => $reward?->name,
+            'quantity'           => $quantity,
+            'points_cost'        => $redemption->points_cost,
+            'status'             => $redemption->status,
+            'requires_approval'  => $redemption->status === 'awaiting_approval' || $redemption->points_cost > $this->rewardService->approvalThreshold(),
+            'fulfilled_at'       => $redemption->fulfilled_at?->toIso8601String(),
+            'created_at'         => $redemption->created_at?->toIso8601String(),
         ];
     }
 }

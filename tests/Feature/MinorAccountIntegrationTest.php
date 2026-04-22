@@ -10,13 +10,13 @@ use App\Domain\Account\Models\TransactionProjection;
 use App\Models\User;
 use App\Policies\AccountPolicy;
 use App\Rules\ValidateMinorAccountPermission;
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
-use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\CreatesApplication;
 
@@ -52,8 +52,8 @@ class MinorAccountIntegrationTest extends BaseTestCase
         $parent = User::factory()->create();
         $coGuardian = User::factory()->create();
         $parentAccount = Account::factory()->create([
-            'user_uuid'    => $parent->uuid,
-            'type'         => 'personal',
+            'user_uuid' => $parent->uuid,
+            'type'      => 'personal',
         ]);
 
         AccountMembership::query()->create([

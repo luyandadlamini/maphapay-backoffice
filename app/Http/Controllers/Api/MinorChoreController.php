@@ -25,7 +25,7 @@ class MinorChoreController extends Controller
     }
 
     /**
-     * GET /api/accounts/minor/{uuid}/chores
+     * GET /api/accounts/minor/{uuid}/chores.
      *
      * List all chores for a minor account.
      * Accessible by child or guardian.
@@ -43,17 +43,17 @@ class MinorChoreController extends Controller
             ->orderByDesc('created_at')
             ->paginate(20);
 
-        $chores = $paginated->map(fn(MinorChore $chore) => [
-            'id'              => $chore->id,
-            'title'           => $chore->title,
-            'description'     => $chore->description,
-            'payout_points'   => $chore->payout_points,
-            'payout_type'     => $chore->payout_type,
-            'due_at'          => $chore->due_at?->toIso8601String(),
-            'recurrence'      => $chore->recurrence,
-            'status'          => $chore->status,
-            'created_at'      => $chore->created_at?->toIso8601String(),
-            'updated_at'      => $chore->updated_at?->toIso8601String(),
+        $chores = $paginated->map(fn (MinorChore $chore) => [
+            'id'            => $chore->id,
+            'title'         => $chore->title,
+            'description'   => $chore->description,
+            'payout_points' => $chore->payout_points,
+            'payout_type'   => $chore->payout_type,
+            'due_at'        => $chore->due_at?->toIso8601String(),
+            'recurrence'    => $chore->recurrence,
+            'status'        => $chore->status,
+            'created_at'    => $chore->created_at?->toIso8601String(),
+            'updated_at'    => $chore->updated_at?->toIso8601String(),
         ]);
 
         return response()->json([
@@ -69,7 +69,7 @@ class MinorChoreController extends Controller
     }
 
     /**
-     * POST /api/accounts/minor/{uuid}/chores
+     * POST /api/accounts/minor/{uuid}/chores.
      *
      * Create a new chore for a minor account.
      * Only guardians can create chores.
@@ -80,11 +80,11 @@ class MinorChoreController extends Controller
         $userAccount = $this->requireGuardian($request, $minorAccount);
 
         $validated = $request->validate([
-            'title'           => 'required|string|max:255',
-            'description'     => 'nullable|string|max:1000',
-            'payout_points'   => 'required|integer|min:1|max:10000',
-            'due_at'          => 'nullable|date|after:now',
-            'recurrence'      => 'nullable|in:weekly,monthly',
+            'title'         => 'required|string|max:255',
+            'description'   => 'nullable|string|max:1000',
+            'payout_points' => 'required|integer|min:1|max:10000',
+            'due_at'        => 'nullable|date|after:now',
+            'recurrence'    => 'nullable|in:weekly,monthly',
         ]);
 
         try {
@@ -93,15 +93,15 @@ class MinorChoreController extends Controller
             return response()->json([
                 'success' => true,
                 'data'    => [
-                    'id'              => $chore->id,
-                    'title'           => $chore->title,
-                    'description'     => $chore->description,
-                    'payout_points'   => $chore->payout_points,
-                    'payout_type'     => $chore->payout_type,
-                    'due_at'          => $chore->due_at?->toIso8601String(),
-                    'recurrence'      => $chore->recurrence,
-                    'status'          => $chore->status,
-                    'created_at'      => $chore->created_at?->toIso8601String(),
+                    'id'            => $chore->id,
+                    'title'         => $chore->title,
+                    'description'   => $chore->description,
+                    'payout_points' => $chore->payout_points,
+                    'payout_type'   => $chore->payout_type,
+                    'due_at'        => $chore->due_at?->toIso8601String(),
+                    'recurrence'    => $chore->recurrence,
+                    'status'        => $chore->status,
+                    'created_at'    => $chore->created_at?->toIso8601String(),
                 ],
             ], 201);
         } catch (ValidationException $e) {
@@ -124,7 +124,7 @@ class MinorChoreController extends Controller
     }
 
     /**
-     * DELETE /api/accounts/minor/{uuid}/chores/{choreId}
+     * DELETE /api/accounts/minor/{uuid}/chores/{choreId}.
      *
      * Cancel a chore.
      * Only guardians can cancel chores.
@@ -152,7 +152,7 @@ class MinorChoreController extends Controller
     }
 
     /**
-     * POST /api/accounts/minor/{uuid}/chores/{choreId}/complete
+     * POST /api/accounts/minor/{uuid}/chores/{choreId}/complete.
      *
      * Submit a chore completion.
      * Accessible by child or guardian.
@@ -180,11 +180,11 @@ class MinorChoreController extends Controller
             return response()->json([
                 'success' => true,
                 'data'    => [
-                    'id'               => $completion->id,
-                    'chore_id'         => $completion->chore_id,
-                    'status'           => $completion->status,
-                    'submission_note'  => $completion->submission_note,
-                    'created_at'       => $completion->created_at?->toIso8601String(),
+                    'id'              => $completion->id,
+                    'chore_id'        => $completion->chore_id,
+                    'status'          => $completion->status,
+                    'submission_note' => $completion->submission_note,
+                    'created_at'      => $completion->created_at?->toIso8601String(),
                 ],
             ], 201);
         } catch (ValidationException $e) {
@@ -208,7 +208,7 @@ class MinorChoreController extends Controller
     }
 
     /**
-     * POST /api/accounts/minor/{uuid}/chores/{choreId}/approve/{completionId}
+     * POST /api/accounts/minor/{uuid}/chores/{choreId}/approve/{completionId}.
      *
      * Approve a chore completion and award points.
      * Only guardians can approve.
@@ -235,13 +235,13 @@ class MinorChoreController extends Controller
             return response()->json([
                 'success' => true,
                 'data'    => [
-                    'id'                    => $completion->id,
-                    'chore_id'              => $completion->chore_id,
-                    'status'                => $completion->status,
-                    'submission_note'       => $completion->submission_note,
+                    'id'                       => $completion->id,
+                    'chore_id'                 => $completion->chore_id,
+                    'status'                   => $completion->status,
+                    'submission_note'          => $completion->submission_note,
                     'reviewed_by_account_uuid' => $completion->reviewed_by_account_uuid,
-                    'reviewed_at'           => $completion->reviewed_at?->toIso8601String(),
-                    'payout_processed_at'   => $completion->payout_processed_at?->toIso8601String(),
+                    'reviewed_at'              => $completion->reviewed_at?->toIso8601String(),
+                    'payout_processed_at'      => $completion->payout_processed_at?->toIso8601String(),
                 ],
             ]);
         } catch (ValidationException $e) {
@@ -266,7 +266,7 @@ class MinorChoreController extends Controller
     }
 
     /**
-     * POST /api/accounts/minor/{uuid}/chores/{choreId}/reject/{completionId}
+     * POST /api/accounts/minor/{uuid}/chores/{choreId}/reject/{completionId}.
      *
      * Reject a chore completion.
      * Only guardians can reject.
@@ -297,13 +297,13 @@ class MinorChoreController extends Controller
             return response()->json([
                 'success' => true,
                 'data'    => [
-                    'id'                    => $completion->id,
-                    'chore_id'              => $completion->chore_id,
-                    'status'                => $completion->status,
-                    'submission_note'       => $completion->submission_note,
-                    'rejection_reason'      => $completion->rejection_reason,
+                    'id'                       => $completion->id,
+                    'chore_id'                 => $completion->chore_id,
+                    'status'                   => $completion->status,
+                    'submission_note'          => $completion->submission_note,
+                    'rejection_reason'         => $completion->rejection_reason,
                     'reviewed_by_account_uuid' => $completion->reviewed_by_account_uuid,
-                    'reviewed_at'           => $completion->reviewed_at?->toIso8601String(),
+                    'reviewed_at'              => $completion->reviewed_at?->toIso8601String(),
                 ],
             ]);
         } catch (ValidationException $e) {

@@ -32,8 +32,8 @@ class AccountPolicyTest extends BaseTestCase
         $child = User::factory()->create();
         $guardian = User::factory()->create();
         $childAccount = Account::factory()->create([
-            'user_uuid'    => $child->uuid,
-            'type'         => 'minor',
+            'user_uuid' => $child->uuid,
+            'type'      => 'minor',
         ]);
 
         $this->createMembership($guardian, $childAccount, 'guardian');
@@ -46,8 +46,8 @@ class AccountPolicyTest extends BaseTestCase
     {
         $guardian = User::factory()->create();
         $childAccount = Account::factory()->create([
-            'user_uuid'    => $guardian->uuid,
-            'type'         => 'minor',
+            'user_uuid' => $guardian->uuid,
+            'type'      => 'minor',
         ]);
 
         $this->assertFalse($this->policy->viewMinor($guardian, $childAccount));
@@ -150,8 +150,8 @@ class AccountPolicyTest extends BaseTestCase
     {
         $parent = User::factory()->create();
         $personalAccount = Account::factory()->create([
-            'user_uuid'    => $parent->uuid,
-            'type'         => 'personal',
+            'user_uuid' => $parent->uuid,
+            'type'      => 'personal',
         ]);
 
         $this->createMembership($parent, $personalAccount, 'owner', 'active', 'personal');
@@ -164,8 +164,8 @@ class AccountPolicyTest extends BaseTestCase
     {
         $child = User::factory()->create();
         $minorAccount = Account::factory()->create([
-            'user_uuid'    => $child->uuid,
-            'type'         => 'minor',
+            'user_uuid' => $child->uuid,
+            'type'      => 'minor',
         ]);
 
         $this->createMembership($child, $minorAccount, 'owner', 'active', 'minor');
@@ -208,8 +208,8 @@ class AccountPolicyTest extends BaseTestCase
     {
         $child = User::factory()->create();
         $childAccount = Account::factory()->create([
-            'user_uuid'    => $child->uuid,
-            'type'         => 'minor',
+            'user_uuid' => $child->uuid,
+            'type'      => 'minor',
         ]);
 
         $this->assertFalse($this->policy->updateMinor($child, $childAccount));
@@ -251,8 +251,8 @@ class AccountPolicyTest extends BaseTestCase
     {
         $child = User::factory()->create();
         $childAccount = Account::factory()->create([
-            'user_uuid'    => $child->uuid,
-            'type'         => 'minor',
+            'user_uuid' => $child->uuid,
+            'type'      => 'minor',
         ]);
 
         $this->assertFalse($this->policy->deleteMinor($child, $childAccount));
@@ -272,8 +272,8 @@ class AccountPolicyTest extends BaseTestCase
     {
         $parent = User::factory()->create();
         $personalAccount = Account::factory()->create([
-            'user_uuid'    => $parent->uuid,
-            'type'         => 'personal',
+            'user_uuid' => $parent->uuid,
+            'type'      => 'personal',
         ]);
 
         $this->createMembership($parent, $personalAccount, 'owner', 'active', 'personal');
@@ -286,8 +286,8 @@ class AccountPolicyTest extends BaseTestCase
     {
         $child = User::factory()->create();
         $minorAccount = Account::factory()->create([
-            'user_uuid'    => $child->uuid,
-            'type'         => 'minor',
+            'user_uuid' => $child->uuid,
+            'type'      => 'minor',
         ]);
 
         $this->createMembership($child, $minorAccount, 'owner', 'active', 'minor');

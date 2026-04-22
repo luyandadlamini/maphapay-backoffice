@@ -90,7 +90,7 @@ class ProjectorHealthDashboard extends Page
             targetType: 'projector',
             targetIdentifier: 'all',
             payload: [
-                'scope' => 'all_projectors',
+                'scope'           => 'all_projectors',
                 'artisan_command' => 'event-sourcing:replay',
             ],
             metadata: [

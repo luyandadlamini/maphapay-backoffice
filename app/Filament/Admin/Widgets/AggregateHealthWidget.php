@@ -9,6 +9,7 @@ use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class AggregateHealthWidget extends BaseWidget
 {
@@ -60,7 +61,7 @@ class AggregateHealthWidget extends BaseWidget
                 'top_domains'            => $topDomains,
                 'total_domain_events'    => array_sum($domainCounts),
             ];
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('AggregateHealthWidget: failed to compute stats', ['error' => $e->getMessage()]);
 
             return $defaults;

@@ -25,8 +25,8 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  *
- * @property-read \App\Models\Thread|null $thread
- * @property-read \App\Models\User|null $creator
+ * @property-read Thread|null $thread
+ * @property-read User|null $creator
  */
 class GroupPocket extends Model
 {

@@ -99,7 +99,7 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
         ]);
 
         $this->sender->update([
-            'transaction_pin' => bcrypt('1234'),
+            'transaction_pin'         => bcrypt('1234'),
             'transaction_pin_enabled' => true,
         ]);
 
@@ -167,7 +167,7 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
     {
         config([
             'maphapay_migration.enable_send_money' => true,
-            'mobile.attestation.enabled' => false,
+            'mobile.attestation.enabled'           => false,
         ]);
 
         $guardianAccount = Account::factory()->create([
@@ -179,8 +179,8 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
             ->firstOrFail();
 
         $senderAccount->forceFill([
-            'type' => 'minor',
-            'permission_level' => 3,
+            'type'              => 'minor',
+            'permission_level'  => 3,
             'parent_account_id' => $guardianAccount->uuid,
         ])->save();
 
@@ -190,10 +190,10 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
             'Idempotency-Key' => 'minor-approval-1',
         ];
         $payload = [
-            'user' => $this->recipient->email,
-            'amount' => '150.00',
+            'user'              => $this->recipient->email,
+            'amount'            => '150.00',
             'verification_type' => 'pin',
-            'attestation' => 'trusted-proof',
+            'attestation'       => 'trusted-proof',
         ];
 
         $firstResponse = $this->withHeaders($headers)
@@ -227,7 +227,7 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
     {
         config([
             'maphapay_migration.enable_send_money' => true,
-            'mobile.attestation.enabled' => false,
+            'mobile.attestation.enabled'           => false,
         ]);
 
         $guardianAccount = Account::factory()->create([
@@ -239,16 +239,16 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
             ->firstOrFail();
 
         $senderAccount->forceFill([
-            'type' => 'minor',
-            'permission_level' => 3,
+            'type'              => 'minor',
+            'permission_level'  => 3,
             'parent_account_id' => $guardianAccount->uuid,
         ])->save();
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
         $response = $this->postJson('/api/send-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '150.00',
+            'user'              => $this->recipient->email,
+            'amount'            => '150.00',
             'verification_type' => 'pin',
         ]);
 
@@ -271,26 +271,26 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
         ]);
 
         $moneyRequest = MoneyRequest::query()->create([
-            'id' => (string) Str::uuid(),
+            'id'                => (string) Str::uuid(),
             'requester_user_id' => $this->recipient->id,
             'recipient_user_id' => $this->sender->id,
-            'amount' => '150.75',
-            'asset_code' => 'SZL',
-            'note' => 'Invoice 42',
-            'status' => MoneyRequest::STATUS_PENDING,
-            'payment_token' => 'LINKTOKEN123',
-            'expires_at' => now()->addDay(),
+            'amount'            => '150.75',
+            'asset_code'        => 'SZL',
+            'note'              => 'Invoice 42',
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'payment_token'     => 'LINKTOKEN123',
+            'expires_at'        => now()->addDay(),
         ]);
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
         $response = $this->postJson('/api/send-money/store', [
             'payment_link_token' => 'LINKTOKEN123',
-            'verification_type' => 'pin',
-            'user' => 'malicious-override@example.com',
-            'amount' => '999.99',
-            'note' => 'tampered note',
-            'attestation' => 'test-attestation-token',
+            'verification_type'  => 'pin',
+            'user'               => 'malicious-override@example.com',
+            'amount'             => '999.99',
+            'note'               => 'tampered note',
+            'attestation'        => 'test-attestation-token',
         ]);
 
         $response->assertOk()
@@ -310,31 +310,31 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
     public function test_verified_payment_link_send_money_marks_money_request_paid(): void
     {
         config([
-            'maphapay_migration.enable_send_money' => true,
+            'maphapay_migration.enable_send_money'   => true,
             'maphapay_migration.enable_verification' => true,
         ]);
 
         $this->sender->update(['transaction_pin' => bcrypt('1234'), 'transaction_pin_enabled' => true]);
 
         $moneyRequest = MoneyRequest::query()->create([
-            'id' => (string) Str::uuid(),
+            'id'                => (string) Str::uuid(),
             'requester_user_id' => $this->recipient->id,
             'recipient_user_id' => $this->sender->id,
-            'amount' => '15.25',
-            'asset_code' => 'SZL',
-            'note' => 'Utilities',
-            'status' => MoneyRequest::STATUS_PENDING,
-            'payment_token' => 'LINKTOKEN456',
-            'expires_at' => now()->addDay(),
+            'amount'            => '15.25',
+            'asset_code'        => 'SZL',
+            'note'              => 'Utilities',
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'payment_token'     => 'LINKTOKEN456',
+            'expires_at'        => now()->addDay(),
         ]);
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
         $initResponse = $this->postJson('/api/send-money/store', [
             'payment_link_token' => 'LINKTOKEN456',
-            'verification_type' => 'pin',
-            'amount' => '1.00',
-            'attestation' => 'test-attestation-token',
+            'verification_type'  => 'pin',
+            'amount'             => '1.00',
+            'attestation'        => 'test-attestation-token',
         ]);
 
         $initResponse->assertOk()
@@ -343,8 +343,8 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
         $trx = (string) $initResponse->json('data.trx');
 
         $verifyResponse = $this->postJson('/api/verification-process/verify/pin', [
-            'trx' => $trx,
-            'pin' => '1234',
+            'trx'    => $trx,
+            'pin'    => '1234',
             'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
         ]);
 

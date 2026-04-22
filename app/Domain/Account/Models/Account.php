@@ -137,7 +137,7 @@ class Account extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'frozen' => 'boolean',
+        'frozen'       => 'boolean',
         'capabilities' => 'array',
     ];
 

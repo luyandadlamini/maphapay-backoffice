@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * Add guardian and co_guardian to the set of valid roles on account_memberships.
@@ -89,7 +88,7 @@ return new class () extends Migration {
     private function dropConstraintIfExists(string $constraintName): void
     {
         $connection = DB::connection($this->connection);
-        $driver     = $connection->getDriverName();
+        $driver = $connection->getDriverName();
 
         if ($driver === 'pgsql') {
             $connection->statement(

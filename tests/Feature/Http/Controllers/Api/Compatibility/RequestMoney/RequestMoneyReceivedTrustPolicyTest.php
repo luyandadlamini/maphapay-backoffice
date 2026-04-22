@@ -34,8 +34,8 @@ class RequestMoneyReceivedTrustPolicyTest extends ControllerTestCase
         Asset::firstOrCreate(
             ['code' => 'SZL'],
             [
-                'name' => 'Swazi Lilangeni',
-                'type' => 'fiat',
+                'name'      => 'Swazi Lilangeni',
+                'type'      => 'fiat',
                 'precision' => 2,
                 'is_active' => true,
             ],
@@ -66,26 +66,26 @@ class RequestMoneyReceivedTrustPolicyTest extends ControllerTestCase
     private function pendingMoneyRequest(): MoneyRequest
     {
         return MoneyRequest::query()->create([
-            'id' => (string) Str::uuid(),
+            'id'                => (string) Str::uuid(),
             'requester_user_id' => $this->requester->id,
             'recipient_user_id' => $this->recipient->id,
-            'amount' => '10.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'status' => MoneyRequest::STATUS_PENDING,
-            'trx' => null,
+            'amount'            => '10.00',
+            'asset_code'        => 'SZL',
+            'note'              => null,
+            'status'            => MoneyRequest::STATUS_PENDING,
+            'trx'               => null,
         ]);
     }
 
     private function createTrustedDeviceForRecipient(): string
     {
-        $deviceId = 'request-money-trusted-device-'.$this->recipient->id;
+        $deviceId = 'request-money-trusted-device-' . $this->recipient->id;
 
         MobileDevice::factory()
             ->trusted()
             ->ios()
             ->create([
-                'user_id' => $this->recipient->id,
+                'user_id'   => $this->recipient->id,
                 'device_id' => $deviceId,
             ]);
 
@@ -97,7 +97,7 @@ class RequestMoneyReceivedTrustPolicyTest extends ControllerTestCase
     {
         config([
             'maphapay_migration.enable_request_money' => true,
-            'mobile.attestation.enabled' => false,
+            'mobile.attestation.enabled'              => false,
         ]);
 
         $moneyRequest = $this->pendingMoneyRequest();
@@ -126,7 +126,7 @@ class RequestMoneyReceivedTrustPolicyTest extends ControllerTestCase
     {
         config([
             'maphapay_migration.enable_request_money' => true,
-            'mobile.attestation.enabled' => true,
+            'mobile.attestation.enabled'              => true,
         ]);
 
         $moneyRequest = $this->pendingMoneyRequest();
@@ -135,7 +135,7 @@ class RequestMoneyReceivedTrustPolicyTest extends ControllerTestCase
 
         $response = $this->postJson("/api/request-money/received-store/{$moneyRequest->id}", [
             'verification_type' => 'sms',
-            'device_type' => 'ios',
+            'device_type'       => 'ios',
         ]);
 
         $response->assertStatus(403)
@@ -143,10 +143,10 @@ class RequestMoneyReceivedTrustPolicyTest extends ControllerTestCase
             ->assertJsonPath('error.code', 'TRUST_POLICY_DENY');
 
         $this->assertDatabaseHas('mobile_attestation_records', [
-            'user_id' => $this->recipient->id,
-            'action' => 'request_money.accept',
+            'user_id'  => $this->recipient->id,
+            'action'   => 'request_money.accept',
             'decision' => 'deny',
-            'reason' => 'attestation_required',
+            'reason'   => 'attestation_required',
         ]);
     }
 
@@ -155,7 +155,7 @@ class RequestMoneyReceivedTrustPolicyTest extends ControllerTestCase
     {
         config([
             'maphapay_migration.enable_request_money' => true,
-            'mobile.attestation.enabled' => false,
+            'mobile.attestation.enabled'              => false,
         ]);
 
         $moneyRequest = $this->pendingMoneyRequest();
@@ -165,8 +165,8 @@ class RequestMoneyReceivedTrustPolicyTest extends ControllerTestCase
 
         $response = $this->postJson("/api/request-money/received-store/{$moneyRequest->id}", [
             'verification_type' => 'sms',
-            'device_type' => 'ios',
-            'device_id' => $deviceId,
+            'device_type'       => 'ios',
+            'device_id'         => $deviceId,
         ]);
 
         $response->assertOk()
@@ -179,9 +179,9 @@ class RequestMoneyReceivedTrustPolicyTest extends ControllerTestCase
         $this->assertNotNull($txn->payload['_trust_record_id'] ?? null);
 
         $this->assertDatabaseHas('mobile_attestation_records', [
-            'id' => $txn->payload['_trust_record_id'] ?? null,
-            'user_id' => $this->recipient->id,
-            'action' => 'request_money.accept',
+            'id'       => $txn->payload['_trust_record_id'] ?? null,
+            'user_id'  => $this->recipient->id,
+            'action'   => 'request_money.accept',
             'decision' => 'allow',
         ]);
     }

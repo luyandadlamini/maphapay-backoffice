@@ -13,7 +13,10 @@ use Illuminate\Queue\SerializesModels;
 
 class SendKybWebhookJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     public function __construct(
         private readonly CompanyKybWebhookService $webhookService,
@@ -21,7 +24,8 @@ class SendKybWebhookJob implements ShouldQueue
         private readonly string $oldStatus,
         private readonly string $newStatus,
         private readonly ?string $verifiedBy = null,
-    ) {}
+    ) {
+    }
 
     public function handle(): void
     {
@@ -29,7 +33,7 @@ class SendKybWebhookJob implements ShouldQueue
             ->with('companyProfile')
             ->find($this->documentId);
 
-        if (!$document) {
+        if (! $document) {
             return;
         }
 

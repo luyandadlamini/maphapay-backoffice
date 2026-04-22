@@ -14,7 +14,8 @@ class HighRiskActionTrustPolicy
 {
     public function __construct(
         private readonly BiometricJWTServiceInterface $biometricJwtService,
-    ) {}
+    ) {
+    }
 
     /**
      * @return array{decision: string, reason: string, attestation_verified: bool, record_id: string}
@@ -71,39 +72,39 @@ class HighRiskActionTrustPolicy
         }
 
         $record = MobileAttestationRecord::query()->create([
-            'user_id' => $user->id,
-            'mobile_device_id' => $mobileDevice?->id,
-            'action' => $action,
-            'decision' => $decision,
-            'reason' => $reason,
-            'attestation_enabled' => $attestationEnabled,
+            'user_id'              => $user->id,
+            'mobile_device_id'     => $mobileDevice?->id,
+            'action'               => $action,
+            'decision'             => $decision,
+            'reason'               => $reason,
+            'attestation_enabled'  => $attestationEnabled,
             'attestation_verified' => $attestationVerified,
-            'device_type' => $deviceType !== '' ? $deviceType : null,
-            'device_id' => $deviceId !== '' ? $deviceId : null,
-            'payload_hash' => $attestation !== '' ? hash('sha256', $attestation) : null,
-            'request_path' => $request->path(),
-            'metadata' => [
+            'device_type'          => $deviceType !== '' ? $deviceType : null,
+            'device_id'            => $deviceId !== '' ? $deviceId : null,
+            'payload_hash'         => $attestation !== '' ? hash('sha256', $attestation) : null,
+            'request_path'         => $request->path(),
+            'metadata'             => [
                 'device_trusted' => $deviceTrusted,
                 'device_posture' => [
                     'source' => $devicePostureSource !== '' ? $devicePostureSource : null,
                     'status' => $devicePostureStatus !== '' ? $devicePostureStatus : null,
                     'reason' => $devicePostureReason !== '' ? $devicePostureReason : null,
                 ],
-                'attestation_present' => $attestation !== '',
-                'attestation_status' => $attestationStatus !== '' ? $attestationStatus : null,
+                'attestation_present'    => $attestation !== '',
+                'attestation_status'     => $attestationStatus !== '' ? $attestationStatus : null,
                 'attestation_capability' => [
                     'available' => $attestationCapabilityAvailable,
-                    'mode' => $attestationCapabilityMode !== '' ? $attestationCapabilityMode : null,
-                    'reason' => $attestationCapabilityReason !== '' ? $attestationCapabilityReason : null,
+                    'mode'      => $attestationCapabilityMode !== '' ? $attestationCapabilityMode : null,
+                    'reason'    => $attestationCapabilityReason !== '' ? $attestationCapabilityReason : null,
                 ],
             ],
         ]);
 
         return [
-            'decision' => $decision,
-            'reason' => $reason,
+            'decision'             => $decision,
+            'reason'               => $reason,
             'attestation_verified' => $attestationVerified,
-            'record_id' => (string) $record->id,
+            'record_id'            => (string) $record->id,
         ];
     }
 

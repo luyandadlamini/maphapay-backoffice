@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
 use Tests\CreatesApplication;
+use Throwable;
 
 class MultiAccountControllerTest extends BaseTestCase
 {
@@ -25,14 +26,14 @@ class MultiAccountControllerTest extends BaseTestCase
 
         try {
             DB::connection('central')->getPdo();
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->markTestSkipped('Central database connection not available: ' . $exception->getMessage());
         }
 
         if (! Schema::connection('central')->hasTable('account_memberships')) {
             Artisan::call('migrate', [
                 '--database' => 'central',
-                '--force' => true,
+                '--force'    => true,
             ]);
         }
     }
@@ -42,13 +43,13 @@ class MultiAccountControllerTest extends BaseTestCase
         [$user, $tenant] = $this->createUserAndTenant();
 
         AccountMembership::query()->create([
-            'user_uuid' => $user->uuid,
-            'tenant_id' => $tenant->id,
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $tenant->id,
             'account_uuid' => 'acc-personal',
             'account_type' => 'personal',
-            'role' => 'owner',
-            'status' => 'active',
-            'joined_at' => now(),
+            'role'         => 'owner',
+            'status'       => 'active',
+            'joined_at'    => now(),
         ]);
 
         Sanctum::actingAs($user, ['read', 'write']);
@@ -67,21 +68,21 @@ class MultiAccountControllerTest extends BaseTestCase
         [$user, $tenant] = $this->createUserAndTenant();
 
         AccountMembership::query()->create([
-            'user_uuid' => $user->uuid,
-            'tenant_id' => $tenant->id,
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $tenant->id,
             'account_uuid' => 'acc-personal',
             'account_type' => 'personal',
-            'role' => 'owner',
-            'status' => 'active',
-            'joined_at' => now(),
+            'role'         => 'owner',
+            'status'       => 'active',
+            'joined_at'    => now(),
         ]);
 
         Sanctum::actingAs($user, ['write']);
 
         $response = $this->postJson('/api/accounts/merchant', [
-            'trade_name' => 'Lihle Market Stall',
+            'trade_name'        => 'Lihle Market Stall',
             'merchant_category' => 'food_and_beverage',
-            'classification' => 'informal',
+            'classification'    => 'informal',
             'settlement_method' => 'maphapay_wallet',
         ]);
 
@@ -91,11 +92,11 @@ class MultiAccountControllerTest extends BaseTestCase
             ->assertJsonPath('data.role', 'owner');
 
         $this->assertDatabaseHas('account_memberships', [
-            'user_uuid' => $user->uuid,
-            'tenant_id' => $tenant->id,
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $tenant->id,
             'account_type' => 'merchant',
-            'role' => 'owner',
-            'status' => 'active',
+            'role'         => 'owner',
+            'status'       => 'active',
         ], 'central');
     }
 
@@ -104,31 +105,31 @@ class MultiAccountControllerTest extends BaseTestCase
         [$user, $tenant] = $this->createUserAndTenant();
 
         AccountMembership::query()->create([
-            'user_uuid' => $user->uuid,
-            'tenant_id' => $tenant->id,
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $tenant->id,
             'account_uuid' => 'acc-personal',
             'account_type' => 'personal',
-            'role' => 'owner',
-            'status' => 'active',
-            'joined_at' => now(),
+            'role'         => 'owner',
+            'status'       => 'active',
+            'joined_at'    => now(),
         ]);
 
         AccountMembership::query()->create([
-            'user_uuid' => $user->uuid,
-            'tenant_id' => $tenant->id,
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $tenant->id,
             'account_uuid' => 'acc-merchant',
             'account_type' => 'merchant',
-            'role' => 'owner',
-            'status' => 'active',
-            'joined_at' => now(),
+            'role'         => 'owner',
+            'status'       => 'active',
+            'joined_at'    => now(),
         ]);
 
         Sanctum::actingAs($user, ['write']);
 
         $response = $this->postJson('/api/accounts/merchant', [
-            'trade_name' => 'Another Stall',
+            'trade_name'        => 'Another Stall',
             'merchant_category' => 'retail',
-            'classification' => 'informal',
+            'classification'    => 'informal',
             'settlement_method' => 'maphapay_wallet',
         ]);
 
@@ -146,7 +147,7 @@ class MultiAccountControllerTest extends BaseTestCase
         ]);
         $team = Team::factory()->create([
             'user_id' => $user->id,
-            'name' => 'Owner Team',
+            'name'    => 'Owner Team',
         ]);
         $tenant = Tenant::createFromTeam($team);
 

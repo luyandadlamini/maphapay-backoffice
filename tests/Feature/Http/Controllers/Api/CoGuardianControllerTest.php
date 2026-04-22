@@ -7,13 +7,13 @@ namespace Tests\Feature\Http\Controllers\Api;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Models\User;
-use Tests\TestCase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class CoGuardianControllerTest extends TestCase
 {
@@ -66,9 +66,9 @@ class CoGuardianControllerTest extends TestCase
 
         $this->minorAccount = Account::factory()->create([
             'user_uuid'        => $this->guardian->uuid,
-            'type'              => 'minor',
+            'type'             => 'minor',
             'permission_level' => 3,
-            'tier'              => 'grow',
+            'tier'             => 'grow',
         ]);
 
         AccountMembership::query()->create([

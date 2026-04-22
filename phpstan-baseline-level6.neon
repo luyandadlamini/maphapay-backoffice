@@ -40329,13 +40329,13 @@ parameters:
 		-
 			message: '#^Unable to resolve the template type TKey in call to function collect$#'
 			identifier: argument.templateType
-			count: 2
+			count: 3
 			path: tests/Domain/Custodian/Services/DailyReconciliationServiceTest.php
 
 		-
 			message: '#^Unable to resolve the template type TValue in call to function collect$#'
 			identifier: argument.templateType
-			count: 2
+			count: 3
 			path: tests/Domain/Custodian/Services/DailyReconciliationServiceTest.php
 
 		-
@@ -45673,4 +45673,3 @@ parameters:
 			identifier: notIdentical.alwaysTrue
 			count: 10
 			path: app/Broadcasting/TenantBroadcastEvent.php
-

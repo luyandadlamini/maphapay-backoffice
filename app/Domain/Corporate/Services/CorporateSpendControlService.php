@@ -13,7 +13,8 @@ class CorporateSpendControlService
 {
     public function __construct(
         private readonly CorporateCapabilityGate $gate,
-    ) {}
+    ) {
+    }
 
     /**
      * Configure an MPP agent spending limit for the team, enforcing

@@ -93,9 +93,9 @@ class WebhookProcessorService
 
                 // Update webhook with transaction reference
                 $webhook->update([
-                    'transaction_id' => $transactionId,
+                    'transaction_id'     => $transactionId,
                     'provider_reference' => $transactionId,
-                    'finality_status' => 'succeeded',
+                    'finality_status'    => 'succeeded',
                 ]);
 
                 $webhook->refresh();
@@ -134,9 +134,9 @@ class WebhookProcessorService
 
                 // Update webhook with transaction reference
                 $webhook->update([
-                    'transaction_id' => $transactionId,
+                    'transaction_id'     => $transactionId,
                     'provider_reference' => $transactionId,
-                    'finality_status' => 'failed',
+                    'finality_status'    => 'failed',
                 ]);
 
                 $webhook->refresh();
@@ -185,8 +185,8 @@ class WebhookProcessorService
 
                 // Update webhook with account reference
                 $webhook->update([
-                    'custodian_account_id' => $custodianAccount->uuid,
-                    'provider_reference' => $accountId,
+                    'custodian_account_id'     => $custodianAccount->uuid,
+                    'provider_reference'       => $accountId,
                     'reconciliation_reference' => sprintf(
                         'webhook:%s:%s:%s',
                         $webhook->custodian_name,
@@ -241,7 +241,7 @@ class WebhookProcessorService
                 // Update webhook with account reference
                 $webhook->update([
                     'custodian_account_id' => $custodianAccount->uuid,
-                    'provider_reference' => $accountId,
+                    'provider_reference'   => $accountId,
                 ]);
 
                 $webhook->refresh();

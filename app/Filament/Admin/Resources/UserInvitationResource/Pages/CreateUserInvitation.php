@@ -34,8 +34,8 @@ class CreateUserInvitation extends CreateRecord
             reason: (string) $data['reason'],
             auditable: $invitation,
             metadata: [
-                'email' => $invitation->email,
-                'role' => $invitation->role,
+                'email'       => $invitation->email,
+                'role'        => $invitation->role,
                 'actor_email' => $user->email ?? 'system',
             ],
             tags: 'backoffice,platform,user-invitations'

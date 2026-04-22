@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Models;
@@ -22,8 +23,8 @@ class MerchantPartner extends Model
 
     protected $casts = [
         'commission_rate' => 'decimal:2',
-        'is_active' => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'is_active'       => 'boolean',
+        'created_at'      => 'datetime',
+        'updated_at'      => 'datetime',
     ];
 }

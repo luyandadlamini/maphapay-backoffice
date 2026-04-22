@@ -35,8 +35,8 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
         Asset::firstOrCreate(
             ['code' => 'SZL'],
             [
-                'name' => 'Swazi Lilangeni',
-                'type' => 'fiat',
+                'name'      => 'Swazi Lilangeni',
+                'type'      => 'fiat',
                 'precision' => 2,
                 'is_active' => true,
             ],
@@ -44,12 +44,12 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
 
         Account::factory()->create([
             'user_uuid' => $this->sender->uuid,
-            'frozen' => false,
+            'frozen'    => false,
         ]);
 
         Account::factory()->create([
             'user_uuid' => $this->recipient->uuid,
-            'frozen' => false,
+            'frozen'    => false,
         ]);
 
         if (! Schema::hasTable('mobile_attestation_records')) {
@@ -76,13 +76,13 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
 
     private function createTrustedDeviceIdForSender(): string
     {
-        $deviceId = 'trusted-device-'.$this->sender->id;
+        $deviceId = 'trusted-device-' . $this->sender->id;
 
         MobileDevice::factory()
             ->trusted()
             ->ios()
             ->create([
-                'user_id' => $this->sender->id,
+                'user_id'   => $this->sender->id,
                 'device_id' => $deviceId,
             ]);
 
@@ -94,14 +94,14 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
     {
         config([
             'maphapay_migration.enable_send_money' => true,
-            'mobile.attestation.enabled' => false,
+            'mobile.attestation.enabled'           => false,
         ]);
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
         $response = $this->postJson('/api/send-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '10.00',
+            'user'              => $this->recipient->email,
+            'amount'            => '10.00',
             'verification_type' => 'none',
         ]);
 
@@ -112,8 +112,8 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
             ->assertJsonPath('error.code', 'TRUST_POLICY_STEP_UP');
 
         $this->assertDatabaseHas('mobile_attestation_records', [
-            'user_id' => $this->sender->id,
-            'action' => 'send_money',
+            'user_id'  => $this->sender->id,
+            'action'   => 'send_money',
             'decision' => 'degrade',
         ]);
 
@@ -131,16 +131,16 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
     {
         config([
             'maphapay_migration.enable_send_money' => true,
-            'mobile.attestation.enabled' => false,
+            'mobile.attestation.enabled'           => false,
         ]);
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
         $response = $this->postJson('/api/send-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '10.00',
-            'verification_type' => 'none',
-            'device_type' => 'ios',
+            'user'                  => $this->recipient->email,
+            'amount'                => '10.00',
+            'verification_type'     => 'none',
+            'device_type'           => 'ios',
             'device_posture_source' => 'runtime-observed',
             'device_posture_status' => 'simulator_or_emulator',
             'device_posture_reason' => 'non_physical_device',
@@ -177,24 +177,24 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
     {
         config([
             'maphapay_migration.enable_send_money' => true,
-            'mobile.attestation.enabled' => false,
+            'mobile.attestation.enabled'           => false,
         ]);
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
         $response = $this->postJson('/api/send-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '10.00',
-            'verification_type' => 'none',
-            'device_type' => 'ios',
-            'attestation' => 'expo-runtime-attestation:{"mode":"runtime-posture"}',
-            'attestation_status' => 'collected',
-            'attestation_capability_mode' => 'runtime-posture',
-            'attestation_capability_reason' => 'ios_app_attest_native_collection_unimplemented',
+            'user'                             => $this->recipient->email,
+            'amount'                           => '10.00',
+            'verification_type'                => 'none',
+            'device_type'                      => 'ios',
+            'attestation'                      => 'expo-runtime-attestation:{"mode":"runtime-posture"}',
+            'attestation_status'               => 'collected',
+            'attestation_capability_mode'      => 'runtime-posture',
+            'attestation_capability_reason'    => 'ios_app_attest_native_collection_unimplemented',
             'attestation_capability_available' => false,
-            'device_posture_source' => 'runtime-observed',
-            'device_posture_status' => 'physical_device',
-            'device_posture_reason' => 'physical_device_confirmed',
+            'device_posture_source'            => 'runtime-observed',
+            'device_posture_status'            => 'physical_device',
+            'device_posture_reason'            => 'physical_device_confirmed',
         ]);
 
         $response->assertStatus(428)
@@ -205,10 +205,10 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
             ->assertJsonPath('error.trust_reason', 'attestation_disabled_device_untrusted');
 
         $this->assertDatabaseHas('mobile_attestation_records', [
-            'user_id' => $this->sender->id,
-            'action' => 'send_money',
+            'user_id'  => $this->sender->id,
+            'action'   => 'send_money',
             'decision' => 'degrade',
-            'reason' => 'attestation_disabled_device_untrusted',
+            'reason'   => 'attestation_disabled_device_untrusted',
         ]);
 
         $this->assertSame(
@@ -225,16 +225,16 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
     {
         config([
             'maphapay_migration.enable_send_money' => true,
-            'mobile.attestation.enabled' => true,
+            'mobile.attestation.enabled'           => true,
         ]);
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
         $response = $this->postJson('/api/send-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '10.00',
+            'user'              => $this->recipient->email,
+            'amount'            => '10.00',
             'verification_type' => 'none',
-            'device_type' => 'ios',
+            'device_type'       => 'ios',
         ]);
 
         $response->assertStatus(403)
@@ -244,10 +244,10 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
             ->assertJsonPath('error.code', 'TRUST_POLICY_DENY');
 
         $this->assertDatabaseHas('mobile_attestation_records', [
-            'user_id' => $this->sender->id,
-            'action' => 'send_money',
+            'user_id'  => $this->sender->id,
+            'action'   => 'send_money',
             'decision' => 'deny',
-            'reason' => 'attestation_required',
+            'reason'   => 'attestation_required',
         ]);
 
         $this->assertSame(
@@ -264,19 +264,19 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
     {
         config([
             'maphapay_migration.enable_send_money' => true,
-            'mobile.attestation.enabled' => true,
+            'mobile.attestation.enabled'           => true,
         ]);
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
         $response = $this->postJson('/api/send-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '10.00',
-            'verification_type' => 'none',
-            'device_type' => 'ios',
-            'attestation_status' => 'error',
-            'attestation_capability_mode' => 'none',
-            'attestation_capability_reason' => 'provider_error',
+            'user'                             => $this->recipient->email,
+            'amount'                           => '10.00',
+            'verification_type'                => 'none',
+            'device_type'                      => 'ios',
+            'attestation_status'               => 'error',
+            'attestation_capability_mode'      => 'none',
+            'attestation_capability_reason'    => 'provider_error',
             'attestation_capability_available' => false,
         ]);
 
@@ -288,10 +288,10 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
             ->assertJsonPath('error.trust_reason', 'attestation_provider_error');
 
         $this->assertDatabaseHas('mobile_attestation_records', [
-            'user_id' => $this->sender->id,
-            'action' => 'send_money',
+            'user_id'  => $this->sender->id,
+            'action'   => 'send_money',
             'decision' => 'deny',
-            'reason' => 'attestation_provider_error',
+            'reason'   => 'attestation_provider_error',
         ]);
     }
 
@@ -300,7 +300,7 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
     {
         config([
             'maphapay_migration.enable_send_money' => true,
-            'mobile.attestation.enabled' => false,
+            'mobile.attestation.enabled'           => false,
         ]);
 
         $deviceId = $this->createTrustedDeviceIdForSender();
@@ -308,11 +308,11 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
         $response = $this->postJson('/api/send-money/store', [
-            'user' => $this->recipient->email,
-            'amount' => '1000.00',
+            'user'              => $this->recipient->email,
+            'amount'            => '1000.00',
             'verification_type' => 'none',
-            'device_id' => $deviceId,
-            'device_type' => 'ios',
+            'device_id'         => $deviceId,
+            'device_type'       => 'ios',
         ]);
 
         $response->assertOk()
@@ -326,9 +326,9 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
         $this->assertNotNull($txn->payload['_trust_record_id'] ?? null);
 
         $this->assertDatabaseHas('mobile_attestation_records', [
-            'id' => $txn->payload['_trust_record_id'] ?? null,
-            'user_id' => $this->sender->id,
-            'action' => 'send_money',
+            'id'       => $txn->payload['_trust_record_id'] ?? null,
+            'user_id'  => $this->sender->id,
+            'action'   => 'send_money',
             'decision' => 'allow',
         ]);
     }
@@ -338,27 +338,27 @@ class SendMoneyTrustPolicyTest extends ControllerTestCase
     {
         config([
             'maphapay_migration.enable_send_money' => true,
-            'mobile.attestation.enabled' => false,
+            'mobile.attestation.enabled'           => false,
         ]);
 
         $this->sender->update([
-            'transaction_pin' => bcrypt('1234'),
+            'transaction_pin'         => bcrypt('1234'),
             'transaction_pin_enabled' => true,
         ]);
 
         $txn = AuthorizedTransaction::query()->create([
             'user_id' => $this->sender->id,
-            'remark' => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx' => 'TRX-TRUST-MISSING-1',
+            'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
+            'trx'     => 'TRX-TRUST-MISSING-1',
             'payload' => [
                 'from_account_uuid' => 'from-account-uuid',
-                'to_account_uuid' => 'to-account-uuid',
-                'amount' => '10.00',
-                'asset_code' => 'SZL',
+                'to_account_uuid'   => 'to-account-uuid',
+                'amount'            => '10.00',
+                'asset_code'        => 'SZL',
             ],
-            'status' => AuthorizedTransaction::STATUS_PENDING,
+            'status'            => AuthorizedTransaction::STATUS_PENDING,
             'verification_type' => AuthorizedTransaction::VERIFICATION_PIN,
-            'expires_at' => now()->addMinutes(30),
+            'expires_at'        => now()->addMinutes(30),
         ]);
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);

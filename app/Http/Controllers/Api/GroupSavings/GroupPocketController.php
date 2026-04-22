@@ -135,7 +135,7 @@ class GroupPocketController extends Controller
         abort_unless($user instanceof User, 401);
 
         $pocket = GroupPocket::findOrFail($id);
-        /** @var \App\Models\Thread $thread */
+        /** @var Thread $thread */
         $thread = $pocket->thread;
         $this->authorizeAdmin($request, $thread);
 
@@ -162,7 +162,7 @@ class GroupPocketController extends Controller
         abort_unless($user instanceof User, 401);
 
         $pocket = GroupPocket::findOrFail($id);
-        /** @var \App\Models\Thread $thread */
+        /** @var Thread $thread */
         $thread = $pocket->thread;
         $this->authorizeAdmin($request, $thread);
 

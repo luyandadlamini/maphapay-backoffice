@@ -46,24 +46,24 @@ return new class () extends Migration {
                                 DB::connection('central')
                                     ->table('account_memberships')
                                     ->insert([
-                                        'id' => (string) Str::uuid(),
-                                        'user_uuid' => $account->user_uuid,
-                                        'tenant_id' => $tenant->id,
-                                        'account_uuid' => $account->uuid,
-                                        'account_type' => $account->type === 'standard' ? 'personal' : $account->type,
-                                        'role' => 'owner',
-                                        'status' => 'active',
-                                        'joined_at' => $account->created_at,
+                                        'id'                   => (string) Str::uuid(),
+                                        'user_uuid'            => $account->user_uuid,
+                                        'tenant_id'            => $tenant->id,
+                                        'account_uuid'         => $account->uuid,
+                                        'account_type'         => $account->type === 'standard' ? 'personal' : $account->type,
+                                        'role'                 => 'owner',
+                                        'status'               => 'active',
+                                        'joined_at'            => $account->created_at,
                                         'permissions_override' => $marker,
-                                        'created_at' => now(),
-                                        'updated_at' => now(),
+                                        'created_at'           => now(),
+                                        'updated_at'           => now(),
                                     ]);
                             });
                     });
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::error('Backfill failed for tenant', [
+                } catch (Throwable $e) {
+                    Illuminate\Support\Facades\Log::error('Backfill failed for tenant', [
                         'tenant_id' => $tenant->id,
-                        'error' => $e->getMessage(),
+                        'error'     => $e->getMessage(),
                     ]);
                 }
             });

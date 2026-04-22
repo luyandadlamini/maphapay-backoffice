@@ -10,16 +10,21 @@ use Illuminate\Database\Eloquent\Model;
 
 class AccountAuditLog extends Model
 {
-    use HasUuids, UsesTenantConnection;
+    use HasUuids;
+    use UsesTenantConnection;
 
     protected $table = 'account_audit_logs';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     public $timestamps = false;
+
     protected $guarded = [];
 
     protected $casts = [
-        'metadata' => 'array',
+        'metadata'   => 'array',
         'created_at' => 'datetime',
     ];
 }

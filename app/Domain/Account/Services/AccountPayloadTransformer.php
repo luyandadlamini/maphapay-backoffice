@@ -34,15 +34,15 @@ class AccountPayloadTransformer
                 $account = Account::query()->where('uuid', $membership->account_uuid)->first();
 
                 $payload = [
-                    'account_uuid' => $membership->account_uuid,
-                    'tenant_id' => $membership->tenant_id,
-                    'account_type' => $membership->account_type,
-                    'display_name' => $this->resolveDisplayName($membership, $currentUser, $account),
-                    'role' => $membership->role,
-                    'capabilities' => $membership->capabilities ?? [],
+                    'account_uuid'      => $membership->account_uuid,
+                    'tenant_id'         => $membership->tenant_id,
+                    'account_type'      => $membership->account_type,
+                    'display_name'      => $this->resolveDisplayName($membership, $currentUser, $account),
+                    'role'              => $membership->role,
+                    'capabilities'      => $membership->capabilities ?? [],
                     'verification_tier' => $membership->verification_tier ?? 'unverified',
-                    'balance_preview' => null,
-                    'currency' => 'SZL',
+                    'balance_preview'   => null,
+                    'currency'          => 'SZL',
                 ];
 
                 if ($includeStatus) {

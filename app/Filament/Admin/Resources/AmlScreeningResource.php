@@ -160,7 +160,7 @@ class AmlScreeningResource extends Resource
                     ->action(function ($record, array $data): void {
                         static::requestSarApproval($record, [
                             'description' => (string) $data['description'],
-                            'reference' => (string) $data['reference'],
+                            'reference'   => (string) $data['reference'],
                         ]);
 
                         Notification::make()
@@ -235,20 +235,20 @@ class AmlScreeningResource extends Resource
             targetType: AmlScreening::class,
             targetIdentifier: (string) $record->getKey(),
             payload: [
-                'screening_number' => $record->screening_number,
-                'overall_risk' => $record->overall_risk,
-                'total_matches' => $record->total_matches,
+                'screening_number'  => $record->screening_number,
+                'overall_risk'      => $record->overall_risk,
+                'total_matches'     => $record->total_matches,
                 'confirmed_matches' => $record->confirmed_matches,
-                'sar_reference' => (string) $data['reference'],
-                'requested_state' => 'sar_pending_approval',
-                'evidence' => [
+                'sar_reference'     => (string) $data['reference'],
+                'requested_state'   => 'sar_pending_approval',
+                'evidence'          => [
                     'description' => (string) $data['description'],
-                    'reference' => (string) $data['reference'],
+                    'reference'   => (string) $data['reference'],
                 ],
             ],
             metadata: [
                 'screening_type' => $record->type,
-                'decision' => 'submit_sar',
+                'decision'       => 'submit_sar',
             ],
         );
     }
@@ -261,9 +261,9 @@ class AmlScreeningResource extends Resource
 
         $record->update([
             'review_decision' => AmlScreening::DECISION_CLEAR,
-            'review_notes' => $reason,
-            'reviewed_by' => auth()->id(),
-            'reviewed_at' => now(),
+            'review_notes'    => $reason,
+            'reviewed_by'     => auth()->id(),
+            'reviewed_at'     => now(),
         ]);
 
         $record->refresh();
@@ -277,9 +277,9 @@ class AmlScreeningResource extends Resource
             newValues: static::reviewState($record),
             metadata: [
                 'screening_number' => $record->screening_number,
-                'decision' => AmlScreening::DECISION_CLEAR,
-                'overall_risk' => $record->overall_risk,
-                'total_matches' => $record->total_matches,
+                'decision'         => AmlScreening::DECISION_CLEAR,
+                'overall_risk'     => $record->overall_risk,
+                'total_matches'    => $record->total_matches,
             ],
             tags: 'backoffice,compliance,aml-screenings'
         );
@@ -293,9 +293,9 @@ class AmlScreeningResource extends Resource
 
         $record->update([
             'review_decision' => AmlScreening::DECISION_ESCALATE,
-            'review_notes' => $reason,
-            'reviewed_by' => auth()->id(),
-            'reviewed_at' => now(),
+            'review_notes'    => $reason,
+            'reviewed_by'     => auth()->id(),
+            'reviewed_at'     => now(),
         ]);
 
         $record->refresh();
@@ -309,9 +309,9 @@ class AmlScreeningResource extends Resource
             newValues: static::reviewState($record),
             metadata: [
                 'screening_number' => $record->screening_number,
-                'decision' => AmlScreening::DECISION_ESCALATE,
-                'overall_risk' => $record->overall_risk,
-                'total_matches' => $record->total_matches,
+                'decision'         => AmlScreening::DECISION_ESCALATE,
+                'overall_risk'     => $record->overall_risk,
+                'total_matches'    => $record->total_matches,
             ],
             tags: 'backoffice,compliance,aml-screenings'
         );
@@ -324,9 +324,9 @@ class AmlScreeningResource extends Resource
     {
         return [
             'review_decision' => $record->review_decision,
-            'review_notes' => $record->review_notes,
-            'reviewed_by' => $record->reviewed_by,
-            'reviewed_at' => $record->reviewed_at?->toIso8601String(),
+            'review_notes'    => $record->review_notes,
+            'reviewed_by'     => $record->reviewed_by,
+            'reviewed_at'     => $record->reviewed_at?->toIso8601String(),
         ];
     }
 

@@ -9,7 +9,6 @@ use App\Domain\Corporate\Services\CorporateApiAdminService;
 use App\Domain\Corporate\Services\CorporateMemberService;
 use App\Domain\Corporate\Services\CorporateSpendControlService;
 use App\Domain\Corporate\Services\CorporateTreasuryOperationsService;
-use App\Domain\MachinePay\Models\MppSpendingLimit;
 use App\Models\ApiKey;
 use App\Models\Team;
 use App\Models\User;
@@ -135,9 +134,9 @@ class CorporateCapabilityEnforcementTest extends TestCase
 
         // Verify DB persistence
         $this->assertDatabaseHas('mpp_spending_limits', [
-            'agent_id'    => 'agent-abc',
-            'team_id'     => $team->id,
-            'daily_limit' => 100000,
+            'agent_id'     => 'agent-abc',
+            'team_id'      => $team->id,
+            'daily_limit'  => 100000,
             'per_tx_limit' => 10000,
         ]);
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Account\Models;
 
 use App\Models\User;
@@ -12,15 +14,19 @@ class AccountMembership extends Model
     use HasUuids;
 
     protected $connection = 'central';
+
     protected $table = 'account_memberships';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     protected $guarded = [];
 
     protected $casts = [
         'permissions_override' => 'array',
-        'capabilities' => 'array',
-        'joined_at' => 'datetime',
+        'capabilities'         => 'array',
+        'joined_at'            => 'datetime',
     ];
 
     public function user(): BelongsTo

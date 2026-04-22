@@ -52,13 +52,13 @@ class VirtualCardCancelTrustPolicyTest extends ControllerTestCase
 
     private function createTrustedDeviceId(): string
     {
-        $deviceId = 'trusted-card-device-'.$this->virtualCardUser->id;
+        $deviceId = 'trusted-card-device-' . $this->virtualCardUser->id;
 
         MobileDevice::factory()
             ->trusted()
             ->ios()
             ->create([
-                'user_id' => $this->virtualCardUser->id,
+                'user_id'   => $this->virtualCardUser->id,
                 'device_id' => $deviceId,
             ]);
 
@@ -108,8 +108,8 @@ class VirtualCardCancelTrustPolicyTest extends ControllerTestCase
             ->assertJsonPath('error.code', 'TRUST_POLICY_STEP_UP');
 
         $this->assertDatabaseHas('mobile_attestation_records', [
-            'user_id' => $this->virtualCardUser->id,
-            'action' => 'virtual_card.cancel',
+            'user_id'  => $this->virtualCardUser->id,
+            'action'   => 'virtual_card.cancel',
             'decision' => 'degrade',
         ]);
 
@@ -143,10 +143,10 @@ class VirtualCardCancelTrustPolicyTest extends ControllerTestCase
             ->assertJsonPath('error.code', 'TRUST_POLICY_DENY');
 
         $this->assertDatabaseHas('mobile_attestation_records', [
-            'user_id' => $this->virtualCardUser->id,
-            'action' => 'virtual_card.cancel',
+            'user_id'  => $this->virtualCardUser->id,
+            'action'   => 'virtual_card.cancel',
             'decision' => 'deny',
-            'reason' => 'attestation_required',
+            'reason'   => 'attestation_required',
         ]);
     }
 
@@ -175,7 +175,7 @@ class VirtualCardCancelTrustPolicyTest extends ControllerTestCase
 
         $response = $this->postJson("/api/virtual-card/cancel/{$cardToken}", [
             'device_type' => 'ios',
-            'device_id' => $deviceId,
+            'device_id'   => $deviceId,
         ]);
 
         $response->assertOk()
@@ -183,8 +183,8 @@ class VirtualCardCancelTrustPolicyTest extends ControllerTestCase
             ->assertJsonPath('data.card_id', $cardToken);
 
         $this->assertDatabaseHas('mobile_attestation_records', [
-            'user_id' => $this->virtualCardUser->id,
-            'action' => 'virtual_card.cancel',
+            'user_id'  => $this->virtualCardUser->id,
+            'action'   => 'virtual_card.cancel',
             'decision' => 'allow',
         ]);
 

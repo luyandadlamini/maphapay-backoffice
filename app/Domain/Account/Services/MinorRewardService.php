@@ -28,8 +28,7 @@ class MinorRewardService
         int $quantity = 1,
         string $status = 'pending',
         bool $deductPoints = true,
-    ): MinorRewardRedemption
-    {
+    ): MinorRewardRedemption {
         $this->assertValidQuantity($quantity);
 
         /** @var MinorRewardRedemption $redemption */
@@ -151,20 +150,20 @@ class MinorRewardService
         $isAffordable = $this->canAfford($minorAccount, $reward);
 
         return [
-            'id' => $reward->id,
-            'name' => $reward->name,
-            'category' => $reward->category,
-            'description' => $reward->description,
-            'image_url' => $reward->image_url,
-            'price_points' => $this->unitPrice($reward),
-            'type' => $reward->type,
-            'metadata' => $reward->metadata,
-            'stock_remaining' => $reward->stock,
-            'is_active' => $reward->is_active,
-            'is_featured' => $reward->is_featured,
-            'requires_approval' => $this->requiresApproval($reward),
-            'is_affordable' => $isAffordable,
-            'can_redeem' => $isAffordable && $reward->hasStock(),
+            'id'                   => $reward->id,
+            'name'                 => $reward->name,
+            'category'             => $reward->category,
+            'description'          => $reward->description,
+            'image_url'            => $reward->image_url,
+            'price_points'         => $this->unitPrice($reward),
+            'type'                 => $reward->type,
+            'metadata'             => $reward->metadata,
+            'stock_remaining'      => $reward->stock,
+            'is_active'            => $reward->is_active,
+            'is_featured'          => $reward->is_featured,
+            'requires_approval'    => $this->requiresApproval($reward),
+            'is_affordable'        => $isAffordable,
+            'can_redeem'           => $isAffordable && $reward->hasStock(),
             'min_permission_level' => $reward->min_permission_level,
         ];
     }

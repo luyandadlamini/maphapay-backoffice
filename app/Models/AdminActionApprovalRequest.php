@@ -28,12 +28,12 @@ class AdminActionApprovalRequest extends Model
     ];
 
     protected $casts = [
-        'payload'       => 'array',
-        'metadata'      => 'array',
-        'requested_at'  => 'datetime',
-        'reviewed_at'   => 'datetime',
-        'created_at'    => 'datetime',
-        'updated_at'    => 'datetime',
+        'payload'      => 'array',
+        'metadata'     => 'array',
+        'requested_at' => 'datetime',
+        'reviewed_at'  => 'datetime',
+        'created_at'   => 'datetime',
+        'updated_at'   => 'datetime',
     ];
 
     public function requester(): BelongsTo

@@ -11,30 +11,34 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AccountProfileCompanyDocument extends Model
 {
-    use HasUuids, UsesTenantConnection;
+    use HasUuids;
+    use UsesTenantConnection;
 
     protected $table = 'account_profiles_company_documents';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     protected $guarded = [];
 
     protected $casts = [
         'uploaded_at' => 'datetime',
         'verified_at' => 'datetime',
-        'file_size' => 'integer',
-        'file_hash' => 'string',
+        'file_size'   => 'integer',
+        'file_hash'   => 'string',
     ];
 
     public const DOCUMENT_TYPES = [
         'certificate_of_incorporation' => 'Certificate of Incorporation',
-        'form_j' => 'Form J (Directors List)',
-        'memo_articles' => 'Memorandum & Articles of Association',
-        'directors_id' => 'Directors Identity Documents',
-        'trading_license' => 'Trading License',
-        'proof_of_address' => 'Proof of Business Address',
-        'bank_statement' => 'Bank Statement',
-        'owners_id' => 'Beneficial Owners Identity',
-        'tin_certificate' => 'TIN Certificate',
+        'form_j'                       => 'Form J (Directors List)',
+        'memo_articles'                => 'Memorandum & Articles of Association',
+        'directors_id'                 => 'Directors Identity Documents',
+        'trading_license'              => 'Trading License',
+        'proof_of_address'             => 'Proof of Business Address',
+        'bank_statement'               => 'Bank Statement',
+        'owners_id'                    => 'Beneficial Owners Identity',
+        'tin_certificate'              => 'TIN Certificate',
     ];
 
     public const REQUIRED_BY_TYPE = [

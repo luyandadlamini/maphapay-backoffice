@@ -28,9 +28,9 @@ class MobileAppAttestKey extends Model
     ];
 
     protected $casts = [
-        'attested_at'      => 'datetime',
+        'attested_at'       => 'datetime',
         'last_assertion_at' => 'datetime',
-        'metadata'         => 'array',
+        'metadata'          => 'array',
     ];
 
     /**

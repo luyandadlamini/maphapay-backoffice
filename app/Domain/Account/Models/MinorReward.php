@@ -1,12 +1,14 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Domain\Account\Models;
 
 use App\Domain\Shared\Traits\UsesTenantConnection;
 use App\Models\MerchantPartner;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**

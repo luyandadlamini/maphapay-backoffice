@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Test;
 use Ramsey\Uuid\Uuid;
 use Tests\CreatesApplication;
+use Throwable;
 
 /**
  * Verifies that the 2026_04_16_120100 migration correctly extends the
@@ -40,7 +41,7 @@ class AddGuardianRolesToAccountMembershipsTest extends BaseTestCase
 
         try {
             DB::connection('central')->getPdo();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->markTestSkipped('Central database connection not available: ' . $e->getMessage());
         }
 
@@ -67,7 +68,7 @@ class AddGuardianRolesToAccountMembershipsTest extends BaseTestCase
 
         // Drop the constraint so the test database is not permanently altered.
         // Use information_schema check for MySQL < 8.0.29 compatibility.
-        $conn   = DB::connection('central');
+        $conn = DB::connection('central');
         $driver = $conn->getDriverName();
 
         if ($driver === 'pgsql') {
@@ -126,7 +127,7 @@ class AddGuardianRolesToAccountMembershipsTest extends BaseTestCase
      */
     private function insertMembershipRow(string $role): string
     {
-        $id   = (string) Uuid::uuid4();
+        $id = (string) Uuid::uuid4();
         $conn = DB::connection('central');
 
         $conn->statement('SET FOREIGN_KEY_CHECKS=0');

@@ -6,8 +6,8 @@ namespace App\Domain\Ledger\Services;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
-use App\Domain\Account\Support\InternalTransferProjectionWriter;
 use App\Domain\Account\Services\Cache\CacheManager;
+use App\Domain\Account\Support\InternalTransferProjectionWriter;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Ledger\Enums\LedgerPostingStatus;
@@ -130,11 +130,11 @@ class LedgerPostingService
                 }
 
                 return [
-                    'account_uuid' => $entry->account_uuid,
-                    'asset_code' => $entry->asset_code,
+                    'account_uuid'  => $entry->account_uuid,
+                    'asset_code'    => $entry->asset_code,
                     'signed_amount' => $entry->signed_amount * -1,
-                    'entry_type' => $entry->signed_amount > 0 ? 'debit' : 'credit',
-                    'metadata' => array_merge($entry->metadata ?? [], [
+                    'entry_type'    => $entry->signed_amount > 0 ? 'debit' : 'credit',
+                    'metadata'      => array_merge($entry->metadata ?? [], [
                         'reversal_of_entry_id' => $entry->id,
                     ]),
                 ];
@@ -152,22 +152,22 @@ class LedgerPostingService
             transferReference: $posting->transfer_reference,
             moneyRequestId: $posting->money_request_id,
             metadata: array_filter([
-                'posting_class' => LedgerPostingType::COMPENSATING_REVERSAL->value,
-                'related_posting_id' => $posting->id,
+                'posting_class'         => LedgerPostingType::COMPENSATING_REVERSAL->value,
+                'related_posting_id'    => $posting->id,
                 'original_posting_type' => $posting->posting_type,
-                'reversal_reason' => trim($reason),
-                'authorized_by' => $authorizedBy !== null ? trim($authorizedBy) : null,
+                'reversal_reason'       => trim($reason),
+                'authorized_by'         => $authorizedBy !== null ? trim($authorizedBy) : null,
             ], static fn (mixed $value): bool => $value !== null && $value !== ''),
         );
 
         $this->applyAccountBalanceReadModels($entries);
 
         $posting->update([
-            'status' => LedgerPostingStatus::REVERSED->value,
+            'status'   => LedgerPostingStatus::REVERSED->value,
             'metadata' => array_merge($posting->metadata ?? [], array_filter([
                 'reversed_by_posting_id' => $reversalPosting->id,
-                'reversal_reason' => trim($reason),
-                'reversed_by' => $authorizedBy !== null ? trim($authorizedBy) : null,
+                'reversal_reason'        => trim($reason),
+                'reversed_by'            => $authorizedBy !== null ? trim($authorizedBy) : null,
             ], static fn (mixed $value): bool => $value !== null && $value !== '')),
         ]);
 
@@ -239,9 +239,9 @@ class LedgerPostingService
         }
 
         $subtype = match ($transaction->remark) {
-            AuthorizedTransaction::REMARK_SEND_MONEY => 'send_money',
+            AuthorizedTransaction::REMARK_SEND_MONEY             => 'send_money',
             AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED => 'request_money_accept',
-            default => null,
+            default                                              => null,
         };
 
         if ($subtype === null) {
@@ -270,22 +270,22 @@ class LedgerPostingService
             description: null,
             reference: $posting->transfer_reference,
             metadata: array_filter([
-                'event_type' => 'LedgerPostingCreated',
-                'event_uuid' => $posting->id,
-                'source' => 'p2p',
-                'operation_type' => $subtype,
+                'event_type'         => 'LedgerPostingCreated',
+                'event_uuid'         => $posting->id,
+                'source'             => 'p2p',
+                'operation_type'     => $subtype,
                 'money_state_anchor' => 'ledger_posting',
-                'note' => $note,
-                'money_request_id' => $posting->money_request_id,
-                'p2p_display' => [
-                    'sender_label' => $this->accountOwnerLabel($debitEntry['account_uuid']),
+                'note'               => $note,
+                'money_request_id'   => $posting->money_request_id,
+                'p2p_display'        => [
+                    'sender_label'    => $this->accountOwnerLabel($debitEntry['account_uuid']),
                     'recipient_label' => $this->accountOwnerLabel($creditEntry['account_uuid']),
-                    'note_preview' => $note,
+                    'note_preview'    => $note,
                 ],
-                'ledger_posting_id' => $posting->id,
-                'ledger_posting_status' => $posting->status,
+                'ledger_posting_id'         => $posting->id,
+                'ledger_posting_status'     => $posting->status,
                 'ledger_transfer_reference' => $posting->transfer_reference,
-                'projection_anchor' => 'ledger_posting',
+                'projection_anchor'         => 'ledger_posting',
             ], static fn (mixed $value): bool => $value !== null && $value !== ''),
         );
     }
@@ -395,20 +395,20 @@ class LedgerPostingService
 
         $entries = [
             [
-                'account_uuid' => $accountUuid,
-                'asset_code' => $assetCode,
+                'account_uuid'  => $accountUuid,
+                'asset_code'    => $assetCode,
                 'signed_amount' => $targetSignedAmount,
-                'entry_type' => $targetSignedAmount > 0 ? 'credit' : 'debit',
-                'metadata' => [
+                'entry_type'    => $targetSignedAmount > 0 ? 'credit' : 'debit',
+                'metadata'      => [
                     'role' => 'adjusted_account',
                 ],
             ],
             [
-                'account_uuid' => $contraAccountUuid,
-                'asset_code' => $assetCode,
+                'account_uuid'  => $contraAccountUuid,
+                'asset_code'    => $assetCode,
                 'signed_amount' => $contraSignedAmount,
-                'entry_type' => $contraSignedAmount > 0 ? 'credit' : 'debit',
-                'metadata' => [
+                'entry_type'    => $contraSignedAmount > 0 ? 'credit' : 'debit',
+                'metadata'      => [
                     'role' => 'contra_account',
                 ],
             ],
@@ -425,11 +425,11 @@ class LedgerPostingService
             transferReference: $relatedPosting?->transfer_reference,
             moneyRequestId: $relatedPosting?->money_request_id,
             metadata: array_filter([
-                'posting_class' => $postingType->value,
-                'related_posting_id' => $relatedPosting?->id,
-                'adjustment_reason' => $reason,
+                'posting_class'        => $postingType->value,
+                'related_posting_id'   => $relatedPosting?->id,
+                'adjustment_reason'    => $reason,
                 'adjustment_direction' => $direction,
-                'authorized_by' => $authorizedBy !== null ? trim($authorizedBy) : null,
+                'authorized_by'        => $authorizedBy !== null ? trim($authorizedBy) : null,
             ], static fn (mixed $value): bool => $value !== null && $value !== ''),
         );
 
@@ -437,11 +437,11 @@ class LedgerPostingService
 
         if ($relatedPosting !== null) {
             $relatedPosting->update([
-                'status' => LedgerPostingStatus::ADJUSTED->value,
+                'status'   => LedgerPostingStatus::ADJUSTED->value,
                 'metadata' => array_merge($relatedPosting->metadata ?? [], array_filter([
                     'adjusted_by_posting_id' => $adjustmentPosting->id,
-                    'adjustment_reason' => $reason,
-                    'adjusted_by' => $authorizedBy !== null ? trim($authorizedBy) : null,
+                    'adjustment_reason'      => $reason,
+                    'adjusted_by'            => $authorizedBy !== null ? trim($authorizedBy) : null,
                 ], static fn (mixed $value): bool => $value !== null && $value !== '')),
             ]);
         }
@@ -462,7 +462,7 @@ class LedgerPostingService
             $balance = AccountBalance::query()->firstOrCreate(
                 [
                     'account_uuid' => $entry['account_uuid'],
-                    'asset_code' => $entry['asset_code'],
+                    'asset_code'   => $entry['asset_code'],
                 ],
                 ['balance' => 0],
             );

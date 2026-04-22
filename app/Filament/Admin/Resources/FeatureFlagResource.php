@@ -135,8 +135,8 @@ class FeatureFlagResource extends Resource
                             oldValues: ['value' => $oldValue],
                             newValues: ['value' => $newValue],
                             metadata: [
-                                'flag' => $record->name,
-                                'scope' => $record->scope,
+                                'flag'        => $record->name,
+                                'scope'       => $record->scope,
                                 'actor_email' => auth()->user()->email ?? 'system',
                             ],
                             tags: 'backoffice,platform,feature-flags'

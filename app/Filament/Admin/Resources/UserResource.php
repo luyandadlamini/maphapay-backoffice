@@ -522,13 +522,13 @@ class UserResource extends Resource
             targetType: User::class,
             targetIdentifier: $record->uuid,
             payload: [
-                'user_uuid' => $record->uuid,
-                'user_email' => $record->email,
-                'current_state' => $record->isFrozen() ? 'frozen' : 'active',
+                'user_uuid'       => $record->uuid,
+                'user_email'      => $record->email,
+                'current_state'   => $record->isFrozen() ? 'frozen' : 'active',
                 'requested_state' => $requestedState,
             ],
             metadata: [
-                'mode' => 'request_approve',
+                'mode'        => 'request_approve',
                 'actor_email' => $actorEmail,
             ],
         );
@@ -545,13 +545,13 @@ class UserResource extends Resource
             reason: $reason,
             payload: [
                 'requested_state' => $approved ? 'approved' : 'rejected',
-                'record_count' => $records->count(),
-                'user_uuids' => $records->map(fn (User $u): string => (string) $u->uuid)->values()->all(),
-                'user_emails' => $records->map(fn (User $u): string => (string) $u->email)->values()->all(),
-                'reason' => $reason,
+                'record_count'    => $records->count(),
+                'user_uuids'      => $records->map(fn (User $u): string => (string) $u->uuid)->values()->all(),
+                'user_emails'     => $records->map(fn (User $u): string => (string) $u->email)->values()->all(),
+                'reason'          => $reason,
             ],
             metadata: [
-                'mode' => 'request_approve',
+                'mode'        => 'request_approve',
                 'actor_email' => $actorEmail,
             ],
         );
@@ -568,12 +568,12 @@ class UserResource extends Resource
             targetType: User::class,
             targetIdentifier: $record->uuid,
             payload: [
-                'user_uuid' => $record->uuid,
-                'user_email' => $record->email,
+                'user_uuid'       => $record->uuid,
+                'user_email'      => $record->email,
                 'requested_state' => 'deleted',
             ],
             metadata: [
-                'mode' => 'request_approve',
+                'mode'        => 'request_approve',
                 'actor_email' => $actorEmail,
             ],
         );
@@ -590,12 +590,12 @@ class UserResource extends Resource
             reason: $reason,
             payload: [
                 'requested_state' => 'deleted',
-                'record_count' => $records->count(),
-                'user_uuids' => $records->map(fn (User $u): string => (string) $u->uuid)->values()->all(),
-                'user_emails' => $records->map(fn (User $u): string => (string) $u->email)->values()->all(),
+                'record_count'    => $records->count(),
+                'user_uuids'      => $records->map(fn (User $u): string => (string) $u->uuid)->values()->all(),
+                'user_emails'     => $records->map(fn (User $u): string => (string) $u->email)->values()->all(),
             ],
             metadata: [
-                'mode' => 'request_approve',
+                'mode'        => 'request_approve',
                 'actor_email' => $actorEmail,
             ],
         );

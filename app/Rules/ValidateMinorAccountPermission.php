@@ -102,18 +102,18 @@ final class ValidateMinorAccountPermission implements ValidationRule
      * Level 3-4 → 100 SZL
      * Level 5-6 → 1000 SZL
      * Level 7   → 2000 SZL
-     * Level 8+  → null (no approval needed — full autonomy)
+     * Level 8+  → null (no approval needed — full autonomy).
      *
      * Amount is compared as a float (major-unit string from request).
      */
     public static function approvalThresholdFor(int $permissionLevel): ?float
     {
         return match (true) {
-            $permissionLevel <= 2 => 0.0,
-            $permissionLevel <= 4 => 100.0,
-            $permissionLevel <= 6 => 1000.0,
+            $permissionLevel <= 2  => 0.0,
+            $permissionLevel <= 4  => 100.0,
+            $permissionLevel <= 6  => 1000.0,
             $permissionLevel === 7 => 2000.0,
-            default => null,
+            default                => null,
         };
     }
 }

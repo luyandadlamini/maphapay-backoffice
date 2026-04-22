@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Compatibility\Pockets;
 
-use App\Models\User;
 use App\Domain\Mobile\Models\Pocket;
 use App\Domain\Mobile\Models\PocketSmartRule;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

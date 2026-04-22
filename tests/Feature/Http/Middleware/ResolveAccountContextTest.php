@@ -146,8 +146,8 @@ class ResolveAccountContextTest extends BaseTestCase
         [$guardian, $tenant] = $this->createUserAndTenant();
         $child = User::factory()->create();
         $minorAccount = Account::factory()->create([
-            'user_uuid'    => $child->uuid,
-            'type'         => 'minor',
+            'user_uuid' => $child->uuid,
+            'type'      => 'minor',
         ]);
 
         AccountMembership::query()->create([
@@ -179,8 +179,8 @@ class ResolveAccountContextTest extends BaseTestCase
         [$child, $tenant] = $this->createUserAndTenant();
         $guardian = User::factory()->create();
         $minorAccount = Account::factory()->create([
-            'user_uuid'    => $child->uuid,
-            'type'         => 'minor',
+            'user_uuid' => $child->uuid,
+            'type'      => 'minor',
         ]);
 
         AccountMembership::query()->create([
@@ -211,8 +211,8 @@ class ResolveAccountContextTest extends BaseTestCase
     {
         [$guardian, $tenant] = $this->createUserAndTenant();
         $minorAccount = Account::factory()->create([
-            'user_uuid'    => $guardian->uuid,
-            'type'         => 'minor',
+            'user_uuid' => $guardian->uuid,
+            'type'      => 'minor',
         ]);
 
         AccountMembership::query()->create([
@@ -245,8 +245,8 @@ class ResolveAccountContextTest extends BaseTestCase
         $guardian = User::factory()->create();
         $child = User::factory()->create();
         $minorAccount = Account::factory()->create([
-            'user_uuid'    => $child->uuid,
-            'type'         => 'minor',
+            'user_uuid' => $child->uuid,
+            'type'      => 'minor',
         ]);
 
         AccountMembership::query()->create([

@@ -7,13 +7,13 @@ namespace App\Filament\Admin\Resources;
 use App\Domain\Compliance\Models\AuditLog;
 use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Filament\Admin\Resources\AuditLogResource\Pages;
+use App\Support\Backoffice\AdminActionGovernance;
+use App\Support\Backoffice\BackofficeWorkspaceAccess;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use App\Support\Backoffice\AdminActionGovernance;
-use App\Support\Backoffice\BackofficeWorkspaceAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -174,8 +174,8 @@ class AuditLogResource extends Resource
             metadata: [
                 'export_scope' => $scope,
                 'record_count' => $logs->count(),
-                'filename' => $filename,
-                'actor_email' => $actor instanceof \App\Models\User ? $actor->email : 'system',
+                'filename'     => $filename,
+                'actor_email'  => $actor instanceof \App\Models\User ? $actor->email : 'system',
             ],
             tags: 'backoffice,platform,audit-logs'
         );

@@ -8,15 +8,15 @@ enum UserRoles: string
 {
     // End-user roles
     case BUSINESS = 'business';
-    case PRIVATE  = 'private';
+    case PRIVATE = 'private';
 
     // Administrative roles
-    case ADMIN              = 'admin';
-    case SUPER_ADMIN        = 'super-admin';
-    case OPERATIONS_L2      = 'operations-l2';
-    case FINANCE_LEAD       = 'finance-lead';
+    case ADMIN = 'admin';
+    case SUPER_ADMIN = 'super-admin';
+    case OPERATIONS_L2 = 'operations-l2';
+    case FINANCE_LEAD = 'finance-lead';
     case COMPLIANCE_MANAGER = 'compliance-manager';
-    case SUPPORT_L1         = 'support-l1';
+    case SUPPORT_L1 = 'support-l1';
 
     /**
      * Returns all roles that may access the Filament admin panel.

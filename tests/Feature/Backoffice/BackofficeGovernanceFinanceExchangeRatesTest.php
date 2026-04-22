@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Domain\Asset\Models\ExchangeRate;
 use App\Domain\Asset\Models\Asset;
+use App\Domain\Asset\Models\ExchangeRate;
 use App\Domain\Compliance\Models\AuditLog;
 use App\Filament\Admin\Resources\ExchangeRateResource;
 use App\Filament\Admin\Resources\ExchangeRateResource\Pages\ListExchangeRates;
@@ -47,15 +47,15 @@ it('submits exchange rate set-rate changes for approval instead of mutating imme
 
     $rate = ExchangeRate::factory()->create([
         'from_asset_code' => 'USD',
-        'to_asset_code' => 'ZAR',
-        'rate' => '18.2500000000',
-        'source' => ExchangeRate::SOURCE_MANUAL,
-        'is_active' => true,
+        'to_asset_code'   => 'ZAR',
+        'rate'            => '18.2500000000',
+        'source'          => ExchangeRate::SOURCE_MANUAL,
+        'is_active'       => true,
     ]);
 
     livewire(ListExchangeRates::class)
         ->callTableAction('setRate', $rate, data: [
-            'rate' => '18.7500000000',
+            'rate'   => '18.7500000000',
             'reason' => 'Treasury requested controlled FX repricing after market review.',
         ])
         ->assertHasNoTableActionErrors();
@@ -88,9 +88,9 @@ it('records governed audit metadata when refreshing an exchange rate', function 
 
     $rate = ExchangeRate::factory()->create([
         'from_asset_code' => 'USD',
-        'to_asset_code' => 'EUR',
-        'source' => ExchangeRate::SOURCE_API,
-        'valid_at' => now()->subDays(2),
+        'to_asset_code'   => 'EUR',
+        'source'          => ExchangeRate::SOURCE_API,
+        'valid_at'        => now()->subDays(2),
     ]);
 
     $previousValidAt = $rate->valid_at;
@@ -122,7 +122,7 @@ it('submits bulk exchange rate status changes for approval with evidence', funct
     $this->actingAs($finance);
 
     $rates = ExchangeRate::factory()->count(2)->create([
-        'source' => ExchangeRate::SOURCE_API,
+        'source'    => ExchangeRate::SOURCE_API,
         'is_active' => true,
     ]);
 

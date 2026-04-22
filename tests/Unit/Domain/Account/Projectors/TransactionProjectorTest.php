@@ -33,7 +33,7 @@ class TransactionProjectorTest extends DomainTestCase
             description: 'Send money',
             transferId: $reference,
             metadata: [
-                'operation_type' => 'send_money',
+                'operation_type'     => 'send_money',
                 'money_state_anchor' => 'ledger_posting',
             ],
         );

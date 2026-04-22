@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Tests\Feature\Http\Controllers\Api;
 
 use App\Domain\Account\Models\Account;
@@ -14,10 +16,18 @@ class MinorPointsServiceTest extends TestCase
     /**
      * @return array<int, string>
      */
-    protected function connectionsToTransact(): array { return ['mysql', 'central']; }
-    protected function shouldCreateDefaultAccountsInSetup(): bool { return false; }
+    protected function connectionsToTransact(): array
+    {
+    return ['mysql', 'central'];
+    }
+
+    protected function shouldCreateDefaultAccountsInSetup(): bool
+    {
+    return false;
+    }
 
     private MinorPointsService $service;
+
     private Account $minorAccount;
 
     protected function setUp(): void
@@ -27,9 +37,9 @@ class MinorPointsServiceTest extends TestCase
         $user = User::factory()->create();
         /** @var Account $account */
         $account = Account::factory()->create([
-            'user_uuid' => $user->uuid,
-            'type'      => 'minor',
-            'tier'      => 'grow',
+            'user_uuid'        => $user->uuid,
+            'type'             => 'minor',
+            'tier'             => 'grow',
             'permission_level' => 3,
         ]);
         $this->minorAccount = $account;
@@ -61,7 +71,7 @@ class MinorPointsServiceTest extends TestCase
     public function it_returns_correct_balance_as_sum_of_ledger(): void
     {
         $this->service->award($this->minorAccount, 100, 'level_unlock', 'Level 3 unlocked', null);
-        $this->service->award($this->minorAccount, 50,  'saving_milestone', '100 SZL saved', '100_szl');
+        $this->service->award($this->minorAccount, 50, 'saving_milestone', '100 SZL saved', '100_szl');
         $this->service->deduct($this->minorAccount, 30, 'redemption', 'Airtime 15 SZL', 'redemption-uuid-1');
 
         $this->assertSame(120, $this->service->getBalance($this->minorAccount));

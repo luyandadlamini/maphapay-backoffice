@@ -183,8 +183,8 @@ class CustodianWebhookController extends Controller
                 Log::info(
                     'Duplicate webhook received',
                     [
-                        'custodian' => $custodianName,
-                        'event_id' => $eventId,
+                        'custodian'  => $custodianName,
+                        'event_id'   => $eventId,
                         'dedupe_key' => $normalized['dedupe_key'],
                     ]
                 );
@@ -193,21 +193,21 @@ class CustodianWebhookController extends Controller
             }
 
             $webhook = CustodianWebhook::create([
-                'custodian_name' => $custodianName,
-                'event_type' => $eventType,
-                'normalized_event_type' => $normalized['normalized_event_type'],
-                'event_id' => $eventId,
-                'provider_reference' => $normalized['provider_reference'],
-                'headers' => $headers,
-                'payload' => $data,
-                'payload_hash' => $normalized['payload_hash'],
-                'dedupe_key' => $normalized['dedupe_key'],
-                'signature' => $signature,
-                'status' => 'pending',
-                'finality_status' => $normalized['finality_status'],
-                'settlement_status' => $normalized['settlement_status'],
-                'reconciliation_status' => $normalized['reconciliation_status'],
-                'settlement_reference' => $normalized['settlement_reference'],
+                'custodian_name'           => $custodianName,
+                'event_type'               => $eventType,
+                'normalized_event_type'    => $normalized['normalized_event_type'],
+                'event_id'                 => $eventId,
+                'provider_reference'       => $normalized['provider_reference'],
+                'headers'                  => $headers,
+                'payload'                  => $data,
+                'payload_hash'             => $normalized['payload_hash'],
+                'dedupe_key'               => $normalized['dedupe_key'],
+                'signature'                => $signature,
+                'status'                   => 'pending',
+                'finality_status'          => $normalized['finality_status'],
+                'settlement_status'        => $normalized['settlement_status'],
+                'reconciliation_status'    => $normalized['reconciliation_status'],
+                'settlement_reference'     => $normalized['settlement_reference'],
                 'reconciliation_reference' => $normalized['reconciliation_reference'],
                 'ledger_posting_reference' => $normalized['ledger_posting_reference'],
             ]);

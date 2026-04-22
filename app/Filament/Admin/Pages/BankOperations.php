@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Pages;
 
-use App\Domain\Compliance\Models\AuditLog;
 use App\Domain\Custodian\Services\CustodianHealthMonitor;
 use App\Domain\Custodian\Services\CustodianRegistry;
 use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
@@ -78,12 +77,12 @@ class BankOperations extends Page implements HasTable
                 Tables\Columns\IconColumn::make('reconciliation_status')
                     ->label('Recon Status')
                     ->options([
-                        'heroicon-s-check-circle' => 'synced',
+                        'heroicon-s-check-circle'         => 'synced',
                         'heroicon-m-exclamation-triangle' => 'lagging',
                     ])
                     ->colors([
                         'success' => 'synced',
-                        'danger' => 'lagging',
+                        'danger'  => 'lagging',
                     ]),
             ])
             ->actions([
@@ -97,7 +96,7 @@ class BankOperations extends Page implements HasTable
                             ->minLength(10),
                     ])
                     ->action(fn ($record, array $data) => $this->runManualRecon($record['custodian'], $data['reason'])),
-                
+
                 Tables\Actions\Action::make('freeze_settlement')
                     ->label('Freeze')
                     ->icon('heroicon-o-pause')
@@ -140,7 +139,7 @@ class BankOperations extends Page implements HasTable
     {
         $monitor = $this->getHealthMonitor();
         $metrics = $monitor->getAvailabilityMetrics($custodian, 24);
-        
+
         return ($metrics['availability_percentage'] ?? 0) . '%';
     }
 
@@ -191,7 +190,7 @@ class BankOperations extends Page implements HasTable
             targetType: 'custodian',
             targetIdentifier: $custodian,
             payload: [
-                'custodian' => $custodian,
+                'custodian'       => $custodian,
                 'requested_state' => 'frozen',
             ],
         );

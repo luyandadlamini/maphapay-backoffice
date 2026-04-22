@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Tests\CreatesApplication;
+use Throwable;
 
 class AccountMembershipServiceTest extends BaseTestCase
 {
@@ -35,14 +36,14 @@ class AccountMembershipServiceTest extends BaseTestCase
 
         try {
             DB::connection('central')->getPdo();
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->markTestSkipped('Central database connection not available: ' . $exception->getMessage());
         }
 
         if (! Schema::connection('central')->hasTable('account_memberships')) {
             Artisan::call('migrate', [
                 '--database' => 'central',
-                '--force' => true,
+                '--force'    => true,
             ]);
         }
 
@@ -68,22 +69,22 @@ class AccountMembershipServiceTest extends BaseTestCase
 
         $team = Team::factory()->make([
             'user_id' => $this->user->id,
-            'name' => 'Owner Team',
+            'name'    => 'Owner Team',
         ]);
         $team->setConnection('central');
         $team->save();
 
         $this->tenant = Tenant::on('central')->create([
             'team_id' => $team->id,
-            'name' => $team->name,
-            'plan' => 'default',
+            'name'    => $team->name,
+            'plan'    => 'default',
         ]);
         $this->account = new Account([
-            'uuid' => (string) Str::uuid(),
-            'user_uuid' => $this->user->uuid,
-            'name' => 'Personal Wallet',
+            'uuid'         => (string) Str::uuid(),
+            'user_uuid'    => $this->user->uuid,
+            'name'         => 'Personal Wallet',
             'display_name' => 'Personal Wallet',
-            'type' => 'personal',
+            'type'         => 'personal',
         ]);
 
         $this->service = app(AccountMembershipService::class);
@@ -102,24 +103,24 @@ class AccountMembershipServiceTest extends BaseTestCase
         $this->assertNotNull($membership->joined_at);
 
         $this->assertDatabaseHas('account_memberships', [
-            'id' => $membership->id,
-            'user_uuid' => $this->user->uuid,
-            'tenant_id' => $this->tenant->id,
+            'id'           => $membership->id,
+            'user_uuid'    => $this->user->uuid,
+            'tenant_id'    => $this->tenant->id,
             'account_uuid' => $this->account->uuid,
-            'role' => 'owner',
-            'status' => 'active',
+            'role'         => 'owner',
+            'status'       => 'active',
         ], 'central');
     }
 
     public function test_user_has_access_to_account_only_for_active_memberships(): void
     {
         AccountMembership::create([
-            'user_uuid' => $this->user->uuid,
-            'tenant_id' => $this->tenant->id,
+            'user_uuid'    => $this->user->uuid,
+            'tenant_id'    => $this->tenant->id,
             'account_uuid' => $this->account->uuid,
             'account_type' => 'personal',
-            'role' => 'viewer',
-            'status' => 'suspended',
+            'role'         => 'viewer',
+            'status'       => 'suspended',
         ]);
 
         $this->assertFalse($this->service->userHasAccessToAccount($this->user, $this->account->uuid));
@@ -127,12 +128,12 @@ class AccountMembershipServiceTest extends BaseTestCase
         AccountMembership::query()->delete();
 
         AccountMembership::create([
-            'user_uuid' => $this->user->uuid,
-            'tenant_id' => $this->tenant->id,
+            'user_uuid'    => $this->user->uuid,
+            'tenant_id'    => $this->tenant->id,
             'account_uuid' => $this->account->uuid,
             'account_type' => 'personal',
-            'role' => 'viewer',
-            'status' => 'active',
+            'role'         => 'viewer',
+            'status'       => 'active',
         ]);
 
         $this->assertTrue($this->service->userHasAccessToAccount($this->user, $this->account->uuid));
@@ -143,30 +144,30 @@ class AccountMembershipServiceTest extends BaseTestCase
         $otherUser = User::factory()->create();
 
         $activeMembership = AccountMembership::create([
-            'user_uuid' => $this->user->uuid,
-            'tenant_id' => $this->tenant->id,
+            'user_uuid'    => $this->user->uuid,
+            'tenant_id'    => $this->tenant->id,
             'account_uuid' => $this->account->uuid,
             'account_type' => 'personal',
-            'role' => 'owner',
-            'status' => 'active',
+            'role'         => 'owner',
+            'status'       => 'active',
         ]);
 
         AccountMembership::create([
-            'user_uuid' => $this->user->uuid,
-            'tenant_id' => $this->tenant->id,
+            'user_uuid'    => $this->user->uuid,
+            'tenant_id'    => $this->tenant->id,
             'account_uuid' => (string) fake()->uuid(),
             'account_type' => 'merchant',
-            'role' => 'admin',
-            'status' => 'removed',
+            'role'         => 'admin',
+            'status'       => 'removed',
         ]);
 
         AccountMembership::create([
-            'user_uuid' => $otherUser->uuid,
-            'tenant_id' => $this->tenant->id,
+            'user_uuid'    => $otherUser->uuid,
+            'tenant_id'    => $this->tenant->id,
             'account_uuid' => (string) fake()->uuid(),
             'account_type' => 'personal',
-            'role' => 'owner',
-            'status' => 'active',
+            'role'         => 'owner',
+            'status'       => 'active',
         ]);
 
         $memberships = $this->service->getActiveMemberships($this->user);
@@ -178,21 +179,21 @@ class AccountMembershipServiceTest extends BaseTestCase
     public function test_get_membership_for_account_returns_membership_for_requested_account(): void
     {
         $firstMembership = AccountMembership::create([
-            'user_uuid' => $this->user->uuid,
-            'tenant_id' => $this->tenant->id,
+            'user_uuid'    => $this->user->uuid,
+            'tenant_id'    => $this->tenant->id,
             'account_uuid' => (string) fake()->uuid(),
             'account_type' => 'merchant',
-            'role' => 'admin',
-            'status' => 'active',
+            'role'         => 'admin',
+            'status'       => 'active',
         ]);
 
         $expectedMembership = AccountMembership::create([
-            'user_uuid' => $this->user->uuid,
-            'tenant_id' => $this->tenant->id,
+            'user_uuid'    => $this->user->uuid,
+            'tenant_id'    => $this->tenant->id,
             'account_uuid' => $this->account->uuid,
             'account_type' => 'personal',
-            'role' => 'owner',
-            'status' => 'active',
+            'role'         => 'owner',
+            'status'       => 'active',
         ]);
 
         $membership = $this->service->getMembershipForAccount($this->user, $this->account->uuid);

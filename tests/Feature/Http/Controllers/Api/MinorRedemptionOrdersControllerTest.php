@@ -45,7 +45,7 @@ class MinorRedemptionOrdersControllerTest extends BaseTestCase
 
         if (! Schema::hasTable('minor_points_ledger')) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/tenant/2026_04_18_100000_create_minor_points_ledger_table.php',
+                '--path'  => 'database/migrations/tenant/2026_04_18_100000_create_minor_points_ledger_table.php',
                 '--force' => true,
             ]);
         }
@@ -54,21 +54,21 @@ class MinorRedemptionOrdersControllerTest extends BaseTestCase
             Schema::dropIfExists('minor_reward_redemptions');
 
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/tenant/2026_04_18_100002_create_minor_reward_redemptions_table.php',
+                '--path'  => 'database/migrations/tenant/2026_04_18_100002_create_minor_reward_redemptions_table.php',
                 '--force' => true,
             ]);
         }
 
         if (! Schema::hasTable('minor_rewards')) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/tenant/2026_04_20_099999_create_minor_rewards_table.php',
+                '--path'  => 'database/migrations/tenant/2026_04_20_099999_create_minor_rewards_table.php',
                 '--force' => true,
             ]);
         }
 
         if (! Schema::hasColumn('minor_rewards', 'is_featured')) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/tenant/2026_04_20_100000_add_phase_8_columns_to_minor_rewards_table.php',
+                '--path'  => 'database/migrations/tenant/2026_04_20_100000_add_phase_8_columns_to_minor_rewards_table.php',
                 '--force' => true,
             ]);
         }
@@ -77,14 +77,14 @@ class MinorRedemptionOrdersControllerTest extends BaseTestCase
 
         $this->tenantId = (string) Str::uuid();
         DB::connection('central')->table('tenants')->insert([
-            'id' => $this->tenantId,
-            'name' => 'Minor Phase 8 Redemption Tenant',
-            'plan' => 'default',
-            'team_id' => null,
+            'id'            => $this->tenantId,
+            'name'          => 'Minor Phase 8 Redemption Tenant',
+            'plan'          => 'default',
+            'team_id'       => null,
             'trial_ends_at' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-            'data' => json_encode([]),
+            'created_at'    => now(),
+            'updated_at'    => now(),
+            'data'          => json_encode([]),
         ]);
 
         $this->guardianUser = User::factory()->create();
@@ -92,9 +92,9 @@ class MinorRedemptionOrdersControllerTest extends BaseTestCase
 
         $this->guardianAccount = $this->createOwnedPersonalAccount($this->guardianUser);
         $this->minorAccount = Account::factory()->create([
-            'user_uuid' => $this->childUser->uuid,
-            'type' => 'minor',
-            'permission_level' => 3,
+            'user_uuid'         => $this->childUser->uuid,
+            'type'              => 'minor',
+            'permission_level'  => 3,
             'parent_account_id' => $this->guardianAccount->uuid,
         ]);
 
@@ -102,37 +102,37 @@ class MinorRedemptionOrdersControllerTest extends BaseTestCase
 
         MinorPointsLedger::query()->create([
             'minor_account_uuid' => $this->minorAccount->uuid,
-            'points' => 500,
-            'source' => 'seed',
-            'description' => 'Seed points',
-            'reference_id' => 'seed-points',
+            'points'             => 500,
+            'source'             => 'seed',
+            'description'        => 'Seed points',
+            'reference_id'       => 'seed-points',
         ]);
 
         $this->smallReward = MinorReward::query()->create([
-            'id' => (string) Str::uuid(),
-            'name' => 'Airtime 50',
-            'description' => 'Immediate airtime reward',
-            'points_cost' => 100,
-            'price_points' => 100,
-            'type' => 'airtime',
-            'metadata' => ['provider' => 'MTN'],
-            'stock' => 5,
-            'is_active' => true,
-            'is_featured' => false,
+            'id'                   => (string) Str::uuid(),
+            'name'                 => 'Airtime 50',
+            'description'          => 'Immediate airtime reward',
+            'points_cost'          => 100,
+            'price_points'         => 100,
+            'type'                 => 'airtime',
+            'metadata'             => ['provider' => 'MTN'],
+            'stock'                => 5,
+            'is_active'            => true,
+            'is_featured'          => false,
             'min_permission_level' => 1,
         ]);
 
         $this->largeReward = MinorReward::query()->create([
-            'id' => (string) Str::uuid(),
-            'name' => 'Tablet Voucher',
-            'description' => 'Needs parent approval',
-            'points_cost' => 300,
-            'price_points' => 300,
-            'type' => 'voucher',
-            'metadata' => ['partner_name' => 'Tech Store'],
-            'stock' => 2,
-            'is_active' => true,
-            'is_featured' => true,
+            'id'                   => (string) Str::uuid(),
+            'name'                 => 'Tablet Voucher',
+            'description'          => 'Needs parent approval',
+            'points_cost'          => 300,
+            'price_points'         => 300,
+            'type'                 => 'voucher',
+            'metadata'             => ['partner_name' => 'Tech Store'],
+            'stock'                => 2,
+            'is_active'            => true,
+            'is_featured'          => true,
             'min_permission_level' => 1,
         ]);
     }
@@ -144,7 +144,7 @@ class MinorRedemptionOrdersControllerTest extends BaseTestCase
 
         $this->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/redemptions/submit", [
             'reward_id' => $this->smallReward->id,
-            'quantity' => 6,
+            'quantity'  => 6,
         ])->assertUnprocessable()
             ->assertJsonValidationErrors(['quantity']);
     }
@@ -156,7 +156,7 @@ class MinorRedemptionOrdersControllerTest extends BaseTestCase
 
         $response = $this->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/redemptions/submit", [
             'reward_id' => $this->smallReward->id,
-            'quantity' => 2,
+            'quantity'  => 2,
         ]);
 
         $response->assertCreated()
@@ -185,7 +185,7 @@ class MinorRedemptionOrdersControllerTest extends BaseTestCase
 
         $submitResponse = $this->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/redemptions/submit", [
             'reward_id' => $this->largeReward->id,
-            'quantity' => 1,
+            'quantity'  => 1,
         ]);
 
         $submitResponse->assertCreated()
@@ -230,7 +230,7 @@ class MinorRedemptionOrdersControllerTest extends BaseTestCase
 
         $submitResponse = $this->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/redemptions/submit", [
             'reward_id' => $this->largeReward->id,
-            'quantity' => 1,
+            'quantity'  => 1,
         ]);
 
         $submitResponse->assertCreated()
@@ -264,11 +264,11 @@ class MinorRedemptionOrdersControllerTest extends BaseTestCase
     public function redemptions_index_returns_the_stabilized_phase_8_order_contract(): void
     {
         $redemption = MinorRewardRedemption::query()->create([
-            'id' => (string) Str::uuid(),
+            'id'                 => (string) Str::uuid(),
             'minor_account_uuid' => $this->minorAccount->uuid,
-            'minor_reward_id' => $this->largeReward->id,
-            'points_cost' => 300,
-            'status' => 'awaiting_approval',
+            'minor_reward_id'    => $this->largeReward->id,
+            'points_cost'        => 300,
+            'status'             => 'awaiting_approval',
         ]);
 
         Sanctum::actingAs($this->guardianUser, ['read', 'write', 'delete']);
@@ -287,17 +287,17 @@ class MinorRedemptionOrdersControllerTest extends BaseTestCase
     {
         $account = Account::factory()->create([
             'user_uuid' => $user->uuid,
-            'type' => 'personal',
+            'type'      => 'personal',
         ]);
 
         AccountMembership::query()->create([
-            'user_uuid' => $user->uuid,
-            'tenant_id' => $this->tenantId,
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $this->tenantId,
             'account_uuid' => $account->uuid,
             'account_type' => 'personal',
-            'role' => 'owner',
-            'status' => 'active',
-            'joined_at' => now(),
+            'role'         => 'owner',
+            'status'       => 'active',
+            'joined_at'    => now(),
         ]);
 
         return $account;
@@ -306,13 +306,13 @@ class MinorRedemptionOrdersControllerTest extends BaseTestCase
     private function createMinorMembership(User $user, Account $minorAccount, string $role): void
     {
         AccountMembership::query()->create([
-            'user_uuid' => $user->uuid,
-            'tenant_id' => $this->tenantId,
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $this->tenantId,
             'account_uuid' => $minorAccount->uuid,
             'account_type' => 'minor',
-            'role' => $role,
-            'status' => 'active',
-            'joined_at' => now(),
+            'role'         => $role,
+            'status'       => 'active',
+            'joined_at'    => now(),
         ]);
     }
 }

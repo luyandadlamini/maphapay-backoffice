@@ -11,11 +11,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AccountProfileMerchant extends Model
 {
-    use HasUuids, UsesTenantConnection;
+    use HasUuids;
+    use UsesTenantConnection;
 
     protected $table = 'account_profiles_merchant';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     protected $guarded = [];
 
     protected $casts = [

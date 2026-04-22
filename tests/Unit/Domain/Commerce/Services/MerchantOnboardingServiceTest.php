@@ -183,16 +183,16 @@ class MerchantOnboardingServiceTest extends TestCase
     {
         $owner = User::factory()->create();
         $team = Team::factory()->create([
-            'user_id' => $owner->id,
-            'name' => 'Acme Treasury',
-            'personal_team' => false,
-            'is_business_organization' => true,
-            'organization_type' => 'business',
+            'user_id'                      => $owner->id,
+            'name'                         => 'Acme Treasury',
+            'personal_team'                => false,
+            'is_business_organization'     => true,
+            'organization_type'            => 'business',
             'business_registration_number' => 'REG-123456',
-            'tax_id' => 'TAX-987654',
-            'business_details' => [
+            'tax_id'                       => 'TAX-987654',
+            'business_details'             => [
                 'legal_name' => 'Acme Treasury (Pty) Ltd',
-                'country' => 'SZ',
+                'country'    => 'SZ',
             ],
         ]);
 

@@ -105,8 +105,7 @@ class MobileAppAttestControllerTest extends TestCase
             'platform'  => 'ios',
         ]);
 
-        $this->app->instance(AppAttestVerifierInterface::class, new class implements AppAttestVerifierInterface
-        {
+        $this->app->instance(AppAttestVerifierInterface::class, new class () implements AppAttestVerifierInterface {
             public function verifyAttestation(string $attestationObject, string $challenge, string $keyId): AppAttestVerificationResult
             {
                 return AppAttestVerificationResult::success([
@@ -167,8 +166,7 @@ class MobileAppAttestControllerTest extends TestCase
             'platform'  => 'ios',
         ]);
 
-        $this->app->instance(AppAttestVerifierInterface::class, new class implements AppAttestVerifierInterface
-        {
+        $this->app->instance(AppAttestVerifierInterface::class, new class () implements AppAttestVerifierInterface {
             public function verifyAttestation(string $attestationObject, string $challenge, string $keyId): AppAttestVerificationResult
             {
                 return AppAttestVerificationResult::success();
@@ -214,8 +212,7 @@ class MobileAppAttestControllerTest extends TestCase
             'platform'  => 'ios',
         ]);
 
-        $this->app->instance(AppAttestVerifierInterface::class, new class implements AppAttestVerifierInterface
-        {
+        $this->app->instance(AppAttestVerifierInterface::class, new class () implements AppAttestVerifierInterface {
             public function verifyAttestation(string $attestationObject, string $challenge, string $keyId): AppAttestVerificationResult
             {
                 return AppAttestVerificationResult::success([

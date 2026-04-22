@@ -24,7 +24,8 @@ class MobileCommerceController extends Controller
         private readonly MerchantOnboardingService $merchantService,
         private readonly PaymentLinkService $paymentLinkService,
         private readonly HighRiskActionTrustPolicy $trustPolicy,
-    ) {}
+    ) {
+    }
 
     /**
      * List available merchants for the user.
@@ -62,7 +63,7 @@ class MobileCommerceController extends Controller
         $query = Merchant::where('status', MerchantStatus::ACTIVE);
 
         if ($search = $request->query('search')) {
-            $query->where('display_name', 'like', '%'.(string) $search.'%');
+            $query->where('display_name', 'like', '%' . (string) $search . '%');
         }
 
         $merchants = $query->orderBy('display_name')
@@ -70,20 +71,20 @@ class MobileCommerceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $merchants->map(fn (Merchant $m) => [
-                'id' => $m->public_id,
-                'display_name' => $m->display_name,
-                'category' => $m->terminal_id ?? 'general',
-                'accepted_tokens' => $m->accepted_assets ?? [],
+            'data'    => $merchants->map(fn (Merchant $m) => [
+                'id'                => $m->public_id,
+                'display_name'      => $m->display_name,
+                'category'          => $m->terminal_id ?? 'general',
+                'accepted_tokens'   => $m->accepted_assets ?? [],
                 'accepted_networks' => $m->accepted_networks ?? [],
-                'icon_url' => $m->icon_url,
-                'active' => true,
+                'icon_url'          => $m->icon_url,
+                'active'            => true,
             ])->values(),
             'pagination' => [
                 'current_page' => $merchants->currentPage(),
-                'last_page' => $merchants->lastPage(),
-                'per_page' => $merchants->perPage(),
-                'total' => $merchants->total(),
+                'last_page'    => $merchants->lastPage(),
+                'per_page'     => $merchants->perPage(),
+                'total'        => $merchants->total(),
             ],
         ]);
     }
@@ -144,8 +145,8 @@ class MobileCommerceController extends Controller
             if (($canonical['invalid'] ?? false) === true) {
                 return response()->json([
                     'success' => false,
-                    'error' => [
-                        'code' => 'INVALID_QR',
+                    'error'   => [
+                        'code'    => 'INVALID_QR',
                         'message' => 'Payment link token is invalid or expired.',
                     ],
                 ], 422);
@@ -153,7 +154,7 @@ class MobileCommerceController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $canonical,
+                'data'    => $canonical,
             ]);
         }
 
@@ -167,8 +168,8 @@ class MobileCommerceController extends Controller
         if (empty($params['merchant'])) {
             return response()->json([
                 'success' => false,
-                'error' => [
-                    'code' => 'INVALID_QR',
+                'error'   => [
+                    'code'    => 'INVALID_QR',
                     'message' => 'Unable to parse QR code.',
                 ],
             ], 422);
@@ -176,13 +177,13 @@ class MobileCommerceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
+            'data'    => [
                 'authority_source' => 'legacy_qr_payload',
-                'merchant_id' => $params['merchant'],
-                'amount' => $params['amount'] ?? null,
-                'asset' => $params['asset'] ?? 'USDC',
-                'network' => $params['network'] ?? 'polygon',
-                'metadata' => $params,
+                'merchant_id'      => $params['merchant'],
+                'amount'           => $params['amount'] ?? null,
+                'asset'            => $params['asset'] ?? 'USDC',
+                'network'          => $params['network'] ?? 'polygon',
+                'metadata'         => $params,
             ],
         ]);
     }
@@ -240,9 +241,9 @@ class MobileCommerceController extends Controller
     {
         $request->validate([
             'merchant_id' => ['required', 'string'],
-            'amount' => ['required', 'string'],
-            'asset' => ['required', 'string', 'in:USDC,USDT,WETH,WBTC'],
-            'network' => ['required', 'string'],
+            'amount'      => ['required', 'string'],
+            'asset'       => ['required', 'string', 'in:USDC,USDT,WETH,WBTC'],
+            'network'     => ['required', 'string'],
         ]);
 
         $merchantId = $request->input('merchant_id');
@@ -256,34 +257,34 @@ class MobileCommerceController extends Controller
         }
 
         $merchantData = $merchant ? [
-            'id' => $merchant->id,
-            'name' => $merchant->public_id ?? $merchant->id,
-            'display_name' => $merchant->display_name,
-            'category' => $merchant->terminal_id,
+            'id'              => $merchant->id,
+            'name'            => $merchant->public_id ?? $merchant->id,
+            'display_name'    => $merchant->display_name,
+            'category'        => $merchant->terminal_id,
             'accepted_tokens' => $merchant->accepted_assets ?? [],
         ] : [
-            'id' => $merchantId,
-            'name' => $merchantId,
-            'display_name' => $merchantId,
-            'category' => null,
+            'id'              => $merchantId,
+            'name'            => $merchantId,
+            'display_name'    => $merchantId,
+            'category'        => null,
             'accepted_tokens' => ['USDC', 'USDT', 'WETH', 'WBTC'],
         ];
 
         $paymentRequest = [
-            'id' => 'pr_'.Str::random(20),
+            'id'          => 'pr_' . Str::random(20),
             'merchant_id' => $merchantId,
-            'merchant' => $merchantData,
-            'amount' => $request->input('amount'),
-            'asset' => $request->input('asset'),
-            'network' => $request->input('network'),
-            'status' => 'pending',
-            'created_at' => now()->toIso8601String(),
-            'expires_at' => now()->addMinutes(15)->toIso8601String(),
+            'merchant'    => $merchantData,
+            'amount'      => $request->input('amount'),
+            'asset'       => $request->input('asset'),
+            'network'     => $request->input('network'),
+            'status'      => 'pending',
+            'created_at'  => now()->toIso8601String(),
+            'expires_at'  => now()->addMinutes(15)->toIso8601String(),
         ];
 
         return response()->json([
             'success' => true,
-            'data' => $paymentRequest,
+            'data'    => $paymentRequest,
         ], 201);
     }
 
@@ -334,8 +335,8 @@ class MobileCommerceController extends Controller
             if (! $this->paymentLinkService->isValidPaymentToken($paymentLinkToken)) {
                 return response()->json([
                     'success' => false,
-                    'error' => [
-                        'code' => 'INVALID_PAYMENT_LINK_TOKEN',
+                    'error'   => [
+                        'code'    => 'INVALID_PAYMENT_LINK_TOKEN',
                         'message' => 'Payment link token is invalid or expired.',
                     ],
                 ], 422);
@@ -348,11 +349,11 @@ class MobileCommerceController extends Controller
             if (($trust['decision'] ?? 'allow') === 'deny') {
                 return response()->json([
                     'success' => false,
-                    'error' => [
-                        'code' => 'TRUST_POLICY_DENY',
-                        'message' => 'Request denied by mobile trust policy.',
-                        'trust_decision' => $trust['decision'] ?? 'deny',
-                        'trust_reason' => $trust['reason'] ?? 'policy',
+                    'error'   => [
+                        'code'            => 'TRUST_POLICY_DENY',
+                        'message'         => 'Request denied by mobile trust policy.',
+                        'trust_decision'  => $trust['decision'] ?? 'deny',
+                        'trust_reason'    => $trust['reason'] ?? 'policy',
                         'trust_record_id' => $trust['record_id'] ?? null,
                     ],
                 ], 403);
@@ -361,45 +362,45 @@ class MobileCommerceController extends Controller
             if (in_array(($trust['decision'] ?? ''), ['step_up', 'degrade'], true)) {
                 return response()->json([
                     'success' => false,
-                    'error' => [
-                        'code' => 'TRUST_POLICY_STEP_UP',
-                        'message' => 'Additional verification is required by mobile trust policy.',
-                        'trust_decision' => $trust['decision'],
-                        'trust_reason' => $trust['reason'] ?? 'policy',
+                    'error'   => [
+                        'code'            => 'TRUST_POLICY_STEP_UP',
+                        'message'         => 'Additional verification is required by mobile trust policy.',
+                        'trust_decision'  => $trust['decision'],
+                        'trust_reason'    => $trust['reason'] ?? 'policy',
                         'trust_record_id' => $trust['record_id'] ?? null,
                     ],
                 ], 428);
             }
 
             $payment = [
-                'id' => 'pay_'.Str::random(20),
+                'id'                 => 'pay_' . Str::random(20),
                 'payment_request_id' => null,
                 'payment_link_token' => $paymentLinkToken,
-                'authority_source' => 'payment_link_token',
-                'trust_decision' => $trust['decision'] ?? 'allow',
-                'trust_record_id' => $trust['record_id'] ?? null,
-                'status' => 'processing',
-                'created_at' => now()->toIso8601String(),
+                'authority_source'   => 'payment_link_token',
+                'trust_decision'     => $trust['decision'] ?? 'allow',
+                'trust_record_id'    => $trust['record_id'] ?? null,
+                'status'             => 'processing',
+                'created_at'         => now()->toIso8601String(),
             ];
 
             return response()->json([
                 'success' => true,
-                'data' => $payment,
+                'data'    => $payment,
             ], 201);
         }
 
         $payment = [
-            'id' => 'pay_'.Str::random(20),
+            'id'                 => 'pay_' . Str::random(20),
             'payment_request_id' => (string) $request->input('payment_request_id'),
             'payment_link_token' => null,
-            'authority_source' => 'payment_request_id',
-            'status' => 'processing',
-            'created_at' => now()->toIso8601String(),
+            'authority_source'   => 'payment_request_id',
+            'status'             => 'processing',
+            'created_at'         => now()->toIso8601String(),
         ];
 
         return response()->json([
             'success' => true,
-            'data' => $payment,
+            'data'    => $payment,
         ], 201);
     }
 
@@ -429,20 +430,20 @@ class MobileCommerceController extends Controller
         $paymentLinkData = $this->paymentLinkService->getPaymentLinkData($token);
         if ($paymentLinkData === null) {
             return [
-                'authority_source' => 'payment_link_token',
+                'authority_source'   => 'payment_link_token',
                 'payment_link_token' => $token,
-                'invalid' => true,
+                'invalid'            => true,
             ];
         }
 
         return [
-            'authority_source' => 'payment_link_token',
+            'authority_source'   => 'payment_link_token',
             'payment_link_token' => $token,
-            'amount_binding' => 'fixed',
-            'amount' => (string) ($paymentLinkData['amount'] ?? ''),
-            'asset' => (string) ($paymentLinkData['asset_code'] ?? 'USDC'),
-            'network' => null,
-            'metadata' => $paymentLinkData,
+            'amount_binding'     => 'fixed',
+            'amount'             => (string) ($paymentLinkData['amount'] ?? ''),
+            'asset'              => (string) ($paymentLinkData['asset_code'] ?? 'USDC'),
+            'network'            => null,
+            'metadata'           => $paymentLinkData,
         ];
     }
 
@@ -484,8 +485,8 @@ class MobileCommerceController extends Controller
     public function generateQr(Request $request): JsonResponse
     {
         $request->validate([
-            'amount' => ['required', 'string'],
-            'asset' => ['required', 'string', 'in:USDC,USDT,WETH,WBTC'],
+            'amount'  => ['required', 'string'],
+            'asset'   => ['required', 'string', 'in:USDC,USDT,WETH,WBTC'],
             'network' => ['required', 'string'],
         ]);
 
@@ -493,7 +494,7 @@ class MobileCommerceController extends Controller
         $user = $request->user();
         $qrData = sprintf(
             'finaegis://pay?to=%s&amount=%s&asset=%s&network=%s',
-            'user_'.$user->id,
+            'user_' . $user->id,
             $request->input('amount'),
             $request->input('asset'),
             $request->input('network'),
@@ -501,8 +502,8 @@ class MobileCommerceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'qr_data' => $qrData,
+            'data'    => [
+                'qr_data'    => $qrData,
                 'expires_at' => now()->addMinutes(30)->toIso8601String(),
             ],
         ]);
@@ -540,8 +541,8 @@ class MobileCommerceController extends Controller
         if (! $merchant) {
             return response()->json([
                 'success' => false,
-                'error' => [
-                    'code' => 'MERCHANT_NOT_FOUND',
+                'error'   => [
+                    'code'    => 'MERCHANT_NOT_FOUND',
                     'message' => 'Merchant not found.',
                 ],
             ], 404);
@@ -549,15 +550,15 @@ class MobileCommerceController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'id' => $merchant->public_id,
-                'display_name' => $merchant->display_name,
-                'category' => $merchant->terminal_id ?? 'general',
-                'accepted_tokens' => $merchant->accepted_assets ?? [],
+            'data'    => [
+                'id'                => $merchant->public_id,
+                'display_name'      => $merchant->display_name,
+                'category'          => $merchant->terminal_id ?? 'general',
+                'accepted_tokens'   => $merchant->accepted_assets ?? [],
                 'accepted_networks' => $merchant->accepted_networks ?? [],
-                'icon_url' => $merchant->icon_url,
-                'status' => $merchant->status->value,
-                'active' => $merchant->canAcceptPayments(),
+                'icon_url'          => $merchant->icon_url,
+                'status'            => $merchant->status->value,
+                'active'            => $merchant->canAcceptPayments(),
             ],
         ]);
     }
@@ -588,15 +589,15 @@ class MobileCommerceController extends Controller
         // Demo implementation — in production, look up from database
         return response()->json([
             'success' => true,
-            'data' => [
-                'id' => $paymentId,
+            'data'    => [
+                'id'          => $paymentId,
                 'merchant_id' => 'merchant_demo_001',
-                'amount' => '0.00',
-                'asset' => 'USDC',
-                'network' => 'polygon',
-                'status' => 'pending',
-                'created_at' => now()->toIso8601String(),
-                'expires_at' => now()->addMinutes(15)->toIso8601String(),
+                'amount'      => '0.00',
+                'asset'       => 'USDC',
+                'network'     => 'polygon',
+                'status'      => 'pending',
+                'created_at'  => now()->toIso8601String(),
+                'expires_at'  => now()->addMinutes(15)->toIso8601String(),
             ],
         ]);
     }
@@ -630,9 +631,9 @@ class MobileCommerceController extends Controller
         // Demo implementation — in production, update database
         return response()->json([
             'success' => true,
-            'data' => [
-                'id' => $paymentId,
-                'status' => 'cancelled',
+            'data'    => [
+                'id'           => $paymentId,
+                'status'       => 'cancelled',
                 'cancelled_at' => now()->toIso8601String(),
             ],
         ]);
@@ -661,7 +662,7 @@ class MobileCommerceController extends Controller
         // Demo implementation — return empty list
         return response()->json([
             'success' => true,
-            'data' => [],
+            'data'    => [],
         ]);
     }
 }

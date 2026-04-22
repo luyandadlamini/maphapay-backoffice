@@ -10,12 +10,12 @@ use App\Models\User;
 use App\Support\Backoffice\AdminActionGovernance;
 use App\Support\Backoffice\BackofficeWorkspaceAccess;
 use Filament\Actions\Action;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Actions\Concerns\InteractsWithActions;
-use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -164,13 +164,13 @@ class BroadcastNotificationPage extends Page implements HasForms, HasActions
         app(BackofficeWorkspaceAccess::class)->authorize(static::getBackofficeWorkspace());
 
         Validator::make($data, [
-            'channel' => ['required', 'string'],
+            'channel'  => ['required', 'string'],
             'audience' => ['required', 'string'],
-            'subject' => ['required', 'string', 'max:255'],
-            'body' => ['required', 'string', 'max:5000'],
-            'reason' => ['required', 'string', 'min:10'],
-            'userId' => ['nullable', 'integer'],
-            'role' => ['nullable', 'string'],
+            'subject'  => ['required', 'string', 'max:255'],
+            'body'     => ['required', 'string', 'max:5000'],
+            'reason'   => ['required', 'string', 'min:10'],
+            'userId'   => ['nullable', 'integer'],
+            'role'     => ['nullable', 'string'],
         ])->validate();
 
         $recipients = $this->getRecipients($data['audience'], $data['userId'] ?? null, $data['role'] ?? null);
@@ -199,13 +199,13 @@ class BroadcastNotificationPage extends Page implements HasForms, HasActions
             action: 'backoffice.broadcast_notifications.sent',
             reason: (string) $data['reason'],
             metadata: [
-                'channel' => $data['channel'],
-                'audience' => $data['audience'],
-                'user_id' => $data['userId'] ?? null,
-                'role' => $data['role'] ?? null,
+                'channel'         => $data['channel'],
+                'audience'        => $data['audience'],
+                'user_id'         => $data['userId'] ?? null,
+                'role'            => $data['role'] ?? null,
                 'recipient_count' => $count,
-                'subject' => $data['subject'],
-                'actor_email' => auth()->user()->email ?? 'system',
+                'subject'         => $data['subject'],
+                'actor_email'     => auth()->user()->email ?? 'system',
             ],
             tags: 'backoffice,platform,broadcast-notifications'
         );

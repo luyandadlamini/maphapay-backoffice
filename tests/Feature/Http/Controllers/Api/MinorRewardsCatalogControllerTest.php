@@ -42,35 +42,35 @@ class MinorRewardsCatalogControllerTest extends BaseTestCase
 
         if (! Schema::hasTable('minor_points_ledger')) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/tenant/2026_04_18_100000_create_minor_points_ledger_table.php',
+                '--path'  => 'database/migrations/tenant/2026_04_18_100000_create_minor_points_ledger_table.php',
                 '--force' => true,
             ]);
         }
 
         if (! Schema::hasTable('minor_rewards')) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/tenant/2026_04_20_099999_create_minor_rewards_table.php',
+                '--path'  => 'database/migrations/tenant/2026_04_20_099999_create_minor_rewards_table.php',
                 '--force' => true,
             ]);
         }
 
         if (! Schema::hasColumn('minor_rewards', 'is_featured')) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/tenant/2026_04_20_100000_add_phase_8_columns_to_minor_rewards_table.php',
+                '--path'  => 'database/migrations/tenant/2026_04_20_100000_add_phase_8_columns_to_minor_rewards_table.php',
                 '--force' => true,
             ]);
         }
 
         $this->tenantId = (string) Str::uuid();
         DB::connection('central')->table('tenants')->insert([
-            'id' => $this->tenantId,
-            'name' => 'Minor Phase 8 Catalog Tenant',
-            'plan' => 'default',
-            'team_id' => null,
+            'id'            => $this->tenantId,
+            'name'          => 'Minor Phase 8 Catalog Tenant',
+            'plan'          => 'default',
+            'team_id'       => null,
             'trial_ends_at' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-            'data' => json_encode([]),
+            'created_at'    => now(),
+            'updated_at'    => now(),
+            'data'          => json_encode([]),
         ]);
 
         $this->guardianUser = User::factory()->create();
@@ -78,9 +78,9 @@ class MinorRewardsCatalogControllerTest extends BaseTestCase
 
         $this->guardianAccount = $this->createOwnedPersonalAccount($this->guardianUser);
         $this->minorAccount = Account::factory()->create([
-            'user_uuid' => $this->childUser->uuid,
-            'type' => 'minor',
-            'permission_level' => 3,
+            'user_uuid'         => $this->childUser->uuid,
+            'type'              => 'minor',
+            'permission_level'  => 3,
             'parent_account_id' => $this->guardianAccount->uuid,
         ]);
 
@@ -88,25 +88,25 @@ class MinorRewardsCatalogControllerTest extends BaseTestCase
 
         MinorPointsLedger::query()->create([
             'minor_account_uuid' => $this->minorAccount->uuid,
-            'points' => 450,
-            'source' => 'seed',
-            'description' => 'Seed points',
-            'reference_id' => 'seed-points',
+            'points'             => 450,
+            'source'             => 'seed',
+            'description'        => 'Seed points',
+            'reference_id'       => 'seed-points',
         ]);
 
         $this->reward = MinorReward::query()->create([
-            'id' => (string) Str::uuid(),
-            'name' => 'Museum Voucher',
-            'category' => 'experiences',
-            'description' => 'Family museum pass',
-            'image_url' => 'https://example.test/museum.png',
-            'points_cost' => 300,
-            'price_points' => 300,
-            'type' => 'voucher',
-            'metadata' => ['partner_name' => 'National Museum'],
-            'stock' => 4,
-            'is_active' => true,
-            'is_featured' => true,
+            'id'                   => (string) Str::uuid(),
+            'name'                 => 'Museum Voucher',
+            'category'             => 'experiences',
+            'description'          => 'Family museum pass',
+            'image_url'            => 'https://example.test/museum.png',
+            'points_cost'          => 300,
+            'price_points'         => 300,
+            'type'                 => 'voucher',
+            'metadata'             => ['partner_name' => 'National Museum'],
+            'stock'                => 4,
+            'is_active'            => true,
+            'is_featured'          => true,
             'min_permission_level' => 2,
         ]);
     }
@@ -154,17 +154,17 @@ class MinorRewardsCatalogControllerTest extends BaseTestCase
     {
         $account = Account::factory()->create([
             'user_uuid' => $user->uuid,
-            'type' => 'personal',
+            'type'      => 'personal',
         ]);
 
         AccountMembership::query()->create([
-            'user_uuid' => $user->uuid,
-            'tenant_id' => $this->tenantId,
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $this->tenantId,
             'account_uuid' => $account->uuid,
             'account_type' => 'personal',
-            'role' => 'owner',
-            'status' => 'active',
-            'joined_at' => now(),
+            'role'         => 'owner',
+            'status'       => 'active',
+            'joined_at'    => now(),
         ]);
 
         return $account;
@@ -173,13 +173,13 @@ class MinorRewardsCatalogControllerTest extends BaseTestCase
     private function createMinorMembership(User $user, Account $minorAccount, string $role): void
     {
         AccountMembership::query()->create([
-            'user_uuid' => $user->uuid,
-            'tenant_id' => $this->tenantId,
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $this->tenantId,
             'account_uuid' => $minorAccount->uuid,
             'account_type' => 'minor',
-            'role' => $role,
-            'status' => 'active',
-            'joined_at' => now(),
+            'role'         => $role,
+            'status'       => 'active',
+            'joined_at'    => now(),
         ]);
     }
 }

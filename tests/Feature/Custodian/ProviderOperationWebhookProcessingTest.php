@@ -8,6 +8,7 @@ use App\Domain\Custodian\Models\CustodianWebhook;
 use App\Domain\Custodian\Services\CustodianAccountService;
 use App\Domain\Custodian\Services\CustodianRegistry;
 use App\Domain\Custodian\Services\WebhookProcessorService;
+use DB;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
@@ -59,8 +60,8 @@ final class ProviderOperationWebhookProcessingTest extends TestCase
         }
 
         // These tables reference each other via nullable FKs, so truncate breaks on MySQL.
-        \DB::table('provider_operations')->delete();
-        \DB::table('custodian_webhooks')->delete();
+        DB::table('provider_operations')->delete();
+        DB::table('custodian_webhooks')->delete();
     }
 
     public function test_it_creates_a_canonical_provider_operation_from_a_processed_payment_webhook(): void
@@ -73,22 +74,22 @@ final class ProviderOperationWebhookProcessingTest extends TestCase
         );
 
         $webhook = CustodianWebhook::create([
-            'custodian_name' => 'mock',
-            'event_type' => 'transaction.completed',
+            'custodian_name'        => 'mock',
+            'event_type'            => 'transaction.completed',
             'normalized_event_type' => 'payment_succeeded',
-            'event_id' => 'evt-provider-op-001',
-            'provider_reference' => 'txn-provider-op-001',
-            'headers' => [],
-            'payload' => [
+            'event_id'              => 'evt-provider-op-001',
+            'provider_reference'    => 'txn-provider-op-001',
+            'headers'               => [],
+            'payload'               => [
                 'transaction_id' => 'txn-provider-op-001',
-                'amount' => 1500,
-                'currency' => 'USD',
+                'amount'         => 1500,
+                'currency'       => 'USD',
             ],
-            'payload_hash' => hash('sha256', json_encode(['transaction_id' => 'txn-provider-op-001', 'amount' => 1500, 'currency' => 'USD'], JSON_THROW_ON_ERROR)),
-            'dedupe_key' => 'mock:event:evt-provider-op-001',
-            'status' => 'pending',
-            'finality_status' => 'pending',
-            'settlement_status' => 'pending',
+            'payload_hash'          => hash('sha256', json_encode(['transaction_id' => 'txn-provider-op-001', 'amount' => 1500, 'currency' => 'USD'], JSON_THROW_ON_ERROR)),
+            'dedupe_key'            => 'mock:event:evt-provider-op-001',
+            'status'                => 'pending',
+            'finality_status'       => 'pending',
+            'settlement_status'     => 'pending',
             'reconciliation_status' => 'pending',
         ]);
 
@@ -100,15 +101,15 @@ final class ProviderOperationWebhookProcessingTest extends TestCase
         $this->assertNotNull($webhook->provider_operation_id);
 
         $this->assertDatabaseHas('provider_operations', [
-            'id' => $webhook->provider_operation_id,
-            'provider_family' => 'custodian',
-            'provider_name' => 'mock',
-            'operation_type' => 'transfer',
-            'provider_reference' => 'txn-provider-op-001',
-            'internal_reference' => 'txn-provider-op-001',
-            'finality_status' => 'succeeded',
-            'settlement_status' => 'pending',
-            'reconciliation_status' => 'pending',
+            'id'                       => $webhook->provider_operation_id,
+            'provider_family'          => 'custodian',
+            'provider_name'            => 'mock',
+            'operation_type'           => 'transfer',
+            'provider_reference'       => 'txn-provider-op-001',
+            'internal_reference'       => 'txn-provider-op-001',
+            'finality_status'          => 'succeeded',
+            'settlement_status'        => 'pending',
+            'reconciliation_status'    => 'pending',
             'ledger_posting_reference' => null,
         ]);
     }
@@ -123,39 +124,39 @@ final class ProviderOperationWebhookProcessingTest extends TestCase
         );
 
         $completedWebhook = CustodianWebhook::create([
-            'custodian_name' => 'mock',
-            'event_type' => 'transaction.completed',
+            'custodian_name'        => 'mock',
+            'event_type'            => 'transaction.completed',
             'normalized_event_type' => 'payment_succeeded',
-            'event_id' => 'evt-provider-op-002-completed',
-            'provider_reference' => 'txn-provider-op-002',
-            'headers' => [],
-            'payload' => [
+            'event_id'              => 'evt-provider-op-002-completed',
+            'provider_reference'    => 'txn-provider-op-002',
+            'headers'               => [],
+            'payload'               => [
                 'transaction_id' => 'txn-provider-op-002',
             ],
-            'payload_hash' => hash('sha256', json_encode(['transaction_id' => 'txn-provider-op-002'], JSON_THROW_ON_ERROR)),
-            'dedupe_key' => 'mock:event:evt-provider-op-002-completed',
-            'status' => 'pending',
-            'finality_status' => 'pending',
-            'settlement_status' => 'pending',
+            'payload_hash'          => hash('sha256', json_encode(['transaction_id' => 'txn-provider-op-002'], JSON_THROW_ON_ERROR)),
+            'dedupe_key'            => 'mock:event:evt-provider-op-002-completed',
+            'status'                => 'pending',
+            'finality_status'       => 'pending',
+            'settlement_status'     => 'pending',
             'reconciliation_status' => 'pending',
         ]);
 
         $failedWebhook = CustodianWebhook::create([
-            'custodian_name' => 'mock',
-            'event_type' => 'transaction.failed',
+            'custodian_name'        => 'mock',
+            'event_type'            => 'transaction.failed',
             'normalized_event_type' => 'payment_failed',
-            'event_id' => 'evt-provider-op-002-failed',
-            'provider_reference' => 'txn-provider-op-002',
-            'headers' => [],
-            'payload' => [
+            'event_id'              => 'evt-provider-op-002-failed',
+            'provider_reference'    => 'txn-provider-op-002',
+            'headers'               => [],
+            'payload'               => [
                 'transaction_id' => 'txn-provider-op-002',
-                'reason' => 'insufficient_funds',
+                'reason'         => 'insufficient_funds',
             ],
-            'payload_hash' => hash('sha256', json_encode(['transaction_id' => 'txn-provider-op-002', 'reason' => 'insufficient_funds'], JSON_THROW_ON_ERROR)),
-            'dedupe_key' => 'mock:event:evt-provider-op-002-failed',
-            'status' => 'pending',
-            'finality_status' => 'pending',
-            'settlement_status' => 'pending',
+            'payload_hash'          => hash('sha256', json_encode(['transaction_id' => 'txn-provider-op-002', 'reason' => 'insufficient_funds'], JSON_THROW_ON_ERROR)),
+            'dedupe_key'            => 'mock:event:evt-provider-op-002-failed',
+            'status'                => 'pending',
+            'finality_status'       => 'pending',
+            'settlement_status'     => 'pending',
             'reconciliation_status' => 'pending',
         ]);
 
@@ -171,13 +172,13 @@ final class ProviderOperationWebhookProcessingTest extends TestCase
         $this->assertSame($initialOperationId, $failedWebhook->provider_operation_id);
         $this->assertDatabaseCount('provider_operations', 1);
         $this->assertDatabaseHas('provider_operations', [
-            'id' => $initialOperationId,
-            'provider_family' => 'custodian',
-            'provider_name' => 'mock',
-            'operation_type' => 'transfer',
-            'provider_reference' => 'txn-provider-op-002',
-            'finality_status' => 'failed',
-            'settlement_status' => 'pending',
+            'id'                    => $initialOperationId,
+            'provider_family'       => 'custodian',
+            'provider_name'         => 'mock',
+            'operation_type'        => 'transfer',
+            'provider_reference'    => 'txn-provider-op-002',
+            'finality_status'       => 'failed',
+            'settlement_status'     => 'pending',
             'reconciliation_status' => 'pending',
         ]);
     }

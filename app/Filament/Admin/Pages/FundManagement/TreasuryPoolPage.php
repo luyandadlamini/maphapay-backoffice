@@ -14,11 +14,13 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class TreasuryPoolPage extends Page implements HasTable, HasForms
 {
     use InteractsWithTable;
     use InteractsWithForms;
+
     protected static ?string $navigationIcon = 'heroicon-o-wallet';
 
     protected static ?string $navigationLabel = 'Treasury Pool';
@@ -52,7 +54,7 @@ class TreasuryPoolPage extends Page implements HasTable, HasForms
                     'formatted' => $asset->formatAmount($this->getTreasuryBalance($asset->code)),
                 ];
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('TreasuryPoolPage: failed to load balances', ['error' => $e->getMessage()]);
         }
     }

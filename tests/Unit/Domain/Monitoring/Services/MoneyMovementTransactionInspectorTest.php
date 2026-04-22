@@ -9,9 +9,9 @@ use App\Domain\Asset\Models\Asset;
 use App\Domain\Asset\Models\AssetTransfer;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Monitoring\Services\MoneyMovementTransactionInspector;
-use App\Support\Reconciliation\ReconciliationReportDataLoader;
 use App\Models\MoneyRequest;
 use App\Models\User;
+use App\Support\Reconciliation\ReconciliationReportDataLoader;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
@@ -576,10 +576,10 @@ class MoneyMovementTransactionInspectorTest extends DomainTestCase
                 'entries_hash'               => hash('sha256', $trx),
                 'metadata'                   => json_encode([
                     'adjusted_by_posting_id' => $adjustmentPostingId,
-                    'adjustment_reason' => 'daily_reconciliation_delta',
+                    'adjustment_reason'      => 'daily_reconciliation_delta',
                 ], JSON_THROW_ON_ERROR),
-                'created_at'                 => now()->subMinutes(5),
-                'updated_at'                 => now()->subMinutes(5),
+                'created_at' => now()->subMinutes(5),
+                'updated_at' => now()->subMinutes(5),
             ],
             [
                 'id'                         => $adjustmentPostingId,
@@ -592,10 +592,10 @@ class MoneyMovementTransactionInspectorTest extends DomainTestCase
                 'entries_hash'               => hash('sha256', $reference),
                 'metadata'                   => json_encode([
                     'related_posting_id' => $postingId,
-                    'adjustment_reason' => 'daily_reconciliation_delta',
+                    'adjustment_reason'  => 'daily_reconciliation_delta',
                 ], JSON_THROW_ON_ERROR),
-                'created_at'                 => now()->subMinute(),
-                'updated_at'                 => now()->subMinute(),
+                'created_at' => now()->subMinute(),
+                'updated_at' => now()->subMinute(),
             ],
         ]);
 
@@ -727,15 +727,15 @@ class MoneyMovementTransactionInspectorTest extends DomainTestCase
             $directory . '/reconciliation-2026-04-09.json',
             json_encode([
                 'summary' => [
-                    'date' => '2026-04-09',
+                    'date'   => '2026-04-09',
                     'status' => 'completed',
                 ],
                 'discrepancies' => [
                     [
-                        'type' => 'balance_mismatch',
+                        'type'                     => 'balance_mismatch',
                         'ledger_posting_reference' => $postingId,
                         'reconciliation_reference' => 'reconciliation:2026-04-09:acc-123:SZL',
-                        'difference' => 250,
+                        'difference'               => 250,
                     ],
                 ],
             ], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR),

@@ -1,39 +1,47 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Tests\Feature\Http\Controllers\Api;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Models\MinorSpendApproval;
 use App\Models\User;
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
+use Tests\CreatesApplication;
 
-class MinorSpendApprovalControllerTest extends TestCase
+class MinorSpendApprovalControllerTest extends BaseTestCase
 {
-    protected function connectionsToTransact(): array { return ['mysql', 'central']; }
-    protected function shouldCreateDefaultAccountsInSetup(): bool { return false; }
+    use CreatesApplication;
 
     private User $guardian;
+
     private Account $minorAccount;
+
     private Account $guardianAccount;
+
     private MinorSpendApproval $approval;
+
     private string $tenantId;
 
     protected function setUp(): void
     {
         parent::setUp();
 
+        $this->withoutMiddleware();
+
         $this->guardian = User::factory()->create();
         $child = User::factory()->create();
         $this->tenantId = (string) Str::uuid();
 
         DB::connection('central')->table('tenants')->insert([
-            'id' => $this->tenantId, 'name' => 'T', 'plan' => 'default',
-            'team_id' => null, 'trial_ends_at' => null,
+            'id'         => $this->tenantId, 'name' => 'T', 'plan' => 'default',
+            'team_id'    => null, 'trial_ends_at' => null,
             'created_at' => now(), 'updated_at' => now(), 'data' => json_encode([]),
         ]);
 
@@ -46,7 +54,7 @@ class MinorSpendApprovalControllerTest extends TestCase
         ]);
 
         $this->minorAccount = Account::factory()->create([
-            'user_uuid' => $child->uuid, 'type' => 'minor', 'tier' => 'grow',
+            'user_uuid'        => $child->uuid, 'type' => 'minor', 'tier' => 'grow',
             'permission_level' => 3, 'parent_account_id' => $this->guardianAccount->uuid,
         ]);
         AccountMembership::create([

@@ -39,11 +39,11 @@ class ProviderOperation extends Model
     ];
 
     protected $casts = [
-        'operation_type' => ProviderOperationType::class,
-        'finality_status' => ProviderFinalityStatus::class,
-        'settlement_status' => ProviderSettlementStatus::class,
+        'operation_type'        => ProviderOperationType::class,
+        'finality_status'       => ProviderFinalityStatus::class,
+        'settlement_status'     => ProviderSettlementStatus::class,
         'reconciliation_status' => ProviderReconciliationStatus::class,
-        'metadata' => 'array',
+        'metadata'              => 'array',
     ];
 
     /** @return HasMany<CustodianWebhook, $this> */

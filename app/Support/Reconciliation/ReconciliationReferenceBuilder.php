@@ -16,12 +16,11 @@ final class ReconciliationReferenceBuilder
         ?string $assetCode,
         ?string $providerReference,
         ?array $ledgerPosting = null,
-    ): array
-    {
+    ): array {
         return [
-            'provider_family' => 'custodian',
-            'provider_reference' => $providerReference,
-            'internal_reference' => $accountUuid,
+            'provider_family'          => 'custodian',
+            'provider_reference'       => $providerReference,
+            'internal_reference'       => $accountUuid,
             'reconciliation_reference' => sprintf(
                 'reconciliation:%s:%s:%s',
                 $date,
@@ -29,8 +28,8 @@ final class ReconciliationReferenceBuilder
                 $assetCode ?? 'n-a'
             ),
             'ledger_posting_reference' => $ledgerPosting['id'] ?? null,
-            'ledger_posting' => $ledgerPosting,
-            'settlement_reference' => null,
+            'ledger_posting'           => $ledgerPosting,
+            'settlement_reference'     => null,
         ];
     }
 }

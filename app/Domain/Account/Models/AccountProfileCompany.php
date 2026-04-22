@@ -12,11 +12,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AccountProfileCompany extends Model
 {
-    use HasUuids, UsesTenantConnection;
+    use HasUuids;
+    use UsesTenantConnection;
 
     protected $table = 'account_profiles_company';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     protected $guarded = [];
 
     protected $casts = [

@@ -28,7 +28,7 @@ class MinorPointsController extends Controller
     }
 
     /**
-     * GET /api/accounts/minor/{uuid}/points
+     * GET /api/accounts/minor/{uuid}/points.
      *
      * Returns the current points balance for a minor account.
      */
@@ -50,7 +50,7 @@ class MinorPointsController extends Controller
     }
 
     /**
-     * GET /api/accounts/minor/{uuid}/points/history
+     * GET /api/accounts/minor/{uuid}/points/history.
      *
      * Returns the points ledger history for a minor account.
      */
@@ -65,13 +65,13 @@ class MinorPointsController extends Controller
             ->orderByDesc('created_at')
             ->paginate(20);
 
-        $ledgerEntries = $paginated->map(fn(MinorPointsLedger $entry) => [
-            'id'            => $entry->id,
-            'points'        => $entry->points,
-            'source'        => $entry->source,
-            'description'   => $entry->description,
-            'reference_id'  => $entry->reference_id,
-            'created_at'    => $entry->created_at?->toIso8601String(),
+        $ledgerEntries = $paginated->map(fn (MinorPointsLedger $entry) => [
+            'id'           => $entry->id,
+            'points'       => $entry->points,
+            'source'       => $entry->source,
+            'description'  => $entry->description,
+            'reference_id' => $entry->reference_id,
+            'created_at'   => $entry->created_at?->toIso8601String(),
         ]);
 
         return response()->json([
@@ -80,7 +80,7 @@ class MinorPointsController extends Controller
                 'minor_account_uuid' => $account->uuid,
                 'history'            => $ledgerEntries,
             ],
-            'meta'    => [
+            'meta' => [
                 'current_page' => $paginated->currentPage(),
                 'last_page'    => $paginated->lastPage(),
                 'per_page'     => $paginated->perPage(),
@@ -90,7 +90,7 @@ class MinorPointsController extends Controller
     }
 
     /**
-     * GET /api/accounts/minor/{uuid}/rewards
+     * GET /api/accounts/minor/{uuid}/rewards.
      *
      * Returns the available rewards catalog for a minor account.
      */
@@ -101,15 +101,15 @@ class MinorPointsController extends Controller
         $this->accessService->authorizeView($request->user(), $account);
 
         $rewards = $this->rewardService->availableCatalog($account)
-            ->map(fn($reward) => [
-                'id'                  => $reward->id,
-                'name'                => $reward->name,
-                'description'         => $reward->description,
-                'points_cost'         => $reward->points_cost,
-                'type'                => $reward->type,
-                'metadata'            => $reward->metadata,
-                'stock'               => $reward->stock,
-                'is_active'           => $reward->is_active,
+            ->map(fn ($reward) => [
+                'id'                   => $reward->id,
+                'name'                 => $reward->name,
+                'description'          => $reward->description,
+                'points_cost'          => $reward->points_cost,
+                'type'                 => $reward->type,
+                'metadata'             => $reward->metadata,
+                'stock'                => $reward->stock,
+                'is_active'            => $reward->is_active,
                 'min_permission_level' => $reward->min_permission_level,
             ]);
 
@@ -123,7 +123,7 @@ class MinorPointsController extends Controller
     }
 
     /**
-     * POST /api/accounts/minor/{uuid}/rewards/{rewardId}/redeem
+     * POST /api/accounts/minor/{uuid}/rewards/{rewardId}/redeem.
      *
      * Redeems a reward for a minor account.
      */
@@ -160,8 +160,8 @@ class MinorPointsController extends Controller
         } catch (Throwable $e) {
             Log::error('MinorPointsController: redeem failed', [
                 'account_uuid' => $account->uuid,
-                'reward_id'  => $rewardId,
-                'error'      => $e->getMessage(),
+                'reward_id'    => $rewardId,
+                'error'        => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -172,7 +172,7 @@ class MinorPointsController extends Controller
     }
 
     /**
-     * GET /api/accounts/minor/{uuid}/rewards/redemptions
+     * GET /api/accounts/minor/{uuid}/rewards/redemptions.
      *
      * Returns the redemption history for a minor account.
      */
@@ -188,14 +188,14 @@ class MinorPointsController extends Controller
             ->orderByDesc('created_at')
             ->paginate(20);
 
-        $redemptions = $paginated->map(fn(MinorRewardRedemption $redemption) => [
-            'id'                 => $redemption->id,
-            'reward_id'          => $redemption->minor_reward_id,
-            'reward_name'        => $redemption->reward?->name,
-            'points_cost'        => $redemption->points_cost,
-            'status'             => $redemption->status,
-            'fulfilled_at'       => $redemption->fulfilled_at?->toIso8601String(),
-            'created_at'         => $redemption->created_at?->toIso8601String(),
+        $redemptions = $paginated->map(fn (MinorRewardRedemption $redemption) => [
+            'id'           => $redemption->id,
+            'reward_id'    => $redemption->minor_reward_id,
+            'reward_name'  => $redemption->reward?->name,
+            'points_cost'  => $redemption->points_cost,
+            'status'       => $redemption->status,
+            'fulfilled_at' => $redemption->fulfilled_at?->toIso8601String(),
+            'created_at'   => $redemption->created_at?->toIso8601String(),
         ]);
 
         return response()->json([
@@ -204,7 +204,7 @@ class MinorPointsController extends Controller
                 'minor_account_uuid' => $account->uuid,
                 'redemptions'        => $redemptions,
             ],
-            'meta'    => [
+            'meta' => [
                 'current_page' => $paginated->currentPage(),
                 'last_page'    => $paginated->lastPage(),
                 'per_page'     => $paginated->perPage(),
@@ -212,5 +212,4 @@ class MinorPointsController extends Controller
             ],
         ]);
     }
-
 }

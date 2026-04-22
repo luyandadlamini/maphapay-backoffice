@@ -29,8 +29,8 @@ class MobileAttestationRecord extends Model
     ];
 
     protected $casts = [
-        'attestation_enabled' => 'boolean',
+        'attestation_enabled'  => 'boolean',
         'attestation_verified' => 'boolean',
-        'metadata' => 'array',
+        'metadata'             => 'array',
     ];
 }

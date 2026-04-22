@@ -82,13 +82,13 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
             'frozen'    => false,
         ]);
 
-        $this->trustedDeviceId = 'send-money-policy-device-'.$this->sender->id;
+        $this->trustedDeviceId = 'send-money-policy-device-' . $this->sender->id;
 
         MobileDevice::factory()
             ->trusted()
             ->ios()
             ->create([
-                'user_id' => $this->sender->id,
+                'user_id'   => $this->sender->id,
                 'device_id' => $this->trustedDeviceId,
             ]);
 
@@ -111,7 +111,7 @@ class SendMoneyPolicyEnforcementTest extends ControllerTestCase
     {
         return $this->withHeaders($headers)->postJson('/api/send-money/store', array_merge([
             'device_type' => 'ios',
-            'device_id' => $this->trustedDeviceId,
+            'device_id'   => $this->trustedDeviceId,
         ], $payload));
     }
 

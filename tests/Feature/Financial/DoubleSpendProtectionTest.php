@@ -70,13 +70,13 @@ class DoubleSpendProtectionTest extends ControllerTestCase
         ]);
         $this->requesterAccount = $this->createAccount($this->requester);
         $this->recipientAccount = $this->createAccount($this->recipient);
-        $this->recipientTrustedDeviceId = 'request-money-double-spend-device-'.$this->recipient->id;
+        $this->recipientTrustedDeviceId = 'request-money-double-spend-device-' . $this->recipient->id;
 
         MobileDevice::factory()
             ->trusted()
             ->ios()
             ->create([
-                'user_id' => $this->recipient->id,
+                'user_id'   => $this->recipient->id,
                 'device_id' => $this->recipientTrustedDeviceId,
             ]);
     }
@@ -94,7 +94,7 @@ class DoubleSpendProtectionTest extends ControllerTestCase
         return $this->withHeaders($headers)
             ->postJson("/api/request-money/received-store/{$moneyRequestId}", array_merge([
                 'device_type' => 'ios',
-                'device_id' => $this->recipientTrustedDeviceId,
+                'device_id'   => $this->recipientTrustedDeviceId,
             ], $payload));
     }
 

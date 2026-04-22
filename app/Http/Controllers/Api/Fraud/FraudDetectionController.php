@@ -47,7 +47,7 @@ class FraudDetectionController extends Controller
     )]
     public function analyzeTransaction(Request $request, string $transactionId): JsonResponse
     {
-        /** @var \App\Domain\Account\Models\Transaction $transaction */
+        /** @var Transaction $transaction */
         $transaction = Transaction::findOrFail($transactionId);
 
         // Ensure user can analyze this transaction
@@ -113,7 +113,7 @@ class FraudDetectionController extends Controller
     )]
     public function analyzeUser(Request $request, string $userId): JsonResponse
     {
-        /** @var \App\Models\User $userModel */
+        /** @var User $userModel */
         $userModel = User::findOrFail($userId);
 
         // Ensure user can analyze this user
@@ -163,7 +163,7 @@ class FraudDetectionController extends Controller
     )]
     public function getFraudScore(string $fraudScoreId): JsonResponse
     {
-        /** @var \App\Domain\Fraud\Models\FraudScore $fraudScore */
+        /** @var FraudScore $fraudScore */
         $fraudScore = FraudScore::with(['fraudCase'])->findOrFail($fraudScoreId);
 
         // Ensure user can view this fraud score
@@ -206,7 +206,7 @@ class FraudDetectionController extends Controller
             ]
         );
 
-        /** @var \App\Domain\Fraud\Models\FraudScore $fraudScore */
+        /** @var FraudScore $fraudScore */
         $fraudScore = FraudScore::findOrFail($fraudScoreId);
 
         // Ensure user can update this fraud score

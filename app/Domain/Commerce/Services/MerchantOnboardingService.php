@@ -7,8 +7,8 @@ namespace App\Domain\Commerce\Services;
 use App\Domain\Commerce\Enums\MerchantStatus;
 use App\Domain\Commerce\Events\MerchantOnboarded;
 use App\Domain\Commerce\Models\Merchant;
-use App\Domain\Corporate\Models\BusinessOnboardingCaseStatusHistory;
 use App\Domain\Corporate\Models\BusinessOnboardingCase;
+use App\Domain\Corporate\Models\BusinessOnboardingCaseStatusHistory;
 use App\Domain\Corporate\Models\CorporateProfile;
 use App\Models\Team;
 use App\Models\User;
@@ -60,31 +60,31 @@ class MerchantOnboardingService
             $corporateProfile,
         ): array {
             $merchant = Merchant::create([
-                'public_id' => 'merchant_' . Str::lower(Str::random(24)),
-                'display_name' => $businessName,
-                'icon_url' => $businessDetails['icon_url'] ?? null,
-                'accepted_assets' => $businessDetails['accepted_assets'] ?? [],
-                'accepted_networks' => $businessDetails['accepted_networks'] ?? [],
-                'status' => MerchantStatus::PENDING,
-                'terminal_id' => $businessDetails['terminal_id'] ?? null,
+                'public_id'            => 'merchant_' . Str::lower(Str::random(24)),
+                'display_name'         => $businessName,
+                'icon_url'             => $businessDetails['icon_url'] ?? null,
+                'accepted_assets'      => $businessDetails['accepted_assets'] ?? [],
+                'accepted_networks'    => $businessDetails['accepted_networks'] ?? [],
+                'status'               => MerchantStatus::PENDING,
+                'terminal_id'          => $businessDetails['terminal_id'] ?? null,
                 'corporate_profile_id' => $corporateProfile?->id,
             ]);
 
             $case = BusinessOnboardingCase::create([
-                'public_id' => 'onboard_' . Str::lower(Str::random(24)),
-                'team_id' => $team?->id,
-                'corporate_profile_id' => $corporateProfile?->id,
-                'merchant_id' => $merchant->id,
-                'relationship_type' => 'merchant',
-                'status' => MerchantStatus::PENDING->value,
-                'business_name' => $businessName,
-                'business_type' => $businessType,
-                'country' => $country,
-                'contact_email' => $contactEmail,
-                'requested_capabilities' => [],
-                'business_details' => $businessDetails,
+                'public_id'               => 'onboard_' . Str::lower(Str::random(24)),
+                'team_id'                 => $team?->id,
+                'corporate_profile_id'    => $corporateProfile?->id,
+                'merchant_id'             => $merchant->id,
+                'relationship_type'       => 'merchant',
+                'status'                  => MerchantStatus::PENDING->value,
+                'business_name'           => $businessName,
+                'business_type'           => $businessType,
+                'country'                 => $country,
+                'contact_email'           => $contactEmail,
+                'requested_capabilities'  => [],
+                'business_details'        => $businessDetails,
                 'activation_requirements' => ['kyb_review', 'merchant_approval'],
-                'submitted_by_user_id' => $user?->id,
+                'submitted_by_user_id'    => $user?->id,
             ]);
 
             $merchant->forceFill([
@@ -93,15 +93,15 @@ class MerchantOnboardingService
 
             BusinessOnboardingCaseStatusHistory::query()->create([
                 'business_onboarding_case_id' => $case->id,
-                'from_status' => null,
-                'to_status' => MerchantStatus::PENDING->value,
-                'actor_user_id' => $user?->id,
-                'reason' => 'Application submitted',
+                'from_status'                 => null,
+                'to_status'                   => MerchantStatus::PENDING->value,
+                'actor_user_id'               => $user?->id,
+                'reason'                      => 'Application submitted',
             ]);
 
             return [
-                'merchant_id' => $merchant->public_id,
-                'status' => $merchant->status->value,
+                'merchant_id'        => $merchant->public_id,
+                'status'             => $merchant->status->value,
                 'onboarding_case_id' => $case->public_id,
             ];
         });
@@ -134,8 +134,8 @@ class MerchantOnboardingService
             actorUserId: (int) $approverId,
             reason: "Approved by {$approverId}",
             caseAttributes: [
-                'approved_by_user_id' => (int) $approverId,
-                'approved_at' => now(),
+                'approved_by_user_id'  => (int) $approverId,
+                'approved_at'          => now(),
                 'last_decision_reason' => "Approved by {$approverId}",
             ],
             caseMetadata: $approvalDetails === [] ? [] : ['approval_details' => $approvalDetails],
@@ -208,16 +208,16 @@ class MerchantOnboardingService
         $case = $this->resolveOnboardingCase($merchant);
 
         return [
-            'merchant_id' => $merchant->public_id,
-            'business_name' => $case->business_name,
-            'business_type' => $case->business_type,
-            'country' => $case->country,
-            'contact_email' => $case->contact_email,
+            'merchant_id'      => $merchant->public_id,
+            'business_name'    => $case->business_name,
+            'business_type'    => $case->business_type,
+            'country'          => $case->country,
+            'contact_email'    => $case->contact_email,
             'business_details' => $case->business_details ?? [],
-            'status' => $merchant->status->value,
-            'created_at' => $case->created_at?->toIso8601String(),
-            'updated_at' => $case->updated_at?->toIso8601String(),
-            'status_history' => $this->getStatusHistory($merchantId),
+            'status'           => $merchant->status->value,
+            'created_at'       => $case->created_at?->toIso8601String(),
+            'updated_at'       => $case->updated_at?->toIso8601String(),
+            'status_history'   => $this->getStatusHistory($merchantId),
         ];
     }
 
@@ -242,9 +242,9 @@ class MerchantOnboardingService
 
         foreach ($case->statusHistory as $statusHistory) {
             $history[] = [
-                'status' => $statusHistory->to_status,
+                'status'     => $statusHistory->to_status,
                 'changed_at' => $statusHistory->created_at?->toIso8601String() ?? now()->toIso8601String(),
-                'reason' => $statusHistory->reason ?? '',
+                'reason'     => $statusHistory->reason ?? '',
             ];
         }
 
@@ -276,12 +276,12 @@ class MerchantOnboardingService
         $recommendation = match (true) {
             $riskScore >= 0.7 => 'reject',
             $riskScore >= 0.4 => 'enhanced_review',
-            default => 'approve',
+            default           => 'approve',
         };
 
         $assessment = [
-            'risk_score' => min(1.0, $riskScore),
-            'risk_factors' => $riskFactors,
+            'risk_score'     => min(1.0, $riskScore),
+            'risk_factors'   => $riskFactors,
             'recommendation' => $recommendation,
         ];
 
@@ -332,17 +332,17 @@ class MerchantOnboardingService
             }
 
             $case->forceFill(array_merge($caseAttributes, [
-                'status' => $newStatus->value,
+                'status'   => $newStatus->value,
                 'metadata' => $mergedMetadata === [] ? null : $mergedMetadata,
             ]))->save();
 
             BusinessOnboardingCaseStatusHistory::query()->create([
                 'business_onboarding_case_id' => $case->id,
-                'from_status' => $currentStatus->value,
-                'to_status' => $newStatus->value,
-                'actor_user_id' => $actorUserId,
-                'reason' => $reason,
-                'metadata' => $caseMetadata === [] ? null : $caseMetadata,
+                'from_status'                 => $currentStatus->value,
+                'to_status'                   => $newStatus->value,
+                'actor_user_id'               => $actorUserId,
+                'reason'                      => $reason,
+                'metadata'                    => $caseMetadata === [] ? null : $caseMetadata,
             ]);
         });
     }

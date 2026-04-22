@@ -6,9 +6,9 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Filament\Admin\Resources\DataSubjectRequestResource\Pages;
+use App\Models\DataSubjectRequest;
 use App\Support\Backoffice\AdminActionGovernance;
 use App\Support\Backoffice\BackofficeWorkspaceAccess;
-use App\Models\DataSubjectRequest;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -224,11 +224,11 @@ class DataSubjectRequestResource extends Resource
             targetType: DataSubjectRequest::class,
             targetIdentifier: (string) $record->getKey(),
             payload: [
-                'request_type' => $record->type,
-                'current_status' => $record->status,
+                'request_type'    => $record->type,
+                'current_status'  => $record->status,
                 'requested_state' => DataSubjectRequest::STATUS_FULFILLED,
-                'user_id' => $record->user_id,
-                'evidence' => [
+                'user_id'         => $record->user_id,
+                'evidence'        => [
                     'reason' => $reason,
                 ],
             ],
@@ -245,10 +245,10 @@ class DataSubjectRequestResource extends Resource
         $oldValues = static::reviewState($record);
 
         $record->update([
-            'status' => DataSubjectRequest::STATUS_FULFILLED,
+            'status'       => DataSubjectRequest::STATUS_FULFILLED,
             'fulfilled_at' => now(),
-            'reviewed_by' => auth()->id(),
-            'reviewed_at' => now(),
+            'reviewed_by'  => auth()->id(),
+            'reviewed_at'  => now(),
             'review_notes' => $reason,
         ]);
 
@@ -263,7 +263,7 @@ class DataSubjectRequestResource extends Resource
             newValues: static::reviewState($record),
             metadata: [
                 'request_type' => $record->type,
-                'user_id' => $record->user_id,
+                'user_id'      => $record->user_id,
                 'fulfilled_at' => $record->fulfilled_at?->toIso8601String(),
             ],
             tags: 'backoffice,compliance,data-subject-requests'
@@ -277,9 +277,9 @@ class DataSubjectRequestResource extends Resource
         $oldValues = static::reviewState($record);
 
         $record->update([
-            'status' => DataSubjectRequest::STATUS_REJECTED,
-            'reviewed_by' => auth()->id(),
-            'reviewed_at' => now(),
+            'status'       => DataSubjectRequest::STATUS_REJECTED,
+            'reviewed_by'  => auth()->id(),
+            'reviewed_at'  => now(),
             'review_notes' => $reason,
         ]);
 
@@ -294,7 +294,7 @@ class DataSubjectRequestResource extends Resource
             newValues: static::reviewState($record),
             metadata: [
                 'request_type' => $record->type,
-                'user_id' => $record->user_id,
+                'user_id'      => $record->user_id,
             ],
             tags: 'backoffice,compliance,data-subject-requests'
         );
@@ -306,10 +306,10 @@ class DataSubjectRequestResource extends Resource
     protected static function reviewState(DataSubjectRequest $record): array
     {
         return [
-            'status' => $record->status,
+            'status'       => $record->status,
             'review_notes' => $record->review_notes,
-            'reviewed_by' => $record->reviewed_by,
-            'reviewed_at' => $record->reviewed_at?->toIso8601String(),
+            'reviewed_by'  => $record->reviewed_by,
+            'reviewed_at'  => $record->reviewed_at?->toIso8601String(),
             'fulfilled_at' => $record->fulfilled_at?->toIso8601String(),
         ];
     }

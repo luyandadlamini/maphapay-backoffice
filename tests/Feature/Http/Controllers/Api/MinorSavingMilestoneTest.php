@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Tests\Feature\Http\Controllers\Api;
 
 use App\Domain\Account\Models\Account;
@@ -15,21 +17,33 @@ use Tests\TestCase;
 
 class MinorSavingMilestoneTest extends TestCase
 {
-    protected function connectionsToTransact(): array { return ['mysql', 'central']; }
-    protected function shouldCreateDefaultAccountsInSetup(): bool { return false; }
+    protected function connectionsToTransact(): array
+    {
+    return ['mysql', 'central'];
+    }
+
+    protected function shouldCreateDefaultAccountsInSetup(): bool
+    {
+    return false;
+    }
 
     private User $childUser;
+
     private User $guardianUser;
+
     private Account $minorAccount;
+
     private Account $guardianAccount;
+
     private MinorPointsService $pointsService;
+
     private string $tenantId;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->pointsService = app(MinorPointsService::class);
-        $this->childUser    = User::factory()->create();
+        $this->childUser = User::factory()->create();
         $this->guardianUser = User::factory()->create();
 
         // Create a tenant row so AccountMembership FK is satisfied
@@ -59,9 +73,9 @@ class MinorSavingMilestoneTest extends TestCase
         ]);
 
         $this->minorAccount = Account::factory()->create([
-            'user_uuid'        => $this->childUser->uuid,
-            'type'             => 'minor',
-            'permission_level' => 3,
+            'user_uuid'         => $this->childUser->uuid,
+            'type'              => 'minor',
+            'permission_level'  => 3,
             'parent_account_id' => $this->guardianAccount->uuid,
         ]);
         AccountMembership::create([
@@ -79,7 +93,7 @@ class MinorSavingMilestoneTest extends TestCase
     {
         // Simulate 100 SZL total saved in transaction_projections for this minor account
         DB::table('transaction_projections')->insert([
-            'uuid'         => \Illuminate\Support\Str::uuid(),
+            'uuid'         => Str::uuid(),
             'account_uuid' => $this->minorAccount->uuid,
             'type'         => 'deposit',
             'subtype'      => 'send_money',

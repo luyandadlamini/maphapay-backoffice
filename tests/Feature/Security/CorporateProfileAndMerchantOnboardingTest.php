@@ -78,11 +78,11 @@ class CorporateProfileAndMerchantOnboardingTest extends TestCase
         $merchant = app(SubmitMerchantApplicationMutation::class)(
             null,
             [
-                'display_name' => 'Acme Merchant',
-                'icon_url' => 'https://example.com/icon.png',
-                'accepted_assets' => ['USDC'],
+                'display_name'      => 'Acme Merchant',
+                'icon_url'          => 'https://example.com/icon.png',
+                'accepted_assets'   => ['USDC'],
                 'accepted_networks' => ['POLYGON'],
-                'terminal_id' => 'term_123',
+                'terminal_id'       => 'term_123',
             ],
         );
 
@@ -120,8 +120,8 @@ class CorporateProfileAndMerchantOnboardingTest extends TestCase
         $merchant = app(SubmitMerchantApplicationMutation::class)(
             null,
             [
-                'display_name' => 'Capability Merchant',
-                'accepted_assets' => ['USDC'],
+                'display_name'      => 'Capability Merchant',
+                'accepted_assets'   => ['USDC'],
                 'accepted_networks' => ['POLYGON'],
             ],
         );
@@ -154,16 +154,16 @@ class CorporateProfileAndMerchantOnboardingTest extends TestCase
     private function createBusinessTeamForOwner(User $owner): Team
     {
         $team = Team::factory()->create([
-            'user_id' => $owner->id,
-            'name' => 'Acme Treasury',
-            'personal_team' => false,
-            'is_business_organization' => true,
-            'organization_type' => 'business',
+            'user_id'                      => $owner->id,
+            'name'                         => 'Acme Treasury',
+            'personal_team'                => false,
+            'is_business_organization'     => true,
+            'organization_type'            => 'business',
             'business_registration_number' => 'REG-123456',
-            'tax_id' => 'TAX-987654',
-            'business_details' => [
+            'tax_id'                       => 'TAX-987654',
+            'business_details'             => [
                 'legal_name' => 'Acme Treasury (Pty) Ltd',
-                'country' => 'SZ',
+                'country'    => 'SZ',
             ],
         ]);
 

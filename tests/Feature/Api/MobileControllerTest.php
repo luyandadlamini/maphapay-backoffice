@@ -60,18 +60,18 @@ class MobileControllerTest extends TestCase
         $response->assertOk()
             ->assertJson([
                 'success' => true,
-                'data' => [
+                'data'    => [
                     'pins' => [
                         [
                             'algorithm' => 'sha256',
-                            'hash' => 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+                            'hash'      => 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
                         ],
                         [
                             'algorithm' => 'sha256',
-                            'hash' => 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=',
+                            'hash'      => 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=',
                         ],
                     ],
-                    'max_age' => 172800,
+                    'max_age'            => 172800,
                     'include_subdomains' => false,
                 ],
             ]);

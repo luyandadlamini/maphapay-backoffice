@@ -19,7 +19,7 @@ beforeEach(function () {
     $this->reconciliationService = new DailyReconciliationService(
         $this->syncService,
         $this->custodianRegistry,
-        app(\App\Support\Reconciliation\ReconciliationReferenceBuilder::class),
+        app(App\Support\Reconciliation\ReconciliationReferenceBuilder::class),
     );
 });
 
@@ -146,14 +146,14 @@ it('attaches latest ledger posting context to balance discrepancies when posted 
     $account = Account::factory()->create();
     $account->balances()->create([
         'asset_code' => 'USD',
-        'balance' => 100000,
+        'balance'    => 100000,
     ]);
 
     CustodianAccount::factory()->create([
-        'account_uuid' => $account->uuid,
-        'custodian_name' => 'test_bank',
+        'account_uuid'         => $account->uuid,
+        'custodian_name'       => 'test_bank',
         'custodian_account_id' => '123',
-        'status' => 'active',
+        'status'               => 'active',
     ]);
 
     $mockConnector = Mockery::mock(App\Domain\Custodian\Contracts\ICustodianConnector::class);
@@ -176,37 +176,37 @@ it('attaches latest ledger posting context to balance discrepancies when posted 
 
     DB::table('ledger_postings')->insert([
         [
-            'id' => '11111111-1111-1111-1111-111111111111',
-            'authorized_transaction_id' => null,
+            'id'                         => '11111111-1111-1111-1111-111111111111',
+            'authorized_transaction_id'  => null,
             'authorized_transaction_trx' => 'TRXORIGINAL000000000000000000001',
-            'posting_type' => 'send_money',
-            'status' => 'adjusted',
-            'asset_code' => 'USD',
-            'transfer_reference' => 'transfer-original',
-            'money_request_id' => null,
-            'rule_version' => 1,
-            'entries_hash' => str_repeat('a', 64),
-            'metadata' => json_encode([], JSON_THROW_ON_ERROR),
-            'posted_at' => now()->subMinutes(5),
-            'created_at' => now()->subMinutes(5),
-            'updated_at' => now()->subMinutes(5),
+            'posting_type'               => 'send_money',
+            'status'                     => 'adjusted',
+            'asset_code'                 => 'USD',
+            'transfer_reference'         => 'transfer-original',
+            'money_request_id'           => null,
+            'rule_version'               => 1,
+            'entries_hash'               => str_repeat('a', 64),
+            'metadata'                   => json_encode([], JSON_THROW_ON_ERROR),
+            'posted_at'                  => now()->subMinutes(5),
+            'created_at'                 => now()->subMinutes(5),
+            'updated_at'                 => now()->subMinutes(5),
         ],
         [
-            'id' => '22222222-2222-2222-2222-222222222222',
-            'authorized_transaction_id' => null,
+            'id'                         => '22222222-2222-2222-2222-222222222222',
+            'authorized_transaction_id'  => null,
             'authorized_transaction_trx' => 'TRXADJUST0000000000000000000002',
-            'posting_type' => 'reconciliation_adjustment',
-            'status' => 'posted',
-            'asset_code' => 'USD',
-            'transfer_reference' => 'transfer-original',
-            'money_request_id' => null,
-            'rule_version' => 1,
-            'entries_hash' => str_repeat('b', 64),
-            'metadata' => json_encode([
+            'posting_type'               => 'reconciliation_adjustment',
+            'status'                     => 'posted',
+            'asset_code'                 => 'USD',
+            'transfer_reference'         => 'transfer-original',
+            'money_request_id'           => null,
+            'rule_version'               => 1,
+            'entries_hash'               => str_repeat('b', 64),
+            'metadata'                   => json_encode([
                 'related_posting_id' => '11111111-1111-1111-1111-111111111111',
-                'adjustment_reason' => 'daily_reconciliation_delta',
+                'adjustment_reason'  => 'daily_reconciliation_delta',
             ], JSON_THROW_ON_ERROR),
-            'posted_at' => now()->subMinute(),
+            'posted_at'  => now()->subMinute(),
             'created_at' => now()->subMinute(),
             'updated_at' => now()->subMinute(),
         ],
@@ -214,26 +214,26 @@ it('attaches latest ledger posting context to balance discrepancies when posted 
 
     DB::table('ledger_entries')->insert([
         [
-            'id' => '33333333-3333-3333-3333-333333333333',
+            'id'                => '33333333-3333-3333-3333-333333333333',
             'ledger_posting_id' => '11111111-1111-1111-1111-111111111111',
-            'account_uuid' => $account->uuid,
-            'asset_code' => 'USD',
-            'signed_amount' => -100000,
-            'entry_type' => 'debit',
-            'metadata' => json_encode(['role' => 'sender'], JSON_THROW_ON_ERROR),
-            'created_at' => now()->subMinutes(5),
-            'updated_at' => now()->subMinutes(5),
+            'account_uuid'      => $account->uuid,
+            'asset_code'        => 'USD',
+            'signed_amount'     => -100000,
+            'entry_type'        => 'debit',
+            'metadata'          => json_encode(['role' => 'sender'], JSON_THROW_ON_ERROR),
+            'created_at'        => now()->subMinutes(5),
+            'updated_at'        => now()->subMinutes(5),
         ],
         [
-            'id' => '44444444-4444-4444-4444-444444444444',
+            'id'                => '44444444-4444-4444-4444-444444444444',
             'ledger_posting_id' => '22222222-2222-2222-2222-222222222222',
-            'account_uuid' => $account->uuid,
-            'asset_code' => 'USD',
-            'signed_amount' => 5000,
-            'entry_type' => 'credit',
-            'metadata' => json_encode(['role' => 'adjusted_account'], JSON_THROW_ON_ERROR),
-            'created_at' => now()->subMinute(),
-            'updated_at' => now()->subMinute(),
+            'account_uuid'      => $account->uuid,
+            'asset_code'        => 'USD',
+            'signed_amount'     => 5000,
+            'entry_type'        => 'credit',
+            'metadata'          => json_encode(['role' => 'adjusted_account'], JSON_THROW_ON_ERROR),
+            'created_at'        => now()->subMinute(),
+            'updated_at'        => now()->subMinute(),
         ],
     ]);
 
@@ -257,9 +257,9 @@ it('attaches latest ledger posting context to balance discrepancies when posted 
     expect($discrepancy)->not->toBeNull()
         ->and($discrepancy['ledger_posting_reference'])->toBe('22222222-2222-2222-2222-222222222222')
         ->and($discrepancy['ledger_posting'])->toMatchArray([
-            'id' => '22222222-2222-2222-2222-222222222222',
-            'posting_type' => 'reconciliation_adjustment',
-            'status' => 'posted',
+            'id'                 => '22222222-2222-2222-2222-222222222222',
+            'posting_type'       => 'reconciliation_adjustment',
+            'status'             => 'posted',
             'transfer_reference' => 'transfer-original',
             'related_posting_id' => '11111111-1111-1111-1111-111111111111',
         ]);
@@ -275,14 +275,14 @@ it('marks matching provider operations as reconciliation exceptions and exposes 
     $account = Account::factory()->create();
     $account->balances()->create([
         'asset_code' => 'USD',
-        'balance' => 100000,
+        'balance'    => 100000,
     ]);
 
     CustodianAccount::factory()->create([
-        'account_uuid' => $account->uuid,
-        'custodian_name' => 'test_bank',
+        'account_uuid'         => $account->uuid,
+        'custodian_name'       => 'test_bank',
         'custodian_account_id' => '123',
-        'status' => 'active',
+        'status'               => 'active',
     ]);
 
     $mockConnector = Mockery::mock(App\Domain\Custodian\Contracts\ICustodianConnector::class);
@@ -304,49 +304,49 @@ it('marks matching provider operations as reconciliation exceptions and exposes 
         ->andReturn($mockConnector);
 
     DB::table('ledger_postings')->insert([
-        'id' => '55555555-5555-5555-5555-555555555555',
-        'authorized_transaction_id' => null,
+        'id'                         => '55555555-5555-5555-5555-555555555555',
+        'authorized_transaction_id'  => null,
         'authorized_transaction_trx' => 'TRXRECON0000000000000000000003',
-        'posting_type' => 'send_money',
-        'status' => 'posted',
-        'asset_code' => 'USD',
-        'transfer_reference' => 'provider-transfer-001',
-        'money_request_id' => null,
-        'rule_version' => 1,
-        'entries_hash' => str_repeat('c', 64),
-        'metadata' => json_encode([], JSON_THROW_ON_ERROR),
-        'posted_at' => now()->subMinute(),
-        'created_at' => now()->subMinute(),
-        'updated_at' => now()->subMinute(),
+        'posting_type'               => 'send_money',
+        'status'                     => 'posted',
+        'asset_code'                 => 'USD',
+        'transfer_reference'         => 'provider-transfer-001',
+        'money_request_id'           => null,
+        'rule_version'               => 1,
+        'entries_hash'               => str_repeat('c', 64),
+        'metadata'                   => json_encode([], JSON_THROW_ON_ERROR),
+        'posted_at'                  => now()->subMinute(),
+        'created_at'                 => now()->subMinute(),
+        'updated_at'                 => now()->subMinute(),
     ]);
 
     DB::table('ledger_entries')->insert([
-        'id' => '66666666-6666-6666-6666-666666666666',
+        'id'                => '66666666-6666-6666-6666-666666666666',
         'ledger_posting_id' => '55555555-5555-5555-5555-555555555555',
-        'account_uuid' => $account->uuid,
-        'asset_code' => 'USD',
-        'signed_amount' => -100000,
-        'entry_type' => 'debit',
-        'metadata' => json_encode(['role' => 'sender'], JSON_THROW_ON_ERROR),
-        'created_at' => now()->subMinute(),
-        'updated_at' => now()->subMinute(),
+        'account_uuid'      => $account->uuid,
+        'asset_code'        => 'USD',
+        'signed_amount'     => -100000,
+        'entry_type'        => 'debit',
+        'metadata'          => json_encode(['role' => 'sender'], JSON_THROW_ON_ERROR),
+        'created_at'        => now()->subMinute(),
+        'updated_at'        => now()->subMinute(),
     ]);
 
     ProviderOperation::query()->create([
-        'provider_family' => 'custodian',
-        'provider_name' => 'test_bank',
-        'operation_type' => 'transfer',
-        'operation_key' => 'custodian:test_bank:transfer:provider-transfer-001',
-        'normalized_event_type' => 'payment_succeeded',
-        'provider_reference' => 'provider-transfer-001',
-        'internal_reference' => $account->uuid,
-        'finality_status' => 'succeeded',
-        'settlement_status' => 'completed',
-        'reconciliation_status' => 'pending',
-        'settlement_reference' => 'NET_SETTLEMENT_001',
+        'provider_family'          => 'custodian',
+        'provider_name'            => 'test_bank',
+        'operation_type'           => 'transfer',
+        'operation_key'            => 'custodian:test_bank:transfer:provider-transfer-001',
+        'normalized_event_type'    => 'payment_succeeded',
+        'provider_reference'       => 'provider-transfer-001',
+        'internal_reference'       => $account->uuid,
+        'finality_status'          => 'succeeded',
+        'settlement_status'        => 'completed',
+        'reconciliation_status'    => 'pending',
+        'settlement_reference'     => 'NET_SETTLEMENT_001',
         'reconciliation_reference' => null,
         'ledger_posting_reference' => null,
-        'metadata' => [
+        'metadata'                 => [
             'source' => 'test',
         ],
     ]);
@@ -358,19 +358,19 @@ it('marks matching provider operations as reconciliation exceptions and exposes 
 
     expect($discrepancy)->not->toBeNull()
         ->and($discrepancy['provider_operation'])->toMatchArray([
-            'provider_name' => 'test_bank',
-            'provider_reference' => 'provider-transfer-001',
-            'finality_status' => 'succeeded',
-            'settlement_status' => 'completed',
-            'reconciliation_status' => 'exception',
-            'settlement_reference' => 'NET_SETTLEMENT_001',
+            'provider_name'            => 'test_bank',
+            'provider_reference'       => 'provider-transfer-001',
+            'finality_status'          => 'succeeded',
+            'settlement_status'        => 'completed',
+            'reconciliation_status'    => 'exception',
+            'settlement_reference'     => 'NET_SETTLEMENT_001',
             'ledger_posting_reference' => '55555555-5555-5555-5555-555555555555',
         ]);
 
     $this->assertDatabaseHas('provider_operations', [
-        'provider_name' => 'test_bank',
-        'provider_reference' => 'provider-transfer-001',
-        'reconciliation_status' => 'exception',
+        'provider_name'            => 'test_bank',
+        'provider_reference'       => 'provider-transfer-001',
+        'reconciliation_status'    => 'exception',
         'reconciliation_reference' => $discrepancy['reconciliation_reference'],
         'ledger_posting_reference' => '55555555-5555-5555-5555-555555555555',
     ]);

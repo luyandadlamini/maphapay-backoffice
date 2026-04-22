@@ -137,7 +137,7 @@ class CorporateTreasuryBoundaryTest extends TestCase
 
         /** @var MppSpendingLimit $limit */
         $limit = MppSpendingLimit::create([
-            'agent_id'   => 'agent-test-001',
+            'agent_id'     => 'agent-test-001',
             'daily_limit'  => 100000,
             'per_tx_limit' => 10000,
             'spent_today'  => 0,
@@ -177,7 +177,7 @@ class CorporateTreasuryBoundaryTest extends TestCase
         $profile = $this->makeCorporateProfile();
         $service = app(CorporateTreasuryBoundary::class);
 
-        $first  = $service->registerTreasuryAccount($profile, 'acct-treasury-uuid-006', 'USD', 'First Label');
+        $first = $service->registerTreasuryAccount($profile, 'acct-treasury-uuid-006', 'USD', 'First Label');
         $second = $service->registerTreasuryAccount($profile, 'acct-treasury-uuid-006', 'USD', 'Updated Label');
 
         $this->assertSame($first->id, $second->id);
@@ -199,14 +199,14 @@ class CorporateTreasuryBoundaryTest extends TestCase
         $owner = User::factory()->create();
 
         $team = Team::factory()->create([
-            'user_id'                    => $owner->id,
-            'name'                       => 'Test Corporate Team',
-            'personal_team'              => false,
-            'is_business_organization'   => true,
-            'organization_type'          => 'business',
+            'user_id'                      => $owner->id,
+            'name'                         => 'Test Corporate Team',
+            'personal_team'                => false,
+            'is_business_organization'     => true,
+            'organization_type'            => 'business',
             'business_registration_number' => 'REG-TEST-001',
-            'tax_id'                     => 'TAX-TEST-001',
-            'business_details'           => ['legal_name' => 'Test Corp (Pty) Ltd', 'country' => 'SZ'],
+            'tax_id'                       => 'TAX-TEST-001',
+            'business_details'             => ['legal_name' => 'Test Corp (Pty) Ltd', 'country' => 'SZ'],
         ]);
 
         $owner->current_team_id = $team->id;

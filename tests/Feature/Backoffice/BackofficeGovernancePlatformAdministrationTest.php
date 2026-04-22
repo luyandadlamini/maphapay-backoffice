@@ -9,10 +9,10 @@ use App\Filament\Admin\Pages\BroadcastNotificationPage;
 use App\Filament\Admin\Pages\Modules;
 use App\Filament\Admin\Pages\ProjectorHealthDashboard;
 use App\Filament\Admin\Pages\SubProducts;
-use App\Filament\Admin\Resources\AuditLogResource;
-use App\Filament\Admin\Resources\AuditLogResource\Pages\ListAuditLogs;
 use App\Filament\Admin\Resources\ApiKeyResource;
 use App\Filament\Admin\Resources\ApiKeyResource\Pages\ListApiKeys;
+use App\Filament\Admin\Resources\AuditLogResource;
+use App\Filament\Admin\Resources\AuditLogResource\Pages\ListAuditLogs;
 use App\Filament\Admin\Resources\FeatureFlagResource;
 use App\Filament\Admin\Resources\FeatureFlagResource\Pages\ListFeatureFlags;
 use App\Filament\Admin\Resources\UserInvitationResource;
@@ -21,7 +21,6 @@ use App\Filament\Admin\Resources\UserInvitationResource\Pages\ListUserInvitation
 use App\Filament\Admin\Resources\WebhookResource;
 use App\Filament\Admin\Resources\WebhookResource\Pages\ListWebhooks;
 use App\Infrastructure\Domain\DataObjects\DomainInfo;
-use App\Infrastructure\Domain\DataObjects\InstallResult;
 use App\Infrastructure\Domain\DataObjects\VerificationResult;
 use App\Infrastructure\Domain\DomainManager;
 use App\Infrastructure\Domain\Enums\DomainStatus;
@@ -32,9 +31,10 @@ use App\Models\Feature;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Mail;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 use function Pest\Livewire\livewire;
+
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 beforeEach(function (): void {
     $this->artisan('db:seed', ['--class' => 'RolesAndPermissionsSeeder']);
@@ -62,7 +62,7 @@ it('records governed audit metadata when a platform admin verifies a module', fu
     $platform->assignRole('super-admin');
     $this->actingAs($platform);
 
-    $domainManager = \Mockery::mock(DomainManager::class);
+    $domainManager = Mockery::mock(DomainManager::class);
     $domainManager->shouldReceive('verify')
         ->once()
         ->with('Treasury')
@@ -94,7 +94,7 @@ it('creates an approval request with evidence when enabling a module', function 
     $platform->assignRole('super-admin');
     $this->actingAs($platform);
 
-    $domainManager = \Mockery::mock(DomainManager::class);
+    $domainManager = Mockery::mock(DomainManager::class);
     $domainManager->shouldReceive('getAvailableDomains')
         ->andReturn(collect([
             new DomainInfo(
@@ -133,12 +133,12 @@ it('records governed audit metadata when revoking an api key', function (): void
     $this->actingAs($platform);
 
     $apiKey = ApiKey::query()->create([
-        'user_uuid' => $owner->uuid,
-        'name' => 'Settlement key',
-        'key_prefix' => 'sett1234',
-        'key_hash' => bcrypt('secret'),
-        'permissions' => ['read', 'write'],
-        'is_active' => true,
+        'user_uuid'     => $owner->uuid,
+        'name'          => 'Settlement key',
+        'key_prefix'    => 'sett1234',
+        'key_hash'      => bcrypt('secret'),
+        'permissions'   => ['read', 'write'],
+        'is_active'     => true,
         'request_count' => 0,
     ]);
 
@@ -168,7 +168,7 @@ it('records governed audit metadata when toggling a feature flag', function (): 
     $this->actingAs($platform);
 
     $feature = Feature::query()->create([
-        'name' => 'maintenance-mode',
+        'name'  => 'maintenance-mode',
         'scope' => 'global',
         'value' => false,
     ]);
@@ -230,12 +230,12 @@ it('records governed audit metadata when testing a webhook', function (): void {
     $this->actingAs($platform);
 
     $webhook = Webhook::query()->create([
-        'name' => 'Treasury Events',
-        'url' => 'https://example.test/webhooks/treasury',
-        'events' => ['transfer.completed'],
-        'is_active' => true,
-        'retry_attempts' => 3,
-        'timeout_seconds' => 30,
+        'name'                 => 'Treasury Events',
+        'url'                  => 'https://example.test/webhooks/treasury',
+        'events'               => ['transfer.completed'],
+        'is_active'            => true,
+        'retry_attempts'       => 3,
+        'timeout_seconds'      => 30,
         'consecutive_failures' => 0,
     ]);
 
@@ -264,12 +264,12 @@ it('creates an approval request with evidence when deactivating a webhook', func
     $this->actingAs($platform);
 
     $webhook = Webhook::query()->create([
-        'name' => 'Compliance Alerts',
-        'url' => 'https://example.test/webhooks/compliance',
-        'events' => ['balance.low'],
-        'is_active' => true,
-        'retry_attempts' => 3,
-        'timeout_seconds' => 30,
+        'name'                 => 'Compliance Alerts',
+        'url'                  => 'https://example.test/webhooks/compliance',
+        'events'               => ['balance.low'],
+        'is_active'            => true,
+        'retry_attempts'       => 3,
+        'timeout_seconds'      => 30,
         'consecutive_failures' => 0,
     ]);
 
@@ -303,8 +303,8 @@ it('records governed audit metadata when creating a user invitation', function (
 
     livewire(CreateUserInvitation::class)
         ->fillForm([
-            'email' => 'ops.manager@example.test',
-            'role' => 'admin',
+            'email'  => 'ops.manager@example.test',
+            'role'   => 'admin',
             'reason' => 'Provision platform operations backup coverage for weekend support.',
         ])
         ->call('create');
@@ -335,9 +335,9 @@ it('records governed audit metadata when copying an invitation link', function (
     $this->actingAs($platform);
 
     $invitation = UserInvitation::query()->create([
-        'email' => 'security.admin@example.test',
-        'token' => str_repeat('a', 64),
-        'role' => 'admin',
+        'email'      => 'security.admin@example.test',
+        'token'      => str_repeat('a', 64),
+        'role'       => 'admin',
         'invited_by' => $platform->id,
         'expires_at' => now()->addDay(),
     ]);
@@ -424,13 +424,13 @@ it('records governed audit metadata when sending a broadcast notification', func
     $this->actingAs($platform);
 
     app(BroadcastNotificationPage::class)->dispatchBroadcast([
-        'channel' => 'database',
+        'channel'  => 'database',
         'audience' => 'user',
-        'userId' => $recipient->getKey(),
-        'role' => null,
-        'subject' => 'Platform maintenance notice',
-        'body' => 'Planned maintenance starts at 22:00 UTC.',
-        'reason' => 'Send an audited maintenance notice to the approved recipient.',
+        'userId'   => $recipient->getKey(),
+        'role'     => null,
+        'subject'  => 'Platform maintenance notice',
+        'body'     => 'Planned maintenance starts at 22:00 UTC.',
+        'reason'   => 'Send an audited maintenance notice to the approved recipient.',
     ]);
 
     $auditLog = AuditLog::query()
@@ -455,12 +455,12 @@ it('submits sub-product configuration changes for approval with captured evidenc
 
     config()->set('sub_products', [
         'treasury' => [
-            'name' => 'Treasury',
+            'name'        => 'Treasury',
             'description' => 'Treasury controls',
-            'icon' => 'heroicon-o-banknotes',
-            'licenses' => ['treasury-license'],
-            'features' => [
-                'sweeps' => false,
+            'icon'        => 'heroicon-o-banknotes',
+            'licenses'    => ['treasury-license'],
+            'features'    => [
+                'sweeps'  => false,
                 'hedging' => false,
             ],
         ],
@@ -470,9 +470,9 @@ it('submits sub-product configuration changes for approval with captured evidenc
     $page->boot();
     $page->mount();
     $page->data = [
-        'treasury_enabled' => true,
-        'treasury_sweeps' => true,
-        'treasury_hedging' => false,
+        'treasury_enabled'  => true,
+        'treasury_sweeps'   => true,
+        'treasury_hedging'  => false,
         'governance_reason' => 'Enable treasury controls after platform readiness review.',
     ];
     $page->governanceReason = 'Enable treasury controls after platform readiness review.';
@@ -505,11 +505,11 @@ it('blocks finance operators from the platform broadcast workspace gate', functi
     $this->actingAs($finance);
 
     expect(fn () => app(BroadcastNotificationPage::class)->dispatchBroadcast([
-        'channel' => 'database',
+        'channel'  => 'database',
         'audience' => 'all',
-        'subject' => 'Unauthorized',
-        'body' => 'This should not send.',
-        'reason' => 'Attempted unauthorized broadcast notification send.',
+        'subject'  => 'Unauthorized',
+        'body'     => 'This should not send.',
+        'reason'   => 'Attempted unauthorized broadcast notification send.',
     ]))->toThrow(HttpException::class, 'This action is outside your workspace.');
 });
 
@@ -520,11 +520,11 @@ it('blocks finance operators from the platform sub-products workspace gate', fun
 
     config()->set('sub_products', [
         'treasury' => [
-            'name' => 'Treasury',
+            'name'        => 'Treasury',
             'description' => 'Treasury controls',
-            'icon' => 'heroicon-o-banknotes',
-            'licenses' => ['treasury-license'],
-            'features' => [
+            'icon'        => 'heroicon-o-banknotes',
+            'licenses'    => ['treasury-license'],
+            'features'    => [
                 'sweeps' => false,
             ],
         ],
@@ -534,8 +534,8 @@ it('blocks finance operators from the platform sub-products workspace gate', fun
     $page->boot();
     $page->mount();
     $page->data = [
-        'treasury_enabled' => true,
-        'treasury_sweeps' => true,
+        'treasury_enabled'  => true,
+        'treasury_sweeps'   => true,
         'governance_reason' => 'Attempted unauthorized treasury configuration change.',
     ];
     $page->governanceReason = 'Attempted unauthorized treasury configuration change.';

@@ -7,8 +7,8 @@ namespace App\Domain\Commerce\Models;
 use App\Domain\Commerce\Enums\MerchantStatus;
 use App\Domain\Corporate\Models\BusinessOnboardingCase;
 use App\Domain\Corporate\Models\CorporateProfile;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Database\Factories\MerchantFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -118,8 +118,8 @@ class Merchant extends Model
         ];
     }
 
-    protected static function newFactory(): \Database\Factories\MerchantFactory
+    protected static function newFactory(): MerchantFactory
     {
-        return \Database\Factories\MerchantFactory::new();
+        return MerchantFactory::new();
     }
 }
