@@ -366,3 +366,8 @@ require __DIR__ . '/api-modules.php';
 */
 
 app(ModuleRouteLoader::class)->loadRoutes();
+
+// v5.14.0 — Internal API Routes (merchant QR payment hook)
+Route::prefix('internal')->middleware('internal.api')->group(function () {
+    Route::post('/minor-merchant-bonus/award', [App\Http\Controllers\Api\Commerce\MinorMerchantBonusController::class, 'award']);
+});

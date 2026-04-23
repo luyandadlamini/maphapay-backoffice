@@ -137,4 +137,16 @@ return [
         'store'  => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Internal API Key
+    |--------------------------------------------------------------------------
+    |
+    | API key for internal service-to-service communication.
+    | Used by the merchant QR payment hook for bonus calculation.
+    |
+    */
+
+    'internal_api_key' => env('INTERNAL_API_KEY', 'internal-dev-key-' . date('Y-m-d')),
+
 ];
