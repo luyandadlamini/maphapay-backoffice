@@ -17,6 +17,7 @@ use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Models\MinorAccountLifecycleException;
 use App\Domain\Account\Models\MinorAccountLifecycleExceptionAcknowledgment;
 use App\Domain\Account\Models\MinorAccountLifecycleTransition;
+use App\Domain\Monitoring\Services\MetricsCollector;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -28,6 +29,7 @@ class MinorAccountLifecycleService
         private readonly MinorAccountLifecyclePolicy $policy,
         private readonly AccountService $accountService,
         private readonly MinorNotificationService $notificationService,
+        private readonly MetricsCollector $metricsCollector,
     ) {
     }
 
@@ -204,6 +206,8 @@ class MinorAccountLifecycleService
                 ->whereKey($exception->id)
                 ->firstOrFail();
 
+            $wasOpen = $locked->status === MinorAccountLifecycleException::STATUS_OPEN;
+
             $this->acknowledgeException($locked, $actor, $note);
 
             /** @var array<string, mixed> $metadata */
@@ -221,6 +225,10 @@ class MinorAccountLifecycleService
                 'metadata' => $metadata,
                 'resolved_at' => now(),
             ])->save();
+
+            if ($wasOpen) {
+                $this->metricsCollector->recordMinorLifecycleExceptionResolved();
+            }
 
             new MinorAccountLifecycleExceptionResolved(
                 $locked->id,
@@ -285,6 +293,7 @@ class MinorAccountLifecycleService
                 metadata: ['transition_type' => $transition->transition_type],
             );
 
+            $this->metricsCollector->recordMinorLifecycleTransitionBlocked();
             new MinorAccountLifecycleTransitionBlocked($transition->id, $minorAccount->uuid, (string) $evaluation['reason_code']);
 
             return ['completed' => 0, 'blocked' => 1, 'exceptions_opened' => 1];
@@ -376,6 +385,7 @@ class MinorAccountLifecycleService
             );
 
             new MinorAccountAdultTransitionFrozen($minorAccount->uuid, (string) $adultTransition['reason_code']);
+            $this->metricsCollector->recordMinorLifecycleTransitionBlocked();
             new MinorAccountLifecycleTransitionBlocked($transition->id, $minorAccount->uuid, (string) $adultTransition['reason_code']);
 
             return ['completed' => 0, 'blocked' => 1, 'exceptions_opened' => 1];
@@ -468,6 +478,7 @@ class MinorAccountLifecycleService
             );
 
             new MinorAccountGuardianContinuityBroken($minorAccount->uuid, (string) $guardianContinuity['reason_code']);
+            $this->metricsCollector->recordMinorLifecycleTransitionBlocked();
             new MinorAccountLifecycleTransitionBlocked($transition->id, $minorAccount->uuid, (string) $guardianContinuity['reason_code']);
 
             return ['completed' => 0, 'blocked' => 1, 'exceptions_opened' => 1];
@@ -550,6 +561,7 @@ class MinorAccountLifecycleService
         );
 
         if ($transition->wasRecentlyCreated) {
+            $this->metricsCollector->recordMinorLifecycleTransitionScheduled();
             new MinorAccountLifecycleTransitionScheduled(
                 $transition->id,
                 $minorAccount->uuid,
@@ -595,6 +607,10 @@ class MinorAccountLifecycleService
             'resolved_at' => null,
         ])->save();
 
+        if ($isNew) {
+            $this->metricsCollector->recordMinorLifecycleExceptionOpened();
+        }
+
         new MinorAccountLifecycleExceptionOpened(
             $exception->id,
             $minorAccount->uuid,
@@ -627,6 +643,8 @@ class MinorAccountLifecycleService
                 'metadata' => $existingMetadata,
                 'resolved_at' => now(),
             ])->save();
+
+            $this->metricsCollector->recordMinorLifecycleExceptionResolved();
 
             new MinorAccountLifecycleExceptionResolved(
                 $exception->id,

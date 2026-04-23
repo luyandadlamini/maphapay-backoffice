@@ -78,6 +78,53 @@ class MetricsCollector
     }
 
     /**
+     * Minor account lifecycle counters (Phase 10 observability; cache-backed).
+     *
+     * @return array{
+     *     transitions_scheduled_total:int,
+     *     transitions_blocked_total:int,
+     *     lifecycle_exceptions_open_total:int,
+     *     lifecycle_exceptions_sla_breached_total:int
+     * }
+     */
+    public function getMinorLifecycleCounterSnapshot(): array
+    {
+        return [
+            'transitions_scheduled_total' => (int) Cache::get('metrics:minor_lifecycle:transitions_scheduled_total', 0),
+            'transitions_blocked_total' => (int) Cache::get('metrics:minor_lifecycle:transitions_blocked_total', 0),
+            'lifecycle_exceptions_open_total' => (int) Cache::get('metrics:minor_lifecycle:lifecycle_exceptions_open_total', 0),
+            'lifecycle_exceptions_sla_breached_total' => (int) Cache::get('metrics:minor_lifecycle:lifecycle_exceptions_sla_breached_total', 0),
+        ];
+    }
+
+    public function recordMinorLifecycleTransitionScheduled(): void
+    {
+        $this->increment('metrics:minor_lifecycle:transitions_scheduled_total');
+    }
+
+    public function recordMinorLifecycleTransitionBlocked(): void
+    {
+        $this->increment('metrics:minor_lifecycle:transitions_blocked_total');
+    }
+
+    public function recordMinorLifecycleExceptionOpened(): void
+    {
+        $this->increment('metrics:minor_lifecycle:lifecycle_exceptions_open_total');
+    }
+
+    public function recordMinorLifecycleExceptionResolved(): void
+    {
+        $this->decrement('metrics:minor_lifecycle:lifecycle_exceptions_open_total');
+    }
+
+    public function recordMinorLifecycleExceptionsSlaBreached(int $count = 1): void
+    {
+        for ($i = 0; $i < max(0, $count); $i++) {
+            $this->increment('metrics:minor_lifecycle:lifecycle_exceptions_sla_breached_total');
+        }
+    }
+
+    /**
      * Batch record multiple metrics.
      */
     public function batchRecord(array $metrics): void
@@ -96,6 +143,12 @@ class MetricsCollector
     {
         $current = (int) Cache::get($key, 0);
         Cache::put($key, (string) ($current + 1));
+    }
+
+    private function decrement(string $key): void
+    {
+        $current = (int) Cache::get($key, 0);
+        Cache::put($key, (string) max(0, $current - 1));
     }
 
     /**

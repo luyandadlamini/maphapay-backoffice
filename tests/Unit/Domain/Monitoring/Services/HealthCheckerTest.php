@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Tests\Unit\Domain\Monitoring\Services;
 
 use App\Domain\Monitoring\Services\HealthChecker;
+use App\Domain\Monitoring\Services\MetricsCollector;
 use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class HealthCheckerTest extends TestCase
@@ -286,5 +288,24 @@ class HealthCheckerTest extends TestCase
         if ($databaseCheck) {
             $this->assertTrue($databaseCheck['healthy']);
         }
+    }
+
+    public function test_health_check_includes_minor_lifecycle_counters_when_schema_present(): void
+    {
+        if (! Schema::hasTable('minor_account_lifecycle_exceptions')) {
+            $this->markTestSkipped('minor_account_lifecycle_exceptions table not present');
+        }
+
+        Cache::flush();
+        app(MetricsCollector::class)->recordMinorLifecycleTransitionScheduled();
+
+        $result = $this->healthChecker->check();
+
+        $this->assertArrayHasKey('minor_account_lifecycle', $result['checks']);
+        $this->assertTrue($result['checks']['minor_account_lifecycle']['healthy']);
+        $this->assertSame(
+            1,
+            $result['checks']['minor_account_lifecycle']['counters']['transitions_scheduled_total']
+        );
     }
 }

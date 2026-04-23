@@ -9,6 +9,7 @@ use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Schema;
 
 class HealthChecker
 {
@@ -37,6 +38,15 @@ class HealthChecker
             'storage'    => $this->checkStorage(),
             'migrations' => $this->checkMigrations(),
         ];
+
+        if (Schema::hasTable('minor_account_lifecycle_exceptions')) {
+            $collector = $this->metricsCollector ?? app(MetricsCollector::class);
+            $checks['minor_account_lifecycle'] = [
+                'healthy' => true,
+                'message' => 'Minor account lifecycle cache counters (since process start / last cache flush).',
+                'counters' => $collector->getMinorLifecycleCounterSnapshot(),
+            ];
+        }
 
         $healthy = collect($checks)->every(fn ($check) => $check['healthy']);
 

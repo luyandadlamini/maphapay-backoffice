@@ -117,6 +117,7 @@ class MoneyMovementTransactionInspectorTest extends DomainTestCase
             $result['warnings'],
         );
         $this->assertSame('challenge_decision', $result['timeline'][1]['event']);
+        $this->assertArrayHasKey('minor_account_lifecycle', $result);
     }
 
     #[Test]

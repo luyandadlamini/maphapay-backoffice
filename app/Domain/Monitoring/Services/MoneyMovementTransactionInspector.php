@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\Monitoring\Services;
 
+use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\MinorAccountLifecycleException;
+use App\Domain\Account\Models\MinorAccountLifecycleTransition;
 use App\Domain\Account\Models\TransactionProjection;
 use App\Domain\Account\Models\MinorFamilyFundingAttempt;
 use App\Domain\Account\Models\MinorFamilyFundingLink;
@@ -17,6 +20,7 @@ use App\Models\MtnMomoTransaction;
 use App\Models\MoneyRequest;
 use App\Support\Reconciliation\ReconciliationReportDataLoader;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 class MoneyMovementTransactionInspector
 {
@@ -265,6 +269,76 @@ class MoneyMovementTransactionInspector
             'telemetry' => app(MaphaPayMoneyMovementTelemetry::class)->metricSnapshot(),
             'timeline'  => $timeline,
             'warnings'  => $warnings,
+            'minor_account_lifecycle' => $this->resolveMinorAccountLifecycleLinkage($ledgerPosting, $projections),
+        ];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $projections
+     *
+     * @return array<string, mixed>|null
+     */
+    private function resolveMinorAccountLifecycleLinkage(?LedgerPosting $ledgerPosting, array $projections): ?array
+    {
+        if (! Schema::hasTable('minor_account_lifecycle_exceptions')) {
+            return null;
+        }
+
+        $uuids = [];
+        foreach ($projections as $projection) {
+            $uuid = $projection['account_uuid'] ?? null;
+            if (is_string($uuid) && $uuid !== '') {
+                $uuids[] = $uuid;
+            }
+        }
+
+        if ($ledgerPosting !== null) {
+            foreach ($ledgerPosting->entries as $entry) {
+                $uuid = $entry->account_uuid;
+                if (is_string($uuid) && $uuid !== '') {
+                    $uuids[] = $uuid;
+                }
+            }
+        }
+
+        $uuids = array_values(array_unique($uuids));
+        if ($uuids === []) {
+            return null;
+        }
+
+        $minorUuids = Account::query()
+            ->whereIn('uuid', $uuids)
+            ->where('type', 'minor')
+            ->pluck('uuid')
+            ->all();
+
+        if ($minorUuids === []) {
+            return null;
+        }
+
+        $rows = [];
+        foreach ($minorUuids as $minorUuid) {
+            $openExceptions = MinorAccountLifecycleException::query()
+                ->where('minor_account_uuid', $minorUuid)
+                ->where('status', MinorAccountLifecycleException::STATUS_OPEN)
+                ->get();
+
+            $pendingTransitions = MinorAccountLifecycleTransition::query()
+                ->where('minor_account_uuid', $minorUuid)
+                ->where('state', MinorAccountLifecycleTransition::STATE_PENDING)
+                ->count();
+
+            $rows[] = [
+                'minor_account_uuid' => $minorUuid,
+                'open_exceptions_count' => $openExceptions->count(),
+                'pending_transitions_count' => $pendingTransitions,
+                'open_reason_codes' => $openExceptions->pluck('reason_code')->unique()->values()->all(),
+            ];
+        }
+
+        return [
+            'minor_accounts' => $rows,
+            'lifecycle_counters' => app(MetricsCollector::class)->getMinorLifecycleCounterSnapshot(),
         ];
     }
 
