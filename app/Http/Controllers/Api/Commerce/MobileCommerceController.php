@@ -10,6 +10,7 @@ use App\Domain\Commerce\Services\MerchantOnboardingService;
 use App\Domain\Mobile\Services\HighRiskActionTrustPolicy;
 use App\Domain\Payment\Services\PaymentLinkService;
 use App\Http\Controllers\Controller;
+use App\Models\MerchantPartner;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -85,6 +86,48 @@ class MobileCommerceController extends Controller
                 'last_page'    => $merchants->lastPage(),
                 'per_page'     => $merchants->perPage(),
                 'total'        => $merchants->total(),
+            ],
+        ]);
+    }
+
+    /**
+     * List merchant partners with optional minor bonus info.
+     */
+    public function partners(Request $request): JsonResponse
+    {
+        $includeMinorBonus = $request->query('include_minor_bonus') === 'true';
+
+        $query = MerchantPartner::where('is_active', true);
+
+        if ($search = $request->query('search')) {
+            $query->where('name', 'like', '%' . (string) $search . '%');
+        }
+
+        if ($includeMinorBonus) {
+            $query->where('is_active_for_minors', true);
+        }
+
+        $partners = $query->orderBy('name')
+            ->paginate(min((int) $request->query('per_page', '20'), 100));
+
+        return response()->json([
+            'success' => true,
+            'data'    => $partners->map(fn (MerchantPartner $m) => [
+                'id'                   => (string) $m->id,
+                'display_name'         => $m->name,
+                'category'             => $m->category,
+                'logo_url'             => $m->logo_url,
+                'bonus_multiplier'     => $includeMinorBonus ? $m->getBonusMultiplier() : null,
+                'min_age_allowance'    => $includeMinorBonus ? $m->getMinAgeAllowance() : null,
+                'category_slugs'       => $includeMinorBonus ? $m->category_slugs : null,
+                'is_active_for_minors' => $includeMinorBonus ? $m->isActiveForMinors() : null,
+                'bonus_terms'          => $includeMinorBonus ? $m->bonus_terms : null,
+            ])->values(),
+            'pagination' => [
+                'current_page' => $partners->currentPage(),
+                'last_page'    => $partners->lastPage(),
+                'per_page'     => $partners->perPage(),
+                'total'        => $partners->total(),
             ],
         ]);
     }

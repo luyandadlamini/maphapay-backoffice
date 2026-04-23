@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1/commerce')->name('mobile.commerce.')
     ->middleware(['auth:sanctum'])
     ->group(function () {
+        Route::get('/partners', [MobileCommerceController::class, 'partners'])
+            ->middleware('api.rate_limit:query')
+            ->name('partners');
         Route::get('/merchants', [MobileCommerceController::class, 'merchants'])
             ->middleware('api.rate_limit:query')
             ->name('merchants');
