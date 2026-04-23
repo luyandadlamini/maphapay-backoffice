@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Domain\Account\Models\MinorMerchantBonusTransaction;
 
 class MerchantPartner extends Model
 {
@@ -57,6 +60,9 @@ class MerchantPartner extends Model
         return (bool) ($this->is_active_for_minors ?? self::DEFAULT_IS_ACTIVE_FOR_MINORS);
     }
 
+    /**
+     * @param  array<string>  $categorySlugs
+     */
     public function isEligibleForMinors(int $minorAge, ?array $categorySlugs = null): bool
     {
         if (! $this->isActiveForMinors()) {
@@ -75,5 +81,13 @@ class MerchantPartner extends Model
         }
 
         return true;
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<MinorMerchantBonusTransaction, $this>
+     */
+    public function minorBonusTransactions(): HasMany
+    {
+        return $this->hasMany(MinorMerchantBonusTransaction::class, 'merchant_partner_id');
     }
 }
