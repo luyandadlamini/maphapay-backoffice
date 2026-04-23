@@ -128,7 +128,7 @@ class CallbackController extends Controller
         }
 
         if ($fresh !== null) {
-            $this->minorFamilyReconciliation->reconcile($fresh);
+            $this->minorFamilyReconciliation->reconcile($fresh, 'callback');
         }
 
         return response('', 200);

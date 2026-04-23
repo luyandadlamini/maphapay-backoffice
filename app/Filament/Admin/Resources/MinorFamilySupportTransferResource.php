@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources;
 
 use App\Domain\Account\Models\MinorFamilySupportTransfer;
+use App\Domain\Account\Models\MinorFamilyReconciliationException;
+use App\Domain\Account\Services\MinorFamilyReconciliationService;
 use App\Filament\Admin\Resources\MinorFamilySupportTransferResource\Pages;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -99,6 +103,35 @@ class MinorFamilySupportTransferResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
+                Action::make('view_exception_artifact')
+                    ->label('View Exception')
+                    ->icon('heroicon-o-exclamation-triangle')
+                    ->color('warning')
+                    ->url(fn (MinorFamilySupportTransfer $record): ?string => static::resolveExceptionArtifactUrl($record))
+                    ->visible(fn (MinorFamilySupportTransfer $record): bool => static::resolveExceptionArtifactUrl($record) !== null),
+                Action::make('retry_settlement')
+                    ->label('Retry Settlement')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Operator Note')
+                            ->maxLength(300)
+                            ->placeholder('Capture why this retry was requested (optional).'),
+                    ])
+                    ->visible(fn (MinorFamilySupportTransfer $record): bool => $record->status === MinorFamilySupportTransfer::STATUS_FAILED_UNRECONCILED
+                        && $record->mtnMomoTransaction !== null)
+                    ->action(function (MinorFamilySupportTransfer $record): void {
+                        if ($record->mtnMomoTransaction === null) {
+                            return;
+                        }
+
+                        app(MinorFamilyReconciliationService::class)->reconcile(
+                            $record->mtnMomoTransaction,
+                            'filament_retry_settlement',
+                        );
+                    }),
             ])
             ->bulkActions([])
             ->defaultSort('created_at', 'desc');
@@ -115,5 +148,25 @@ class MinorFamilySupportTransferResource extends Resource
             'index' => Pages\ListMinorFamilySupportTransfers::route('/'),
             'view' => Pages\ViewMinorFamilySupportTransfer::route('/{record}'),
         ];
+    }
+
+    public static function resolveExceptionArtifactUrl(MinorFamilySupportTransfer $record): ?string
+    {
+        if ($record->mtn_momo_transaction_id === null || $record->mtn_momo_transaction_id === '') {
+            return null;
+        }
+
+        /** @var MinorFamilyReconciliationException|null $exception */
+        $exception = MinorFamilyReconciliationException::query()
+            ->where('mtn_momo_transaction_id', $record->mtn_momo_transaction_id)
+            ->where('status', MinorFamilyReconciliationException::STATUS_OPEN)
+            ->latest('last_seen_at')
+            ->first();
+
+        if ($exception === null) {
+            return null;
+        }
+
+        return MinorFamilyReconciliationExceptionResource::getUrl('view', ['record' => $exception->getKey()]);
     }
 }

@@ -537,6 +537,11 @@ class MinorFamilyIntegrationService
             return $existing;
         }
 
+        $this->assertPublicFundingAttemptAbuseControls(
+            $link,
+            $this->stringValue($attributes, 'sponsor_msisdn'),
+        );
+
         $this->assertAllowed($this->fundingPolicy->validateFundingAttempt(
             $link,
             $amount,
@@ -686,6 +691,38 @@ class MinorFamilyIntegrationService
         }
 
         return $attempt;
+    }
+
+    private function assertPublicFundingAttemptAbuseControls(
+        MinorFamilyFundingLink $link,
+        string $sponsorMsisdn,
+    ): void {
+        $windowMinutes = max(1, (int) config('minor_family.public_funding.attempt_window_minutes', 10));
+        $linkLimit = max(1, (int) config('minor_family.public_funding.link_max_attempts_per_window', 25));
+        $sponsorLimit = max(1, (int) config('minor_family.public_funding.sponsor_max_attempts_per_window', 5));
+
+        $recentAttempts = MinorFamilyFundingAttempt::query()
+            ->where('funding_link_uuid', $link->id)
+            ->where('created_at', '>=', now()->subMinutes($windowMinutes))
+            ->get(['sponsor_msisdn']);
+
+        if ($recentAttempts->count() >= $linkLimit) {
+            throw ValidationException::withMessages([
+                'minor_family_integration' => ['Too many funding attempts for this support link. Please try again shortly.'],
+            ]);
+        }
+
+        $normalisedSponsorMsisdn = $this->normaliseMsisdn($sponsorMsisdn);
+
+        $sponsorAttempts = $recentAttempts
+            ->filter(fn (MinorFamilyFundingAttempt $attempt): bool => $this->normaliseMsisdn((string) $attempt->sponsor_msisdn) === $normalisedSponsorMsisdn)
+            ->count();
+
+        if ($sponsorAttempts >= $sponsorLimit) {
+            throw ValidationException::withMessages([
+                'minor_family_integration' => ['Too many funding attempts from this sponsor. Please try again shortly.'],
+            ]);
+        }
     }
 
     private function assertAllowed(MinorFamilyFundingPolicyResult $result): void

@@ -240,3 +240,10 @@ Schedule::command('minor-accounts:expire-approvals')
     ->dailyAt('00:00')
     ->description('Cancel pending minor spend approvals past their 24-hour expiry')
     ->appendOutputTo(storage_path('logs/minor-accounts-expire-approvals.log'));
+
+// Minor family funding — flag reconciliation exceptions past operator SLA review window
+Schedule::command('minor-family:reconciliation-exceptions-flag-sla-breaches')
+    ->hourly()
+    ->description('Set sla_escalated_at on open minor-family reconciliation exceptions past SLA due time')
+    ->appendOutputTo(storage_path('logs/minor-family-recon-sla-breaches.log'))
+    ->withoutOverlapping();

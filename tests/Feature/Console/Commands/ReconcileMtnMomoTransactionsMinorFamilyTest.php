@@ -82,6 +82,13 @@ class ReconcileMtnMomoTransactionsMinorFamilyTest extends TestCase
         ]);
 
         $this->assertNull(MinorFamilyFundingAttempt::query()->findOrFail($attempt->id)->wallet_credited_at);
+        $this->assertDatabaseHas('minor_family_reconciliation_exceptions', [
+            'mtn_momo_transaction_id' => $txn->id,
+            'reason_code' => 'missing_tenant_context',
+            'source' => 'reconcile_command',
+            'status' => 'open',
+            'occurrence_count' => 1,
+        ]);
 
         Log::shouldHaveReceived('warning')
             ->withArgs(function (string $message, array $context): bool {
@@ -385,6 +392,13 @@ class ReconcileMtnMomoTransactionsMinorFamilyTest extends TestCase
         if (! Schema::hasColumns('mtn_momo_transactions', ['context_type', 'context_uuid'])) {
             Artisan::call('migrate', [
                 '--path' => 'database/migrations/2026_04_23_100300_add_minor_family_context_to_mtn_momo_transactions_table.php',
+                '--force' => true,
+            ]);
+        }
+
+        if (! Schema::hasTable('minor_family_reconciliation_exceptions')) {
+            Artisan::call('migrate', [
+                '--path' => 'database/migrations/2026_04_23_100400_create_minor_family_reconciliation_exceptions_table.php',
                 '--force' => true,
             ]);
         }

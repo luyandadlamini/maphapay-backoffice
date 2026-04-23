@@ -367,7 +367,7 @@ class ReconcileMtnMomoTransactions extends Command
             'last_mtn_status' => $remoteStatus,
         ]);
 
-        $reconciliationOutcome = $this->minorFamilyReconciliation->reconcile($txn->fresh() ?? $txn);
+        $reconciliationOutcome = $this->minorFamilyReconciliation->reconcile($txn->fresh() ?? $txn, 'reconcile_command');
 
         if (! $reconciliationOutcome->isReconciled()) {
             return 'unreconciled';

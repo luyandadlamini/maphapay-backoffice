@@ -13,6 +13,7 @@ use App\Http\Middleware\ResolveAccountContext;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -216,6 +217,185 @@ class PublicMinorFundingLinkControllerTest extends TestCase
             $second->json('data.funding_attempt_uuid')
         );
         $this->assertDatabaseCount('minor_family_funding_attempts', 1);
+    }
+
+    #[Test]
+    public function request_to_pay_rejects_when_sponsor_attempt_window_limit_is_exceeded(): void
+    {
+        $link = $this->createFundingLink([
+            'token' => 'sponsor-window-limit-token',
+            'amount_mode' => MinorFamilyFundingLink::AMOUNT_MODE_CAPPED,
+            'target_amount' => '1000.00',
+            'collected_amount' => '0.00',
+            'provider_options' => ['mtn_momo'],
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-04-23 15:10:00'));
+
+        $adapter = Mockery::mock(MtnMomoFamilyFundingAdapter::class);
+        $adapter->shouldReceive('initiateInboundCollection')
+            ->times(5)
+            ->andReturnUsing(function (): array {
+                static $callCount = 0;
+                $callCount++;
+
+                return [
+                    'provider_name' => 'mtn_momo',
+                    'provider_reference_id' => sprintf('provider-attempt-limit-%d', $callCount),
+                    'provider_status' => 'pending',
+                ];
+            });
+        $this->app->instance(MtnMomoFamilyFundingAdapter::class, $adapter);
+
+        $notifications = Mockery::mock(MinorNotificationService::class);
+        $notifications->shouldReceive('notify')->times(5);
+        $this->app->instance(MinorNotificationService::class, $notifications);
+
+        $basePayload = [
+            'sponsor_name' => 'Windowed Sponsor',
+            'sponsor_msisdn' => '+26876122222',
+            'asset_code' => 'SZL',
+        ];
+
+        foreach ([10, 11, 12, 13, 14] as $amount) {
+            $this->postJson("/api/minor-support-links/{$link->token}/mtn/request-to-pay", array_merge($basePayload, [
+                'amount' => number_format((float) $amount, 2, '.', ''),
+            ]))->assertStatus(202);
+        }
+
+        $this->postJson("/api/minor-support-links/{$link->token}/mtn/request-to-pay", array_merge($basePayload, [
+            'amount' => '15.00',
+        ]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['minor_family_integration']);
+
+        $this->assertDatabaseCount('minor_family_funding_attempts', 5);
+    }
+
+    #[Test]
+    public function sponsor_attempt_limit_respects_config_overrides(): void
+    {
+        Config::set('minor_family.public_funding.attempt_window_minutes', 60);
+        Config::set('minor_family.public_funding.sponsor_max_attempts_per_window', 2);
+
+        $link = $this->createFundingLink([
+            'token' => 'sponsor-config-limit-token',
+            'amount_mode' => MinorFamilyFundingLink::AMOUNT_MODE_CAPPED,
+            'target_amount' => '1000.00',
+            'collected_amount' => '0.00',
+            'provider_options' => ['mtn_momo'],
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-04-23 16:00:00'));
+
+        $adapter = Mockery::mock(MtnMomoFamilyFundingAdapter::class);
+        $adapter->shouldReceive('initiateInboundCollection')
+            ->times(2)
+            ->andReturnUsing(function (): array {
+                static $callCount = 0;
+                $callCount++;
+
+                return [
+                    'provider_name' => 'mtn_momo',
+                    'provider_reference_id' => sprintf('provider-config-limit-%d', $callCount),
+                    'provider_status' => 'pending',
+                ];
+            });
+        $this->app->instance(MtnMomoFamilyFundingAdapter::class, $adapter);
+
+        $notifications = Mockery::mock(MinorNotificationService::class);
+        $notifications->shouldReceive('notify')->times(2);
+        $this->app->instance(MinorNotificationService::class, $notifications);
+
+        $basePayload = [
+            'sponsor_name' => 'Config Sponsor',
+            'sponsor_msisdn' => '+26876144444',
+            'asset_code' => 'SZL',
+        ];
+
+        foreach ([20.0, 21.0] as $amount) {
+            $this->postJson("/api/minor-support-links/{$link->token}/mtn/request-to-pay", array_merge($basePayload, [
+                'amount' => number_format((float) $amount, 2, '.', ''),
+            ]))->assertStatus(202);
+        }
+
+        $this->postJson("/api/minor-support-links/{$link->token}/mtn/request-to-pay", array_merge($basePayload, [
+            'amount' => '22.00',
+        ]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['minor_family_integration']);
+
+        $this->assertDatabaseCount('minor_family_funding_attempts', 2);
+    }
+
+    #[Test]
+    public function replay_of_existing_dedupe_attempt_still_succeeds_after_window_limit_is_hit(): void
+    {
+        $link = $this->createFundingLink([
+            'token' => 'dedupe-after-limit-token',
+            'amount_mode' => MinorFamilyFundingLink::AMOUNT_MODE_CAPPED,
+            'target_amount' => '1000.00',
+            'collected_amount' => '0.00',
+            'provider_options' => ['mtn_momo'],
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-04-23 15:40:00'));
+
+        $adapter = Mockery::mock(MtnMomoFamilyFundingAdapter::class);
+        $adapter->shouldReceive('initiateInboundCollection')
+            ->times(5)
+            ->andReturnUsing(function (): array {
+                static $callCount = 0;
+                $callCount++;
+
+                return [
+                    'provider_name' => 'mtn_momo',
+                    'provider_reference_id' => sprintf('provider-attempt-dedupe-limit-%d', $callCount),
+                    'provider_status' => 'pending',
+                ];
+            });
+        $this->app->instance(MtnMomoFamilyFundingAdapter::class, $adapter);
+
+        $notifications = Mockery::mock(MinorNotificationService::class);
+        $notifications->shouldReceive('notify')->times(5);
+        $this->app->instance(MinorNotificationService::class, $notifications);
+
+        $firstPayload = [
+            'sponsor_name' => 'Replay Sponsor',
+            'sponsor_msisdn' => '+26876133333',
+            'amount' => '10.00',
+            'asset_code' => 'SZL',
+        ];
+
+        $first = $this->postJson("/api/minor-support-links/{$link->token}/mtn/request-to-pay", $firstPayload)
+            ->assertStatus(202);
+
+        foreach ([11, 12, 13, 14] as $amount) {
+            $this->postJson("/api/minor-support-links/{$link->token}/mtn/request-to-pay", [
+                'sponsor_name' => 'Replay Sponsor',
+                'sponsor_msisdn' => '+26876133333',
+                'amount' => number_format((float) $amount, 2, '.', ''),
+                'asset_code' => 'SZL',
+            ])->assertStatus(202);
+        }
+
+        $this->postJson("/api/minor-support-links/{$link->token}/mtn/request-to-pay", [
+            'sponsor_name' => 'Replay Sponsor',
+            'sponsor_msisdn' => '+26876133333',
+            'amount' => '15.00',
+            'asset_code' => 'SZL',
+        ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['minor_family_integration']);
+
+        $replayed = $this->postJson("/api/minor-support-links/{$link->token}/mtn/request-to-pay", $firstPayload)
+            ->assertStatus(202);
+
+        $this->assertSame(
+            $first->json('data.funding_attempt_uuid'),
+            $replayed->json('data.funding_attempt_uuid')
+        );
+        $this->assertDatabaseCount('minor_family_funding_attempts', 5);
     }
 
     #[Test]

@@ -7,6 +7,7 @@ namespace App\Domain\Monitoring\Services;
 use App\Domain\Account\Models\TransactionProjection;
 use App\Domain\Account\Models\MinorFamilyFundingAttempt;
 use App\Domain\Account\Models\MinorFamilyFundingLink;
+use App\Domain\Account\Models\MinorFamilyReconciliationException;
 use App\Domain\Account\Models\MinorFamilySupportTransfer;
 use App\Domain\Asset\Models\AssetTransfer;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
@@ -185,6 +186,10 @@ class MoneyMovementTransactionInspector
 
         if (($minorFamilyContext['support_transfer']['status'] ?? null) === MinorFamilySupportTransfer::STATUS_FAILED_UNRECONCILED) {
             $warnings[] = 'Minor family support transfer failed without a recorded wallet refund. Funds-at-risk reconciliation is required.';
+        }
+
+        if (($minorFamilyContext['reconciliation_exceptions'] ?? []) !== []) {
+            $warnings[] = 'Minor family reconciliation exceptions are linked to this MTN transaction. Review the exception queue artifact for reason/source traceability.';
         }
 
         return [
@@ -500,11 +505,41 @@ class MoneyMovementTransactionInspector
             ? MinorFamilyFundingLink::query()->whereKey($attempt->funding_link_uuid)->first()
             : null;
 
+        $reconciliationExceptions = MinorFamilyReconciliationException::query()
+            ->where('mtn_momo_transaction_id', $providerTransaction->id)
+            ->orderByDesc('last_seen_at')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function (MinorFamilyReconciliationException $exception): array {
+                $metadata = is_array($exception->metadata) ? $exception->metadata : [];
+
+                return [
+                    'id' => $exception->id,
+                    'mtn_momo_transaction_id' => $exception->mtn_momo_transaction_id,
+                    'reason_code' => $exception->reason_code,
+                    'status' => $exception->status,
+                    'source' => $exception->source,
+                    'occurrence_count' => $exception->occurrence_count,
+                    'reconciliation_source' => $metadata['reconciliation_source'] ?? null,
+                    'reconciliation_outcome' => $metadata['reconciliation_outcome'] ?? null,
+                    'reconciliation_reason_code' => $metadata['reconciliation_reason_code'] ?? null,
+                    'context_type' => $metadata['context_type'] ?? null,
+                    'context_uuid' => $metadata['context_uuid'] ?? null,
+                    'mtn_reference_id' => $metadata['mtn_reference_id'] ?? null,
+                    'resolution_path' => $metadata['resolution_path'] ?? null,
+                    'last_seen_at' => $exception->last_seen_at->toIso8601String(),
+                    'first_seen_at' => $exception->first_seen_at->toIso8601String(),
+                ];
+            })
+            ->values()
+            ->all();
+
         return [
             'context_type' => $contextType,
             'context_uuid' => $contextUuid,
             'provider_reference_id' => $providerTransaction->mtn_reference_id,
             'mtn_momo_transaction_id' => $providerTransaction->id,
+            'reconciliation_exceptions' => $reconciliationExceptions,
             'funding_link' => $fundingLink !== null ? [
                 'id' => $fundingLink->id,
                 'status' => $fundingLink->status,

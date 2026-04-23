@@ -98,7 +98,7 @@ class TransactionStatusController extends Controller
         }
 
         if ($fresh !== null) {
-            $this->minorFamilyReconciliation->reconcile($fresh);
+            $this->minorFamilyReconciliation->reconcile($fresh, 'status_poll');
             $fresh = $fresh->fresh();
         }
 

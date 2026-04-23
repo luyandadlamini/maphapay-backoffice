@@ -34,6 +34,7 @@ class MinorFamilyMtnCallbackIntegrationTest extends TestCase
         DB::table('minor_family_funding_attempts')->delete();
         DB::table('minor_family_funding_links')->delete();
         DB::table('mtn_momo_transactions')->delete();
+        DB::table('minor_family_reconciliation_exceptions')->delete();
         DB::table('mtn_callback_log')->delete();
 
         config([
@@ -50,6 +51,77 @@ class MinorFamilyMtnCallbackIntegrationTest extends TestCase
                 'is_active' => true,
             ],
         );
+    }
+
+    #[Test]
+    public function callback_reconciliation_records_missing_tenant_context_exception_with_callback_source(): void
+    {
+        [, $attempt, $txn] = $this->makeFundingAttemptFixture(
+            referenceId: null,
+            attemptTenantId: '',
+        );
+
+        $walletOps = Mockery::mock(WalletOperationsService::class);
+        $walletOps->shouldNotReceive('deposit');
+        $this->app->instance(WalletOperationsService::class, $walletOps);
+
+        $this->postJson('/api/mtn/callback', ['status' => 'SUCCESSFUL'], [
+            'X-Reference-Id' => $txn->mtn_reference_id,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('minor_family_funding_attempts', [
+            'id' => $attempt->id,
+            'status' => MinorFamilyFundingAttempt::STATUS_PENDING_PROVIDER,
+            'tenant_id' => '',
+        ]);
+
+        $this->assertDatabaseHas('minor_family_reconciliation_exceptions', [
+            'mtn_momo_transaction_id' => $txn->id,
+            'reason_code' => 'missing_tenant_context',
+            'source' => 'callback',
+            'status' => 'open',
+            'occurrence_count' => 1,
+        ]);
+    }
+
+    #[Test]
+    public function status_poll_reconciliation_records_missing_tenant_context_exception_with_status_poll_source(): void
+    {
+        [, $attempt, $txn] = $this->makeFundingAttemptFixture(
+            referenceId: null,
+            attemptTenantId: '',
+        );
+
+        $walletOps = Mockery::mock(WalletOperationsService::class);
+        $walletOps->shouldNotReceive('deposit');
+        $this->app->instance(WalletOperationsService::class, $walletOps);
+
+        $mtnClient = Mockery::mock(\App\Domain\MtnMomo\Services\MtnMomoClient::class);
+        $mtnClient->shouldReceive('assertConfigured')->once();
+        $mtnClient->shouldReceive('getRequestToPayStatus')
+            ->once()
+            ->with($txn->mtn_reference_id)
+            ->andReturn(['status' => 'SUCCESSFUL']);
+        $this->app->instance(\App\Domain\MtnMomo\Services\MtnMomoClient::class, $mtnClient);
+
+        Sanctum::actingAs($txn->user, ['read', 'write', 'delete']);
+        $this->getJson('/api/mtn/transaction/' . $txn->mtn_reference_id . '/status')
+            ->assertOk()
+            ->assertJsonPath('data.transaction.status', MtnMomoTransaction::STATUS_SUCCESSFUL);
+
+        $this->assertDatabaseHas('minor_family_funding_attempts', [
+            'id' => $attempt->id,
+            'status' => MinorFamilyFundingAttempt::STATUS_PENDING_PROVIDER,
+            'tenant_id' => '',
+        ]);
+
+        $this->assertDatabaseHas('minor_family_reconciliation_exceptions', [
+            'mtn_momo_transaction_id' => $txn->id,
+            'reason_code' => 'missing_tenant_context',
+            'source' => 'status_poll',
+            'status' => 'open',
+            'occurrence_count' => 1,
+        ]);
     }
 
     #[Test]
@@ -290,9 +362,9 @@ class MinorFamilyMtnCallbackIntegrationTest extends TestCase
     /**
      * @return array{0: Account, 1: MinorFamilyFundingAttempt, 2: MtnMomoTransaction}
      */
-    private function makeFundingAttemptFixture(?string $referenceId = null): array
+    private function makeFundingAttemptFixture(?string $referenceId = null, ?string $attemptTenantId = null): array
     {
-        $creator = User::factory()->create();
+        $creator = User::factory()->create(['kyc_status' => 'approved']);
         $minorOwner = User::factory()->create();
         $creatorAccount = Account::factory()->create([
             'user_uuid' => $creator->uuid,
@@ -341,7 +413,7 @@ class MinorFamilyMtnCallbackIntegrationTest extends TestCase
 
         $attempt = MinorFamilyFundingAttempt::query()->create([
             'id' => $attemptId,
-            'tenant_id' => $link->tenant_id,
+            'tenant_id' => $attemptTenantId ?? $link->tenant_id,
             'funding_link_uuid' => $link->id,
             'minor_account_uuid' => $minorAccount->uuid,
             'status' => MinorFamilyFundingAttempt::STATUS_PENDING_PROVIDER,
@@ -447,6 +519,13 @@ class MinorFamilyMtnCallbackIntegrationTest extends TestCase
         if (! Schema::hasColumns('mtn_momo_transactions', ['context_type', 'context_uuid'])) {
             Artisan::call('migrate', [
                 '--path' => 'database/migrations/2026_04_23_100300_add_minor_family_context_to_mtn_momo_transactions_table.php',
+                '--force' => true,
+            ]);
+        }
+
+        if (! Schema::hasTable('minor_family_reconciliation_exceptions')) {
+            Artisan::call('migrate', [
+                '--path' => 'database/migrations/2026_04_23_100400_create_minor_family_reconciliation_exceptions_table.php',
                 '--force' => true,
             ]);
         }

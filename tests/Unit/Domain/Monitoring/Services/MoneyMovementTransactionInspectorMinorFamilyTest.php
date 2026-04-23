@@ -6,6 +6,7 @@ namespace Tests\Unit\Domain\Monitoring\Services;
 
 use App\Domain\Account\Models\MinorFamilyFundingAttempt;
 use App\Domain\Account\Models\MinorFamilyFundingLink;
+use App\Domain\Account\Models\MinorFamilyReconciliationException;
 use App\Domain\Account\Models\MinorFamilySupportTransfer;
 use App\Domain\Monitoring\Services\MoneyMovementTransactionInspector;
 use App\Models\MtnMomoTransaction;
@@ -70,6 +71,24 @@ class MoneyMovementTransactionInspectorMinorFamilyTest extends DomainTestCase
             'context_uuid' => $attempt->id,
         ])->save();
 
+        $exception = MinorFamilyReconciliationException::query()->create([
+            'mtn_momo_transaction_id' => $transaction->id,
+            'reason_code' => 'missing_tenant_context',
+            'status' => MinorFamilyReconciliationException::STATUS_OPEN,
+            'source' => 'callback',
+            'occurrence_count' => 2,
+            'metadata' => [
+                'reconciliation_source' => 'callback',
+                'reconciliation_outcome' => 'unresolved',
+                'reconciliation_reason_code' => 'missing_tenant_context',
+                'context_type' => MinorFamilyFundingAttempt::class,
+                'context_uuid' => $attempt->id,
+                'mtn_reference_id' => $reference,
+            ],
+            'first_seen_at' => now()->subMinutes(10),
+            'last_seen_at' => now()->subMinute(),
+        ]);
+
         $result = app(MoneyMovementTransactionInspector::class)->inspect(reference: $reference);
 
         $this->assertSame(MinorFamilyFundingAttempt::class, $result['minor_family_context']['context_type']);
@@ -77,6 +96,16 @@ class MoneyMovementTransactionInspectorMinorFamilyTest extends DomainTestCase
         $this->assertSame($reference, $result['minor_family_context']['provider_reference_id']);
         $this->assertSame(MinorFamilyFundingAttempt::STATUS_SUCCESSFUL_UNCREDITED, $result['minor_family_context']['funding_attempt']['status']);
         $this->assertSame($link->id, $result['minor_family_context']['funding_link']['id']);
+        $this->assertSame($exception->id, $result['minor_family_context']['reconciliation_exceptions'][0]['id']);
+        $this->assertSame('missing_tenant_context', $result['minor_family_context']['reconciliation_exceptions'][0]['reason_code']);
+        $this->assertSame('callback', $result['minor_family_context']['reconciliation_exceptions'][0]['source']);
+        $this->assertSame('unresolved', $result['minor_family_context']['reconciliation_exceptions'][0]['reconciliation_outcome']);
+        $this->assertSame($attempt->id, $result['minor_family_context']['reconciliation_exceptions'][0]['context_uuid']);
+        $this->assertSame($transaction->id, $result['minor_family_context']['reconciliation_exceptions'][0]['mtn_momo_transaction_id']);
+        $this->assertContains(
+            'Minor family reconciliation exceptions are linked to this MTN transaction. Review the exception queue artifact for reason/source traceability.',
+            $result['warnings'],
+        );
         $this->assertContains(
             'Minor family funding attempt is successful at provider level but still uncredited. Wallet credit reconciliation is required.',
             $result['warnings'],

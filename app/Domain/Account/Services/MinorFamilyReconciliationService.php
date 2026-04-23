@@ -29,20 +29,41 @@ class MinorFamilyReconciliationService
     public function __construct(
         private readonly WalletOperationsService $walletOps,
         private readonly MinorNotificationService $notifications,
+        private readonly MinorFamilyReconciliationExceptionQueueService $exceptionQueue,
     ) {
     }
 
-    public function reconcile(MtnMomoTransaction $transaction): MinorFamilyReconciliationOutcome
+    public function reconcile(
+        MtnMomoTransaction $transaction,
+        string $source = 'unknown',
+    ): MinorFamilyReconciliationOutcome
     {
-        $fundingAttempt = $this->resolveFundingAttempt($transaction);
+        $fundingAttempt = $this->resolveFundingAttempt($transaction, $source);
         if ($fundingAttempt !== null) {
             return $this->reconcileFundingAttempt($fundingAttempt, $transaction);
         }
 
-        $supportTransfer = $this->resolveSupportTransfer($transaction);
+        $supportTransfer = $this->resolveSupportTransfer($transaction, $source);
         if ($supportTransfer !== null) {
             return $this->reconcileSupportTransfer($supportTransfer, $transaction);
         }
+
+        $this->exceptionQueue->recordOpenException(
+            transaction: $transaction,
+            reasonCode: 'unresolved_outcome',
+            source: $source,
+            metadata: $this->buildExceptionMetadata(
+                transaction: $transaction,
+                source: $source,
+                reasonCode: 'unresolved_outcome',
+                metadata: [
+                    'context_type' => (string) ($transaction->getAttribute('context_type') ?? ''),
+                    'context_uuid' => (string) ($transaction->getAttribute('context_uuid') ?? ''),
+                    'transaction_status' => $transaction->status,
+                    'resolution_path' => 'funding_or_support_context_unresolved',
+                ],
+            ),
+        );
 
         return MinorFamilyReconciliationOutcome::UNRESOLVED;
     }
@@ -444,7 +465,7 @@ class MinorFamilyReconciliationService
         return $link?->created_by_user_uuid;
     }
 
-    private function resolveFundingAttempt(MtnMomoTransaction $transaction): ?MinorFamilyFundingAttempt
+    private function resolveFundingAttempt(MtnMomoTransaction $transaction, string $source): ?MinorFamilyFundingAttempt
     {
         $contextType = (string) ($transaction->getAttribute('context_type') ?? '');
         $contextUuid = (string) ($transaction->getAttribute('context_uuid') ?? '');
@@ -462,6 +483,16 @@ class MinorFamilyReconciliationService
                         'mtn_momo_transaction_id' => $transaction->id,
                         'context_uuid' => $contextUuid,
                     ]);
+
+                    $this->recordMissingTenantContextException(
+                        transaction: $transaction,
+                        source: $source,
+                        contextType: $contextType,
+                        contextUuid: $contextUuid,
+                        relatedIdKey: 'funding_attempt_id',
+                        relatedId: $resolved->id,
+                        tenantId: $resolved->tenant_id,
+                    );
 
                     return null;
                 }
@@ -487,13 +518,23 @@ class MinorFamilyReconciliationService
                 'context_uuid' => $contextUuid,
             ]);
 
+            $this->recordMissingTenantContextException(
+                transaction: $transaction,
+                source: $source,
+                contextType: $contextType,
+                contextUuid: $contextUuid,
+                relatedIdKey: 'funding_attempt_id',
+                relatedId: $resolvedByLink->id,
+                tenantId: $resolvedByLink->tenant_id,
+            );
+
             return null;
         }
 
         return $resolvedByLink;
     }
 
-    private function resolveSupportTransfer(MtnMomoTransaction $transaction): ?MinorFamilySupportTransfer
+    private function resolveSupportTransfer(MtnMomoTransaction $transaction, string $source): ?MinorFamilySupportTransfer
     {
         $contextType = (string) ($transaction->getAttribute('context_type') ?? '');
         $contextUuid = (string) ($transaction->getAttribute('context_uuid') ?? '');
@@ -511,6 +552,16 @@ class MinorFamilyReconciliationService
                         'mtn_momo_transaction_id' => $transaction->id,
                         'context_uuid' => $contextUuid,
                     ]);
+
+                    $this->recordMissingTenantContextException(
+                        transaction: $transaction,
+                        source: $source,
+                        contextType: $contextType,
+                        contextUuid: $contextUuid,
+                        relatedIdKey: 'support_transfer_id',
+                        relatedId: $resolved->id,
+                        tenantId: $resolved->tenant_id,
+                    );
 
                     return null;
                 }
@@ -536,6 +587,16 @@ class MinorFamilyReconciliationService
                 'context_uuid' => $contextUuid,
             ]);
 
+            $this->recordMissingTenantContextException(
+                transaction: $transaction,
+                source: $source,
+                contextType: $contextType,
+                contextUuid: $contextUuid,
+                relatedIdKey: 'support_transfer_id',
+                relatedId: $resolvedByLink->id,
+                tenantId: $resolvedByLink->tenant_id,
+            );
+
             return null;
         }
 
@@ -545,6 +606,54 @@ class MinorFamilyReconciliationService
     private function hasTenantContext(?string $tenantId): bool
     {
         return is_string($tenantId) && trim($tenantId) !== '';
+    }
+
+    private function recordMissingTenantContextException(
+        MtnMomoTransaction $transaction,
+        string $source,
+        string $contextType,
+        string $contextUuid,
+        string $relatedIdKey,
+        string $relatedId,
+        ?string $tenantId,
+    ): void {
+        $this->exceptionQueue->recordOpenException(
+            transaction: $transaction,
+            reasonCode: 'missing_tenant_context',
+            source: $source,
+            metadata: $this->buildExceptionMetadata(
+                transaction: $transaction,
+                source: $source,
+                reasonCode: 'missing_tenant_context',
+                metadata: [
+                    'context_type' => $contextType,
+                    'context_uuid' => $contextUuid,
+                    $relatedIdKey => $relatedId,
+                    'tenant_id' => $tenantId,
+                    'transaction_status' => $transaction->status,
+                    'resolution_path' => 'context_resolved_tenant_missing',
+                ],
+            ),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     * @return array<string, mixed>
+     */
+    private function buildExceptionMetadata(
+        MtnMomoTransaction $transaction,
+        string $source,
+        string $reasonCode,
+        array $metadata,
+    ): array {
+        return array_merge([
+            'reconciliation_source' => $source,
+            'reconciliation_outcome' => MinorFamilyReconciliationOutcome::UNRESOLVED->value,
+            'reconciliation_reason_code' => $reasonCode,
+            'mtn_reference_id' => $transaction->mtn_reference_id,
+            'mtn_momo_transaction_id' => $transaction->id,
+        ], $metadata);
     }
 
     private function normaliseNumericAmount(?string $amount): ?BigDecimal
