@@ -17,8 +17,9 @@ Phase 12 delivers virtual card issuance and management for Rise tier minor accou
 - Apple Pay / Google Pay provisioning via existing `CardProvisioningService`.
 - Merchant category blocklist enforcement at card level (alcohol, tobacco, gambling blocked).
 - Filament admin surface for card management and approval workflow.
-- Card issuance requests tracking (minor_card_requests table).
-- Card-to-minor account linking in the cards table.
+- Card issuance requests tracking (`minor_card_requests` table).
+- Card-to-minor account linking via `minor_account_uuid` column on `cards` table.
+- Scheduled job to auto-expire stale pending requests.
 
 ### Out of Scope
 
@@ -44,10 +45,22 @@ Phase 12 delivers virtual card issuance and management for Rise tier minor accou
 - CardIssuance domain is fully operational (`app/Domain/CardIssuance/`).
 - `CardProvisioningService` provides `createCard()`, `getProvisioningData()`, `freezeCard()`, `unfreezeCard()`, `cancelCard()`, `updateSpendingLimits()`.
 - Demo and Rain card issuer adapters implement `CardIssuerInterface`.
-- Minor accounts use `account_type = 'minor'` with `permission_level` (1-8) and `tier` ('grow'|'rise') in accounts table.
-- `MinorAccountAccessService` provides `canSpendAtMerchant()` for category block enforcement.
-- Account domain provides `AccountQueryService` for fetching minor account limits.
-- Phase 11 merchant partners table and bonus system exists (bonus system not required for card but share infrastructure).
+- Minor accounts use `account_type = 'minor'` with `permission_level` (1-8) in accounts table.
+- `MinorAccountAccessService` takes `User + Account` pairs and provides `hasGuardianAccess(User, Account)` and `authorizeGuardian(User, Account)` — THIS IS THE API. Do NOT use Account-only variants.
+- Phase 11 merchant partners table and bonus system exists.
+- Existing card `cards` table uses `issuer_card_token` as the primary card identifier (NOT `card_token`).
+
+### Authorization Pattern (CRITICAL)
+
+All guardian checks must follow this pattern:
+
+```php
+$user = $request->user(); // App\Models\User
+$minorAccount = Account::where('uuid', $minorUuid)->firstOrFail();
+$this->accessService->authorizeGuardian($user, $minorAccount); // throws AuthorizationException if not guardian
+```
+
+Do NOT pass `Account` objects to `MinorAccountAccessService`. The service operates on `User + Account` pairs.
 
 ### Operational
 
@@ -60,13 +73,12 @@ Phase 12 delivers virtual card issuance and management for Rise tier minor accou
 ### Entities / Services
 
 - **MinorCardRequest** model: tracks card issuance requests with approval state.
-- **MinorCardSettings** model (or field on accounts table): stores card-level preferences.
 - Extend `cards` table with `minor_account_uuid` (nullable FK) for linking card to minor.
-- Card issuer adapters updated to accept minor-specific metadata.
+- Card issuer adapters continue to accept metadata; the `minor_account_uuid` is also stored as a DB column for efficient queries.
 
 ### Migrations
 
-Add `minor_account_uuid` to `cards` table:
+Add `minor_account_uuid` to `cards` table (additive, nullable for backward compatibility):
 
 ```php
 Schema::table('cards', function (Blueprint $table) {
@@ -85,16 +97,16 @@ Add `minor_card_requests` table:
 Schema::create('minor_card_requests', function (Blueprint $table) {
     $table->uuid('id')->primary();
     $table->uuid('tenant_id')->nullable();
-    $table->uuid('minor_account_uuid'); // FK to accounts
-    $table->uuid('requested_by_account_uuid'); // parent or child account UUID
-    $table->string('request_type'); // 'parent_initiated' | 'child_requested'
-    $table->string('status'); // 'pending_approval' | 'approved' | 'denied' | 'card_created' | 'expired'
-    $table->string('requested_network')->default('visa'); // visa | mastercard
-    $table->json('requested_limits')->nullable(); // optional parent-specified limits
+    $table->uuid('minor_account_uuid');
+    $table->uuid('requested_by_account_uuid');
+    $table->string('request_type');
+    $table->string('status')->default('pending_approval');
+    $table->string('requested_network')->default('visa');
+    $table->json('requested_limits')->nullable();
     $table->text('denial_reason')->nullable();
-    $table->uuid('approved_by')->nullable(); // parent account UUID
+    $table->uuid('approved_by')->nullable();
     $table->timestamp('approved_at')->nullable();
-    $table->timestamp('expires_at')->nullable(); // request expiry
+    $table->timestamp('expires_at')->nullable();
     $table->timestamps();
 
     $table->foreign('minor_account_uuid')->references('uuid')->on('accounts')->onDelete('cascade');
@@ -108,13 +120,24 @@ Schema::create('minor_card_requests', function (Blueprint $table) {
 
 ### Card-Level Limit Integration
 
-The card's spending limits are driven by the minor's account limits, not by a separate configuration. At card creation time:
+The card's spending limits are driven by the minor's account limits. At card creation time:
 
 - `daily_limit` = `MIN(requested_daily_limit, minor.account_daily_limit)`
 - `monthly_limit` = `MIN(requested_monthly_limit, minor.account_monthly_limit)`
 - `single_transaction_limit` = `MIN(requested_single_txn, minor.account_single_txn_limit)`
 
-If account has no explicit limit, card uses its default limit from the card issuer adapter.
+If the account has no explicit limit set, the card uses the default from the card issuer adapter.
+
+### JIT Funding Limit Enforcement
+
+At authorization time, `JitFundingService` must enforce limits for minor cards:
+
+1. Detect minor cards via `$card->minor_account_uuid` (DB column) or `$card->metadata['minor_account_uuid']`.
+2. Load the minor `Account` from the linked UUID.
+3. Aggregate the minor's card spend in the current daily/monthly period using `AccountQueryService` or a dedicated spend aggregation query.
+4. If `current_spend + authorization_amount > MIN(card_limit, account_limit)`, decline with `AuthorizationDecision::DECLINED_LIMIT_EXCEEDED`.
+
+Note: The implementation must stay within the 2000ms latency budget. Prefer a single optimized query over multiple round-trips.
 
 ## 5. API Contract
 
@@ -165,25 +188,27 @@ Body:
 ```
 
 Response: `201` with request object.
-`403` if: minor not Rise tier, minor already has active card, requestor not authorized.
+`403` if: requestor not the minor or a guardian.
+`422` if: minor not Rise tier, minor already has active card, pending request exists.
 
-#### Approve card request (parent only)
+#### Approve card request (parent guardian only — CRITICAL authorization check)
 
 ```
 POST /api/v1/minor-cards/requests/{id}/approve
 ```
 
-Response: `200` with request + created card object.
-`403` if not parent guardian.
+`403` if not parent guardian (checked via `MinorAccountAccessService::hasGuardianAccess(User, Account)`).
 `409` if request already processed.
+Response: `200` with request + created card object.
 
-#### Deny card request (parent only)
+#### Deny card request (parent guardian only — CRITICAL authorization check)
 
 ```
 POST /api/v1/minor-cards/requests/{id}/deny
 ```
 
 Body: `{ "reason": "string" }`
+`403` if not parent guardian.
 Response: `200` with updated request.
 
 #### List minor's cards (parent sees minor's cards; child sees own)
@@ -193,7 +218,7 @@ GET /api/v1/minor-cards
 ```
 
 Query params: `minor_account_uuid` (required for parent, forbidden for child).
-Response: same structure as existing `/api/v1/cards` but filtered to minor's cards.
+Response: card array filtered to minor's linked cards.
 
 #### Get card details
 
@@ -203,16 +228,16 @@ GET /api/v1/minor-cards/{cardId}
 
 Response: card details + `spending_limits` + `account_limits_applied`.
 
-#### Freeze / unfreeze card (parent only)
+#### Freeze / unfreeze card (parent guardian only)
 
 ```
 POST /api/v1/minor-cards/{cardId}/freeze
 DELETE /api/v1/minor-cards/{cardId}/freeze
 ```
 
-Response: updated card with new status.
+`403` if not guardian.
 
-#### Provision card for wallet (same as existing `/api/v1/cards/provision` but scoped to minor card)
+#### Provision card for wallet
 
 ```
 POST /api/v1/minor-cards/{cardId}/provision
@@ -223,12 +248,12 @@ Response: provisioning data for wallet.
 
 ### Response / Status Model
 
-Standard envelope. `200` for success, `201` for creation, `403` for auth/authorization, `404` for not found, `409` for conflict (e.g., card already exists), `422` for validation.
+Standard envelope. `200` success, `201` creation, `403` auth/authorization, `404` not found, `409` conflict, `422` validation.
 
 ### Auth / Authorization
 
-- Card request endpoints: authenticated user must be either the minor (self) or a guardian of the minor.
-- Card management (freeze/unfreeze/approve/deny): guardian only.
+- Card request creation: authenticated user must be either the minor or a guardian.
+- Approve/deny/freeze/unfreeze: must be a guardian (via `MinorAccountAccessService::hasGuardianAccess(User, Account)`).
 - Provisioning: minor or guardian.
 
 ## 6. Operator Workflow / Filament Blueprint
@@ -237,27 +262,26 @@ Standard envelope. `200` for success, `201` for creation, `403` for auth/authori
 
 **MinorCardRequestResource** (new):
 
-- List page: all card requests across platform, filterable by status, tier, date.
-- Columns: minor name, account UUID, request type, status, requested network, created at, expires at.
+- List page: all card requests across platform, filterable by status, date.
+- Columns: minor name, account UUID, request type, status, network, created at, expires at.
 - View page: full request details + linked minor account info.
-- Relation manager: linked card (if created).
+- Relation manager: linked card (read-only).
 - Actions:
-  - `ApproveAction` - approve and trigger card creation.
-  - `DenyAction` - deny with reason.
+  - `ApproveAction` - approve and trigger card creation (guardian-only).
+  - `DenyAction` - deny with reason (guardian-only).
 
-**MinorCardResource** (extend existing CardResource or create new):
+**MinorCardResource** (extend or wrap existing CardResource):
 
 - Filter: link to minor account cards only.
 - Columns: card token (masked), minor name, network, status, spend limits, frozen_at.
-- Actions:
-  - `FreezeAction`, `UnfreezeAction` (independent of account).
+- Actions: `FreezeAction`, `UnfreezeAction` (independent of account).
 - Info widget: show account-level limits next to card limits.
 
 ### Audit Trail
 
 - Every approval/deny logged via standard Filament audit.
 - Card freeze/unfreeze logged.
-- Card creation linked to request via `minor_card_request_id`.
+- Card creation linked to request via `card_request_id` in card metadata.
 
 ## 7. Failure Modes + Risk Register
 
@@ -265,23 +289,24 @@ Standard envelope. `200` for success, `201` for creation, `403` for auth/authori
 
 - Card limit exceeds account limit — enforced via `MIN(card, account)` at creation and via JIT funding at transaction time.
 - Card used after account is frozen — card status check in `VirtualCard::isUsable()` + `JitFundingService` re-checks account standing.
-- Card used after minor turns 18 — lifecycle automation (Phase 10) handles conversion; card should be converted to personal account card (deferred, card remains frozen).
+- Card used after minor turns 18 — lifecycle automation (Phase 10) handles conversion; card frozen pending review (deferred to Phase 13+ for full conversion flow).
 
 ### Abuse Vectors
 
 - Minor requesting card without parent knowledge — dual approval flow ensures parent must approve.
-- Child spoofing parent identity to approve own request — endpoint validates caller is guardian via `MinorAccountAccessService`.
+- Non-guardian approving own request — `approveRequest` endpoint guards with `MinorAccountAccessService::hasGuardianAccess(User, Account)`.
 - Parent creating card for Grow-tier minor — age check rejects at request time.
 - Parent setting excessive limits — card limit = `MIN(parent_requested, account_limit)`.
-- Race condition: two approval requests for same minor — unique constraint on `(minor_account_uuid, status)` with status IN ('pending_approval').
+- Race condition: two concurrent approval requests — wrapped in `DB::transaction()` with optimistic locking on request status.
+- Non-guardian freezing card — freeze endpoint requires guardian check.
 
 ### Controls
 
 - Age gate: only Rise tier (age 13+) eligible.
-- Parent approval gate: both flow patterns require guardian.
+- Guardian authorization gate: approve/deny/freeze/unfreeze require `hasGuardianAccess(User, Account)`.
 - Limit enforcement: `MIN(card, account)` at creation + JIT check at transaction time.
-- One active card per minor: uniqueness constraint.
-- Request expiry: requests expire after 72 hours if not processed.
+- One active card per minor: check + uniqueness constraint.
+- Request expiry: scheduled job auto-expires stale pending requests after 72 hours.
 
 ## 8. Verification Strategy
 
@@ -291,23 +316,27 @@ Standard envelope. `200` for success, `201` for creation, `403` for auth/authori
   - Age gate: Rise tier eligible, Grow tier rejected.
   - Limit calculation: `MIN(card_limit, account_limit)` enforced.
   - One active card per minor: second request returns conflict.
-  - Request type validation: `parent_initiated` vs `child_requested`.
+  - Request type: `parent_initiated` vs `child_requested` correctly determined.
   - Approval/deny state transitions.
   - Card freeze independent of account.
+  - `hasGuardianAccess(User, Account)` returns correct result for guardian vs non-guardian.
+  - `authorizeGuardian(User, Account)` throws for non-guardian.
+  - JIT authorization declines when minor exceeds daily/monthly limit.
   - Merchant category block enforced on card transactions.
 - Feature/API:
   - Child request flow: creates pending request.
   - Parent approve flow: creates card, updates request to `card_created`.
   - Parent deny flow: updates request to `denied`.
-  - Parent freeze/unfreeze card.
-  - Minor provisions card to Apple Pay.
+  - Non-guardian POST /approve → 403.
+  - Non-guardian POST /deny → 403.
+  - Non-guardian POST /freeze → 403.
   - Card listing filtered by minor account.
-  - 403 returned for unauthorized caller.
-  - 409 returned for duplicate card request.
+  - 409 returned for duplicate active card request.
+  - 409 returned for pending request already open.
 - Filament:
   - Request list and filters work.
-  - Approve action creates card.
-  - Deny action updates status.
+  - Approve action creates card and updates status.
+  - Deny action updates status with reason.
   - Card freeze independent action works.
 
 ### Regression Suites
@@ -315,7 +344,7 @@ Standard envelope. `200` for success, `201` for creation, `403` for auth/authori
 - Existing `CardProvisioningService` tests.
 - Existing `MinorAccountAccessService` auth tests.
 - Existing JIT funding authorization tests.
-- Existing card lifecycle tests (freeze/unfreeze/cancel).
+- Existing card lifecycle tests.
 
 ### Static Analysis
 
