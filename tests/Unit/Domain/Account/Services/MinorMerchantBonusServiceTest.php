@@ -37,6 +37,27 @@ class MinorMerchantBonusServiceTest extends TestCase
         $this->assertEquals(5, $result);
     }
 
+    public function test_award_bonus_caps_multiplier_at_max(): void
+    {
+        $partner = MerchantPartner::create([
+            'id' => 1,
+            'name' => 'Test Merchant',
+            'is_active_for_minors' => true,
+            'bonus_multiplier' => 6.0,
+            'min_age_allowance' => 12,
+        ]);
+
+        $result = $this->service->awardBonus(
+            'trx-cap-test',
+            1,
+            'minor-uuid',
+            25.00
+        );
+
+        $this->assertEquals(5, $result['bonus_points_awarded']);
+        $this->assertEquals(5.0, $result['multiplier_applied']);
+    }
+
     public function test_award_bonus_checks_idempotency(): void
     {
         $partner = MerchantPartner::create([

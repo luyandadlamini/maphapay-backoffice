@@ -12,9 +12,11 @@ class MinorMerchantBonusService
 {
     private const POINTS_PER_SZL = 0.1;
     private const MAX_BONUS_POINTS = 5;
+    private const MAX_MULTIPLIER = 5.0;
 
     public function calculateBonusPoints(float $amountSzl, float $multiplier): int
     {
+        $multiplier = min($multiplier, self::MAX_MULTIPLIER);
         $points = $amountSzl * self::POINTS_PER_SZL * $multiplier;
         
         return (int) min(floor($points), self::MAX_BONUS_POINTS);
@@ -78,7 +80,7 @@ class MinorMerchantBonusService
             ];
         }
 
-        $multiplier = $partner->getBonusMultiplier();
+        $multiplier = min($partner->getBonusMultiplier(), self::MAX_MULTIPLIER);
         $points = $this->calculateBonusPoints($amountSzl, $multiplier);
 
         if ($points > 0) {
