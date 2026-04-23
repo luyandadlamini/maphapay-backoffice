@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Commerce;
 
+use App\Domain\Account\Services\MinorMerchantBonusService;
 use App\Domain\Commerce\Enums\MerchantStatus;
 use App\Domain\Commerce\Models\Merchant;
 use App\Domain\Commerce\Services\MerchantOnboardingService;
@@ -129,6 +130,32 @@ class MobileCommerceController extends Controller
                 'per_page'     => $partners->perPage(),
                 'total'        => $partners->total(),
             ],
+        ]);
+    }
+
+    /**
+     * Get merchant partner bonus details.
+     */
+    public function partnerBonusDetails(int $partnerId): JsonResponse
+    {
+        $partner = MerchantPartner::find($partnerId);
+
+        if (! $partner) {
+            return response()->json([
+                'success' => false,
+                'error'   => [
+                    'code'    => 'MERCHANT_NOT_FOUND',
+                    'message' => 'Merchant not found.',
+                ],
+            ], 404);
+        }
+
+        $service = app(MinorMerchantBonusService::class);
+        $details = $service->getBonusDetails($partnerId);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $details,
         ]);
     }
 

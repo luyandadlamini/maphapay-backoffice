@@ -6,6 +6,7 @@ namespace Tests\Feature\Api\Commerce;
 
 use App\Domain\Commerce\Enums\MerchantStatus;
 use App\Domain\Commerce\Models\Merchant;
+use App\Models\MerchantPartner;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
@@ -181,5 +182,39 @@ class MobileCommerceDetailTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data', []);
+    }
+
+    public function test_merchant_bonus_details_returns_full_info(): void
+    {
+        $partner = MerchantPartner::create([
+            'name' => 'Test Store',
+            'category' => 'grocery',
+            'is_active' => true,
+            'bonus_multiplier' => 2.0,
+            'min_age_allowance' => 12,
+            'is_active_for_minors' => true,
+            'bonus_terms' => 'Earn 2x points on all purchases',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v1/commerce/partners/'.$partner->id.'/bonus-details');
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+            ])
+            ->assertJsonPath('data.bonus_multiplier', 2)
+            ->assertJsonPath('data.min_age_allowance', 12)
+            ->assertJsonPath('data.is_active_for_minors', true);
+    }
+
+    public function test_merchant_bonus_details_returns_404_for_nonexistent(): void
+    {
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v1/commerce/partners/99999/bonus-details');
+
+        $response->assertNotFound()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error.code', 'MERCHANT_NOT_FOUND');
     }
 }

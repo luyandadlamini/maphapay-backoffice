@@ -11,6 +11,9 @@ Route::prefix('v1/commerce')->name('mobile.commerce.')
         Route::get('/partners', [MobileCommerceController::class, 'partners'])
             ->middleware('api.rate_limit:query')
             ->name('partners');
+        Route::get('/partners/{partnerId}/bonus-details', [MobileCommerceController::class, 'partnerBonusDetails'])
+            ->middleware('api.rate_limit:query')
+            ->name('partners.bonus-details');
         Route::get('/merchants', [MobileCommerceController::class, 'merchants'])
             ->middleware('api.rate_limit:query')
             ->name('merchants');
