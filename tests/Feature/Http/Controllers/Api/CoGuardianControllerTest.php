@@ -7,6 +7,7 @@ namespace Tests\Feature\Http\Controllers\Api;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Models\User;
+use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -19,7 +20,7 @@ class CoGuardianControllerTest extends TestCase
 {
     protected function connectionsToTransact(): array
     {
-        return ['mysql', 'central'];
+        return [];
     }
 
     protected function shouldCreateDefaultAccountsInSetup(): bool
@@ -35,11 +36,14 @@ class CoGuardianControllerTest extends TestCase
 
     private string $tenantId;
 
+    private ConnectionInterface $centralConnection;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->withoutMiddleware();
+        $this->centralConnection = DB::connection('central');
 
         if (! Schema::connection('central')->hasTable('guardian_invites')) {
             Artisan::call('migrate', [
@@ -53,7 +57,8 @@ class CoGuardianControllerTest extends TestCase
         $this->coGuardian = User::factory()->create();
         $this->tenantId = (string) Str::uuid();
 
-        DB::connection('central')->table('tenants')->insert([
+        $this->centralConnection->statement('SET FOREIGN_KEY_CHECKS=0');
+        $this->centralConnection->table('tenants')->insert([
             'id'            => $this->tenantId,
             'name'          => 'Minor Accounts Tenant',
             'plan'          => 'default',
@@ -71,7 +76,8 @@ class CoGuardianControllerTest extends TestCase
             'tier'             => 'grow',
         ]);
 
-        AccountMembership::query()->create([
+        $this->centralConnection->table('account_memberships')->insert([
+            'id'           => (string) Str::uuid(),
             'user_uuid'    => $this->guardian->uuid,
             'tenant_id'    => $this->tenantId,
             'account_uuid' => $this->minorAccount->uuid,
@@ -80,6 +86,7 @@ class CoGuardianControllerTest extends TestCase
             'status'       => 'active',
             'joined_at'    => now(),
         ]);
+        $this->centralConnection->statement('SET FOREIGN_KEY_CHECKS=1');
     }
 
     #[Test]
@@ -106,7 +113,8 @@ class CoGuardianControllerTest extends TestCase
     #[Test]
     public function co_guardian_cannot_generate_an_invite_code(): void
     {
-        AccountMembership::query()->create([
+        $this->centralConnection->table('account_memberships')->insert([
+            'id'           => (string) Str::uuid(),
             'user_uuid'    => $this->coGuardian->uuid,
             'tenant_id'    => $this->tenantId,
             'account_uuid' => $this->minorAccount->uuid,
@@ -130,7 +138,7 @@ class CoGuardianControllerTest extends TestCase
     {
         $code = strtoupper(Str::random(8));
 
-        DB::connection('central')->table('guardian_invites')->insert([
+        $this->centralConnection->table('guardian_invites')->insert([
             'id'                   => (string) Str::uuid(),
             'minor_account_uuid'   => $this->minorAccount->uuid,
             'invited_by_user_uuid' => $this->guardian->uuid,
@@ -170,7 +178,7 @@ class CoGuardianControllerTest extends TestCase
     {
         $code = strtoupper(Str::random(8));
 
-        DB::connection('central')->table('guardian_invites')->insert([
+        $this->centralConnection->table('guardian_invites')->insert([
             'id'                   => (string) Str::uuid(),
             'minor_account_uuid'   => $this->minorAccount->uuid,
             'invited_by_user_uuid' => $this->guardian->uuid,

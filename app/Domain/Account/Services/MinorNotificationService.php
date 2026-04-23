@@ -50,6 +50,14 @@ class MinorNotificationService
 
     public const TYPE_FAMILY_SUPPORT_TRANSFER_REFUNDED = 'family_support_transfer_refunded';
 
+    public const TYPE_LIFECYCLE_TIER_ADVANCED = 'lifecycle_tier_advanced';
+
+    public const TYPE_LIFECYCLE_ADULT_TRANSITION_COMPLETED = 'lifecycle_adult_transition_completed';
+
+    public const TYPE_LIFECYCLE_ADULT_TRANSITION_FROZEN = 'lifecycle_adult_transition_frozen';
+
+    public const TYPE_LIFECYCLE_GUARDIAN_CONTINUITY_BROKEN = 'lifecycle_guardian_continuity_broken';
+
     private const ACTION_MAP = [
         self::TYPE_APPROVAL_REQUESTED => 'minor.approval.requested',
         self::TYPE_APPROVAL_APPROVED  => 'minor.approval.approved',
@@ -69,6 +77,10 @@ class MinorNotificationService
         self::TYPE_FAMILY_SUPPORT_TRANSFER_SUCCEEDED => 'minor.family_support_transfer.succeeded',
         self::TYPE_FAMILY_SUPPORT_TRANSFER_FAILED => 'minor.family_support_transfer.failed',
         self::TYPE_FAMILY_SUPPORT_TRANSFER_REFUNDED => 'minor.family_support_transfer.refunded',
+        self::TYPE_LIFECYCLE_TIER_ADVANCED => 'minor.lifecycle.tier_advanced',
+        self::TYPE_LIFECYCLE_ADULT_TRANSITION_COMPLETED => 'minor.lifecycle.adult_transition_completed',
+        self::TYPE_LIFECYCLE_ADULT_TRANSITION_FROZEN => 'minor.lifecycle.adult_transition_frozen',
+        self::TYPE_LIFECYCLE_GUARDIAN_CONTINUITY_BROKEN => 'minor.lifecycle.guardian_continuity_broken',
     ];
 
     /**

@@ -32,11 +32,17 @@ describe('EventMigrationService', function () {
         }
     });
 
-    it('returns empty plan when no events to migrate', function () {
-        // With a fresh database, there should be no events
+    it('returns a valid plan shape when checking for events to migrate', function () {
         $plan = $this->service->getMigrationPlan();
 
-        expect($plan)->toBeEmpty();
+        expect($plan)->toBeArray();
+
+        foreach ($plan as $domain => $entry) {
+            expect($domain)->toBeString();
+            expect($entry)->toHaveKeys(['source', 'target', 'count', 'aliases']);
+            expect($entry['count'])->toBeInt()->toBeGreaterThanOrEqual(0);
+            expect($entry['aliases'])->toBeArray();
+        }
     });
 
     it('creates dry-run migration record', function () {

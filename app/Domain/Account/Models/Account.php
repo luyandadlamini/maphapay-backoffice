@@ -29,6 +29,8 @@ use InvalidArgumentException;
  * @property string|null $tier
  * @property int|null $permission_level
  * @property string|null $parent_account_id
+ * @property string|null $minor_transition_state
+ * @property \Illuminate\Support\Carbon|null $minor_transition_effective_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  *
@@ -139,6 +141,7 @@ class Account extends Model
     protected $casts = [
         'frozen'       => 'boolean',
         'capabilities' => 'array',
+        'minor_transition_effective_at' => 'datetime',
     ];
 
     /**
@@ -280,6 +283,22 @@ class Account extends Model
     public function auditLogs(): HasMany
     {
         return $this->hasMany(AccountAuditLog::class, 'account_uuid', 'uuid');
+    }
+
+    /**
+     * @return HasMany<MinorAccountLifecycleTransition, $this>
+     */
+    public function lifecycleTransitions(): HasMany
+    {
+        return $this->hasMany(MinorAccountLifecycleTransition::class, 'minor_account_uuid', 'uuid');
+    }
+
+    /**
+     * @return HasMany<MinorAccountLifecycleException, $this>
+     */
+    public function lifecycleExceptions(): HasMany
+    {
+        return $this->hasMany(MinorAccountLifecycleException::class, 'minor_account_uuid', 'uuid');
     }
 
     public function hasCapability(string $capability): bool

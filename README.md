@@ -153,6 +153,10 @@ For production-style built assets:
 npm run build
 ```
 
+For Filament admin panel local testing, see:
+
+- `docs/06-DEVELOPMENT/LOCAL_ADMIN_SETUP.md`
+
 ## Queues and background work
 
 This repo includes scheduled jobs and queue-backed flows for notifications, events, and financial processing.

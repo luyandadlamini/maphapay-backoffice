@@ -139,10 +139,10 @@ class MetricsCollectorService
         $summary = [];
         foreach ($metrics as $metric) {
             $summary[$metric->name] = [
-                'average' => round($metric->avg_value, 2),
-                'min'     => round($metric->min_value, 2),
-                'max'     => round($metric->max_value, 2),
-                'count'   => $metric->count,
+                'average' => round((float) $metric->avg_value, 2),
+                'min'     => round((float) $metric->min_value, 2),
+                'max'     => round((float) $metric->max_value, 2),
+                'count'   => (int) $metric->count,
             ];
         }
 

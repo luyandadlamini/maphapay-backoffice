@@ -170,8 +170,8 @@ class CreateAccountTool implements MCPToolInterface
                 uuid: $accountUuid
             );
 
-            // Create the account using the service (workflow-based)
-            $this->accountService->create($accountData);
+            // Create the account using the service (workflow path with safe sync fallback).
+            $accountUuid = $this->accountService->create($accountData);
 
             // Retrieve the created account model
             $account = AccountModel::where('uuid', $accountUuid)->first();
@@ -210,10 +210,12 @@ class CreateAccountTool implements MCPToolInterface
                     // Convert amount to cents for storage
                     $amountInCents = (int) round($parameters['initial_deposit'] * 100);
 
-                    // For now, directly update the balance in the database
-                    // In production, this would go through the deposit workflow
+                    // Keep projection balance aligned with the MCP response contract.
+                    $account->balance = $amountInCents;
+                    $account->save();
+
                     // Create or update the AccountBalance entry for USD
-                    $accountBalance = \App\Domain\Account\Models\AccountBalance::updateOrCreate(
+                    \App\Domain\Account\Models\AccountBalance::updateOrCreate(
                         [
                             'account_uuid' => $account->uuid,
                             'asset_code'   => $parameters['currency'] ?? 'USD',

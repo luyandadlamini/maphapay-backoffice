@@ -58,7 +58,7 @@ DB_PASSWORD='maphapay_test_password' \
 php -d max_execution_time=300 ./vendor/bin/pest <tests...>
 ```
 
-- `phpunit.xml` now uses `defaultTimeLimit="300"` because first-run migration bootstrap is heavy.
+- `phpunit.xml` now uses `defaultTimeLimit="600"` because first-run migration bootstrap and schema-heavy tests can exceed shorter limits.
 - One-time local repair/provisioning: `./scripts/reset-local-mysql-test-access.sh`
 - Daily verification/bootstrap: `./scripts/bootstrap-local-test-db.sh`
 

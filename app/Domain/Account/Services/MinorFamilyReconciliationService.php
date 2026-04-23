@@ -40,12 +40,12 @@ class MinorFamilyReconciliationService
     {
         $fundingAttempt = $this->resolveFundingAttempt($transaction, $source);
         if ($fundingAttempt !== null) {
-            return $this->reconcileFundingAttempt($fundingAttempt, $transaction);
+            return $this->reconcileFundingAttempt($fundingAttempt, $transaction, $source);
         }
 
         $supportTransfer = $this->resolveSupportTransfer($transaction, $source);
         if ($supportTransfer !== null) {
-            return $this->reconcileSupportTransfer($supportTransfer, $transaction);
+            return $this->reconcileSupportTransfer($supportTransfer, $transaction, $source);
         }
 
         $this->exceptionQueue->recordOpenException(
@@ -71,6 +71,7 @@ class MinorFamilyReconciliationService
     private function reconcileFundingAttempt(
         MinorFamilyFundingAttempt $attempt,
         MtnMomoTransaction $transaction,
+        string $source,
     ): MinorFamilyReconciliationOutcome
     {
         DB::transaction(function () use ($attempt, $transaction): void {
@@ -139,6 +140,15 @@ class MinorFamilyReconciliationService
             MinorFamilyFundingAttempt::STATUS_CREDITED,
             MinorFamilyFundingAttempt::STATUS_FAILED,
         ], true)) {
+            $this->exceptionQueue->resolveOpenExceptionsForTransaction(
+                transaction: $transaction,
+                source: $source,
+                metadata: [
+                    'resolution_path' => 'funding_attempt_terminal_state',
+                    'funding_attempt_id' => $freshAttempt->id,
+                ],
+            );
+
             return MinorFamilyReconciliationOutcome::RECONCILED;
         }
 
@@ -280,6 +290,7 @@ class MinorFamilyReconciliationService
     private function reconcileSupportTransfer(
         MinorFamilySupportTransfer $transfer,
         MtnMomoTransaction $transaction,
+        string $source,
     ): MinorFamilyReconciliationOutcome {
         DB::transaction(function () use ($transfer, $transaction): void {
             /** @var MinorFamilySupportTransfer|null $lockedTransfer */
@@ -449,6 +460,15 @@ class MinorFamilyReconciliationService
             MinorFamilySupportTransfer::STATUS_SUCCESSFUL,
             MinorFamilySupportTransfer::STATUS_FAILED_REFUNDED,
         ], true)) {
+            $this->exceptionQueue->resolveOpenExceptionsForTransaction(
+                transaction: $transaction,
+                source: $source,
+                metadata: [
+                    'resolution_path' => 'support_transfer_terminal_state',
+                    'support_transfer_id' => $freshTransfer->id,
+                ],
+            );
+
             return MinorFamilyReconciliationOutcome::RECONCILED;
         }
 

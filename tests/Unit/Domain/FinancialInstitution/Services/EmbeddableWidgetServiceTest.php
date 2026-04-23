@@ -9,7 +9,6 @@ use App\Domain\FinancialInstitution\Models\PartnerBranding;
 use App\Domain\FinancialInstitution\Services\EmbeddableWidgetService;
 use App\Domain\FinancialInstitution\Services\PartnerTierService;
 use Illuminate\Support\Facades\Config;
-use Mockery;
 use Tests\TestCase;
 
 class EmbeddableWidgetServiceTest extends TestCase
@@ -52,16 +51,8 @@ class EmbeddableWidgetServiceTest extends TestCase
         $this->service = new EmbeddableWidgetService(new PartnerTierService());
     }
 
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
-
     private function createMockPartner(array $attributes = []): FinancialInstitutionPartner
     {
-        $mock = Mockery::mock(FinancialInstitutionPartner::class)->makePartial();
-
         $defaults = [
             'id'               => fake()->uuid(),
             'partner_code'     => 'TST-12345',
@@ -71,27 +62,33 @@ class EmbeddableWidgetServiceTest extends TestCase
             'sandbox_enabled'  => true,
         ];
 
-        foreach (array_merge($defaults, $attributes) as $key => $value) {
-            $mock->{$key} = $value;
-        }
+        $merged = array_merge($defaults, $attributes);
+        $branding = array_key_exists('branding', $merged) ? $merged['branding'] : null;
+        unset($merged['branding']);
 
-        return $mock;
+        $partner = new FinancialInstitutionPartner();
+        $partner->forceFill($merged);
+        $partner->setRelation('branding', $branding);
+
+        return $partner;
     }
 
     private function createMockBranding(): PartnerBranding
     {
-        $branding = Mockery::mock(PartnerBranding::class)->makePartial();
-        $branding->primary_color = '#1a73e8';
-        $branding->secondary_color = '#5f6368';
-        $branding->accent_color = '#1a73e8';
-        $branding->text_color = '#202124';
-        $branding->background_color = '#ffffff';
-        $branding->company_name = 'Test Partner Co';
-        $branding->tagline = 'Testing made easy';
-        $branding->logo_url = 'https://example.com/logo.png';
-        $branding->logo_dark_url = 'https://example.com/logo-dark.png';
-        $branding->support_email = 'support@test.com';
-        $branding->widget_config = null;
+        $branding = new PartnerBranding();
+        $branding->forceFill([
+            'primary_color'    => '#1a73e8',
+            'secondary_color'  => '#5f6368',
+            'accent_color'     => '#1a73e8',
+            'text_color'       => '#202124',
+            'background_color' => '#ffffff',
+            'company_name'     => 'Test Partner Co',
+            'tagline'          => 'Testing made easy',
+            'logo_url'         => 'https://example.com/logo.png',
+            'logo_dark_url'    => 'https://example.com/logo-dark.png',
+            'support_email'    => 'support@test.com',
+            'widget_config'    => null,
+        ]);
 
         return $branding;
     }

@@ -247,3 +247,15 @@ Schedule::command('minor-family:reconciliation-exceptions-flag-sla-breaches')
     ->description('Set sla_escalated_at on open minor-family reconciliation exceptions past SLA due time')
     ->appendOutputTo(storage_path('logs/minor-family-recon-sla-breaches.log'))
     ->withoutOverlapping();
+
+Schedule::command('minor-accounts:lifecycle-evaluate')
+    ->dailyAt('01:15')
+    ->description('Evaluate and execute minor account lifecycle transitions')
+    ->appendOutputTo(storage_path('logs/minor-account-lifecycle-evaluate.log'))
+    ->withoutOverlapping();
+
+Schedule::command('minor-accounts:lifecycle-exceptions-flag-sla-breaches')
+    ->hourly()
+    ->description('Set sla_escalated_at on open minor-account lifecycle exceptions past SLA due time')
+    ->appendOutputTo(storage_path('logs/minor-account-lifecycle-sla-breaches.log'))
+    ->withoutOverlapping();

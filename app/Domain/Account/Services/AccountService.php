@@ -32,8 +32,14 @@ class AccountService
     public function create(Account|array $account): string
     {
         $workflow = WorkflowStub::make(CreateAccountWorkflow::class);
+        $accountData = __account($account);
+        $result = $workflow->execute($accountData);
 
-        return $workflow->execute(__account($account));
+        if (is_string($result) && $result !== '') {
+            return $result;
+        }
+
+        return $this->createDirect($accountData);
     }
 
     /**

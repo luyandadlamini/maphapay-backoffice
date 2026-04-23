@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\CoGuardianController;
 use App\Http\Controllers\Api\CompanyDocumentController;
 use App\Http\Controllers\Api\CustodianController;
 use App\Http\Controllers\Api\MinorAccountController;
+use App\Http\Controllers\Api\MinorAccountLifecycleController;
 use App\Http\Controllers\Api\MinorChoreController;
 use App\Http\Controllers\Api\MinorFamilyFundingLinkController;
 use App\Http\Controllers\Api\MinorFamilySupportTransferController;
@@ -40,6 +41,9 @@ Route::middleware(['auth:sanctum', 'account.context'])->group(function () {
     Route::post('/accounts/minor/{minorAccountUuid}/funding-links/{fundingLinkUuid}/expire', [MinorFamilyFundingLinkController::class, 'expire'])->middleware(['api.rate_limit:mutation', 'scope:write']);
     Route::get('/accounts/minor/{minorAccountUuid}/family-support-transfers', [MinorFamilySupportTransferController::class, 'index'])->middleware(['api.rate_limit:query', 'scope:read']);
     Route::post('/accounts/minor/{minorAccountUuid}/family-support-transfers', [MinorFamilySupportTransferController::class, 'store'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+    Route::get('/accounts/minor/{minorAccountUuid}/lifecycle', [MinorAccountLifecycleController::class, 'show'])->middleware(['api.rate_limit:query', 'scope:read']);
+    Route::get('/accounts/minor/{minorAccountUuid}/lifecycle/transitions', [MinorAccountLifecycleController::class, 'transitions'])->middleware(['api.rate_limit:query', 'scope:read']);
+    Route::post('/accounts/minor/{minorAccountUuid}/lifecycle/review-actions', [MinorAccountLifecycleController::class, 'reviewActions'])->middleware(['api.rate_limit:mutation', 'scope:write']);
 
     // Minor account spend approvals
     Route::get('/minor-accounts/{uuid}/approvals', [MinorSpendApprovalController::class, 'index'])->middleware(['api.rate_limit:read', 'scope:read']);

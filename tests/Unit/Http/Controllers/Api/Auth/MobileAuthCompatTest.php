@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domain\Mobile\Services\MobileDeviceService;
 use App\Domain\Mobile\Services\PasskeyAuthenticationService;
+use App\Domain\Account\Services\AccountPayloadTransformer;
 use App\Http\Controllers\Api\Auth\AccountDeletionController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\PasskeyController;
@@ -17,7 +18,10 @@ uses(UnitTestCase::class);
 describe('LoginController response envelope', function (): void {
     it('wraps user/me response in { success, data } envelope', function (): void {
         $ipBlockingService = Mockery::mock(IpBlockingService::class);
-        $controller = new LoginController($ipBlockingService);
+        $accountPayloadTransformer = Mockery::mock(AccountPayloadTransformer::class);
+        $accountPayloadTransformer->shouldReceive('transformUserMemberships')->once()->andReturn([]);
+        $accountPayloadTransformer->shouldReceive('resolveActiveAccountUuid')->once()->andReturn(null);
+        $controller = new LoginController($ipBlockingService, $accountPayloadTransformer);
 
         $user = Mockery::mock(User::class)->makePartial();
         $user->id = 1;

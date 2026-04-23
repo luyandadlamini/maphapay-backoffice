@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Services\AccountMembershipService;
+use App\Domain\User\Models\UserProfile;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Policies\AccountPolicy;
@@ -90,6 +91,17 @@ class MinorAccountController extends Controller
                 'email'    => null,
                 'password' => Str::password(32),
             ]);
+
+            UserProfile::query()->updateOrCreate(
+                ['user_id' => $child->id],
+                [
+                    'email' => $child->email ?? sprintf('%s@minor.local', $child->uuid),
+                    'first_name' => $sanitizedName,
+                    'status' => 'active',
+                    'date_of_birth' => $dateOfBirth->toDateString(),
+                    'is_verified' => false,
+                ],
+            );
 
             $account = Account::create([
                 'user_uuid'         => $child->uuid,

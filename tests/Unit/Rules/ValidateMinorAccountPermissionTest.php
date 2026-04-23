@@ -20,7 +20,7 @@ class ValidateMinorAccountPermissionTest extends BaseTestCase
     public function it_rejects_view_only_minor_accounts(): void
     {
         $minorAccount = Account::factory()->create([
-            'account_type'     => 'minor',
+            'type'             => 'minor',
             'permission_level' => 2,
         ]);
 
@@ -40,7 +40,7 @@ class ValidateMinorAccountPermissionTest extends BaseTestCase
     public function it_rejects_blocked_transaction_categories_for_minor_accounts(): void
     {
         $minorAccount = Account::factory()->create([
-            'account_type'     => 'minor',
+            'type'             => 'minor',
             'permission_level' => 5,
         ]);
 
@@ -60,7 +60,7 @@ class ValidateMinorAccountPermissionTest extends BaseTestCase
     public function it_rejects_transactions_that_exceed_the_daily_limit(): void
     {
         $minorAccount = Account::factory()->create([
-            'account_type'     => 'minor',
+            'type'             => 'minor',
             'permission_level' => 3,
         ]);
 
@@ -74,7 +74,7 @@ class ValidateMinorAccountPermissionTest extends BaseTestCase
         ]);
 
         $validator = Validator::make(
-            ['amount' => 10000],
+            ['amount' => 60],
             ['amount' => [new ValidateMinorAccountPermission($minorAccount, 'transfer')]],
         );
 
@@ -89,7 +89,7 @@ class ValidateMinorAccountPermissionTest extends BaseTestCase
     public function it_rejects_transactions_that_exceed_the_monthly_limit(): void
     {
         $minorAccount = Account::factory()->create([
-            'account_type'     => 'minor',
+            'type'             => 'minor',
             'permission_level' => 5,
         ]);
 
@@ -103,7 +103,7 @@ class ValidateMinorAccountPermissionTest extends BaseTestCase
         ]);
 
         $validator = Validator::make(
-            ['amount' => 10000],
+            ['amount' => 100],
             ['amount' => [new ValidateMinorAccountPermission($minorAccount, 'transfer')]],
         );
 
@@ -118,7 +118,7 @@ class ValidateMinorAccountPermissionTest extends BaseTestCase
     public function it_allows_transactions_within_limit_for_spend_enabled_minor_accounts(): void
     {
         $minorAccount = Account::factory()->create([
-            'account_type'     => 'minor',
+            'type'             => 'minor',
             'permission_level' => 6,
         ]);
 
@@ -132,7 +132,7 @@ class ValidateMinorAccountPermissionTest extends BaseTestCase
         ]);
 
         $validator = Validator::make(
-            ['amount' => 25000],
+            ['amount' => 250],
             ['amount' => [new ValidateMinorAccountPermission($minorAccount, 'transfer')]],
         );
 

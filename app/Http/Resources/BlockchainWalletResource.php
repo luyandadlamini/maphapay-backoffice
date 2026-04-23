@@ -16,8 +16,11 @@ class BlockchainWalletResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $metadata = json_decode($this->metadata, true) ?? [];
-        $settings = json_decode($this->settings, true) ?? [];
+        $metadata = is_string($this->metadata) ? json_decode($this->metadata, true) : [];
+        $settings = is_string($this->settings) ? json_decode($this->settings, true) : [];
+
+        $metadata = is_array($metadata) ? $metadata : [];
+        $settings = is_array($settings) ? $settings : [];
 
         return [
             'wallet_id'      => $this->wallet_id,

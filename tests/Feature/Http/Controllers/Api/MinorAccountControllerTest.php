@@ -8,6 +8,7 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Http\Middleware\ResolveAccountContext;
 use App\Models\User;
+use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
@@ -20,10 +21,12 @@ class MinorAccountControllerTest extends TestCase
 
     protected Account $parentAccount;
 
-    /** Wrap both connections in a transaction so every insert rolls back automatically. */
+    protected ConnectionInterface $centralConnection;
+
+    /** These tests cross mysql/central data in one request, so disable transaction wrapping to avoid FK lock waits. */
     protected function connectionsToTransact(): array
     {
-        return ['mysql', 'central'];
+        return [];
     }
 
     protected function shouldCreateDefaultAccountsInSetup(): bool
@@ -36,6 +39,7 @@ class MinorAccountControllerTest extends TestCase
         parent::setUp();
 
         $this->withoutMiddleware(ResolveAccountContext::class);
+        $this->centralConnection = DB::connection('central');
 
         $this->user = User::factory()->create();
         $this->parentAccount = Account::factory()->create([
@@ -45,7 +49,8 @@ class MinorAccountControllerTest extends TestCase
 
         // Create a tenant row so the AccountMembership FK is satisfied.
         $tenantId = (string) Str::uuid();
-        DB::connection('central')->table('tenants')->insert([
+        $this->centralConnection->statement('SET FOREIGN_KEY_CHECKS=0');
+        $this->centralConnection->table('tenants')->insert([
             'id'            => $tenantId,
             'name'          => 'Test Tenant',
             'plan'          => 'default',
@@ -56,7 +61,8 @@ class MinorAccountControllerTest extends TestCase
             'data'          => json_encode([]),
         ]);
 
-        AccountMembership::create([
+        $this->centralConnection->table('account_memberships')->insert([
+            'id'           => (string) Str::uuid(),
             'user_uuid'    => $this->user->uuid,
             'account_uuid' => $this->parentAccount->uuid,
             'tenant_id'    => $tenantId,
@@ -64,6 +70,7 @@ class MinorAccountControllerTest extends TestCase
             'role'         => 'owner',
             'status'       => 'active',
         ]);
+        $this->centralConnection->statement('SET FOREIGN_KEY_CHECKS=1');
     }
 
     #[Test]
@@ -315,10 +322,14 @@ class MinorAccountControllerTest extends TestCase
         $minorUuid = (string) $createResponse->json('data.account.uuid');
 
         $coGuardian = User::factory()->create();
-        AccountMembership::query()->create([
+        $this->centralConnection->table('account_memberships')->insert([
+            'id'           => (string) Str::uuid(),
             'user_uuid'    => $coGuardian->uuid,
             'account_uuid' => $minorUuid,
-            'tenant_id'    => AccountMembership::query()->where('account_uuid', $minorUuid)->value('tenant_id'),
+            'tenant_id'    => (string) $this->centralConnection
+                ->table('account_memberships')
+                ->where('account_uuid', $minorUuid)
+                ->value('tenant_id'),
             'account_type' => 'minor',
             'role'         => 'co_guardian',
             'status'       => 'active',

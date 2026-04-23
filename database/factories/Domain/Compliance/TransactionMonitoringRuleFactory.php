@@ -23,7 +23,7 @@ class TransactionMonitoringRuleFactory extends Factory
         $riskLevels = ['low', 'medium', 'high'];
 
         static $counter = 1;
-        $ruleCode = 'TMR-' . str_pad($counter++, 3, '0', STR_PAD_LEFT);
+        $ruleCode = 'TMR-' . str_pad((string) $counter++, 3, '0', STR_PAD_LEFT);
 
         return [
             'rule_code'   => $ruleCode,

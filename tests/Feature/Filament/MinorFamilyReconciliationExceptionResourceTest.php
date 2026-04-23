@@ -31,6 +31,14 @@ beforeEach(function (): void {
         ]);
     }
 
+    if (Schema::hasTable('minor_family_reconciliation_exceptions')
+        && ! Schema::hasColumns('minor_family_reconciliation_exceptions', ['resolved_at'])) {
+        Artisan::call('migrate', [
+            '--path' => 'database/migrations/2026_04_23_100430_add_resolved_at_to_minor_family_reconciliation_exceptions_table.php',
+            '--force' => true,
+        ]);
+    }
+
     $this->artisan('db:seed', ['--class' => 'RolesAndPermissionsSeeder']);
 
     $panel = Filament::getPanel('admin');
@@ -134,4 +142,69 @@ it('supports conservative acknowledge-manual-review action with audit trail meta
 
     livewire(ViewMinorFamilyReconciliationException::class, ['record' => $exception->getKey()])
         ->assertSuccessful();
+});
+
+it('supports explicit resolve and reopen lifecycle actions with audit trail', function (): void {
+    $operator = User::factory()->create();
+    $operator->assignRole('operations-l2');
+    $this->actingAs($operator);
+
+    $transactionOwner = User::factory()->create();
+    $mtnTransaction = MtnMomoTransaction::query()->create([
+        'id' => (string) Str::uuid(),
+        'user_id' => $transactionOwner->id,
+        'idempotency_key' => (string) Str::uuid(),
+        'type' => MtnMomoTransaction::TYPE_DISBURSEMENT,
+        'amount' => '210.00',
+        'currency' => 'SZL',
+        'status' => MtnMomoTransaction::STATUS_FAILED,
+        'party_msisdn' => '26876009999',
+        'mtn_reference_id' => 'recon-ref-003',
+    ]);
+
+    $exception = MinorFamilyReconciliationException::query()->create([
+        'id' => (string) Str::uuid(),
+        'mtn_momo_transaction_id' => $mtnTransaction->id,
+        'reason_code' => 'unresolved_outcome',
+        'status' => MinorFamilyReconciliationException::STATUS_OPEN,
+        'source' => 'callback',
+        'occurrence_count' => 1,
+        'metadata' => ['transaction_status' => 'failed'],
+        'first_seen_at' => now()->subMinutes(30),
+        'last_seen_at' => now()->subMinutes(10),
+    ]);
+
+    livewire(ListMinorFamilyReconciliationExceptions::class)
+        ->assertSuccessful()
+        ->assertTableActionVisible('resolve_exception', $exception)
+        ->callTableAction('resolve_exception', $exception, [
+            'note' => 'Confirmed closure after reconciliation convergence.',
+        ]);
+
+    /** @var MinorFamilyReconciliationException $resolved */
+    $resolved = $exception->fresh();
+    expect($resolved->status)->toBe(MinorFamilyReconciliationException::STATUS_RESOLVED)
+        ->and($resolved->resolved_at)->not->toBeNull()
+        ->and(data_get($resolved->metadata, 'resolution.source'))->toBe('filament_manual_resolve')
+        ->and(data_get($resolved->metadata, 'resolution.resolved_by_user_uuid'))->toBe($operator->uuid);
+
+    livewire(ListMinorFamilyReconciliationExceptions::class)
+        ->assertSuccessful()
+        ->assertTableActionVisible('reopen_exception', $resolved)
+        ->callTableAction('reopen_exception', $resolved, [
+            'note' => 'New callback mismatch evidence requires follow-up.',
+        ]);
+
+    /** @var MinorFamilyReconciliationException $reopened */
+    $reopened = $resolved->fresh();
+    expect($reopened->status)->toBe(MinorFamilyReconciliationException::STATUS_OPEN)
+        ->and($reopened->resolved_at)->toBeNull()
+        ->and(data_get($reopened->metadata, 'reopened.source'))->toBe('filament_manual_reopen')
+        ->and(data_get($reopened->metadata, 'reopened.reopened_by_user_uuid'))->toBe($operator->uuid);
+
+    expect(
+        MinorFamilyReconciliationExceptionAcknowledgment::query()
+            ->where('minor_family_reconciliation_exception_id', $exception->id)
+            ->count(),
+    )->toBe(2);
 });

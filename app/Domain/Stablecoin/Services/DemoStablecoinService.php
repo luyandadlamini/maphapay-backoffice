@@ -255,16 +255,20 @@ class DemoStablecoinService
 
             if ($currentRatio < $liquidationThreshold) {
                 // Calculate liquidation amounts
-                $debtToCover = $position->debt_amount * 0.5; // Liquidate 50% of position
-                $collateralToSeize = ($debtToCover / $collateralPrice) * 1.1; // 10% penalty
-                $penaltyAmount = $collateralToSeize * 0.1;
+                $debtToCover = (int) round((int) $position->debt_amount * 0.5); // Liquidate 50% of position
+                $collateralToSeizeEth = ($debtToCover / $collateralPrice) * 1.1; // 10% penalty
+                $collateralToSeize = (int) round($collateralToSeizeEth * 1000000); // Store in micro units
+                $penaltyAmount = (int) round($collateralToSeize * 0.1);
+                $newDebt = max(0, (int) $position->debt_amount - $debtToCover);
+                $newCollateral = max(0, (int) $position->collateral_amount - $collateralToSeize);
+                $newCollateralValue = ($newCollateral / 1000000) * $collateralPrice;
 
                 $position->update([
-                    'debt_amount'       => $position->debt_amount - $debtToCover,
-                    'collateral_amount' => max(0, $position->collateral_amount - $collateralToSeize),
-                    'status'            => $position->debt_amount - $debtToCover <= 0 ? 'liquidated' : 'active',
-                    'collateral_ratio'  => $position->debt_amount - $debtToCover > 0
-                        ? ($position->collateral_amount - $collateralToSeize) * $collateralPrice / ($position->debt_amount - $debtToCover)
+                    'debt_amount'       => $newDebt,
+                    'collateral_amount' => $newCollateral,
+                    'status'            => $newDebt <= 0 ? 'liquidated' : 'active',
+                    'collateral_ratio'  => $newDebt > 0
+                        ? $newCollateralValue / $newDebt
                         : 0,
                 ]);
 

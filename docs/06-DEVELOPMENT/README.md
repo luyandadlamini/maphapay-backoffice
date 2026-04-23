@@ -9,6 +9,7 @@ This directory contains guides for developers working on the FinAegis platform.
 - **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development setup, conventions, and best practices
 - **[DEMO.md](DEMO.md)** - Demo environment setup and sample data
 - **[DEMO-DEPOSIT.md](DEMO-DEPOSIT.md)** - Demo deposit functionality implementation
+- **[LOCAL_ADMIN_SETUP.md](LOCAL_ADMIN_SETUP.md)** - Local Filament admin and back-office setup
 
 ### Testing Documentation
 - **[BEHAT.md](BEHAT.md)** - Behat testing framework setup and usage

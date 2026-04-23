@@ -31,11 +31,18 @@ it('can get all event queue values', function () {
 });
 
 it('can get all user role values', function () {
-    $cases = UserRoles::cases();
+    $values = collect(UserRoles::cases())->pluck('value')->sort()->values()->all();
 
-    expect($cases)->toHaveCount(3);
-    expect(collect($cases)->pluck('value')->toArray())
-        ->toBe(['business', 'private', 'admin']);
+    expect($values)->toBe([
+        'admin',
+        'business',
+        'compliance-manager',
+        'finance-lead',
+        'operations-l2',
+        'private',
+        'super-admin',
+        'support-l1',
+    ]);
 });
 
 it('enums are backed by strings', function () {

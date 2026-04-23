@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Domain\AI\MCP\Tools\Account;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Account\Services\AccountService;
 use App\Domain\AI\MCP\MCPServer;
 use App\Domain\AI\MCP\ResourceManager;
@@ -184,9 +185,12 @@ class CreateAccountToolTest extends TestCase
         // Verify in database
         $account = Account::where('uuid', $result['account_uuid'])->first();
         $this->assertNotNull($account);
-        $account->refresh(); // Refresh from database
-        // Balance is stored in cents in the database
-        $this->assertEquals(100050, $account->balance);
+
+        $balance = AccountBalance::where('account_uuid', $result['account_uuid'])
+            ->where('asset_code', 'USD')
+            ->first();
+        $this->assertNotNull($balance);
+        $this->assertEquals(100050, $balance->balance);
     }
 
     #[Test]

@@ -45,19 +45,138 @@ class MinorFamilyReconciliationExceptionQueueService
                 ]);
             }
 
+            /** @var array<string, mixed> $existingMetadata */
+            $existingMetadata = is_array($existing->metadata) ? $existing->metadata : [];
+
             $existing->forceFill([
                 'status' => MinorFamilyReconciliationException::STATUS_OPEN,
                 'source' => $source,
-                'metadata' => $metadata,
+                'metadata' => array_merge($existingMetadata, $metadata),
                 'occurrence_count' => $existing->occurrence_count + 1,
                 'last_seen_at' => now(),
                 'sla_due_at' => $existing->sla_due_at ?? $this->slaDueAt($existing->first_seen_at),
+                'resolved_at' => null,
             ])->save();
 
             return $existing;
         });
 
         return $exception;
+    }
+
+    /**
+     * @param array<string, mixed> $metadata
+     */
+    public function resolveOpenExceptionsForTransaction(
+        MtnMomoTransaction $transaction,
+        string $source,
+        array $metadata = [],
+    ): int {
+        return DB::transaction(function () use ($transaction, $source, $metadata): int {
+            /** @var \Illuminate\Database\Eloquent\Collection<int, MinorFamilyReconciliationException> $openExceptions */
+            $openExceptions = MinorFamilyReconciliationException::query()
+                ->where('mtn_momo_transaction_id', $transaction->id)
+                ->where('status', MinorFamilyReconciliationException::STATUS_OPEN)
+                ->lockForUpdate()
+                ->get();
+
+            if ($openExceptions->isEmpty()) {
+                return 0;
+            }
+
+            $now = now();
+
+            foreach ($openExceptions as $exception) {
+                /** @var array<string, mixed> $existingMetadata */
+                $existingMetadata = is_array($exception->metadata) ? $exception->metadata : [];
+                $existingMetadata['resolution'] = array_merge([
+                    'source' => $source,
+                    'resolved_at' => $now->toIso8601String(),
+                ], $metadata);
+
+                $exception->forceFill([
+                    'status' => MinorFamilyReconciliationException::STATUS_RESOLVED,
+                    'source' => $source,
+                    'metadata' => $existingMetadata,
+                    'resolved_at' => $now,
+                ])->save();
+            }
+
+            return $openExceptions->count();
+        });
+    }
+
+    /**
+     * @param array<string, mixed> $metadata
+     */
+    public function resolveException(
+        MinorFamilyReconciliationException $exception,
+        string $source,
+        array $metadata = [],
+    ): MinorFamilyReconciliationException {
+        /** @var MinorFamilyReconciliationException $fresh */
+        $fresh = DB::transaction(function () use ($exception, $source, $metadata): MinorFamilyReconciliationException {
+            /** @var MinorFamilyReconciliationException $locked */
+            $locked = MinorFamilyReconciliationException::query()
+                ->whereKey($exception->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            /** @var array<string, mixed> $existingMetadata */
+            $existingMetadata = is_array($locked->metadata) ? $locked->metadata : [];
+            $existingMetadata['resolution'] = array_merge([
+                'source' => $source,
+                'resolved_at' => now()->toIso8601String(),
+            ], $metadata);
+
+            $locked->forceFill([
+                'status' => MinorFamilyReconciliationException::STATUS_RESOLVED,
+                'source' => $source,
+                'metadata' => $existingMetadata,
+                'resolved_at' => now(),
+            ])->save();
+
+            return $locked;
+        });
+
+        return $fresh;
+    }
+
+    /**
+     * @param array<string, mixed> $metadata
+     */
+    public function reopenException(
+        MinorFamilyReconciliationException $exception,
+        string $source,
+        array $metadata = [],
+    ): MinorFamilyReconciliationException {
+        /** @var MinorFamilyReconciliationException $fresh */
+        $fresh = DB::transaction(function () use ($exception, $source, $metadata): MinorFamilyReconciliationException {
+            /** @var MinorFamilyReconciliationException $locked */
+            $locked = MinorFamilyReconciliationException::query()
+                ->whereKey($exception->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            /** @var array<string, mixed> $existingMetadata */
+            $existingMetadata = is_array($locked->metadata) ? $locked->metadata : [];
+            $existingMetadata['reopened'] = array_merge([
+                'source' => $source,
+                'reopened_at' => now()->toIso8601String(),
+            ], $metadata);
+
+            $locked->forceFill([
+                'status' => MinorFamilyReconciliationException::STATUS_OPEN,
+                'source' => $source,
+                'metadata' => $existingMetadata,
+                'resolved_at' => null,
+                'last_seen_at' => now(),
+            ])->save();
+
+            return $locked;
+        });
+
+        return $fresh;
     }
 
     private function slaDueAt(Carbon $from): Carbon

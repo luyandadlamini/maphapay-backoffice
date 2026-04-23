@@ -163,6 +163,60 @@ class MinorFamilyReconciliationServiceExceptionQueueTest extends TestCase
         $this->assertSame('funding_or_support_context_unresolved', $metadata['resolution_path'] ?? null);
     }
 
+    #[Test]
+    public function it_resolves_open_exception_when_reconciliation_outcome_becomes_reconciled(): void
+    {
+        [$minorAccount, $attempt, $txn] = $this->makeFundingAttemptFixture();
+
+        DB::table('minor_family_reconciliation_exceptions')->insert([
+            'id' => (string) Str::uuid(),
+            'mtn_momo_transaction_id' => $txn->id,
+            'reason_code' => 'unresolved_outcome',
+            'status' => 'open',
+            'source' => 'reconcile_command',
+            'occurrence_count' => 1,
+            'metadata' => json_encode(['seed' => true], JSON_THROW_ON_ERROR),
+            'first_seen_at' => now()->subMinutes(10),
+            'last_seen_at' => now()->subMinutes(5),
+            'sla_due_at' => now()->addHours(4),
+            'sla_escalated_at' => null,
+            'resolved_at' => null,
+            'created_at' => now()->subMinutes(10),
+            'updated_at' => now()->subMinutes(5),
+        ]);
+
+        $walletOps = Mockery::mock(WalletOperationsService::class);
+        $walletOps->shouldReceive('deposit')
+            ->once()
+            ->with(
+                $minorAccount->uuid,
+                'SZL',
+                '10000',
+                Mockery::type('string'),
+                Mockery::type('array'),
+            )
+            ->andReturn('wallet-credit-success');
+        $this->app->instance(WalletOperationsService::class, $walletOps);
+
+        $service = $this->app->make(MinorFamilyReconciliationService::class);
+        $outcome = $service->reconcile($txn->fresh() ?? $txn, 'status_poll');
+
+        $this->assertTrue($outcome->isReconciled());
+        $this->assertDatabaseHas('minor_family_reconciliation_exceptions', [
+            'mtn_momo_transaction_id' => $txn->id,
+            'reason_code' => 'unresolved_outcome',
+            'status' => 'resolved',
+            'source' => 'status_poll',
+        ]);
+
+        $row = DB::table('minor_family_reconciliation_exceptions')
+            ->where('mtn_momo_transaction_id', $txn->id)
+            ->where('reason_code', 'unresolved_outcome')
+            ->first();
+        $this->assertNotNull($row);
+        $this->assertNotNull($row->resolved_at);
+    }
+
     /**
      * @return array{0: Account, 1: MinorFamilyFundingAttempt, 2: MtnMomoTransaction}
      */
@@ -268,6 +322,14 @@ class MinorFamilyReconciliationServiceExceptionQueueTest extends TestCase
             && ! Schema::hasColumns('minor_family_reconciliation_exceptions', ['sla_due_at', 'sla_escalated_at'])) {
             Artisan::call('migrate', [
                 '--path' => 'database/migrations/2026_04_23_100410_add_sla_columns_to_minor_family_reconciliation_exceptions_table.php',
+                '--force' => true,
+            ]);
+        }
+
+        if (Schema::hasTable('minor_family_reconciliation_exceptions')
+            && ! Schema::hasColumns('minor_family_reconciliation_exceptions', ['resolved_at'])) {
+            Artisan::call('migrate', [
+                '--path' => 'database/migrations/2026_04_23_100430_add_resolved_at_to_minor_family_reconciliation_exceptions_table.php',
                 '--force' => true,
             ]);
         }

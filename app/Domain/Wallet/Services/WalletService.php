@@ -21,7 +21,7 @@ class WalletService implements WalletServiceInterface
     public function deposit(mixed $accountUuid, string $assetCode, mixed $amount): void
     {
         $workflow = WorkflowStub::make(WalletDepositWorkflow::class);
-        $workflow->start(__account_uuid($accountUuid), $assetCode, $amount);
+        $workflow->start(__account_uuid($accountUuid), $assetCode, (string) $amount);
     }
 
     /**
@@ -35,13 +35,14 @@ class WalletService implements WalletServiceInterface
         $accountUuidObj = __account_uuid($accountUuid);
         /** @var \Illuminate\Database\Eloquent\Model|null $account */
         $account = Account::where('uuid', (string) $accountUuidObj)->first();
+        $requestedAmount = (int) $amount;
 
-        if (! $account || ! $account->hasSufficientBalance($assetCode, $amount)) {
+        if (! $account || ! $account->hasSufficientBalance($assetCode, $requestedAmount)) {
             throw new Exception('Insufficient balance');
         }
 
         $workflow = WorkflowStub::make(WalletWithdrawWorkflow::class);
-        $workflow->start($accountUuidObj, $assetCode, $amount);
+        $workflow->start($accountUuidObj, $assetCode, (string) $amount);
     }
 
     /**
@@ -55,8 +56,9 @@ class WalletService implements WalletServiceInterface
         $fromAccountUuidObj = __account_uuid($fromAccountUuid);
         /** @var \Illuminate\Database\Eloquent\Model|null $fromAccount */
         $fromAccount = Account::where('uuid', (string) $fromAccountUuidObj)->first();
+        $requestedAmount = (int) $amount;
 
-        if (! $fromAccount || ! $fromAccount->hasSufficientBalance($assetCode, $amount)) {
+        if (! $fromAccount || ! $fromAccount->hasSufficientBalance($assetCode, $requestedAmount)) {
             throw new Exception('Insufficient balance');
         }
 
@@ -65,7 +67,7 @@ class WalletService implements WalletServiceInterface
             $fromAccountUuidObj,
             __account_uuid($toAccountUuid),
             $assetCode,
-            $amount,
+            (string) $amount,
             $reference
         );
     }
@@ -80,7 +82,7 @@ class WalletService implements WalletServiceInterface
             __account_uuid($accountUuid),
             $fromAssetCode,
             $toAssetCode,
-            $amount
+            (string) $amount
         );
     }
 }

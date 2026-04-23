@@ -6,6 +6,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Domain\Account\Models\MinorFamilyReconciliationException;
 use App\Domain\Account\Models\MinorFamilyReconciliationExceptionAcknowledgment;
+use App\Domain\Account\Services\MinorFamilyReconciliationExceptionQueueService;
 use App\Filament\Admin\Resources\MinorFamilyReconciliationExceptionResource\Pages;
 use App\Filament\Admin\Resources\MinorFamilyReconciliationExceptionResource\RelationManagers;
 use Filament\Forms\Components\KeyValue;
@@ -153,28 +154,69 @@ class MinorFamilyReconciliationExceptionResource extends Resource
                         }
 
                         $note = (string) ($data['note'] ?? '');
+                        self::appendManualReviewMetadata($record, $user->uuid, $note);
+                    }),
+                Action::make('resolve_exception')
+                    ->label('Resolve Exception')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->form([
+                        Textarea::make('note')
+                            ->label('Resolution Note')
+                            ->required()
+                            ->minLength(5)
+                            ->maxLength(500),
+                    ])
+                    ->visible(fn (MinorFamilyReconciliationException $record): bool => $record->status === MinorFamilyReconciliationException::STATUS_OPEN)
+                    ->action(function (MinorFamilyReconciliationException $record, array $data): void {
+                        $user = auth()->user();
+                        if ($user === null || ! is_string($user->uuid) || $user->uuid === '') {
+                            return;
+                        }
 
-                        DB::transaction(function () use ($record, $user, $note): void {
-                            /** @var MinorFamilyReconciliationExceptionAcknowledgment $ack */
-                            $ack = MinorFamilyReconciliationExceptionAcknowledgment::query()->create([
-                                'minor_family_reconciliation_exception_id' => $record->id,
-                                'acknowledged_by_user_uuid' => $user->uuid,
+                        $note = (string) ($data['note'] ?? '');
+                        self::appendManualReviewMetadata($record, $user->uuid, $note);
+
+                        app(MinorFamilyReconciliationExceptionQueueService::class)->resolveException(
+                            exception: $record->refresh(),
+                            source: 'filament_manual_resolve',
+                            metadata: [
+                                'resolved_by_user_uuid' => $user->uuid,
                                 'note' => $note,
-                            ]);
+                            ],
+                        );
+                    }),
+                Action::make('reopen_exception')
+                    ->label('Reopen Exception')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->form([
+                        Textarea::make('note')
+                            ->label('Reopen Reason')
+                            ->required()
+                            ->minLength(5)
+                            ->maxLength(500),
+                    ])
+                    ->visible(fn (MinorFamilyReconciliationException $record): bool => $record->status === MinorFamilyReconciliationException::STATUS_RESOLVED)
+                    ->action(function (MinorFamilyReconciliationException $record, array $data): void {
+                        $user = auth()->user();
+                        if ($user === null || ! is_string($user->uuid) || $user->uuid === '') {
+                            return;
+                        }
 
-                            /** @var array<string, mixed> $metadata */
-                            $metadata = is_array($record->metadata) ? $record->metadata : [];
-                            $metadata['manual_review'] = [
-                                'acknowledged_by_user_uuid' => $user->uuid,
-                                'acknowledged_at' => now()->toIso8601String(),
+                        $note = (string) ($data['note'] ?? '');
+                        self::appendManualReviewMetadata($record, $user->uuid, $note);
+
+                        app(MinorFamilyReconciliationExceptionQueueService::class)->reopenException(
+                            exception: $record->refresh(),
+                            source: 'filament_manual_reopen',
+                            metadata: [
+                                'reopened_by_user_uuid' => $user->uuid,
                                 'note' => $note,
-                                'latest_acknowledgment_id' => $ack->id,
-                            ];
-
-                            $record->forceFill([
-                                'metadata' => $metadata,
-                            ])->save();
-                        });
+                            ],
+                        );
                     }),
             ])
             ->bulkActions([])
@@ -194,5 +236,39 @@ class MinorFamilyReconciliationExceptionResource extends Resource
             'index' => Pages\ListMinorFamilyReconciliationExceptions::route('/'),
             'view' => Pages\ViewMinorFamilyReconciliationException::route('/{record}'),
         ];
+    }
+
+    private static function appendManualReviewMetadata(
+        MinorFamilyReconciliationException $record,
+        string $userUuid,
+        string $note,
+    ): void {
+        DB::transaction(function () use ($record, $userUuid, $note): void {
+            /** @var MinorFamilyReconciliationException $lockedRecord */
+            $lockedRecord = MinorFamilyReconciliationException::query()
+                ->whereKey($record->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            /** @var MinorFamilyReconciliationExceptionAcknowledgment $ack */
+            $ack = MinorFamilyReconciliationExceptionAcknowledgment::query()->create([
+                'minor_family_reconciliation_exception_id' => $lockedRecord->id,
+                'acknowledged_by_user_uuid' => $userUuid,
+                'note' => $note,
+            ]);
+
+            /** @var array<string, mixed> $metadata */
+            $metadata = is_array($lockedRecord->metadata) ? $lockedRecord->metadata : [];
+            $metadata['manual_review'] = [
+                'acknowledged_by_user_uuid' => $userUuid,
+                'acknowledged_at' => now()->toIso8601String(),
+                'note' => $note,
+                'latest_acknowledgment_id' => $ack->id,
+            ];
+
+            $lockedRecord->forceFill([
+                'metadata' => $metadata,
+            ])->save();
+        });
     }
 }

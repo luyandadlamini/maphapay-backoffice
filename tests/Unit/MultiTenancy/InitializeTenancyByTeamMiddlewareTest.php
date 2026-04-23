@@ -9,6 +9,7 @@ use App\Http\Middleware\InitializeTenancyByTeam;
 use App\Models\Team;
 use App\Models\Tenant;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use ReflectionClass;
@@ -35,6 +36,10 @@ class InitializeTenancyByTeamMiddlewareTest extends TestCase
             $this->markTestSkipped('Multi-tenancy tests require MySQL/PostgreSQL (SQLite in-memory cannot share tables across connections)');
         }
 
+        if (! $this->canCreateTenantDatabases()) {
+            $this->markTestSkipped('Multi-tenancy tests require CREATE DATABASE privileges for tenant_* databases');
+        }
+
         $this->middleware = app(InitializeTenancyByTeam::class);
     }
 
@@ -48,6 +53,24 @@ class InitializeTenancyByTeamMiddlewareTest extends TestCase
         $database = config("database.connections.{$connection}.database");
 
         return $driver === 'sqlite' && $database === ':memory:';
+    }
+
+    protected function canCreateTenantDatabases(): bool
+    {
+        try {
+            $user = User::factory()->create();
+            $team = Team::factory()->create(['user_id' => $user->id]);
+            $tenant = Tenant::createFromTeam($team);
+
+            $tenant->delete();
+            $team->delete();
+            $user->delete();
+
+            return true;
+        } catch (QueryException $e) {
+            return ! str_contains($e->getMessage(), 'CREATE DATABASE')
+                && ! str_contains($e->getMessage(), 'Access denied for user');
+        }
     }
 
     protected function tearDown(): void

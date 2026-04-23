@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon $last_seen_at
  * @property \Illuminate\Support\Carbon|null $sla_due_at
  * @property \Illuminate\Support\Carbon|null $sla_escalated_at
+ * @property \Illuminate\Support\Carbon|null $resolved_at
  */
 class MinorFamilyReconciliationException extends Model
 {
@@ -47,6 +48,7 @@ class MinorFamilyReconciliationException extends Model
             'last_seen_at' => 'datetime',
             'sla_due_at' => 'datetime',
             'sla_escalated_at' => 'datetime',
+            'resolved_at' => 'datetime',
         ];
     }
 

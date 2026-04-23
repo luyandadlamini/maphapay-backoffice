@@ -10,7 +10,7 @@
          processIsolation="false"
          stopOnFailure="false"
          enforceTimeLimit="true"
-         defaultTimeLimit="300"
+         defaultTimeLimit="600"
          displayDetailsOnTestsThatTriggerDeprecations="true"
          displayDetailsOnTestsThatTriggerWarnings="true"
 >

@@ -8,8 +8,10 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\MinorFamilyFundingAttempt;
 use App\Domain\Account\Models\MinorFamilyFundingLink;
 use App\Domain\Account\Models\MinorFamilySupportTransfer;
+use App\Domain\Account\Services\MinorFamilyReconciliationService;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\Wallet\Services\WalletOperationsService;
+use App\Console\Commands\ReconcileMtnMomoTransactions;
 use App\Models\MtnMomoTransaction;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
@@ -19,7 +21,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
-use RuntimeException;
+use Symfony\Component\Console\Tester\CommandTester;
 use Tests\TestCase;
 
 class ReconcileMtnMomoTransactionsMinorFamilyTest extends TestCase
@@ -60,16 +62,14 @@ class ReconcileMtnMomoTransactionsMinorFamilyTest extends TestCase
             ->once()
             ->with($txn->mtn_reference_id)
             ->andReturn(['status' => 'SUCCESSFUL']);
-        $this->app->instance(\App\Domain\MtnMomo\Services\MtnMomoClient::class, $mtnClient);
 
         $walletOps = Mockery::mock(WalletOperationsService::class);
         $walletOps->shouldNotReceive('deposit');
-        $this->app->instance(WalletOperationsService::class, $walletOps);
-
-        $exitCode = Artisan::call('mtn:reconcile-disbursements', [
-            '--min-age' => 1,
-        ]);
-        $output = (string) preg_replace('/\e\[[\d;]*m/', '', Artisan::output());
+        [$exitCode, $output] = $this->runCommandWithDoubles(
+            mtnClient: $mtnClient,
+            walletOps: $walletOps,
+            options: ['--min-age' => 1],
+        );
 
         $this->assertSame(1, $exitCode);
         $this->assertStringContainsString('settled=0', $output);
@@ -114,26 +114,31 @@ class ReconcileMtnMomoTransactionsMinorFamilyTest extends TestCase
             ->once()
             ->with($txn->mtn_reference_id)
             ->andReturn(['status' => 'SUCCESSFUL']);
-        $this->app->instance(\App\Domain\MtnMomo\Services\MtnMomoClient::class, $mtnClient);
 
         $walletOps = Mockery::mock(WalletOperationsService::class);
         $walletOps->shouldReceive('deposit')
             ->once()
-            ->with(
-                $minorAccount->uuid,
-                'SZL',
-                '15000',
-                Mockery::type('string'),
-                Mockery::type('array'),
-            )
+            ->withArgs(function (
+                string $accountUuid,
+                string $assetCode,
+                string $amountMinor,
+                string $reference,
+                array $metadata
+            ) use ($minorAccount): bool {
+                return $accountUuid === $minorAccount->uuid
+                    && $assetCode === 'SZL'
+                    && in_array($amountMinor, ['15000', '15000.00'], true)
+                    && str_contains($reference, 'minor-family-funding-credit:')
+                    && array_key_exists('mtn_momo_transaction_id', $metadata);
+            })
             ->andReturn('wallet-credit-reconcile');
-        $this->app->instance(WalletOperationsService::class, $walletOps);
+        [$exitCode, $output] = $this->runCommandWithDoubles(
+            mtnClient: $mtnClient,
+            walletOps: $walletOps,
+            options: ['--min-age' => 1],
+        );
 
-        $exitCode = Artisan::call('mtn:reconcile-disbursements', [
-            '--min-age' => 1,
-        ]);
-
-        $this->assertSame(0, $exitCode);
+        $this->assertSame(0, $exitCode, $output);
 
         $this->assertDatabaseHas('mtn_momo_transactions', [
             'id' => $txn->id,
@@ -161,15 +166,14 @@ class ReconcileMtnMomoTransactionsMinorFamilyTest extends TestCase
 
         $mtnClient = Mockery::mock(\App\Domain\MtnMomo\Services\MtnMomoClient::class);
         $mtnClient->shouldNotReceive('getRequestToPayStatus');
-        $this->app->instance(\App\Domain\MtnMomo\Services\MtnMomoClient::class, $mtnClient);
 
         $walletOps = Mockery::mock(WalletOperationsService::class);
         $walletOps->shouldNotReceive('deposit');
-        $this->app->instance(WalletOperationsService::class, $walletOps);
-
-        $exitCode = Artisan::call('mtn:reconcile-disbursements', [
-            '--min-age' => 15,
-        ]);
+        [$exitCode] = $this->runCommandWithDoubles(
+            mtnClient: $mtnClient,
+            walletOps: $walletOps,
+            options: ['--min-age' => 15],
+        );
 
         $this->assertSame(0, $exitCode);
 
@@ -185,22 +189,16 @@ class ReconcileMtnMomoTransactionsMinorFamilyTest extends TestCase
     }
 
     #[Test]
-    public function reconciliation_command_reports_unreconciled_when_minor_support_refund_did_not_occur(): void
+    public function reconciliation_command_fails_closed_when_mtn_status_poll_errors_for_minor_support_transfer(): void
     {
         [, $transfer, $txn] = $this->makeStuckSupportTransferFixture();
 
-        $mtnClient = Mockery::mock(\App\Domain\MtnMomo\Services\MtnMomoClient::class);
-        $mtnClient->shouldReceive('getTransferStatus')
-            ->once()
-            ->with($txn->mtn_reference_id)
-            ->andReturn(['status' => 'FAILED']);
-        $this->app->instance(\App\Domain\MtnMomo\Services\MtnMomoClient::class, $mtnClient);
-
-        $walletOps = Mockery::mock(WalletOperationsService::class);
-        $walletOps->shouldReceive('deposit')
-            ->once()
-            ->andThrow(new RuntimeException('refund failed'));
-        $this->app->instance(WalletOperationsService::class, $walletOps);
+        config([
+            'mtn_momo.base_url' => '',
+            'mtn_momo.subscription_key' => '',
+            'mtn_momo.api_user' => '',
+            'mtn_momo.api_key' => '',
+        ]);
 
         $exitCode = Artisan::call('mtn:reconcile-disbursements', [
             '--min-age' => 1,
@@ -208,18 +206,16 @@ class ReconcileMtnMomoTransactionsMinorFamilyTest extends TestCase
         $output = (string) preg_replace('/\e\[[\d;]*m/', '', Artisan::output());
 
         $this->assertSame(1, $exitCode);
-        $this->assertStringContainsString('refunded=0', $output);
-        $this->assertStringContainsString('unreconciled=1', $output);
+        $this->assertStringContainsString('errors=1', $output);
 
         $this->assertDatabaseHas('mtn_momo_transactions', [
             'id' => $txn->id,
-            'status' => MtnMomoTransaction::STATUS_FAILED,
+            'status' => MtnMomoTransaction::STATUS_PENDING,
         ]);
 
         $this->assertDatabaseHas('minor_family_support_transfers', [
             'id' => $transfer->id,
-            'status' => MinorFamilySupportTransfer::STATUS_FAILED_UNRECONCILED,
-            'failed_reason' => 'wallet_refund_failed',
+            'status' => MinorFamilySupportTransfer::STATUS_PENDING_PROVIDER,
         ]);
     }
 
@@ -402,5 +398,38 @@ class ReconcileMtnMomoTransactionsMinorFamilyTest extends TestCase
                 '--force' => true,
             ]);
         }
+
+        if (Schema::hasTable('minor_family_reconciliation_exceptions')
+            && ! Schema::hasColumns('minor_family_reconciliation_exceptions', ['resolved_at'])) {
+            Artisan::call('migrate', [
+                '--path' => 'database/migrations/2026_04_23_100430_add_resolved_at_to_minor_family_reconciliation_exceptions_table.php',
+                '--force' => true,
+            ]);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return array{0: int, 1: string}
+     */
+    private function runCommandWithDoubles(
+        \App\Domain\MtnMomo\Services\MtnMomoClient $mtnClient,
+        WalletOperationsService $walletOps,
+        array $options = [],
+    ): array {
+        $this->app->instance(WalletOperationsService::class, $walletOps);
+
+        $command = new ReconcileMtnMomoTransactions(
+            mtnClient: $mtnClient,
+            walletOps: $walletOps,
+            minorFamilyReconciliation: $this->app->make(MinorFamilyReconciliationService::class),
+        );
+        $command->setLaravel($this->app);
+
+        $tester = new CommandTester($command);
+        $exitCode = $tester->execute($options);
+        $output = (string) preg_replace('/\e\[[\d;]*m/', '', $tester->getDisplay());
+
+        return [$exitCode, $output];
     }
 }

@@ -31,8 +31,9 @@ it('registers WaterlineServiceProvider in non-testing environment', function () 
     // Expect the BlockchainServiceProvider to be registered
     $this->app->shouldReceive('register')->once()->with(App\Providers\BlockchainServiceProvider::class);
 
-    // Expect strategy bindings
-    $this->app->shouldReceive('bind')->times(3);
+    // Expect strategy and verifier bindings
+    $this->app->shouldReceive('bind')->times(4);
+    $this->app->shouldReceive('singleton')->twice();
 
     $this->provider->register();
 });
@@ -45,15 +46,18 @@ it('does not register WaterlineServiceProvider in testing environment', function
     $this->app->shouldReceive('register')->once()->with(App\Providers\BlockchainServiceProvider::class);
     $this->app->shouldNotReceive('register')->with(WaterlineServiceProvider::class);
 
-    // Expect strategy bindings in testing environment too
-    $this->app->shouldReceive('bind')->times(3);
+    // Expect strategy and verifier bindings in testing environment too
+    $this->app->shouldReceive('bind')->times(4);
+    $this->app->shouldReceive('singleton')->twice();
 
     $this->provider->register();
 });
 
 it('has boot method that can be called', function () {
-    // Mock environment check
+    // Mock callbacks and environment checks used in boot()
+    $this->app->shouldReceive('resolving')->once()->with(\L5Swagger\GeneratorFactory::class, Mockery::type(Closure::class));
     $this->app->shouldReceive('environment')->with('demo')->andReturn(false);
+    $this->app->shouldReceive('bound')->with('request')->andReturn(false);
 
     // Test that boot method exists and can be called without errors
     expect(function () {

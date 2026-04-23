@@ -496,6 +496,8 @@ class AccountResource extends Resource
             RelationManagers\TransactionsRelationManager::class,
             RelationManagers\TurnoversRelationManager::class,
             RelationManagers\LinkedWalletsRelationManager::class,
+            RelationManagers\MinorAccountLifecycleTransitionsRelationManager::class,
+            RelationManagers\MinorAccountLifecycleExceptionsRelationManager::class,
         ];
     }
 
