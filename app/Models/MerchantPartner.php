@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class MerchantPartner extends Model
 {
+    public const DEFAULT_BONUS_MULTIPLIER = 2.0;
+    public const DEFAULT_MIN_AGE_ALLOWANCE = 0;
+    public const DEFAULT_IS_ACTIVE_FOR_MINORS = true;
+
     protected $table = 'merchant_partners';
 
     protected $fillable = [
@@ -40,20 +44,20 @@ class MerchantPartner extends Model
 
     public function getBonusMultiplier(): float
     {
-        return (float) ($this->bonus_multiplier ?? 2.0);
+        return (float) ($this->bonus_multiplier ?? self::DEFAULT_BONUS_MULTIPLIER);
     }
 
     public function getMinAgeAllowance(): int
     {
-        return (int) ($this->min_age_allowance ?? 0);
+        return (int) ($this->min_age_allowance ?? self::DEFAULT_MIN_AGE_ALLOWANCE);
     }
 
     public function isActiveForMinors(): bool
     {
-        return (bool) ($this->is_active_for_minors ?? true);
+        return (bool) ($this->is_active_for_minors ?? self::DEFAULT_IS_ACTIVE_FOR_MINORS);
     }
 
-    public function isEligibleForMinor(int $minorAge, ?array $categorySlugs = null): bool
+    public function isEligibleForMinors(int $minorAge, ?array $categorySlugs = null): bool
     {
         if (! $this->isActiveForMinors()) {
             return false;
