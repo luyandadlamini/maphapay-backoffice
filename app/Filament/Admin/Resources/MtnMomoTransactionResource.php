@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Domain\Account\Models\MinorFamilyFundingAttempt;
+use App\Domain\Account\Models\MinorFamilySupportTransfer;
 use App\Filament\Admin\Resources\MtnMomoTransactionResource\Pages;
 use App\Models\MtnMomoTransaction;
 use Filament\Forms\Components\TextInput;
@@ -57,6 +59,8 @@ class MtnMomoTransactionResource extends Resource
                 TextInput::make('party_msisdn')->disabled(),
                 TextInput::make('mtn_reference_id')->disabled(),
                 TextInput::make('mtn_financial_transaction_id')->disabled(),
+                TextInput::make('context_type')->disabled(),
+                TextInput::make('context_uuid')->disabled(),
                 TextInput::make('note')->disabled(),
             ]);
     }
@@ -90,6 +94,12 @@ class MtnMomoTransactionResource extends Resource
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable(),
+                TextColumn::make('context_type')
+                    ->label('Context Type')
+                    ->toggleable(),
+                TextColumn::make('context_uuid')
+                    ->label('Context UUID')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
@@ -101,37 +111,13 @@ class MtnMomoTransactionResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\Action::make('retry')
-                    ->label('Retry')
-                    ->icon('heroicon-o-arrow-path')
-                    ->color('warning')
-                    ->requiresConfirmation()
-                    ->visible(
-                        fn (MtnMomoTransaction $record): bool => $record->status === MtnMomoTransaction::STATUS_FAILED &&
-                        $record->type === MtnMomoTransaction::TYPE_DISBURSEMENT &&
-                        (auth()->user()?->can('approve-adjustments') ?? false)
-                    )
-                    ->action(function (MtnMomoTransaction $record): void {
-                        $record->update(['status' => MtnMomoTransaction::STATUS_PENDING]);
-                        \Filament\Notifications\Notification::make()->title('Payout Retried')->success()->send();
-                    }),
-                Tables\Actions\Action::make('refund')
-                    ->label('Refund')
-                    ->icon('heroicon-o-arrow-uturn-left')
-                    ->color('primary')
-                    ->requiresConfirmation()
-                    ->visible(
-                        fn (MtnMomoTransaction $record): bool => $record->status === MtnMomoTransaction::STATUS_FAILED &&
-                        $record->type === MtnMomoTransaction::TYPE_REQUEST_TO_PAY &&
-                        (auth()->user()?->can('approve-adjustments') ?? false)
-                    )
-                    ->action(function (MtnMomoTransaction $record): void {
-                        $record->update([
-                            'status' => MtnMomoTransaction::STATUS_SUCCESSFUL,
-                            'note'   => trim($record->note . ' | Refunded manually by ' . auth()->id(), ' | '),
-                        ]);
-                        \Filament\Notifications\Notification::make()->title('Collection Refunded')->success()->send();
-                    }),
+                Tables\Actions\Action::make('view_linked_context')
+                    ->label(fn (MtnMomoTransaction $record): string => static::getLinkedContextLabel($record))
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->color('gray')
+                    ->url(fn (MtnMomoTransaction $record): ?string => static::getLinkedContextUrl($record))
+                    ->openUrlInNewTab()
+                    ->visible(fn (MtnMomoTransaction $record): bool => static::getLinkedContextUrl($record) !== null),
             ])
             ->bulkActions([])
             ->defaultSort('created_at', 'desc');
@@ -150,5 +136,93 @@ class MtnMomoTransactionResource extends Resource
             'index' => Pages\ListMtnMomoTransactions::route('/'),
             'view'  => Pages\ViewMtnMomoTransaction::route('/{record}'),
         ];
+    }
+
+    private static function getLinkedContextLabel(MtnMomoTransaction $record): string
+    {
+        $linkedUrl = static::getLinkedContextUrl($record);
+
+        if ($linkedUrl === null) {
+            return 'Linked Context';
+        }
+
+        $supportTransfer = static::resolveSupportTransfer($record);
+        if ($supportTransfer !== null) {
+            return 'View Support Transfer';
+        }
+
+        $fundingAttempt = static::resolveFundingAttempt($record);
+        if ($fundingAttempt !== null) {
+            return 'View Funding Attempt';
+        }
+
+        return 'View Linked Context';
+    }
+
+    private static function getLinkedContextUrl(MtnMomoTransaction $record): ?string
+    {
+        $supportTransfer = static::resolveSupportTransfer($record);
+        if ($supportTransfer !== null) {
+            return MinorFamilySupportTransferResource::getUrl('view', ['record' => $supportTransfer->getKey()]);
+        }
+
+        $fundingAttempt = static::resolveFundingAttempt($record);
+        if ($fundingAttempt !== null) {
+            return MinorFamilyFundingAttemptResource::getUrl('view', ['record' => $fundingAttempt->getKey()]);
+        }
+
+        return null;
+    }
+
+    private static function resolveSupportTransfer(MtnMomoTransaction $record): ?MinorFamilySupportTransfer
+    {
+        $byTransaction = MinorFamilySupportTransfer::query()
+            ->where('mtn_momo_transaction_id', $record->id)
+            ->first();
+
+        if ($byTransaction !== null) {
+            return $byTransaction;
+        }
+
+        if ($record->context_uuid === null || $record->context_type === null) {
+            return null;
+        }
+
+        if (in_array($record->context_type, [
+            MinorFamilySupportTransfer::class,
+            'minor_family_support_transfer',
+            'support_transfer',
+        ], true)) {
+            /** @var MinorFamilySupportTransfer|null */
+            return MinorFamilySupportTransfer::query()->find($record->context_uuid);
+        }
+
+        return null;
+    }
+
+    private static function resolveFundingAttempt(MtnMomoTransaction $record): ?MinorFamilyFundingAttempt
+    {
+        $byTransaction = MinorFamilyFundingAttempt::query()
+            ->where('mtn_momo_transaction_id', $record->id)
+            ->first();
+
+        if ($byTransaction !== null) {
+            return $byTransaction;
+        }
+
+        if ($record->context_uuid === null || $record->context_type === null) {
+            return null;
+        }
+
+        if (in_array($record->context_type, [
+            MinorFamilyFundingAttempt::class,
+            'minor_family_funding_attempt',
+            'funding_attempt',
+        ], true)) {
+            /** @var MinorFamilyFundingAttempt|null */
+            return MinorFamilyFundingAttempt::query()->find($record->context_uuid);
+        }
+
+        return null;
     }
 }

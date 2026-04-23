@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Domain\Shared\OperationRecord;
 
 use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
+use App\Domain\Shared\OperationRecord\Exceptions\OperationInProgressException;
 use App\Domain\Shared\OperationRecord\Exceptions\OperationPayloadMismatchException;
 use Closure;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Str;
-use RuntimeException;
 use Throwable;
 
 /**
@@ -60,6 +60,12 @@ class OperationRecordService
             ->first();
 
         if ($existing !== null) {
+            if ($existing->payload_hash !== $payloadHash) {
+                throw new OperationPayloadMismatchException(
+                    'Idempotency key reused with a different request payload.'
+                );
+            }
+
             if ($existing->status === OperationRecord::STATUS_COMPLETED
                 && $existing->result_payload !== null) {
                 $this->telemetry->logOperationReplay($userId, $type, $key);
@@ -67,13 +73,7 @@ class OperationRecordService
                 return $existing->result_payload;
             }
 
-            if ($existing->payload_hash !== $payloadHash) {
-                throw new OperationPayloadMismatchException(
-                    'Idempotency key reused with a different request payload.'
-                );
-            }
-
-            throw new RuntimeException('An identical operation is already in progress. Please retry shortly.');
+            throw new OperationInProgressException();
         }
 
         try {
@@ -93,6 +93,12 @@ class OperationRecordService
                 ->where('idempotency_key', $key)
                 ->firstOrFail();
 
+            if ($record->payload_hash !== $payloadHash) {
+                throw new OperationPayloadMismatchException(
+                    'Idempotency key reused with a different request payload.'
+                );
+            }
+
             if ($record->status === OperationRecord::STATUS_COMPLETED
                 && $record->result_payload !== null) {
                 $this->telemetry->logOperationReplay($userId, $type, $key);
@@ -100,7 +106,7 @@ class OperationRecordService
                 return $record->result_payload;
             }
 
-            throw new RuntimeException('An identical operation is already in progress. Please retry shortly.');
+            throw new OperationInProgressException();
         }
 
         try {

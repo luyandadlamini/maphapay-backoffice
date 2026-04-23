@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Compatibility\Mtn;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\MinorFamilyFundingAttempt;
+use App\Domain\Account\Models\MinorFamilySupportTransfer;
+use App\Domain\Account\Services\MinorFamilyReconciliationService;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\MtnMomo\Services\MtnMomoClient;
 use App\Domain\MtnMomo\Services\MtnMomoCollectionSettler;
@@ -29,6 +32,7 @@ class TransactionStatusController extends Controller
         private readonly MtnMomoClient $mtnMomoClient,
         private readonly MtnMomoCollectionSettler $collectionSettler,
         private readonly WalletOperationsService $walletOps,
+        private readonly MinorFamilyReconciliationService $minorFamilyReconciliation,
     ) {
     }
 
@@ -75,6 +79,7 @@ class TransactionStatusController extends Controller
             $fresh !== null
             && $fresh->type === MtnMomoTransaction::TYPE_REQUEST_TO_PAY
             && $normalized === MtnMomoTransaction::STATUS_SUCCESSFUL
+            && ! $this->isMinorFamilyContext($fresh)
         ) {
             $this->collectionSettler->creditIfNeeded($fresh, $authUser);
             $fresh = $fresh->fresh();
@@ -86,8 +91,14 @@ class TransactionStatusController extends Controller
             && $normalized === MtnMomoTransaction::STATUS_FAILED
             && $fresh->wallet_debited_at !== null
             && $fresh->wallet_refunded_at === null
+            && ! $this->isMinorFamilyContext($fresh)
         ) {
             $this->refundDisbursementIfNeeded($fresh);
+            $fresh = $fresh->fresh();
+        }
+
+        if ($fresh !== null) {
+            $this->minorFamilyReconciliation->reconcile($fresh);
             $fresh = $fresh->fresh();
         }
 
@@ -234,5 +245,15 @@ class TransactionStatusController extends Controller
             'note'                         => $txn->note,
             'last_mtn_status'              => $txn->last_mtn_status,
         ];
+    }
+
+    private function isMinorFamilyContext(MtnMomoTransaction $transaction): bool
+    {
+        $contextType = (string) ($transaction->getAttribute('context_type') ?? '');
+
+        return in_array($contextType, [
+            MinorFamilyFundingAttempt::class,
+            MinorFamilySupportTransfer::class,
+        ], true);
     }
 }

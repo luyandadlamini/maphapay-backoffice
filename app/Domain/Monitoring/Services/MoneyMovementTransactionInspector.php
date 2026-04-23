@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace App\Domain\Monitoring\Services;
 
 use App\Domain\Account\Models\TransactionProjection;
+use App\Domain\Account\Models\MinorFamilyFundingAttempt;
+use App\Domain\Account\Models\MinorFamilyFundingLink;
+use App\Domain\Account\Models\MinorFamilySupportTransfer;
 use App\Domain\Asset\Models\AssetTransfer;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Ledger\Models\LedgerEntry;
 use App\Domain\Ledger\Models\LedgerPosting;
+use App\Models\MtnMomoTransaction;
 use App\Models\MoneyRequest;
 use App\Support\Reconciliation\ReconciliationReportDataLoader;
 use Illuminate\Support\Collection;
@@ -84,6 +88,7 @@ class MoneyMovementTransactionInspector
             ->values()
             ->all());
         $reconciliationExceptions = $this->resolveReconciliationExceptions($postingChainIds);
+        $minorFamilyContext = $this->resolveMinorFamilyContext($resolvedReference);
 
         $timeline = [];
         if ($transaction !== null) {
@@ -174,6 +179,14 @@ class MoneyMovementTransactionInspector
             $warnings[] = 'Reconciliation exceptions reference this ledger posting chain.';
         }
 
+        if (($minorFamilyContext['funding_attempt']['status'] ?? null) === MinorFamilyFundingAttempt::STATUS_SUCCESSFUL_UNCREDITED) {
+            $warnings[] = 'Minor family funding attempt is successful at provider level but still uncredited. Wallet credit reconciliation is required.';
+        }
+
+        if (($minorFamilyContext['support_transfer']['status'] ?? null) === MinorFamilySupportTransfer::STATUS_FAILED_UNRECONCILED) {
+            $warnings[] = 'Minor family support transfer failed without a recorded wallet refund. Funds-at-risk reconciliation is required.';
+        }
+
         return [
             'lookup' => array_filter([
                 'trx'       => $trx,
@@ -233,6 +246,7 @@ class MoneyMovementTransactionInspector
             'projection_state'          => $projectionState,
             'reconciliation_exceptions' => $reconciliationExceptions,
             'transaction_projections'   => $projections,
+            'minor_family_context'      => $minorFamilyContext,
             'money_request'             => $moneyRequest !== null ? [
                 'id'                => $moneyRequest->id,
                 'status'            => $moneyRequest->status,
@@ -414,5 +428,116 @@ class MoneyMovementTransactionInspector
             })
             ->values()
             ->all());
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function resolveMinorFamilyContext(?string $reference): ?array
+    {
+        if (! is_string($reference) || $reference === '') {
+            return null;
+        }
+
+        /** @var MtnMomoTransaction|null $providerTransaction */
+        $providerTransaction = MtnMomoTransaction::query()
+            ->where('mtn_reference_id', $reference)
+            ->orWhere('id', $reference)
+            ->first();
+
+        if ($providerTransaction === null) {
+            return null;
+        }
+
+        $contextType = (string) ($providerTransaction->getAttribute('context_type') ?? '');
+        $contextUuid = (string) ($providerTransaction->getAttribute('context_uuid') ?? '');
+
+        /** @var MinorFamilyFundingAttempt|null $attempt */
+        $attempt = null;
+        /** @var MinorFamilySupportTransfer|null $transfer */
+        $transfer = null;
+
+        if ($contextType === MinorFamilyFundingAttempt::class) {
+            $attempt = $contextUuid !== ''
+                ? MinorFamilyFundingAttempt::query()->whereKey($contextUuid)->first()
+                : null;
+        } elseif ($contextType === MinorFamilySupportTransfer::class) {
+            $transfer = $contextUuid !== ''
+                ? MinorFamilySupportTransfer::query()->whereKey($contextUuid)->first()
+                : null;
+        }
+
+        if ($attempt === null && $transfer === null) {
+            $attempt = MinorFamilyFundingAttempt::query()
+                ->where('mtn_momo_transaction_id', $providerTransaction->id)
+                ->orWhere('provider_reference_id', $reference)
+                ->first();
+
+            if ($attempt !== null) {
+                $contextType = MinorFamilyFundingAttempt::class;
+                $contextUuid = $attempt->id;
+            }
+        }
+
+        if ($attempt === null && $transfer === null) {
+            $transfer = MinorFamilySupportTransfer::query()
+                ->where('mtn_momo_transaction_id', $providerTransaction->id)
+                ->orWhere('provider_reference_id', $reference)
+                ->first();
+
+            if ($transfer !== null) {
+                $contextType = MinorFamilySupportTransfer::class;
+                $contextUuid = $transfer->id;
+            }
+        }
+
+        if ($attempt === null && $transfer === null) {
+            return null;
+        }
+
+        /** @var MinorFamilyFundingLink|null $fundingLink */
+        $fundingLink = $attempt !== null
+            ? MinorFamilyFundingLink::query()->whereKey($attempt->funding_link_uuid)->first()
+            : null;
+
+        return [
+            'context_type' => $contextType,
+            'context_uuid' => $contextUuid,
+            'provider_reference_id' => $providerTransaction->mtn_reference_id,
+            'mtn_momo_transaction_id' => $providerTransaction->id,
+            'funding_link' => $fundingLink !== null ? [
+                'id' => $fundingLink->id,
+                'status' => $fundingLink->status,
+                'minor_account_uuid' => $fundingLink->minor_account_uuid,
+                'amount_mode' => $fundingLink->amount_mode,
+                'target_amount' => $fundingLink->target_amount,
+                'collected_amount' => $fundingLink->collected_amount,
+                'asset_code' => $fundingLink->asset_code,
+            ] : null,
+            'funding_attempt' => $attempt !== null ? [
+                'id' => $attempt->id,
+                'status' => $attempt->status,
+                'minor_account_uuid' => $attempt->minor_account_uuid,
+                'funding_link_uuid' => $attempt->funding_link_uuid,
+                'provider_name' => $attempt->provider_name,
+                'provider_reference_id' => $attempt->provider_reference_id,
+                'amount' => $attempt->amount,
+                'asset_code' => $attempt->asset_code,
+                'wallet_credited_at' => $attempt->wallet_credited_at?->toIso8601String(),
+                'failed_reason' => $attempt->failed_reason,
+            ] : null,
+            'support_transfer' => $transfer !== null ? [
+                'id' => $transfer->id,
+                'status' => $transfer->status,
+                'minor_account_uuid' => $transfer->minor_account_uuid,
+                'source_account_uuid' => $transfer->source_account_uuid,
+                'provider_name' => $transfer->provider_name,
+                'provider_reference_id' => $transfer->provider_reference_id,
+                'amount' => $transfer->amount,
+                'asset_code' => $transfer->asset_code,
+                'wallet_refunded_at' => $transfer->wallet_refunded_at?->toIso8601String(),
+                'failed_reason' => $transfer->failed_reason,
+            ] : null,
+        ];
     }
 }

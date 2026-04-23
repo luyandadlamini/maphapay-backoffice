@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\CompanyDocumentController;
 use App\Http\Controllers\Api\CustodianController;
 use App\Http\Controllers\Api\MinorAccountController;
 use App\Http\Controllers\Api\MinorChoreController;
+use App\Http\Controllers\Api\MinorFamilyFundingLinkController;
+use App\Http\Controllers\Api\MinorFamilySupportTransferController;
 use App\Http\Controllers\Api\MinorPointsController;
 use App\Http\Controllers\Api\MinorRedemptionOrdersController;
 use App\Http\Controllers\Api\MinorRewardsCatalogController;
@@ -33,6 +35,11 @@ Route::middleware(['auth:sanctum', 'account.context'])->group(function () {
     Route::put('/accounts/minor/{uuid}/permission-level', [MinorAccountController::class, 'updatePermissionLevel'])->middleware(['api.rate_limit:mutation', 'scope:write']);
     Route::post('/accounts/minor/{minorAccountUuid}/invite-co-guardian', [CoGuardianController::class, 'storeInvite'])->middleware(['api.rate_limit:mutation', 'scope:write']);
     Route::post('/guardian-invites/{code}/accept', [CoGuardianController::class, 'acceptInvite'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+    Route::get('/accounts/minor/{minorAccountUuid}/funding-links', [MinorFamilyFundingLinkController::class, 'index'])->middleware(['api.rate_limit:query', 'scope:read']);
+    Route::post('/accounts/minor/{minorAccountUuid}/funding-links', [MinorFamilyFundingLinkController::class, 'store'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+    Route::post('/accounts/minor/{minorAccountUuid}/funding-links/{fundingLinkUuid}/expire', [MinorFamilyFundingLinkController::class, 'expire'])->middleware(['api.rate_limit:mutation', 'scope:write']);
+    Route::get('/accounts/minor/{minorAccountUuid}/family-support-transfers', [MinorFamilySupportTransferController::class, 'index'])->middleware(['api.rate_limit:query', 'scope:read']);
+    Route::post('/accounts/minor/{minorAccountUuid}/family-support-transfers', [MinorFamilySupportTransferController::class, 'store'])->middleware(['api.rate_limit:mutation', 'scope:write']);
 
     // Minor account spend approvals
     Route::get('/minor-accounts/{uuid}/approvals', [MinorSpendApprovalController::class, 'index'])->middleware(['api.rate_limit:read', 'scope:read']);

@@ -14,6 +14,7 @@ use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\ParallelTesting;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
@@ -444,6 +445,40 @@ abstract class TestCase extends BaseTestCase
                 $table->json('metadata')->nullable();
                 $table->timestamps();
             });
+        }
+
+        // Ensure Phase 9A schemas exist when reusing persistent MySQL test schemas.
+        if (! Schema::hasTable('minor_family_funding_links')) {
+            Artisan::call('migrate', [
+                '--path' => 'database/migrations/2026_04_23_100000_create_minor_family_funding_links_table.php',
+                '--force' => true,
+            ]);
+        }
+
+        if (! Schema::hasTable('minor_family_funding_attempts')) {
+            Artisan::call('migrate', [
+                '--path' => 'database/migrations/2026_04_23_100100_create_minor_family_funding_attempts_table.php',
+                '--force' => true,
+            ]);
+        }
+
+        if (! Schema::hasTable('minor_family_support_transfers')) {
+            Artisan::call('migrate', [
+                '--path' => 'database/migrations/2026_04_23_100200_create_minor_family_support_transfers_table.php',
+                '--force' => true,
+            ]);
+        }
+
+        Artisan::call('migrate', [
+            '--path' => 'database/migrations/2026_04_23_100250_scope_minor_family_support_transfer_idempotency_unique.php',
+            '--force' => true,
+        ]);
+
+        if (! Schema::hasColumns('mtn_momo_transactions', ['context_type', 'context_uuid'])) {
+            Artisan::call('migrate', [
+                '--path' => 'database/migrations/2026_04_23_100300_add_minor_family_context_to_mtn_momo_transactions_table.php',
+                '--force' => true,
+            ]);
         }
     }
 

@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Compatibility\Mtn;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\MinorFamilyFundingAttempt;
+use App\Domain\Account\Models\MinorFamilySupportTransfer;
+use App\Domain\Account\Services\MinorFamilyReconciliationService;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\MtnMomo\Services\MtnMomoCollectionSettler;
 use App\Domain\Shared\Money\MoneyConverter;
@@ -26,6 +29,7 @@ class CallbackController extends Controller
     public function __construct(
         private readonly MtnMomoCollectionSettler $collectionSettler,
         private readonly WalletOperationsService $walletOps,
+        private readonly MinorFamilyReconciliationService $minorFamilyReconciliation,
     ) {
     }
 
@@ -59,8 +63,21 @@ class CallbackController extends Controller
         $normalized = MtnMomoTransaction::normaliseRemoteStatus($remoteStatus);
         $financialId = $this->mtnFinancialIdFrom($body);
 
-        // Replay protection: terminal-state callbacks (SUCCESSFUL / FAILED) are processed
-        // exactly once per reference ID. A duplicate unique key means the work is already done.
+        $txn = MtnMomoTransaction::query()
+            ->where('mtn_reference_id', $referenceId)
+            ->first();
+
+        if ($txn === null) {
+            Log::warning('MTN callback received for unknown reference ID', [
+                'mtn_reference_id' => $referenceId,
+            ]);
+
+            // Return 200 to prevent MTN from retrying; do not leak whether the ID exists.
+            return response('', 200);
+        }
+
+        // Replay protection for known transactions only. Resolving the transaction first
+        // prevents unknown callbacks from consuming a dedupe key for future legitimate work.
         $terminalStatuses = [MtnMomoTransaction::STATUS_SUCCESSFUL, MtnMomoTransaction::STATUS_FAILED];
         if (in_array($normalized, $terminalStatuses, true)) {
             try {
@@ -78,19 +95,6 @@ class CallbackController extends Controller
             }
         }
 
-        $txn = MtnMomoTransaction::query()
-            ->where('mtn_reference_id', $referenceId)
-            ->first();
-
-        if ($txn === null) {
-            Log::warning('MTN callback received for unknown reference ID', [
-                'mtn_reference_id' => $referenceId,
-            ]);
-
-            // Return 200 to prevent MTN from retrying; do not leak whether the ID exists.
-            return response('', 200);
-        }
-
         $txn->update([
             'last_mtn_status'              => $remoteStatus,
             'status'                       => $normalized,
@@ -103,6 +107,7 @@ class CallbackController extends Controller
             $fresh !== null
             && $fresh->type === MtnMomoTransaction::TYPE_REQUEST_TO_PAY
             && $normalized === MtnMomoTransaction::STATUS_SUCCESSFUL
+            && ! $this->isMinorFamilyContext($fresh)
         ) {
             $user = $fresh->user;
             if ($user !== null) {
@@ -117,8 +122,13 @@ class CallbackController extends Controller
             && $normalized === MtnMomoTransaction::STATUS_FAILED
             && $fresh->wallet_debited_at !== null
             && $fresh->wallet_refunded_at === null
+            && ! $this->isMinorFamilyContext($fresh)
         ) {
             $this->refundDisbursementIfNeeded($fresh);
+        }
+
+        if ($fresh !== null) {
+            $this->minorFamilyReconciliation->reconcile($fresh);
         }
 
         return response('', 200);
@@ -233,5 +243,15 @@ class CallbackController extends Controller
         }
 
         return null;
+    }
+
+    private function isMinorFamilyContext(MtnMomoTransaction $transaction): bool
+    {
+        $contextType = (string) ($transaction->getAttribute('context_type') ?? '');
+
+        return in_array($contextType, [
+            MinorFamilyFundingAttempt::class,
+            MinorFamilySupportTransfer::class,
+        ], true);
     }
 }

@@ -61,6 +61,7 @@ use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardStoreAdditiona
 use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardTransactionController;
 use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardViewController;
 use App\Http\Controllers\Api\Compatibility\WalletLinking\WalletLinkingController;
+use App\Http\Controllers\Api\PublicMinorFundingLinkController;
 use App\Http\Controllers\Api\SocialMoney\GroupController;
 use App\Http\Controllers\Api\SocialMoney\MessageController;
 use App\Http\Controllers\Api\SocialMoney\ThreadBillSplitController;
@@ -115,6 +116,20 @@ Route::middleware(['migration_flag:enable_send_money', 'kyc_approved', 'idempote
 Route::get('pay/r/{token}', [App\Http\Controllers\Api\Pay\PaymentLinkController::class, 'show'])
     ->middleware('throttle:maphapay-payment-link')
     ->name('maphapay.compat.pay.link');
+
+Route::prefix('minor-support-links')
+    ->withoutMiddleware([Authenticate::class, 'auth:sanctum', 'account.context'])
+    ->group(function (): void {
+    Route::get('{token}', [PublicMinorFundingLinkController::class, 'show'])
+        ->middleware('api.rate_limit:query')
+        ->name('maphapay.compat.minor-support-links.show');
+    Route::post('{token}/mtn/request-to-pay', [PublicMinorFundingLinkController::class, 'requestToPay'])
+        ->middleware('api.rate_limit:mutation')
+        ->name('maphapay.compat.minor-support-links.mtn.request-to-pay');
+    Route::get('{token}/attempts/{attemptUuid}', [PublicMinorFundingLinkController::class, 'attemptStatus'])
+        ->middleware('api.rate_limit:query')
+        ->name('maphapay.compat.minor-support-links.attempts.show');
+});
 
 Route::middleware(['migration_flag:enable_request_money', 'kyc_approved'])->group(function () {
     Route::post('request-money/store', RequestMoneyStoreController::class)

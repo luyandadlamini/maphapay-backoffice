@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\MinorFamilyFundingAttempt;
+use App\Domain\Account\Models\MinorFamilySupportTransfer;
+use App\Domain\Account\Services\MinorFamilyReconciliationService;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\MtnMomo\Services\MtnMomoClient;
 use App\Domain\Shared\Money\MoneyConverter;
@@ -42,6 +45,7 @@ class ReconcileMtnMomoTransactions extends Command
     public function __construct(
         private readonly MtnMomoClient $mtnClient,
         private readonly WalletOperationsService $walletOps,
+        private readonly MinorFamilyReconciliationService $minorFamilyReconciliation,
     ) {
         parent::__construct();
     }
@@ -58,12 +62,21 @@ class ReconcileMtnMomoTransactions extends Command
         }
 
         $ids = MtnMomoTransaction::query()
-            ->where('type', MtnMomoTransaction::TYPE_DISBURSEMENT)
             ->where('status', MtnMomoTransaction::STATUS_PENDING)
-            ->whereNotNull('wallet_debited_at')
-            ->whereNull('wallet_refunded_at')
-            ->where('wallet_debited_at', '<=', $cutoff)
-            ->orderBy('wallet_debited_at')
+            ->where(function ($query) use ($cutoff): void {
+                $query->where(function ($disbursementQuery) use ($cutoff): void {
+                    $disbursementQuery->where('type', MtnMomoTransaction::TYPE_DISBURSEMENT)
+                        ->whereNotNull('wallet_debited_at')
+                        ->whereNull('wallet_refunded_at')
+                        ->where('wallet_debited_at', '<=', $cutoff);
+                })->orWhere(function ($phase9Query) use ($cutoff): void {
+                    $phase9Query->whereIn('context_type', [
+                        MinorFamilyFundingAttempt::class,
+                        MinorFamilySupportTransfer::class,
+                    ])->where('created_at', '<=', $cutoff);
+                });
+            })
+            ->orderByRaw('COALESCE(wallet_debited_at, created_at) asc')
             ->limit($chunkSize)
             ->pluck('id');
 
@@ -77,6 +90,7 @@ class ReconcileMtnMomoTransactions extends Command
 
         $reconciled = 0;
         $refunded = 0;
+        $unreconciled = 0;
         $errors = 0;
 
         foreach ($ids as $txnId) {
@@ -86,25 +100,27 @@ class ReconcileMtnMomoTransactions extends Command
                 'refunded' => $refunded++,
                 'settled'  => $reconciled++,
                 'pending'  => null,
+                'unreconciled' => $unreconciled++,
                 default    => $errors++,
             };
         }
 
         $this->info(sprintf(
-            'Done. settled=%d refunded=%d still_pending=%d errors=%d',
+            'Done. settled=%d refunded=%d unreconciled=%d still_pending=%d errors=%d',
             $reconciled,
             $refunded,
-            $ids->count() - $reconciled - $refunded - $errors,
+            $unreconciled,
+            $ids->count() - $reconciled - $refunded - $unreconciled - $errors,
             $errors,
         ));
 
-        return $errors > 0 ? Command::FAILURE : Command::SUCCESS;
+        return ($errors > 0 || $unreconciled > 0) ? Command::FAILURE : Command::SUCCESS;
     }
 
     /**
      * Reconcile a single disbursement row.
      *
-     * @return 'refunded'|'settled'|'pending'|'error'
+     * @return 'refunded'|'settled'|'pending'|'unreconciled'|'error'
      */
     private function reconcileOne(string $txnId, bool $dryRun): string
     {
@@ -156,10 +172,14 @@ class ReconcileMtnMomoTransactions extends Command
                     };
                 }
 
+                if ($this->isMinorFamilyContext($txn)) {
+                    return $this->reconcileMinorFamilyTransaction($txn, $normalisedStatus, $remoteStatus);
+                }
+
                 return match ($normalisedStatus) {
                     MtnMomoTransaction::STATUS_SUCCESSFUL => $this->markSuccessful($txn, $remoteStatus),
-                    MtnMomoTransaction::STATUS_FAILED     => $this->refundAndFail($txn, $remoteStatus),
-                    default                               => $this->updateLastStatus($txn, $remoteStatus),
+                    MtnMomoTransaction::STATUS_FAILED => $this->refundAndFail($txn, $remoteStatus),
+                    default => $this->updateLastStatus($txn, $remoteStatus),
                 };
             });
         } catch (Throwable $e) {
@@ -307,7 +327,15 @@ class ReconcileMtnMomoTransactions extends Command
     private function fetchRemoteStatus(string $referenceId, string $txnId): ?string
     {
         try {
-            $statusData = $this->mtnClient->getTransferStatus($referenceId);
+            /** @var MtnMomoTransaction|null $txn */
+            $txn = MtnMomoTransaction::query()->find($txnId);
+            if ($txn === null) {
+                return null;
+            }
+
+            $statusData = $txn->type === MtnMomoTransaction::TYPE_REQUEST_TO_PAY
+                ? $this->mtnClient->getRequestToPayStatus($referenceId)
+                : $this->mtnClient->getTransferStatus($referenceId);
             $raw = $statusData['status'] ?? null;
 
             return is_string($raw) ? $raw : null;
@@ -320,5 +348,58 @@ class ReconcileMtnMomoTransactions extends Command
 
             return null;
         }
+    }
+
+    /**
+     * @return 'settled'|'refunded'|'pending'|'unreconciled'
+     */
+    private function reconcileMinorFamilyTransaction(
+        MtnMomoTransaction $txn,
+        string $normalisedStatus,
+        string $remoteStatus,
+    ): string {
+        if ($normalisedStatus === MtnMomoTransaction::STATUS_PENDING) {
+            return $this->updateLastStatus($txn, $remoteStatus);
+        }
+
+        $txn->update([
+            'status' => $normalisedStatus,
+            'last_mtn_status' => $remoteStatus,
+        ]);
+
+        $reconciliationOutcome = $this->minorFamilyReconciliation->reconcile($txn->fresh() ?? $txn);
+
+        if (! $reconciliationOutcome->isReconciled()) {
+            return 'unreconciled';
+        }
+
+        if ($normalisedStatus !== MtnMomoTransaction::STATUS_FAILED) {
+            return 'settled';
+        }
+
+        if ((string) ($txn->getAttribute('context_type') ?? '') !== MinorFamilySupportTransfer::class) {
+            return 'settled';
+        }
+
+        /** @var MinorFamilySupportTransfer|null $transfer */
+        $transfer = MinorFamilySupportTransfer::query()
+            ->where('mtn_momo_transaction_id', $txn->id)
+            ->first();
+
+        if ($transfer?->status === MinorFamilySupportTransfer::STATUS_FAILED_REFUNDED) {
+            return 'refunded';
+        }
+
+        return 'settled';
+    }
+
+    private function isMinorFamilyContext(MtnMomoTransaction $txn): bool
+    {
+        $contextType = (string) ($txn->getAttribute('context_type') ?? '');
+
+        return in_array($contextType, [
+            MinorFamilyFundingAttempt::class,
+            MinorFamilySupportTransfer::class,
+        ], true);
     }
 }

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\Shared\OperationRecord\Exceptions\OperationPayloadMismatchException;
+use App\Domain\Shared\OperationRecord\Exceptions\OperationInProgressException;
 use App\Domain\Shared\OperationRecord\OperationRecord;
 use App\Domain\Shared\OperationRecord\OperationRecordService;
 use App\Models\User;
@@ -178,7 +179,7 @@ describe('OperationRecordService::guardAndRun — concurrent same-key', function
 
                 return ['trx' => 'TRX-CONCURRENT'];
             },
-        ))->toThrow(RuntimeException::class, 'already in progress');
+        ))->toThrow(OperationInProgressException::class);
 
         expect($fnCalls)->toBe(0);
 
