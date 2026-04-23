@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
+use App\Domain\Account\Services\MinorAccountAccessService;
 use App\Models\Tenant;
 use Closure;
 use Illuminate\Http\JsonResponse;
@@ -18,6 +19,7 @@ class ResolveAccountContext
 {
     public function __construct(
         private readonly Tenancy $tenancy,
+        private readonly MinorAccountAccessService $accessService,
     ) {
     }
 
@@ -90,19 +92,20 @@ class ResolveAccountContext
                         ->where('type', 'minor')
                         ->first();
 
-                if ($accountRecord !== null && (string) $accountRecord->user_uuid === $userUuid) {
-                    $existingMembership = AccountMembership::query()
-                        ->forAccount($requestedAccountId)
-                        ->forUser($userUuid)
-                        ->exists();
+                /** @var \App\Models\User $resolvedUser */
+                $resolvedUser = $request->user();
 
-                    if ($existingMembership) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'You do not have access to this account.',
-                        ], 403);
-                    }
+                $isChildAccess = $accountRecord instanceof Account
+                    ? $this->accessService->isChild($resolvedUser, $accountRecord)
+                    : ($accountRecord !== null
+                        && (string) $accountRecord->user_uuid === $userUuid
+                        && AccountMembership::query()
+                            ->forAccount($requestedAccountId)
+                            ->active()
+                            ->whereIn('role', ['guardian', 'co_guardian'])
+                            ->exists());
 
+                if ($isChildAccess) {
                     $childMembership = new AccountMembership();
                     $childMembership->forceFill([
                         'user_uuid'    => $userUuid,

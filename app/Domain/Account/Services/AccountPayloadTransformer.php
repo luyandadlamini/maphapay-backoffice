@@ -18,9 +18,13 @@ class AccountPayloadTransformer
     {
         $memberships = $user->activeAccountMemberships()
             ->with('user')
+            ->orderByRaw("case when account_type = 'personal' then 0 else 1 end")
+            ->orderByDesc('joined_at')
             ->get();
 
-        return $this->transformMemberships($memberships, $user, $includeStatus);
+        $payloads = $this->transformMemberships($memberships, $user, $includeStatus);
+
+        return $this->appendOwnedMinorChildPayloads($payloads, $user, $includeStatus);
     }
 
     /**
@@ -61,6 +65,17 @@ class AccountPayloadTransformer
             ->all();
     }
 
+    public function resolveActiveAccountUuid(User $user): ?string
+    {
+        $accounts = $this->transformUserMemberships($user);
+
+        $activeAccountUuid = $accounts[0]['account_uuid'] ?? null;
+
+        return is_string($activeAccountUuid) && $activeAccountUuid !== ''
+            ? $activeAccountUuid
+            : null;
+    }
+
     private function resolveDisplayName(AccountMembership $membership, ?User $currentUser, ?Account $minorAccount): string
     {
         if ($membership->account_type === 'personal') {
@@ -79,5 +94,61 @@ class AccountPayloadTransformer
         }
 
         return $membership->account_uuid;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $payloads
+     * @return array<int, array<string, mixed>>
+     */
+    private function appendOwnedMinorChildPayloads(array $payloads, User $user, bool $includeStatus): array
+    {
+        $existingAccountUuids = collect($payloads)
+            ->pluck('account_uuid')
+            ->filter(fn (mixed $uuid): bool => is_string($uuid) && $uuid !== '')
+            ->all();
+
+        $childAccounts = Account::query()
+            ->where('user_uuid', $user->uuid)
+            ->where('type', 'minor')
+            ->whereNotIn('uuid', $existingAccountUuids)
+            ->orderBy('id')
+            ->get();
+
+        foreach ($childAccounts as $account) {
+            $guardianMembership = AccountMembership::query()
+                ->forAccount($account->uuid)
+                ->active()
+                ->whereIn('role', ['guardian', 'co_guardian'])
+                ->orderByRaw("case when role = 'guardian' then 0 else 1 end")
+                ->orderBy('joined_at')
+                ->first();
+
+            if ($guardianMembership === null) {
+                continue;
+            }
+
+            $payload = [
+                'account_uuid'        => $account->uuid,
+                'tenant_id'           => $guardianMembership->tenant_id,
+                'account_type'        => $account->type,
+                'display_name'        => $account->name ?: $account->uuid,
+                'role'                => 'child',
+                'capabilities'        => [],
+                'verification_tier'   => 'unverified',
+                'balance_preview'     => null,
+                'currency'            => 'SZL',
+                'account_tier'        => $account->tier,
+                'permission_level'    => $account->permission_level,
+                'parent_account_uuid' => $account->parent_account_id,
+            ];
+
+            if ($includeStatus) {
+                $payload['status'] = 'active';
+            }
+
+            $payloads[] = $payload;
+        }
+
+        return array_values($payloads);
     }
 }

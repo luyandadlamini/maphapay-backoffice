@@ -401,13 +401,7 @@ class LoginController extends Controller
 
     private function resolveActiveAccountId(User $user): ?string
     {
-        $membership = $user->activeAccountMemberships()
-            ->active()
-            ->orderByRaw("case when account_type = 'personal' then 0 else 1 end")
-            ->orderByDesc('joined_at')
-            ->first();
-
-        return $membership?->account_uuid;
+        return $this->accountPayloadTransformer->resolveActiveAccountUuid($user);
     }
 
     /**

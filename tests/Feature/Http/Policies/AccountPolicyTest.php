@@ -127,6 +127,21 @@ class AccountPolicyTest extends BaseTestCase
     }
 
     #[Test]
+    public function test_viewAnyMinor_allows_child_with_owned_minor_account(): void
+    {
+        $child = User::factory()->create();
+        $guardian = User::factory()->create();
+        $childAccount = Account::factory()->create([
+            'user_uuid' => $child->uuid,
+            'type'      => 'minor',
+        ]);
+
+        $this->createMembership($guardian, $childAccount, 'guardian');
+
+        $this->assertTrue($this->policy->viewAnyMinor($child));
+    }
+
+    #[Test]
     public function test_viewAnyMinor_denies_user_without_guardian_membership(): void
     {
         $user = User::factory()->create();

@@ -21,6 +21,8 @@ class MinorAccountMobileContractTest extends BaseTestCase
 
     private User $guardian;
 
+    private User $child;
+
     private Account $personalAccount;
 
     private Account $minorAccount;
@@ -52,8 +54,13 @@ class MinorAccountMobileContractTest extends BaseTestCase
             'transaction_pin' => Hash::make('1234'),
         ]);
 
-        $child = User::factory()->create([
-            'name' => 'Child User',
+        $this->child = User::factory()->create([
+            'name'            => 'Child User',
+            'email'           => 'child-' . Str::lower((string) Str::uuid()) . '@example.com',
+            'dial_code'       => '+268',
+            'mobile'          => '78' . str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT),
+            'password'        => Hash::make('secret-pass'),
+            'transaction_pin' => Hash::make('5678'),
         ]);
 
         $this->personalAccount = Account::factory()->create([
@@ -63,7 +70,7 @@ class MinorAccountMobileContractTest extends BaseTestCase
         ]);
 
         $this->minorAccount = Account::factory()->create([
-            'user_uuid'         => $child->uuid,
+            'user_uuid'         => $this->child->uuid,
             'type'              => 'minor',
             'name'              => 'Jamie',
             'tier'              => 'grow',
@@ -132,6 +139,41 @@ class MinorAccountMobileContractTest extends BaseTestCase
     }
 
     #[Test]
+    public function child_mobile_login_includes_the_canonical_minor_account_payload_without_membership(): void
+    {
+        $response = $this->postJson('/api/auth/mobile/login', [
+            'dial_code' => '+268',
+            'mobile'    => $this->child->mobile,
+            'pin'       => '5678',
+        ]);
+
+        $response->assertOk();
+
+        $minorAccount = collect($response->json('data.accounts'))
+            ->firstWhere('account_uuid', $this->minorAccount->uuid);
+
+        $this->assertEquals([
+            'account_uuid'        => $this->minorAccount->uuid,
+            'account_type'        => 'minor',
+            'role'                => 'child',
+            'display_name'        => 'Jamie',
+            'account_tier'        => 'grow',
+            'permission_level'    => 3,
+            'parent_account_uuid' => $this->personalAccount->uuid,
+        ], array_intersect_key($minorAccount, array_flip([
+            'account_uuid',
+            'account_type',
+            'role',
+            'display_name',
+            'account_tier',
+            'permission_level',
+            'parent_account_uuid',
+        ])));
+
+        $this->assertSame($this->minorAccount->uuid, $response->json('data.active_account_id'));
+    }
+
+    #[Test]
     public function auth_user_payload_includes_the_canonical_minor_account_payload(): void
     {
         Sanctum::actingAs($this->guardian, ['read', 'write', 'delete']);
@@ -150,6 +192,25 @@ class MinorAccountMobileContractTest extends BaseTestCase
     }
 
     #[Test]
+    public function child_auth_user_payload_includes_the_canonical_minor_account_payload_without_membership(): void
+    {
+        Sanctum::actingAs($this->child, ['read', 'write', 'delete']);
+
+        $response = $this->getJson('/api/auth/user');
+
+        $response->assertOk();
+
+        $minorAccount = collect($response->json('data.accounts'))
+            ->firstWhere('account_uuid', $this->minorAccount->uuid);
+
+        $this->assertSame('child', $minorAccount['role'] ?? null);
+        $this->assertSame('grow', $minorAccount['account_tier'] ?? null);
+        $this->assertSame(3, $minorAccount['permission_level'] ?? null);
+        $this->assertSame($this->personalAccount->uuid, $minorAccount['parent_account_uuid'] ?? null);
+        $this->assertSame($this->minorAccount->uuid, $response->json('data.active_account_id'));
+    }
+
+    #[Test]
     public function account_index_includes_the_canonical_minor_account_payload(): void
     {
         Sanctum::actingAs($this->guardian, ['read', 'write', 'delete']);
@@ -162,6 +223,25 @@ class MinorAccountMobileContractTest extends BaseTestCase
             ->firstWhere('account_uuid', $this->minorAccount->uuid);
 
         $this->assertSame('Jamie', $minorAccount['display_name'] ?? null);
+        $this->assertSame('grow', $minorAccount['account_tier'] ?? null);
+        $this->assertSame(3, $minorAccount['permission_level'] ?? null);
+        $this->assertSame($this->personalAccount->uuid, $minorAccount['parent_account_uuid'] ?? null);
+    }
+
+    #[Test]
+    public function child_account_index_includes_the_canonical_minor_account_payload_without_membership(): void
+    {
+        Sanctum::actingAs($this->child, ['read', 'write', 'delete']);
+
+        $response = $this->getJson('/api/accounts');
+
+        $response->assertOk();
+
+        $minorAccount = collect($response->json('data'))
+            ->firstWhere('account_uuid', $this->minorAccount->uuid);
+
+        $this->assertSame('Jamie', $minorAccount['display_name'] ?? null);
+        $this->assertSame('child', $minorAccount['role'] ?? null);
         $this->assertSame('grow', $minorAccount['account_tier'] ?? null);
         $this->assertSame(3, $minorAccount['permission_level'] ?? null);
         $this->assertSame($this->personalAccount->uuid, $minorAccount['parent_account_uuid'] ?? null);

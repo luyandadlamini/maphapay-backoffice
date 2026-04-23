@@ -6,12 +6,18 @@ namespace App\Policies;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
+use App\Domain\Account\Services\MinorAccountAccessService;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class AccountPolicy
 {
     use HandlesAuthorization;
+
+    public function __construct(
+        private readonly ?MinorAccountAccessService $minorAccountAccessService = null,
+    ) {
+    }
 
     /**
      * Determine whether the user can view a minor account.
@@ -22,17 +28,7 @@ class AccountPolicy
      */
     public function viewMinor(User $user, Account $account): bool
     {
-        if ($this->isChildIdentity($user, $account)) {
-            return true;
-        }
-
-        // Check if user has active membership as guardian or co_guardian
-        return AccountMembership::query()
-            ->forAccount($account->uuid)
-            ->forUser($user->uuid)
-            ->active()
-            ->whereIn('role', ['guardian', 'co_guardian'])
-            ->exists();
+        return $this->accessService()->canView($user, $account);
     }
 
     /**
@@ -42,11 +38,19 @@ class AccountPolicy
      */
     public function viewAnyMinor(User $user): bool
     {
-        return AccountMembership::query()
+        if (AccountMembership::query()
             ->forUser($user->uuid)
             ->active()
             ->whereIn('role', ['guardian', 'co_guardian'])
-            ->exists();
+            ->exists()) {
+            return true;
+        }
+
+        return Account::query()
+            ->where('user_uuid', $user->uuid)
+            ->where('type', 'minor')
+            ->get()
+            ->contains(fn (Account $account): bool => $this->accessService()->isChild($user, $account));
     }
 
     /**
@@ -111,25 +115,8 @@ class AccountPolicy
             ->exists();
     }
 
-    private function isChildIdentity(User $user, Account $account): bool
+    private function accessService(): MinorAccountAccessService
     {
-        if ($account->type !== 'minor' || $account->user_uuid !== $user->uuid) {
-            return false;
-        }
-
-        $hasGuardianMembership = AccountMembership::query()
-            ->forAccount($account->uuid)
-            ->active()
-            ->whereIn('role', ['guardian', 'co_guardian'])
-            ->exists();
-
-        if (! $hasGuardianMembership) {
-            return false;
-        }
-
-        return ! AccountMembership::query()
-            ->forAccount($account->uuid)
-            ->forUser($user->uuid)
-            ->exists();
+        return $this->minorAccountAccessService ?? app(MinorAccountAccessService::class);
     }
 }

@@ -25,6 +25,7 @@ use App\Rules\ValidateMinorAccountPermission;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use InvalidArgumentException;
@@ -201,6 +202,15 @@ class SendMoneyStoreController extends Controller
             $threshold = ValidateMinorAccountPermission::approvalThresholdFor($permissionLevel);
 
             if ($threshold !== null && (float) $normalizedAmount > $threshold) {
+                if ($idempotencyKey === '') {
+                    return $this->errorResponse(
+                        $request,
+                        'Idempotency-Key header is required for guardian approval requests.',
+                        422,
+                        ['event' => 'send_money_initiation_failed'],
+                    );
+                }
+
                 $trust = $this->trustPolicy->evaluate($authUser, $request, 'send_money');
 
                 if (($trust['decision'] ?? 'allow') === 'deny') {
@@ -256,15 +266,13 @@ class SendMoneyStoreController extends Controller
                 ];
 
                 try {
-                    $approvalResponse = $idempotencyKey === ''
-                        ? $this->createMinorApprovalResponse($approvalPayload)
-                        : $this->operationRecordService->guardAndRun(
+                    $approvalResponse = DB::transaction(fn (): array => $this->operationRecordService->guardAndRun(
                             userId: (int) $authUser->getAuthIdentifier(),
                             type: self::MINOR_SPEND_APPROVAL_OPERATION,
                             key: $idempotencyKey,
                             payloadHash: $this->minorApprovalPayloadHash($approvalPayload),
                             fn: fn (): array => $this->createMinorApprovalResponse($approvalPayload),
-                        );
+                        ));
                 } catch (OperationPayloadMismatchException) {
                     return response()->json([
                         'error'   => 'Idempotency key already used',

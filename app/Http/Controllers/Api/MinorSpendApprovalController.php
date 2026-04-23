@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Account\Models\Account;
-use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Models\MinorSpendApproval;
+use App\Domain\Account\Services\MinorAccountAccessService;
 use App\Domain\AuthorizedTransaction\Services\AuthorizedTransactionManager;
 use App\Http\Controllers\Controller;
-use App\Policies\AccountPolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -17,7 +16,7 @@ use Illuminate\Support\Str;
 class MinorSpendApprovalController extends Controller
 {
     public function __construct(
-        private readonly AccountPolicy $accountPolicy,
+        private readonly MinorAccountAccessService $accessService,
         private readonly AuthorizedTransactionManager $authorizedTransactionManager,
     ) {
     }
@@ -29,7 +28,7 @@ class MinorSpendApprovalController extends Controller
         $user = $request->user();
         $minorAccount = Account::query()->where('uuid', $minorAccountUuid)->firstOrFail();
 
-        abort_unless($this->accountPolicy->viewMinor($user, $minorAccount), 403);
+        $this->accessService->authorizeView($user, $minorAccount);
 
         $approvals = MinorSpendApproval::query()
             ->where('minor_account_uuid', $minorAccountUuid)
@@ -46,9 +45,10 @@ class MinorSpendApprovalController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user();
         $approval = MinorSpendApproval::query()->findOrFail($approvalId);
+        $minorAccount = Account::query()->where('uuid', $approval->minor_account_uuid)->firstOrFail();
 
         $this->assertActionable($approval);
-        $this->assertGuardian($user, $approval);
+        $this->accessService->authorizeGuardian($user, $minorAccount, $approval->guardian_account_uuid);
 
         // Initiate + immediately finalize (guardian approval = verification step)
         $txn = $this->authorizedTransactionManager->initiate(
@@ -85,9 +85,10 @@ class MinorSpendApprovalController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user();
         $approval = MinorSpendApproval::query()->findOrFail($approvalId);
+        $minorAccount = Account::query()->where('uuid', $approval->minor_account_uuid)->firstOrFail();
 
         $this->assertActionable($approval);
-        $this->assertGuardian($user, $approval);
+        $this->accessService->authorizeGuardian($user, $minorAccount, $approval->guardian_account_uuid);
 
         $approval->forceFill([
             'status'     => 'declined',
@@ -108,17 +109,5 @@ class MinorSpendApprovalController extends Controller
         if ($approval->isExpired()) {
             abort(422, 'This approval request has expired.');
         }
-    }
-
-    private function assertGuardian(\App\Models\User $user, MinorSpendApproval $approval): void
-    {
-        $isGuardian = AccountMembership::query()
-            ->forAccount($approval->minor_account_uuid)
-            ->forUser($user->uuid)
-            ->active()
-            ->whereIn('role', ['guardian', 'co_guardian'])
-            ->exists();
-
-        abort_unless($isGuardian, 403);
     }
 }

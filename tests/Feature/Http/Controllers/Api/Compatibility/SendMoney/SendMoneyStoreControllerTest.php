@@ -246,7 +246,9 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
 
         Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
 
-        $response = $this->postJson('/api/send-money/store', [
+        $response = $this->withHeaders([
+            'Idempotency-Key' => '00000000-0000-0000-0000-000000000021',
+        ])->postJson('/api/send-money/store', [
             'user'              => $this->recipient->email,
             'amount'            => '150.00',
             'verification_type' => 'pin',
@@ -260,6 +262,56 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
             \App\Domain\Account\Models\MinorSpendApproval::query()
                 ->where('minor_account_uuid', $senderAccount->uuid)
                 ->count(),
+        );
+    }
+
+    #[Test]
+    public function test_minor_approval_requires_idempotency_key_before_creating_pending_approval(): void
+    {
+        config([
+            'maphapay_migration.enable_send_money' => true,
+            'mobile.attestation.enabled'           => false,
+        ]);
+
+        $guardianAccount = Account::factory()->create([
+            'frozen' => false,
+        ]);
+
+        $senderAccount = Account::query()
+            ->where('user_uuid', $this->sender->uuid)
+            ->firstOrFail();
+
+        $senderAccount->forceFill([
+            'type'              => 'minor',
+            'permission_level'  => 3,
+            'parent_account_id' => $guardianAccount->uuid,
+        ])->save();
+
+        Sanctum::actingAs($this->sender, ['read', 'write', 'delete']);
+
+        $response = $this->postJson('/api/send-money/store', [
+            'user'              => $this->recipient->email,
+            'amount'            => '150.00',
+            'verification_type' => 'pin',
+            'attestation'       => 'trusted-proof',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('message.0', 'Idempotency-Key header is required for guardian approval requests.');
+
+        $this->assertSame(
+            0,
+            \App\Domain\Account\Models\MinorSpendApproval::query()
+                ->where('minor_account_uuid', $senderAccount->uuid)
+                ->count(),
+        );
+
+        $this->assertNull(
+            OperationRecord::query()
+                ->where('user_id', $this->sender->id)
+                ->where('operation_type', 'minor_spend_approval')
+                ->first(),
         );
     }
 

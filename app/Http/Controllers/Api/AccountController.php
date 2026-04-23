@@ -63,14 +63,12 @@ class AccountController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user();
 
-        $memberships = $user->activeAccountMemberships()
-            ->with('user')
-            ->get();
+        $accountSummaries = $this->accountPayloadTransformer->transformUserMemberships($user, true);
 
-        if ($memberships->isNotEmpty()) {
+        if ($accountSummaries !== []) {
             return response()->json([
                 'success' => true,
-                'data'    => $this->transformMemberships($memberships),
+                'data'    => $accountSummaries,
             ]);
         }
 
@@ -488,21 +486,6 @@ class AccountController extends Controller
                 'display_name' => $membership->display_name,
             ],
         ]);
-    }
-
-    /**
-     * @param \Illuminate\Support\Collection<int, AccountMembership> $memberships
-     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
-     */
-    private function transformMemberships($memberships)
-    {
-        return collect(
-            $this->accountPayloadTransformer->transformMemberships(
-                $memberships,
-                null,
-                true,
-            )
-        );
     }
 
         #[OA\Delete(
