@@ -2,6 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Domain\Basket\Services\BasketValueCalculationService;
+use App\Domain\Mobile\Jobs\CleanupExpiredChallenges;
+use App\Domain\Mobile\Jobs\CleanupStaleDevices;
+use App\Domain\Mobile\Jobs\ProcessScheduledNotifications;
+use App\Domain\Mobile\Jobs\RetryFailedNotifications;
+use App\Domain\MobilePayment\Jobs\ExpireStalePaymentIntents;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -26,7 +32,7 @@ Schedule::command('baskets:rebalance')
 
 // Schedule hourly basket value calculations for performance tracking
 Schedule::call(function () {
-    $service = app(App\Domain\Basket\Services\BasketValueCalculationService::class);
+    $service = app(BasketValueCalculationService::class);
     $service->calculateAllBasketValues();
 })->hourly()
     ->description('Calculate and store basket values for performance tracking');
@@ -157,7 +163,7 @@ Schedule::command('liquidity:update-market-making --cancel-existing')
 
 // Demo Data Cleanup (only runs in demo environment)
 if (app()->environment('demo')) {
-    Schedule::command('demo:cleanup --days=' . config('demo.cleanup.retention_days', 1))
+    Schedule::command('demo:cleanup --days='.config('demo.cleanup.retention_days', 1))
         ->dailyAt(config('demo.cleanup.time', '03:00'))
         ->description('Clean up old demo data')
         ->appendOutputTo(storage_path('logs/demo-cleanup.log'))
@@ -184,38 +190,38 @@ Schedule::command('mtn:reconcile-disbursements')
 
 // Mobile Backend Jobs
 // Process scheduled mobile push notifications every minute
-Schedule::job(new App\Domain\Mobile\Jobs\ProcessScheduledNotifications())
+Schedule::job(new ProcessScheduledNotifications)
     ->everyMinute()
     ->description('Process scheduled mobile push notifications')
     ->withoutOverlapping();
 
 // Retry failed mobile push notifications every 5 minutes
-Schedule::job(new App\Domain\Mobile\Jobs\RetryFailedNotifications())
+Schedule::job(new RetryFailedNotifications)
     ->everyFiveMinutes()
     ->description('Retry failed mobile push notifications')
     ->withoutOverlapping();
 
 // Cleanup expired biometric challenges every 5 minutes
-Schedule::job(new App\Domain\Mobile\Jobs\CleanupExpiredChallenges())
+Schedule::job(new CleanupExpiredChallenges)
     ->everyFiveMinutes()
     ->description('Cleanup expired biometric authentication challenges')
     ->withoutOverlapping();
 
 // Cleanup stale mobile devices daily at 3 AM
-Schedule::job(new App\Domain\Mobile\Jobs\CleanupStaleDevices())
+Schedule::job(new CleanupStaleDevices)
     ->dailyAt('03:00')
     ->description('Cleanup stale mobile devices')
     ->appendOutputTo(storage_path('logs/mobile-cleanup.log'))
     ->withoutOverlapping();
 
 // Mobile Payment - Expire stale payment intents every minute
-Schedule::job(new App\Domain\MobilePayment\Jobs\ExpireStalePaymentIntents())
+Schedule::job(new ExpireStalePaymentIntents)
     ->everyMinute()
     ->description('Expire stale payment intents past their TTL')
     ->withoutOverlapping();
 
 // Fraud Anomaly Detection Batch Scan
-Schedule::command('fraud:scan-anomalies --hours=' . config('fraud.batch.lookback_hours', 24) . ' --chunk=' . config('fraud.batch.chunk_size', 100))
+Schedule::command('fraud:scan-anomalies --hours='.config('fraud.batch.lookback_hours', 24).' --chunk='.config('fraud.batch.chunk_size', 100))
     ->cron(config('fraud.batch.schedule', '0 */6 * * *'))
     ->description('Batch scan recent transactions for anomaly detection')
     ->appendOutputTo(storage_path('logs/fraud-anomaly-scan.log'))
@@ -249,7 +255,7 @@ Schedule::command('minor-family:reconciliation-exceptions-flag-sla-breaches')
     ->withoutOverlapping();
 
 Schedule::command('minor-accounts:lifecycle-evaluate')
-    ->dailyAt('01:15')
+    ->everyFifteenMinutes()
     ->description('Evaluate and execute minor account lifecycle transitions')
     ->appendOutputTo(storage_path('logs/minor-account-lifecycle-evaluate.log'))
     ->withoutOverlapping();
@@ -258,4 +264,11 @@ Schedule::command('minor-accounts:lifecycle-exceptions-flag-sla-breaches')
     ->hourly()
     ->description('Set sla_escalated_at on open minor-account lifecycle exceptions past SLA due time')
     ->appendOutputTo(storage_path('logs/minor-account-lifecycle-sla-breaches.log'))
+    ->withoutOverlapping();
+
+// Wallet revenue — read-only anomaly scan per tenant DB (REQ-ALR-001 v1)
+Schedule::command('revenue:scan-anomalies:for-tenants')
+    ->dailyAt('05:40')
+    ->description('Read-only scan for revenue-target anomalies across all tenant databases')
+    ->appendOutputTo(storage_path('logs/revenue-anomaly-scan.log'))
     ->withoutOverlapping();
