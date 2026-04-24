@@ -174,8 +174,8 @@ class Account extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'frozen'       => 'boolean',
-        'capabilities' => 'array',
+        'frozen'                        => 'boolean',
+        'capabilities'                  => 'array',
         'minor_transition_effective_at' => 'datetime',
     ];
 

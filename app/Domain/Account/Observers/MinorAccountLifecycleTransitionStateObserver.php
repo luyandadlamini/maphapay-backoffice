@@ -23,7 +23,7 @@ class MinorAccountLifecycleTransitionStateObserver
         }
 
         $from = $transition->getOriginal('state');
-        $to   = $transition->state;
+        $to = $transition->state;
 
         if ($from === null) {
             if ($to !== MinorAccountLifecycleTransition::STATE_PENDING) {

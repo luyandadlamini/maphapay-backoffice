@@ -47,7 +47,7 @@ class ExpireMinorSpendApprovals extends Command
                                 'decided_at' => now(),
                             ])->save();
 
-                            ++$count;
+                            $count++;
                         });
                     }
                 });

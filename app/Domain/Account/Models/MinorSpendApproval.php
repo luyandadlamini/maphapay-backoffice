@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class MinorSpendApproval extends Model
 {
+    /** @use HasFactory<\Database\Factories\Domain\Account\MinorSpendApprovalFactory> */
     use HasFactory;
     use HasUuids;
     use UsesTenantConnection;

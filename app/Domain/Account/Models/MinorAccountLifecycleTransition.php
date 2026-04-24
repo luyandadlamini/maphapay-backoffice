@@ -26,17 +26,23 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class MinorAccountLifecycleTransition extends Model
 {
+    /** @use HasFactory<\Database\Factories\Domain\Account\MinorAccountLifecycleTransitionFactory> */
     use HasFactory;
     use HasUuids;
     use UsesTenantConnection;
 
     public const TYPE_TIER_ADVANCE = 'tier_advance';
+
     public const TYPE_ADULT_TRANSITION_REVIEW = 'adult_transition_review';
+
     public const TYPE_ADULT_TRANSITION_CUTOFF = 'adult_transition_cutoff';
+
     public const TYPE_GUARDIAN_CONTINUITY = 'guardian_continuity';
 
     public const STATE_PENDING = 'pending';
+
     public const STATE_COMPLETED = 'completed';
+
     public const STATE_BLOCKED = 'blocked';
 
     protected $table = 'minor_account_lifecycle_transitions';
@@ -61,8 +67,8 @@ class MinorAccountLifecycleTransition extends Model
     {
         return [
             'effective_at' => 'datetime',
-            'executed_at' => 'datetime',
-            'metadata' => 'array',
+            'executed_at'  => 'datetime',
+            'metadata'     => 'array',
         ];
     }
 

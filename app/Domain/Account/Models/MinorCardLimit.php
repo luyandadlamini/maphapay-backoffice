@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Validator;
+use InvalidArgumentException;
 
 class MinorCardLimit extends Model
 {
@@ -26,10 +27,10 @@ class MinorCardLimit extends Model
     ];
 
     protected $casts = [
-        'daily_limit' => 'decimal:2',
-        'monthly_limit' => 'decimal:2',
+        'daily_limit'              => 'decimal:2',
+        'monthly_limit'            => 'decimal:2',
         'single_transaction_limit' => 'decimal:2',
-        'is_active' => 'boolean',
+        'is_active'                => 'boolean',
     ];
 
     protected static function booted(): void
@@ -48,28 +49,28 @@ class MinorCardLimit extends Model
         $validator = Validator::make(
             ['daily_limit' => $this->daily_limit, 'monthly_limit' => $this->monthly_limit, 'single_transaction_limit' => $this->single_transaction_limit],
             [
-                'daily_limit' => 'required|numeric|min:0.01',
-                'monthly_limit' => 'required|numeric|min:0.01',
+                'daily_limit'              => 'required|numeric|min:0.01',
+                'monthly_limit'            => 'required|numeric|min:0.01',
                 'single_transaction_limit' => 'required|numeric|min:0.01',
             ],
             [
-                'daily_limit.min' => 'Daily limit must be greater than 0',
-                'monthly_limit.min' => 'Monthly limit must be greater than 0',
+                'daily_limit.min'              => 'Daily limit must be greater than 0',
+                'monthly_limit.min'            => 'Monthly limit must be greater than 0',
                 'single_transaction_limit.min' => 'Single transaction limit must be greater than 0',
             ]
         );
 
         if ($validator->fails()) {
-            throw new \InvalidArgumentException($validator->errors()->first());
+            throw new InvalidArgumentException($validator->errors()->first());
         }
 
         if ((float) $this->daily_limit > (float) $this->monthly_limit) {
-            throw new \InvalidArgumentException('Daily limit cannot exceed monthly limit');
+            throw new InvalidArgumentException('Daily limit cannot exceed monthly limit');
         }
 
         $maxSingleMonthly = (float) $this->single_transaction_limit * now()->daysInMonth;
         if ((float) $this->monthly_limit > $maxSingleMonthly) {
-            throw new \InvalidArgumentException('Monthly limit cannot exceed single transaction limit multiplied by days in current month');
+            throw new InvalidArgumentException('Monthly limit cannot exceed single transaction limit multiplied by days in current month');
         }
     }
 
@@ -77,8 +78,9 @@ class MinorCardLimit extends Model
     {
         try {
             $this->validateHierarchy();
+
             return true;
-        } catch (\InvalidArgumentException) {
+        } catch (InvalidArgumentException) {
             return false;
         }
     }
