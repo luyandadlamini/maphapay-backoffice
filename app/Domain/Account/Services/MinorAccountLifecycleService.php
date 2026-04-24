@@ -46,10 +46,20 @@ class MinorAccountLifecycleService
         $blocked = 0;
         $exceptionsOpened = 0;
 
-        /** @var Account $freshAccount */
-        $freshAccount = Account::query()
-            ->where('uuid', $minorAccount->uuid)
-            ->firstOrFail();
+        return DB::transaction(function () use (
+            $minorAccount,
+            $tenantId,
+            $source,
+            &$scheduled,
+            &$completed,
+            &$blocked,
+            &$exceptionsOpened,
+        ): array {
+            /** @var Account $freshAccount */
+            $freshAccount = Account::query()
+                ->where('uuid', $minorAccount->uuid)
+                ->lockForUpdate()
+                ->firstOrFail();
 
         $tierEvaluation = $this->policy->evaluateTierAdvance($freshAccount);
         if ($tierEvaluation['eligible']) {
@@ -112,6 +122,7 @@ class MinorAccountLifecycleService
             'blocked' => $blocked,
             'exceptions_opened' => $exceptionsOpened,
         ];
+        }); // end DB::transaction
     }
 
     /**
