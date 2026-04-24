@@ -17,7 +17,7 @@ class MinorCardLimitTest extends BaseTestCase
     {
         $limit = new MinorCardLimit([
             'daily_limit' => 100.00,
-            'monthly_limit' => 3000.00,
+            'monthly_limit' => 1400.00,
             'single_transaction_limit' => 50.00,
             'is_active' => true,
         ]);
@@ -40,17 +40,17 @@ class MinorCardLimitTest extends BaseTestCase
     }
 
     #[\PHPUnit\Framework\Attributes\Test]
-    public function single_transaction_times_thirty_exceeding_monthly_limit_throws(): void
+    public function single_transaction_times_days_in_month_exceeding_monthly_limit_throws(): void
     {
         $limit = new MinorCardLimit([
             'daily_limit' => 100.00,
             'monthly_limit' => 1000.00,
-            'single_transaction_limit' => 100.00,
+            'single_transaction_limit' => 30.00,
             'is_active' => true,
         ]);
 
         expect(fn () => $limit->validateHierarchy())
-            ->toThrow(\InvalidArgumentException::class, 'Single transaction limit x 30 cannot exceed monthly limit');
+            ->toThrow(\InvalidArgumentException::class, 'Monthly limit cannot exceed single transaction limit multiplied by days in current month');
     }
 
     #[\PHPUnit\Framework\Attributes\Test]

@@ -67,9 +67,9 @@ class MinorCardLimit extends Model
             throw new \InvalidArgumentException('Daily limit cannot exceed monthly limit');
         }
 
-        $maxSingleMonthly = (float) $this->single_transaction_limit * 30;
-        if ($maxSingleMonthly > (float) $this->monthly_limit) {
-            throw new \InvalidArgumentException('Single transaction limit x 30 cannot exceed monthly limit');
+        $maxSingleMonthly = (float) $this->single_transaction_limit * now()->daysInMonth;
+        if ((float) $this->monthly_limit > $maxSingleMonthly) {
+            throw new \InvalidArgumentException('Monthly limit cannot exceed single transaction limit multiplied by days in current month');
         }
     }
 
