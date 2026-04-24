@@ -145,7 +145,28 @@ class Account extends Model
         return \Database\Factories\AccountFactory::new();
     }
 
-    public $guarded = [];
+    protected $fillable = [
+        'account_number',
+        'capabilities',
+        'display_name',
+        'emergency_allowance_amount',
+        'frozen',
+        'legal_name',
+        'minor_transition_effective_at',
+        'minor_transition_state',
+        'name',
+        'parent_account_id',
+        'permission_level',
+        'status',
+        'team_id',
+        'tier',
+        'treasury_id',
+        'type',
+        'user_id',
+        'user_uuid',
+        'uuid',
+        'verification_tier',
+    ];
 
     /**
      * The attributes that should be cast.
