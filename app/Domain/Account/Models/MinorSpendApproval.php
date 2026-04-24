@@ -6,6 +6,7 @@ namespace App\Domain\Account\Models;
 
 use App\Domain\Shared\Traits\UsesTenantConnection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -26,6 +27,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class MinorSpendApproval extends Model
 {
+    use HasFactory;
     use HasUuids;
     use UsesTenantConnection;
 
@@ -53,5 +55,10 @@ class MinorSpendApproval extends Model
     {
         return $query->where('status', 'pending')
                      ->where('expires_at', '>', now());
+    }
+
+    protected static function newFactory(): \Database\Factories\Domain\Account\MinorSpendApprovalFactory
+    {
+        return \Database\Factories\Domain\Account\MinorSpendApprovalFactory::new();
     }
 }
