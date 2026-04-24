@@ -35,7 +35,6 @@ return [
     'age_min'        => (int) env('MINOR_AGE_MIN', 6),
     'age_max'        => (int) env('MINOR_AGE_MAX', 17),
     'tier_grow_max_age' => (int) env('MINOR_TIER_GROW_MAX_AGE', 12),
-    'tier_rise_min_age' => (int) env('MINOR_TIER_RISE_MIN_AGE', 13),
 
     /*
     |--------------------------------------------------------------------------
@@ -78,8 +77,11 @@ return [
     | Blocked Merchant Categories
     |--------------------------------------------------------------------------
     */
-    'blocked_merchant_categories' => array_filter(
-        explode(',', (string) env('MINOR_BLOCKED_MCC', 'alcohol,tobacco,gambling,adult_content'))
+    'blocked_merchant_categories' => array_map(
+        'trim',
+        array_filter(
+            explode(',', (string) env('MINOR_BLOCKED_MCC', 'alcohol,tobacco,gambling,adult_content'))
+        )
     ),
 
     /*

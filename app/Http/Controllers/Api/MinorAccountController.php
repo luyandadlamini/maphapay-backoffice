@@ -8,7 +8,6 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountAuditLog;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Services\AccountMembershipService;
-use App\Domain\Account\Services\ScaVerificationService;
 use App\Domain\User\Models\UserProfile;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -20,7 +19,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Validation\UnauthorizedException;
 use Throwable;
 
 class MinorAccountController extends Controller
@@ -28,31 +26,7 @@ class MinorAccountController extends Controller
     public function __construct(
         private readonly AccountMembershipService $membershipService,
         private readonly AccountPolicy $accountPolicy,
-        private readonly ScaVerificationService $scaService,
     ) {
-    }
-
-    private function verifySca(User $user, ?string $scaToken, ?string $scaType, ?string $deviceId): void
-    {
-        if (! $scaToken) {
-            throw new UnauthorizedException('SCA token is required for this operation.');
-        }
-
-        $scaMethod = $scaType ?? 'otp';
-
-        $result = match ($scaMethod) {
-            'otp'       => $this->scaService->verifyOtp($user->uuid, $scaToken),
-            'biometric' => $this->scaService->verifyBiometric(
-                $user->uuid,
-                $deviceId ?? '',
-                $scaToken
-            ),
-            default => throw new UnauthorizedException('Unsupported SCA method.'),
-        };
-
-        if (! $result) {
-            throw new UnauthorizedException('SCA verification failed.');
-        }
     }
 
     /**
@@ -91,8 +65,8 @@ class MinorAccountController extends Controller
         $dateOfBirth = Carbon::parse((string) $validated['date_of_birth'])->startOfDay();
         $age = (int) floor($dateOfBirth->diffInYears(now(), true));
 
-        $ageMin = config('minor_family.age_min');
-        $ageMax = config('minor_family.age_max');
+        $ageMin = config('minor_family.age_min', 6);
+        $ageMax = config('minor_family.age_max', 17);
 
         if ($age < $ageMin || $age > $ageMax) {
             return response()->json([
@@ -104,7 +78,7 @@ class MinorAccountController extends Controller
         }
 
         // Determine tier: grow or rise
-        $tier = $age <= config('minor_family.tier_grow_max_age') ? 'grow' : 'rise';
+        $tier = $age <= config('minor_family.tier_grow_max_age', 12) ? 'grow' : 'rise';
 
         // Determine permission level based on age
         $permissionLevel = $this->getPermissionLevel($age);
@@ -186,7 +160,7 @@ class MinorAccountController extends Controller
         abort_unless($this->accountPolicy->updateMinor($user, $account), 403);
 
         $validated = $request->validate([
-            'permission_level' => ['required', 'integer', 'min:' . config('minor_family.permission_level_min'), 'max:' . config('minor_family.permission_level_max_rise')],
+            'permission_level' => ['required', 'integer', 'min:' . config('minor_family.permission_level_min', 1), 'max:' . config('minor_family.permission_level_max_rise', 7)],
         ]);
 
         $previousLevel = (int) $account->permission_level;
@@ -202,20 +176,20 @@ class MinorAccountController extends Controller
             ], 422);
         }
 
-        if ($account->tier === 'grow' && $newPermissionLevel > config('minor_family.permission_level_max_grow')) {
+        if ($account->tier === 'grow' && $newPermissionLevel > config('minor_family.permission_level_max_grow', 4)) {
             return response()->json([
-                'message' => 'Grow tier accounts cannot exceed permission level ' . config('minor_family.permission_level_max_grow') . '.',
+                'message' => 'Grow tier accounts cannot exceed permission level ' . config('minor_family.permission_level_max_grow', 4) . '.',
                 'errors'  => [
-                    'permission_level' => ['Grow tier accounts cannot exceed permission level ' . config('minor_family.permission_level_max_grow') . '.'],
+                    'permission_level' => ['Grow tier accounts cannot exceed permission level ' . config('minor_family.permission_level_max_grow', 4) . '.'],
                 ],
             ], 422);
         }
 
-        if ($account->tier === 'rise' && $newPermissionLevel > config('minor_family.permission_level_max_rise')) {
+        if ($account->tier === 'rise' && $newPermissionLevel > config('minor_family.permission_level_max_rise', 7)) {
             return response()->json([
-                'message' => 'Rise tier accounts cannot exceed permission level ' . config('minor_family.permission_level_max_rise') . '.',
+                'message' => 'Rise tier accounts cannot exceed permission level ' . config('minor_family.permission_level_max_rise', 7) . '.',
                 'errors'  => [
-                    'permission_level' => ['Rise tier accounts cannot exceed permission level ' . config('minor_family.permission_level_max_rise') . '.'],
+                    'permission_level' => ['Rise tier accounts cannot exceed permission level ' . config('minor_family.permission_level_max_rise', 7) . '.'],
                 ],
             ], 422);
         }
@@ -271,25 +245,15 @@ class MinorAccountController extends Controller
      */
     public function setEmergencyAllowance(Request $request, string $uuid): JsonResponse
     {
-        $validated = $request->validate([
-            'amount'    => ['required', 'integer', 'min:0', 'max:' . config('minor_family.emergency_allowance_max')],
-            'sca_token' => ['required', 'string'],
-            'sca_type'  => ['nullable', 'string', 'in:otp,biometric'],
-            'device_id' => ['nullable', 'string'],
-        ]);
-
         /** @var User $user */
         $user = $request->user();
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
         abort_unless($this->accountPolicy->updateMinor($user, $account), 403);
 
-        $this->verifySca(
-            $user,
-            $validated['sca_token'] ?? null,
-            $validated['sca_type'] ?? null,
-            $validated['device_id'] ?? null
-        );
+        $validated = $request->validate([
+            'amount' => ['required', 'integer', 'min:0', 'max:' . config('minor_family.emergency_allowance_max', 100000)],
+        ]);
 
         $amount = (int) $validated['amount'];
 

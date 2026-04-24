@@ -36,7 +36,7 @@ final class ValidateMinorAccountPermission implements ValidationRule
             return;
         }
 
-        if (in_array($this->transactionType, config('minor_family.blocked_merchant_categories'), true)) {
+        if (in_array($this->transactionType, config('minor_family.blocked_merchant_categories', []), true)) {
             $fail('This transaction category is not allowed for minor accounts.');
 
             return;
