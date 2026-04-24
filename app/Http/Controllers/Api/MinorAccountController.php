@@ -8,6 +8,7 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountAuditLog;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Services\AccountMembershipService;
+use App\Domain\Account\Services\ScaVerificationService;
 use App\Domain\User\Models\UserProfile;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -19,6 +20,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\UnauthorizedException;
 use Throwable;
 
 class MinorAccountController extends Controller
@@ -26,7 +28,31 @@ class MinorAccountController extends Controller
     public function __construct(
         private readonly AccountMembershipService $membershipService,
         private readonly AccountPolicy $accountPolicy,
+        private readonly ScaVerificationService $scaService,
     ) {
+    }
+
+    private function verifySca(User $user, ?string $scaToken, ?string $scaType, ?string $deviceId): void
+    {
+        if (! $scaToken) {
+            throw new UnauthorizedException('SCA token is required for this operation.');
+        }
+
+        $scaMethod = $scaType ?? 'otp';
+
+        $result = match ($scaMethod) {
+            'otp'       => $this->scaService->verifyOtp($user->uuid, $scaToken),
+            'biometric' => $this->scaService->verifyBiometric(
+                $user->uuid,
+                $deviceId ?? '',
+                $scaToken
+            ),
+            default => throw new UnauthorizedException('Unsupported SCA method.'),
+        };
+
+        if (! $result) {
+            throw new UnauthorizedException('SCA verification failed.');
+        }
     }
 
     /**
@@ -65,17 +91,20 @@ class MinorAccountController extends Controller
         $dateOfBirth = Carbon::parse((string) $validated['date_of_birth'])->startOfDay();
         $age = (int) floor($dateOfBirth->diffInYears(now(), true));
 
-        if ($age < 6 || $age > 17) {
+        $ageMin = config('minor_family.age_min');
+        $ageMax = config('minor_family.age_max');
+
+        if ($age < $ageMin || $age > $ageMax) {
             return response()->json([
                 'success' => false,
                 'errors'  => [
-                    'date_of_birth' => ['Child must be between 6 and 17 years old.'],
+                    'date_of_birth' => ["Child must be between {$ageMin} and {$ageMax} years old."],
                 ],
             ], 422);
         }
 
-        // Determine tier: grow (6-12) or rise (13-17)
-        $tier = $age < 13 ? 'grow' : 'rise';
+        // Determine tier: grow or rise
+        $tier = $age <= config('minor_family.tier_grow_max_age') ? 'grow' : 'rise';
 
         // Determine permission level based on age
         $permissionLevel = $this->getPermissionLevel($age);
@@ -96,11 +125,11 @@ class MinorAccountController extends Controller
             UserProfile::query()->updateOrCreate(
                 ['user_id' => $child->id],
                 [
-                    'email' => $child->email ?? sprintf('%s@minor.local', $child->uuid),
-                    'first_name' => $sanitizedName,
-                    'status' => 'active',
+                    'email'         => $child->email ?? sprintf('%s@minor.local', $child->uuid),
+                    'first_name'    => $sanitizedName,
+                    'status'        => 'active',
                     'date_of_birth' => $dateOfBirth->toDateString(),
-                    'is_verified' => false,
+                    'is_verified'   => false,
                 ],
             );
 
@@ -157,7 +186,7 @@ class MinorAccountController extends Controller
         abort_unless($this->accountPolicy->updateMinor($user, $account), 403);
 
         $validated = $request->validate([
-            'permission_level' => ['required', 'integer', 'min:1', 'max:7'],
+            'permission_level' => ['required', 'integer', 'min:' . config('minor_family.permission_level_min'), 'max:' . config('minor_family.permission_level_max_rise')],
         ]);
 
         $previousLevel = (int) $account->permission_level;
@@ -173,20 +202,20 @@ class MinorAccountController extends Controller
             ], 422);
         }
 
-        if ($account->tier === 'grow' && $newPermissionLevel > 4) {
+        if ($account->tier === 'grow' && $newPermissionLevel > config('minor_family.permission_level_max_grow')) {
             return response()->json([
-                'message' => 'Grow tier accounts cannot exceed permission level 4.',
+                'message' => 'Grow tier accounts cannot exceed permission level ' . config('minor_family.permission_level_max_grow') . '.',
                 'errors'  => [
-                    'permission_level' => ['Grow tier accounts cannot exceed permission level 4.'],
+                    'permission_level' => ['Grow tier accounts cannot exceed permission level ' . config('minor_family.permission_level_max_grow') . '.'],
                 ],
             ], 422);
         }
 
-        if ($account->tier === 'rise' && $newPermissionLevel > 7) {
+        if ($account->tier === 'rise' && $newPermissionLevel > config('minor_family.permission_level_max_rise')) {
             return response()->json([
-                'message' => 'Rise tier accounts cannot exceed permission level 7.',
+                'message' => 'Rise tier accounts cannot exceed permission level ' . config('minor_family.permission_level_max_rise') . '.',
                 'errors'  => [
-                    'permission_level' => ['Rise tier accounts cannot exceed permission level 7.'],
+                    'permission_level' => ['Rise tier accounts cannot exceed permission level ' . config('minor_family.permission_level_max_rise') . '.'],
                 ],
             ], 422);
         }
@@ -196,15 +225,15 @@ class MinorAccountController extends Controller
         ])->save();
 
         AccountAuditLog::create([
-            'account_uuid'     => $account->uuid,
+            'account_uuid'    => $account->uuid,
             'actor_user_uuid' => $user->uuid,
-            'action'        => 'permission_level_changed',
-            'metadata'      => [
+            'action'          => 'permission_level_changed',
+            'metadata'        => [
                 'old_value' => $previousLevel,
                 'new_value' => $newPermissionLevel,
-                'reason' => $request->string('reason', 'Guardian updated permission level')->toString(),
+                'reason'    => $request->string('reason', 'Guardian updated permission level')->toString(),
             ],
-            'created_at'    => now(),
+            'created_at' => now(),
         ]);
 
         // Award level-unlock bonus points when guardian advances the child's level
@@ -242,15 +271,25 @@ class MinorAccountController extends Controller
      */
     public function setEmergencyAllowance(Request $request, string $uuid): JsonResponse
     {
+        $validated = $request->validate([
+            'amount'    => ['required', 'integer', 'min:0', 'max:' . config('minor_family.emergency_allowance_max')],
+            'sca_token' => ['required', 'string'],
+            'sca_type'  => ['nullable', 'string', 'in:otp,biometric'],
+            'device_id' => ['nullable', 'string'],
+        ]);
+
         /** @var User $user */
         $user = $request->user();
         $account = Account::query()->where('uuid', $uuid)->firstOrFail();
 
         abort_unless($this->accountPolicy->updateMinor($user, $account), 403);
 
-        $validated = $request->validate([
-            'amount' => ['required', 'integer', 'min:0', 'max:100000'],
-        ]);
+        $this->verifySca(
+            $user,
+            $validated['sca_token'] ?? null,
+            $validated['sca_type'] ?? null,
+            $validated['device_id'] ?? null
+        );
 
         $amount = (int) $validated['amount'];
 
@@ -281,12 +320,12 @@ class MinorAccountController extends Controller
     private function getPermissionLevel(int $age): int
     {
         return match (true) {
-            $age <= 7  => 1,
-            $age <= 9  => 2,
-            $age <= 11 => 3,
-            $age <= 13 => 4,
-            $age <= 15 => 5,
-            default    => 6,
+            $age <= config('minor_family.permission_level_age_1_max', 7)  => 1,
+            $age <= config('minor_family.permission_level_age_2_max', 9)  => 2,
+            $age <= config('minor_family.permission_level_age_3_max', 11) => 3,
+            $age <= config('minor_family.permission_level_age_4_max', 13) => 4,
+            $age <= config('minor_family.permission_level_age_5_max', 15) => 5,
+            default => config('minor_family.permission_level_default', 6),
         };
     }
 }

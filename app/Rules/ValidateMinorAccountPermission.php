@@ -11,13 +11,6 @@ use Illuminate\Contracts\Validation\ValidationRule;
 
 final class ValidateMinorAccountPermission implements ValidationRule
 {
-    private const BLOCKED_TRANSACTION_TYPES = [
-        'alcohol',
-        'tobacco',
-        'gambling',
-        'adult_content',
-    ];
-
     private const SPENDING_TRANSACTION_TYPES = [
         'withdrawal',
         'transfer',
@@ -43,7 +36,7 @@ final class ValidateMinorAccountPermission implements ValidationRule
             return;
         }
 
-        if (in_array($this->transactionType, self::BLOCKED_TRANSACTION_TYPES, true)) {
+        if (in_array($this->transactionType, config('minor_family.blocked_merchant_categories'), true)) {
             $fail('This transaction category is not allowed for minor accounts.');
 
             return;
@@ -88,12 +81,9 @@ final class ValidateMinorAccountPermission implements ValidationRule
      */
     private function resolveLimits(int $permissionLevel): array
     {
-        return match (true) {
-            $permissionLevel <= 4  => [50_000, 500_000],
-            $permissionLevel === 5 => [100_000, 1_000_000],
-            $permissionLevel <= 7  => [200_000, 1_500_000],
-            default                => [null, null],
-        };
+        $limits = config('minor_family.spend_limit_level_' . $permissionLevel);
+
+        return $limits ?? [null, null];
     }
 
     /**
