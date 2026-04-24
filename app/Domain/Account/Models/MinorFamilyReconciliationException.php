@@ -4,29 +4,16 @@ declare(strict_types=1);
 
 namespace App\Domain\Account\Models;
 
+use App\Domain\Shared\Traits\UsesTenantConnection;
 use App\Models\MtnMomoTransaction;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-/**
- * @property string $id
- * @property string $mtn_momo_transaction_id
- * @property string $reason_code
- * @property string $status
- * @property string $source
- * @property int $occurrence_count
- * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon $first_seen_at
- * @property \Illuminate\Support\Carbon $last_seen_at
- * @property \Illuminate\Support\Carbon|null $sla_due_at
- * @property \Illuminate\Support\Carbon|null $sla_escalated_at
- * @property \Illuminate\Support\Carbon|null $resolved_at
- */
 class MinorFamilyReconciliationException extends Model
 {
-    use HasUuids;
+    use HasUuids, UsesTenantConnection;
 
     public const STATUS_OPEN = 'open';
 

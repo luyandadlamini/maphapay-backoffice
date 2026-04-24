@@ -4,23 +4,15 @@ declare(strict_types=1);
 
 namespace App\Domain\Account\Models;
 
+use App\Domain\Shared\Traits\UsesTenantConnection;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * Immutable operator acknowledgment for a reconciliation exception (append-only).
- *
- * @property string $id
- * @property string $minor_family_reconciliation_exception_id
- * @property string $acknowledged_by_user_uuid
- * @property string $note
- * @property \Illuminate\Support\Carbon $created_at
- */
 class MinorFamilyReconciliationExceptionAcknowledgment extends Model
 {
-    use HasUuids;
+    use HasUuids, UsesTenantConnection;
 
     public const UPDATED_AT = null;
 
