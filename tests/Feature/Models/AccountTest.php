@@ -100,4 +100,28 @@ class AccountTest extends TestCase
 
         $this->assertFalse($account->frozen);
     }
+
+    #[Test]
+    public function test_generate_account_number_returns_unique_values(): void
+    {
+        $generatedNumbers = [];
+
+        for ($i = 0; $i < 100; $i++) {
+            $generatedNumbers[] = Account::generateAccountNumber();
+        }
+
+        $uniqueNumbers = array_unique($generatedNumbers);
+        $this->assertCount(100, $uniqueNumbers, 'All generated account numbers should be unique');
+    }
+
+    #[Test]
+    public function test_generate_account_number_respects_prefix(): void
+    {
+        config(['banking.account_prefix' => '8']);
+
+        $accountNumber = Account::generateAccountNumber();
+
+        $this->assertStringStartsWith('8', $accountNumber);
+        $this->assertEquals(10, strlen($accountNumber));
+    }
 }

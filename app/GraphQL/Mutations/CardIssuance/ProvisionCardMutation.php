@@ -33,8 +33,7 @@ class ProvisionCardMutation
         );
 
         return [
-            'id'              => $card->cardToken,
-            'card_token'      => $card->cardToken,
+            'id'              => (string) $card->id,
             'cardholder_name' => $card->cardholderName,
             'last_four'       => $card->last4,
             'network'         => $card->network->value,

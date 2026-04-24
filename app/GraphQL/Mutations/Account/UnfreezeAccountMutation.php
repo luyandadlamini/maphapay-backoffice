@@ -7,8 +7,10 @@ namespace App\GraphQL\Mutations\Account;
 use App\Domain\Account\DataObjects\AccountUuid;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Workflows\UnfreezeAccountWorkflow;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Auth;
 use Workflow\WorkflowStub;
 
@@ -23,6 +25,10 @@ class UnfreezeAccountMutation
 
         if (! $user) {
             throw new AuthenticationException('Unauthenticated.');
+        }
+
+        if (! Gate::allows('superadmin')) {
+            throw new AuthorizationException('Only superadmins can unfreeze accounts.');
         }
 
         /** @var Account|null $account */

@@ -110,6 +110,15 @@ class BiometricAuthenticationService
         string $signature,
         ?string $ipAddress = null
     ): ?array {
+        if ($this->detectEmulator()) {
+            Log::warning('Biometric authentication blocked: emulator detected', [
+                'device_id' => $device->id,
+                'user_id'   => $device->user_id,
+            ]);
+
+            return null;
+        }
+
         // SECURITY CHECK 1: Is device blocked for device-level issues?
         if ($device->is_blocked) {
             Log::warning('Device is blocked, cannot use biometric', [
@@ -572,5 +581,55 @@ class BiometricAuthenticationService
             'device_id' => $device->id,
             'user_id'   => $device->user_id,
         ]);
+    }
+
+    /**
+     * Detect if the request is coming from an emulator.
+     *
+     * Checks for common emulator indicators in user agent, device model,
+     * and other request metadata.
+     */
+    public function detectEmulator(): bool
+    {
+        $userAgent = request()->header('User-Agent', '');
+        $deviceModel = request()->header('X-Device-Model', '');
+        $platform = request()->header('X-Platform', '');
+        $debugFlag = request()->header('X-Debug-Enabled', '');
+
+        $emulatorIndicators = [
+            'genymotion',
+            'emulator',
+            'sdk',
+            'goldfish',
+            'ranchu',
+            'virtualbox',
+            'android_x86',
+            'x86_64',
+            'i386',
+        ];
+
+        $combined = strtolower($userAgent . ' ' . $deviceModel . ' ' . $platform);
+
+        foreach ($emulatorIndicators as $indicator) {
+            if (str_contains($combined, $indicator)) {
+                Log::info('Emulator detected via indicator', [
+                    'indicator'  => $indicator,
+                    'user_agent' => $userAgent,
+                    'device_model' => $deviceModel,
+                ]);
+
+                return true;
+            }
+        }
+
+        if ($debugFlag === 'true' || $debugFlag === '1') {
+            Log::info('Emulator detected via debug flag', [
+                'debug_flag' => $debugFlag,
+            ]);
+
+            return true;
+        }
+
+        return false;
     }
 }

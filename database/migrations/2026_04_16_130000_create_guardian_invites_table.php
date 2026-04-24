@@ -17,7 +17,7 @@ return new class () extends Migration {
             $table->uuid('id')->primary();
             $table->uuid('minor_account_uuid');
             $table->uuid('invited_by_user_uuid');
-            $table->char('code', 8)->unique();
+            $table->string('code', 16)->unique();
             $table->timestamp('expires_at');
             $table->timestamp('claimed_at')->nullable();
             $table->uuid('claimed_by_user_uuid')->nullable();

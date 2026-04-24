@@ -129,7 +129,15 @@ class MinorNotificationService
                 'target_id'          => $targetId,
             ]);
         } catch (Throwable $e) {
-            Log::warning("MinorNotificationService: failed to create notification [{$type}] for {$minorAccountUuid}: {$e->getMessage()}");
+            Log::error("MinorNotificationService: failed to create notification [{$type}] for {$minorAccountUuid}: {$e->getMessage()}", [
+                'minor_account_uuid' => $minorAccountUuid,
+                'type'               => $type,
+                'actor_user_uuid'    => $resolvedActor,
+                'exception'          => $e,
+            ]);
+            if (app()->environment('local', 'testing')) {
+                throw $e;
+            }
         }
     }
 }

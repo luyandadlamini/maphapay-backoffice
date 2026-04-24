@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\GraphQL\Mutations\Stablecoin;
 
 use App\Domain\Account\DataObjects\AccountUuid;
+use App\Domain\Account\Models\Account;
 use App\Domain\Stablecoin\Models\StablecoinReserve;
 use App\Domain\Stablecoin\Workflows\BurnStablecoinWorkflow;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
@@ -39,7 +41,16 @@ class RedeemStablecoinMutation
             throw new InvalidArgumentException('Redeem amount exceeds available reserve.');
         }
 
+        // Validate account_uuid belongs to authenticated user
         $accountUuid = AccountUuid::fromString($args['account_uuid'] ?? $user->uuid);
+        $account = Account::query()
+            ->where('uuid', $accountUuid->toString())
+            ->where('user_uuid', $user->uuid)
+            ->first();
+
+        if (! $account) {
+            throw new AuthorizationException('You do not own this account.');
+        }
 
         $workflow = WorkflowStub::make(BurnStablecoinWorkflow::class);
         $workflow->start(

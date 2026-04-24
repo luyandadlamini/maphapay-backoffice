@@ -47,4 +47,22 @@ class MinorSpendApprovalModelTest extends TestCase
 
         $this->assertDatabaseHas('minor_spend_approvals', ['id' => $approval->id, 'status' => 'pending']);
     }
+
+    #[Test]
+    public function isExpired_returns_false_when_expires_at_is_null(): void
+    {
+        $approval = MinorSpendApproval::create([
+            'minor_account_uuid'    => (string) \Illuminate\Support\Str::uuid(),
+            'guardian_account_uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'from_account_uuid'     => (string) \Illuminate\Support\Str::uuid(),
+            'to_account_uuid'       => (string) \Illuminate\Support\Str::uuid(),
+            'amount'                => '150.00',
+            'asset_code'            => 'SZL',
+            'note'                  => 'Test',
+            'merchant_category'     => 'general',
+            'status'                => 'pending',
+        ]);
+
+        $this->assertFalse($approval->isExpired());
+    }
 }

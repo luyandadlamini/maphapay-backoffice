@@ -9,6 +9,7 @@ use App\Domain\Stablecoin\Models\StablecoinReserve;
 use App\Domain\Stablecoin\Workflows\MintStablecoinWorkflow;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Workflow\WorkflowStub;
 
@@ -21,8 +22,8 @@ class MintStablecoinMutation
     {
         $user = Auth::user();
 
-        if (! $user) {
-            throw new AuthenticationException('Unauthenticated.');
+        if (! $user || ! Gate::allows('superadmin')) {
+            throw new AuthenticationException('Unauthorized. Superadmin access required.');
         }
 
         $accountUuid = AccountUuid::fromString($args['account_uuid'] ?? $user->uuid);

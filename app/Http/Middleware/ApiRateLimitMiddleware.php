@@ -50,6 +50,11 @@ class ApiRateLimitMiddleware
             'window'         => 60,    // per minute
             'block_duration' => 300, // 5 minutes lockout after exceeding
         ],
+        'mutation' => [
+            'limit'          => 30,    // 30 requests (for mutations like create/update/delete)
+            'window'         => 60,    // per minute
+            'block_duration' => 60,
+        ],
     ];
 
     /**
@@ -82,7 +87,7 @@ class ApiRateLimitMiddleware
         }
 
         // Default: non-partner rate limiting
-        $config = self::RATE_LIMITS[$rateLimitType] ?? self::RATE_LIMITS['query'];
+        $config = self::RATE_LIMITS[$rateLimitType] ?? self::RATE_LIMITS['mutation'];
 
         return $this->applyRateLimit($request, $next, $rateLimitType, $config);
     }
@@ -323,7 +328,7 @@ class ApiRateLimitMiddleware
      */
     public static function getRateLimitConfig(string $type): array
     {
-        return self::RATE_LIMITS[$type] ?? self::RATE_LIMITS['query'];
+        return self::RATE_LIMITS[$type] ?? self::RATE_LIMITS['mutation'];
     }
 
     /**

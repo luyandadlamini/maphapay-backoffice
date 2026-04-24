@@ -6,8 +6,10 @@ namespace App\GraphQL\Mutations\Lending;
 
 use App\Domain\Lending\Models\LoanApplication;
 use App\Domain\Lending\Services\LoanApplicationService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Auth;
 
 class ApproveLoanMutation
@@ -26,6 +28,10 @@ class ApproveLoanMutation
 
         if (! $user) {
             throw new AuthenticationException('Unauthenticated.');
+        }
+
+        if (! Gate::allows('superadmin')) {
+            throw new AuthorizationException('Only superadmins can approve loans.');
         }
 
         /** @var LoanApplication|null $application */

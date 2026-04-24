@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domain\Account\Projectors\AccountProjector;
+use App\Domain\Account\Projectors\AssetBalanceProjector;
+use App\Domain\Account\Projectors\TurnoverProjector;
+use App\Domain\Account\Projectors\AssetBalanceProjector;
+use App\Domain\Account\Projectors\MinorPointsProjector;
+use App\Domain\Account\Projectors\MinorRedemptionProjector;
+use App\Domain\Account\Projectors\TransactionProjector;
+use App\Domain\Account\Projectors\TurnoverProjector;
+use App\Domain\Account\Projectors\AccountProjector;
 use App\Domain\Account\Services\AccountOperationsAdapter;
 use App\Domain\Account\Services\AccountQueryService;
 use App\Domain\Asset\Services\AssetTransferService;
@@ -231,11 +240,19 @@ class DomainServiceProvider extends ServiceProvider
     /**
      * Register Spatie Event Sourcing projectors.
      */
-    private function registerProjectors(): void
+private function registerProjectors(): void
     {
         // Register Compliance projectors
         Projectionist::addProjector(ComplianceAlertProjector::class);
         Projectionist::addProjector(TransactionMonitoringProjector::class);
+
+        // Register Account projectors
+        Projectionist::addProjector(AssetBalanceProjector::class);
+        Projectionist::addProjector(AccountProjector::class);
+        Projectionist::addProjector(TransactionProjector::class);
+        Projectionist::addProjector(TurnoverProjector::class);
+        Projectionist::addProjector(MinorPointsProjector::class);
+        Projectionist::addProjector(MinorRedemptionProjector::class);
 
         // Other domain projectors can be added here as they are implemented
         // Example:

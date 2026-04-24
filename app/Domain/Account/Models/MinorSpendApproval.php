@@ -45,7 +45,7 @@ class MinorSpendApproval extends Model
 
     public function isExpired(): bool
     {
-        return $this->expires_at->isPast();
+        return $this->expires_at !== null && $this->expires_at->isPast();
     }
 
     /** Scope: only pending approvals that have not yet expired. */

@@ -21,6 +21,10 @@ class PublicMinorFundingLinkController extends Controller
 
     public function show(string $token): JsonResponse
     {
+        if (strlen($token) < 32) {
+            return $this->notFoundResponse();
+        }
+
         $link = MinorFamilyFundingLink::query()
             ->where('token', $token)
             ->first();
@@ -53,6 +57,10 @@ class PublicMinorFundingLinkController extends Controller
 
     public function requestToPay(Request $request, string $token): JsonResponse
     {
+        if (strlen($token) < 32) {
+            return $this->notFoundResponse();
+        }
+
         $link = MinorFamilyFundingLink::query()
             ->where('token', $token)
             ->first();
@@ -109,6 +117,10 @@ class PublicMinorFundingLinkController extends Controller
 
     public function attemptStatus(string $token, string $attemptUuid): JsonResponse
     {
+        if (strlen($token) < 32) {
+            return $this->notFoundResponse();
+        }
+
         $link = MinorFamilyFundingLink::query()
             ->where('token', $token)
             ->first();

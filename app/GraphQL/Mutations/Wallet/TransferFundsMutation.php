@@ -6,6 +6,7 @@ namespace App\GraphQL\Mutations\Wallet;
 
 use App\Domain\Wallet\Models\MultiSigWallet;
 use App\Domain\Wallet\Services\WalletService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
@@ -33,6 +34,10 @@ class TransferFundsMutation
 
         if (! $wallet) {
             throw new ModelNotFoundException('Wallet not found.');
+        }
+
+        if ($wallet->user_id !== $user->id) {
+            throw new AuthorizationException('You do not own this wallet.');
         }
 
         $this->walletService->transfer(

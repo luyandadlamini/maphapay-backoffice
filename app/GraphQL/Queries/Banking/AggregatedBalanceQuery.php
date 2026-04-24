@@ -24,9 +24,9 @@ final class AggregatedBalanceQuery
             throw new AuthenticationException('Unauthenticated.');
         }
 
-        // Aggregate from bank accounts directly
+        // IGNORE user_uuid arg entirely - always use authenticated user
         $accounts = BankAccountModel::query()
-            ->where('user_uuid', $args['user_uuid'])
+            ->where('user_uuid', $user->uuid)
             ->where('status', 'active')
             ->get();
 

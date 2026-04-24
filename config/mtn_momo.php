@@ -41,4 +41,15 @@ return [
     | When false, callback token verification is skipped (local sandbox only).
     */
     'verify_callback_token' => (bool) env('MTNMOMO_VERIFY_CALLBACK_TOKEN', true),
+
+    /*
+    | HMAC-SHA256 key for X-Signature header verification.
+    | MTN Mobile Money signs callbacks with HMAC-SHA256 over the raw body.
+    */
+    'hmac_key' => (string) env('MTNMOMO_HMAC_KEY', ''),
+
+    /*
+    | When false, HMAC signature verification is skipped (local sandbox only).
+    */
+    'verify_hmac_signature' => (bool) env('MTNMOMO_VERIFY_HMAC_SIGNATURE', true),
 ];

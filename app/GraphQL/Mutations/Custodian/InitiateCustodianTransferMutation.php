@@ -8,6 +8,7 @@ use App\Domain\Account\DataObjects\Money;
 use App\Domain\Custodian\Models\CustodianAccount;
 use App\Domain\Custodian\Models\CustodianTransfer;
 use App\Domain\Custodian\Services\CustodianAccountService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\Auth;
 
@@ -34,6 +35,11 @@ final class InitiateCustodianTransferMutation
         $fromAccount = CustodianAccount::query()
             ->where('account_uuid', $args['from_account_uuid'])
             ->firstOrFail();
+
+        // Verify from_account belongs to authenticated user
+        if ($fromAccount->user_uuid !== $user->uuid) {
+            throw new AuthorizationException('You do not own the source account.');
+        }
 
         /** @var CustodianAccount $toAccount */
         $toAccount = CustodianAccount::query()

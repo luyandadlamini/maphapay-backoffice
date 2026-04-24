@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountAuditLog;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Services\AccountMembershipService;
 use App\Domain\User\Models\UserProfile;
@@ -193,6 +194,18 @@ class MinorAccountController extends Controller
         $account->forceFill([
             'permission_level' => $newPermissionLevel,
         ])->save();
+
+        AccountAuditLog::create([
+            'account_uuid'     => $account->uuid,
+            'actor_user_uuid' => $user->uuid,
+            'action'        => 'permission_level_changed',
+            'metadata'      => [
+                'old_value' => $previousLevel,
+                'new_value' => $newPermissionLevel,
+                'reason' => $request->string('reason', 'Guardian updated permission level')->toString(),
+            ],
+            'created_at'    => now(),
+        ]);
 
         // Award level-unlock bonus points when guardian advances the child's level
         if ($newPermissionLevel > $previousLevel) {

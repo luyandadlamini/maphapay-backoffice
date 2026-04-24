@@ -51,6 +51,8 @@ class CallbackController extends Controller
             }
         }
 
+        $this->verifyHmacSignature($request);
+
         $referenceId = (string) $request->header('X-Reference-Id', '');
         if ($referenceId === '') {
             return response('', 400);
@@ -253,5 +255,38 @@ class CallbackController extends Controller
             MinorFamilyFundingAttempt::class,
             MinorFamilySupportTransfer::class,
         ], true);
+    }
+
+    private function verifyHmacSignature(Request $request): void
+    {
+        if (! config('mtn_momo.verify_hmac_signature', true)) {
+            return;
+        }
+
+        $signature = (string) $request->header('X-Signature', '');
+        if ($signature === '') {
+            Log::warning('MTN callback received without X-Signature header.');
+
+            abort(401);
+        }
+
+        $key = (string) config('mtn_momo.hmac_key', '');
+        if ($key === '') {
+            Log::warning('MTN HMAC key (MTNMOMO_HMAC_KEY) is not configured.');
+
+            abort(401);
+        }
+
+        $rawBody = $request->getContent();
+        $computed = hash_hmac('sha256', $rawBody, $key);
+
+        if (! hash_equals($computed, $signature)) {
+            Log::warning('MTN callback HMAC signature verification failed.', [
+                'received_signature_length' => strlen($signature),
+                'computed_signature_length' => strlen($computed),
+            ]);
+
+            abort(401);
+        }
     }
 }

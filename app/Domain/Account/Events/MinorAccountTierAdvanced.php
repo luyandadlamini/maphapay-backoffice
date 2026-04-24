@@ -12,6 +12,7 @@ class MinorAccountTierAdvanced extends ShouldBeStored
         public readonly string $minorAccountUuid,
         public readonly string $fromTier,
         public readonly string $toTier,
+        public readonly ?string $actorUserUuid = null,
         public readonly array $metadata = [],
     ) {
     }

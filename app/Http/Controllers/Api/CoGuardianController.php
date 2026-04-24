@@ -122,7 +122,8 @@ class CoGuardianController extends Controller
     private function generateUniqueCode(): string
     {
         do {
-            $code = strtoupper(Str::random(8));
+            $random = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $code = 'GD' . $random . strtoupper(substr(bin2hex(random_bytes(1)), 0, 2));
         } while (GuardianInvite::query()->where('code', $code)->exists());
 
         return $code;

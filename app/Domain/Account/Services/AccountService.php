@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Account\Services;
 
+use App\Domain\Account\Aggregates\AssetTransactionAggregate;
 use App\Domain\Account\Aggregates\LedgerAggregate;
 use App\Domain\Account\Aggregates\TransactionAggregate;
 use App\Domain\Account\Aggregates\TransferAggregate;
@@ -81,22 +82,15 @@ class AccountService
      */
     public function depositDirect(mixed $uuid, mixed $amount, string $description = 'Admin deposit'): string
     {
+        $accountUuid = (string) __account_uuid($uuid);
         $assetCode = config('banking.default_currency', 'SZL');
+        $moneyAmount = __money($amount);
 
-        // Update the AccountBalance directly
-        $balance = \App\Domain\Account\Models\AccountBalance::firstOrCreate(
-            [
-                'account_uuid' => $uuid,
-                'asset_code'   => $assetCode,
-            ],
-            [
-                'balance' => 0,
-            ]
-        );
-        $balance->balance += $amount;
-        $balance->save();
+        AssetTransactionAggregate::retrieve($accountUuid)
+            ->credit($assetCode, $moneyAmount->getAmount())
+            ->persist();
 
-        return $this->recordDepositTransaction($uuid, $amount, $description);
+        return $this->recordDepositTransaction($accountUuid, $moneyAmount->getAmount(), $description);
     }
 
     public function withdraw(mixed $uuid, mixed $amount): void
@@ -110,31 +104,20 @@ class AccountService
      */
     public function withdrawDirect(mixed $uuid, mixed $amount, string $description = 'Admin withdrawal'): string
     {
+        $accountUuid = (string) __account_uuid($uuid);
         $assetCode = config('banking.default_currency', 'SZL');
+        $moneyAmount = __money($amount);
 
-        // Record the event
-        $transactionAggregate = $this->transaction->retrieve($uuid);
-        $transactionAggregate->debit(__money($amount))->persist();
+        AssetTransactionAggregate::retrieve($accountUuid)
+            ->debit($assetCode, $moneyAmount->getAmount())
+            ->persist();
 
-        // Update the AccountBalance directly
-        $balance = \App\Domain\Account\Models\AccountBalance::firstOrCreate(
-            [
-                'account_uuid' => $uuid,
-                'asset_code'   => $assetCode,
-            ],
-            [
-                'balance' => 0,
-            ]
-        );
-        $balance->balance -= $amount;
-        $balance->save();
-
-        return $this->recordWithdrawTransaction($uuid, $amount, $description);
+        return $this->recordWithdrawTransaction($accountUuid, $moneyAmount->getAmount(), $description);
     }
 
     protected function recordDepositTransaction(mixed $uuid, mixed $amount, string $description): string
     {
-        $reference = 'dep_' . Str::uuid()->toString();
+        $reference = Str::uuid()->toString();
 
         \App\Domain\Account\Models\TransactionProjection::create([
             'uuid'         => $reference,
@@ -145,6 +128,7 @@ class AccountService
             'description'  => $description,
             'reference'    => $reference,
             'status'       => 'completed',
+            'hash'         => hash('sha3-512', "{$uuid}:{$amount}:{$reference}"),
         ]);
 
         return $reference;
@@ -152,7 +136,7 @@ class AccountService
 
     protected function recordWithdrawTransaction(mixed $uuid, mixed $amount, string $description): string
     {
-        $reference = 'wd_' . Str::uuid()->toString();
+        $reference = Str::uuid()->toString();
 
         \App\Domain\Account\Models\TransactionProjection::create([
             'uuid'         => $reference,
@@ -163,6 +147,7 @@ class AccountService
             'description'  => $description,
             'reference'    => $reference,
             'status'       => 'completed',
+            'hash'         => hash('sha3-512', "{$uuid}:{$amount}:{$reference}"),
         ]);
 
         return $reference;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Account\Services;
 
+use App\Domain\Account\Aggregates\MinorAccountLifecycleAggregate;
 use App\Domain\Account\Events\MinorAccountAdultTransitionCompleted;
 use App\Domain\Account\Events\MinorAccountAdultTransitionFrozen;
 use App\Domain\Account\Events\MinorAccountGuardianContinuityBroken;
@@ -19,6 +20,7 @@ use App\Domain\Account\Models\MinorAccountLifecycleExceptionAcknowledgment;
 use App\Domain\Account\Models\MinorAccountLifecycleTransition;
 use App\Domain\Monitoring\Services\MetricsCollector;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -243,14 +245,14 @@ class MinorAccountLifecycleService
         return $resolved;
     }
 
-    public function exceptionQueryForAccount(Account $minorAccount)
+    public function exceptionQueryForAccount(Account $minorAccount): Builder
     {
         return MinorAccountLifecycleException::query()
             ->where('minor_account_uuid', $minorAccount->uuid)
             ->orderByDesc('last_seen_at');
     }
 
-    public function transitionQueryForAccount(Account $minorAccount)
+    public function transitionQueryForAccount(Account $minorAccount): Builder
     {
         return MinorAccountLifecycleTransition::query()
             ->where('minor_account_uuid', $minorAccount->uuid)
@@ -279,6 +281,10 @@ class MinorAccountLifecycleService
         $evaluation = $this->policy->evaluateTierAdvance($minorAccount);
 
         if (! $evaluation['eligible']) {
+            $aggregate = MinorAccountLifecycleAggregate::initialize($minorAccount->uuid);
+            $aggregate->blockTierAdvance((string) $evaluation['reason_code']);
+            $aggregate->persist();
+
             $transition->forceFill([
                 'state' => MinorAccountLifecycleTransition::STATE_BLOCKED,
                 'blocked_reason_code' => $evaluation['reason_code'],
@@ -300,12 +306,14 @@ class MinorAccountLifecycleService
         }
 
         $fromTier = (string) $minorAccount->tier;
-        $minorAccount->forceFill([
-            'tier' => $evaluation['target_tier'],
-            'permission_level' => $evaluation['target_permission_level'],
-            'minor_transition_state' => MinorAccountLifecycleTransition::TYPE_TIER_ADVANCE,
-            'minor_transition_effective_at' => $transition->effective_at,
-        ])->save();
+
+        $aggregate = MinorAccountLifecycleAggregate::initialize($minorAccount->uuid);
+        $aggregate->transitionToTier(
+            targetTier: (string) $evaluation['target_tier'],
+            targetPermissionLevel: (string) $evaluation['target_permission_level'],
+            effectiveAt: $transition->effective_at !== null ? $transition->effective_at->toIso8601String() : null,
+        );
+        $aggregate->persist();
 
         $transition->forceFill([
             'state' => MinorAccountLifecycleTransition::STATE_COMPLETED,
@@ -345,14 +353,12 @@ class MinorAccountLifecycleService
         $adultTransition = $this->policy->evaluateAdultTransition($minorAccount);
 
         if (! $adultTransition['ready']) {
-            if (! $minorAccount->frozen) {
-                $this->accountService->freeze(
-                    $minorAccount->uuid,
-                    reason: 'minor_adult_transition_blocked',
-                    authorizedBy: 'minor_account_lifecycle_service',
-                );
-                $minorAccount->refresh();
-            }
+            $aggregate = MinorAccountLifecycleAggregate::initialize($minorAccount->uuid);
+            $aggregate->freezeForAdultTransition(
+                reasonCode: (string) $adultTransition['reason_code'],
+                effectiveAt: $transition->effective_at !== null ? $transition->effective_at->toIso8601String() : null,
+            );
+            $aggregate->persist();
 
             $transition->forceFill([
                 'state' => MinorAccountLifecycleTransition::STATE_BLOCKED,
@@ -367,11 +373,6 @@ class MinorAccountLifecycleService
                 reasonCode: (string) $adultTransition['reason_code'],
                 metadata: ['transition_type' => $transition->transition_type],
             );
-
-            $minorAccount->forceFill([
-                'minor_transition_state' => 'adult_transition_frozen',
-                'minor_transition_effective_at' => $transition->effective_at,
-            ])->save();
 
             $this->notificationService->notify(
                 $minorAccount->uuid,
@@ -391,18 +392,11 @@ class MinorAccountLifecycleService
             return ['completed' => 0, 'blocked' => 1, 'exceptions_opened' => 1];
         }
 
-        if ($minorAccount->frozen) {
-            $this->accountService->unfreeze(
-                $minorAccount->uuid,
-                reason: 'minor_adult_transition_completed',
-                authorizedBy: 'minor_account_lifecycle_service',
-            );
-        }
-
-        $minorAccount->forceFill([
-            'minor_transition_state' => 'adult_transition_completed',
-            'minor_transition_effective_at' => $transition->effective_at,
-        ])->save();
+        $aggregate = MinorAccountLifecycleAggregate::initialize($minorAccount->uuid);
+        $aggregate->transitionToAdult(
+            effectiveAt: $transition->effective_at !== null ? $transition->effective_at->toIso8601String() : now()->toIso8601String(),
+        );
+        $aggregate->persist();
 
         $transition->forceFill([
             'state' => MinorAccountLifecycleTransition::STATE_COMPLETED,
@@ -438,14 +432,12 @@ class MinorAccountLifecycleService
         $guardianContinuity = $this->policy->evaluateGuardianContinuity($minorAccount);
 
         if (! $guardianContinuity['valid']) {
-            if (! $minorAccount->frozen) {
-                $this->accountService->freeze(
-                    $minorAccount->uuid,
-                    reason: 'minor_guardian_continuity_broken',
-                    authorizedBy: 'minor_account_lifecycle_service',
-                );
-                $minorAccount->refresh();
-            }
+            $aggregate = MinorAccountLifecycleAggregate::initialize($minorAccount->uuid);
+            $aggregate->breakGuardianContinuity(
+                reasonCode: (string) $guardianContinuity['reason_code'],
+                effectiveAt: $transition->effective_at !== null ? $transition->effective_at->toIso8601String() : null,
+            );
+            $aggregate->persist();
 
             $transition->forceFill([
                 'state' => MinorAccountLifecycleTransition::STATE_BLOCKED,
@@ -460,11 +452,6 @@ class MinorAccountLifecycleService
                 reasonCode: (string) $guardianContinuity['reason_code'],
                 metadata: ['transition_type' => $transition->transition_type],
             );
-
-            $minorAccount->forceFill([
-                'minor_transition_state' => 'guardian_review_blocked',
-                'minor_transition_effective_at' => $transition->effective_at,
-            ])->save();
 
             $this->notificationService->notify(
                 $minorAccount->uuid,
@@ -483,6 +470,10 @@ class MinorAccountLifecycleService
 
             return ['completed' => 0, 'blocked' => 1, 'exceptions_opened' => 1];
         }
+
+        $aggregate = MinorAccountLifecycleAggregate::initialize($minorAccount->uuid);
+        $aggregate->restoreGuardianContinuity();
+        $aggregate->persist();
 
         $transition->forceFill([
             'state' => MinorAccountLifecycleTransition::STATE_COMPLETED,

@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Domain\Account\Services;
 
+use App\Domain\Account\Events\RedemptionApproved;
+use App\Domain\Account\Events\RedemptionDeclined;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\MinorPointsLedger;
 use App\Domain\Account\Models\MinorReward;
 use App\Domain\Account\Models\MinorRewardRedemption;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\ValidationException;
 
 class MinorRedemptionOrderService
@@ -93,7 +96,12 @@ class MinorRedemptionOrderService
                 true,
             );
 
-            $redemption->forceFill(['status' => 'approved'])->save();
+            Event::dispatch(new RedemptionApproved(
+                redemptionId: $redemption->id,
+                minorAccountUuid: $minorAccount->uuid,
+                guardianAccountUuid: $guardianAccount->uuid,
+                pointsCost: $redemption->points_cost,
+            ));
 
             $this->notifications->notify(
                 $minorAccount->uuid,
@@ -166,7 +174,11 @@ class MinorRedemptionOrderService
                 );
             }
 
-            $redemption->forceFill(['status' => 'declined'])->save();
+            Event::dispatch(new RedemptionDeclined(
+                redemptionId: $redemption->id,
+                minorAccountUuid: $minorAccount->uuid,
+                guardianAccountUuid: $guardianAccount->uuid,
+            ));
 
             $this->notifications->notify(
                 $minorAccount->uuid,

@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace App\Domain\Account\Services;
 
+use App\Domain\Account\Events\ChoreCompletionApproved;
+use App\Domain\Account\Events\ChoreCompletionRejected;
+use App\Domain\Account\Events\ChoreCompletionSubmitted;
+use App\Domain\Account\Events\ChoreCreated;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\MinorChore;
 use App\Domain\Account\Models\MinorChoreCompletion;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\ValidationException;
 
 class MinorChoreService
@@ -41,6 +46,15 @@ class MinorChoreService
                 'due_at'                => isset($data['due_at']) ? Carbon::parse($data['due_at']) : null,
                 'status'                => 'active',
             ]);
+
+            Event::dispatch(new ChoreCreated(
+                choreId: (string) $chore->id,
+                guardianAccountUuid: $guardianAccount->uuid,
+                minorAccountUuid: $minorAccount->uuid,
+                title: $chore->title,
+                description: $chore->description,
+                payoutPoints: $chore->payout_points,
+            ));
 
             $this->notifications->notify(
                 $minorAccount->uuid,
@@ -90,11 +104,20 @@ class MinorChoreService
             ]);
         }
 
-        return MinorChoreCompletion::create([
+        /** @var MinorChoreCompletion $completion */
+        $completion = MinorChoreCompletion::create([
             'chore_id'        => $chore->id,
             'submission_note' => $note,
             'status'          => 'pending_review',
         ]);
+
+        Event::dispatch(new ChoreCompletionSubmitted(
+            choreId: (string) $chore->id,
+            completionId: (string) $completion->id,
+            submissionNote: $note,
+        ));
+
+        return $completion;
     }
 
     /**
@@ -146,6 +169,14 @@ class MinorChoreService
                 }
             }
 
+            Event::dispatch(new ChoreCompletionApproved(
+                choreId: (string) $chore->id,
+                completionId: (string) $lockedCompletion->id,
+                minorAccountUuid: $chore->minor_account_uuid,
+                reviewedByAccountUuid: $guardianAccount->uuid,
+                payoutPoints: $chore->payout_points,
+            ));
+
             $this->notifications->notify(
                 $chore->minor_account_uuid,
                 MinorNotificationService::TYPE_CHORE_APPROVED,
@@ -195,6 +226,16 @@ class MinorChoreService
                 'reviewed_at'              => now(),
                 'rejection_reason'         => $reason,
             ]);
+
+            $chore = $lockedCompletion->chore;
+
+            Event::dispatch(new ChoreCompletionRejected(
+                choreId: (string) $chore->id,
+                completionId: (string) $lockedCompletion->id,
+                minorAccountUuid: $chore->minor_account_uuid,
+                reviewedByAccountUuid: $guardianAccount->uuid,
+                reason: $reason,
+            ));
 
             $this->notifications->notify(
                 $lockedCompletion->chore->minor_account_uuid,

@@ -58,6 +58,11 @@ return [
             'window'         => env('RATE_LIMIT_WEBHOOK_WINDOW', 60),
             'block_duration' => env('RATE_LIMIT_WEBHOOK_BLOCK', 0),
         ],
+        'mutation' => [
+            'limit'          => env('RATE_LIMIT_MUTATION', 30),
+            'window'         => env('RATE_LIMIT_MUTATION_WINDOW', 60),
+            'block_duration' => env('RATE_LIMIT_MUTATION_BLOCK', 60),
+        ],
     ],
 
     /*
@@ -253,6 +258,7 @@ return [
             'webhook'     => 2.0,
             'admin'       => 1.0,
             'public'      => 1.0,
+            'mutation'    => 0.5,
         ],
         'enforce_monthly_limits' => env('PARTNER_ENFORCE_MONTHLY_LIMITS', true),
     ],

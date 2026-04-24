@@ -10,6 +10,7 @@ class MinorAccountAdultTransitionCompleted extends ShouldBeStored
 {
     public function __construct(
         public readonly string $minorAccountUuid,
+        public readonly ?string $actorUserUuid = null,
         public readonly array $metadata = [],
     ) {
     }

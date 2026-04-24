@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Account\Services;
 
+use App\Domain\Account\Aggregates\MinorPointsAggregate;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\MinorPointsLedger;
 use Illuminate\Database\Eloquent\Builder;
@@ -41,13 +42,15 @@ class MinorPointsService
             $this->getBalance($minorAccount, true);
         }
 
-        return MinorPointsLedger::create([
-            'minor_account_uuid' => $minorAccount->uuid,
-            'points'             => abs($points),
-            'source'             => $source,
-            'description'        => $description,
-            'reference_id'       => $referenceId,
-        ]);
+        MinorPointsAggregate::initialize($minorAccount->uuid)
+            ->awardPoints($points, $source, $description, $referenceId)
+            ->persist();
+
+        return MinorPointsLedger::query()
+            ->where('minor_account_uuid', $minorAccount->uuid)
+            ->where('source', $source)
+            ->where('reference_id', $referenceId)
+            ->firstOrFail();
     }
 
     public function deduct(
@@ -72,13 +75,15 @@ class MinorPointsService
             ]);
         }
 
-        return MinorPointsLedger::create([
-            'minor_account_uuid' => $minorAccount->uuid,
-            'points'             => -abs($points),
-            'source'             => $source,
-            'description'        => $description,
-            'reference_id'       => $referenceId,
-        ]);
+        MinorPointsAggregate::initialize($minorAccount->uuid)
+            ->deductPoints($points, $source, $description, $referenceId)
+            ->persist();
+
+        return MinorPointsLedger::query()
+            ->where('minor_account_uuid', $minorAccount->uuid)
+            ->where('source', $source)
+            ->where('reference_id', $referenceId)
+            ->firstOrFail();
     }
 
     /**

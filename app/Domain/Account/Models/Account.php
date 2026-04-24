@@ -14,7 +14,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * @property int $id
@@ -87,19 +89,31 @@ class Account extends Model
 
     /**
      * Generate a unique account number.
+     *
+     * Uses a retry loop with exists() check to prevent duplicates. With the unique
+     * index on account_number, concurrent inserts that somehow slip through will
+     * fail at the database level. The retry loop handles the common case.
      */
     public static function generateAccountNumber(): string
     {
         $prefix = (string) config('banking.account_prefix', '8');
         $bodyLength = max(1, self::ACCOUNT_NUMBER_LENGTH - strlen($prefix));
+        $maxRetries = 10;
 
-        do {
-            // Generate a fixed-length numeric account number with configured prefix.
+        for ($i = 0; $i < $maxRetries; $i++) {
             $maxBody = (10 ** $bodyLength) - 1;
             $accountNumber = $prefix . str_pad((string) random_int(0, $maxBody), $bodyLength, '0', STR_PAD_LEFT);
-        } while (self::where('account_number', $accountNumber)->exists());
 
-        return $accountNumber;
+            $exists = DB::table('accounts')
+                ->where('account_number', $accountNumber)
+                ->exists();
+
+            if (! $exists) {
+                return $accountNumber;
+            }
+        }
+
+        throw new RuntimeException('Failed to generate unique account number after ' . $maxRetries . ' attempts: all numbers exhausted');
     }
 
     public static function isValidAccountNumberFormat(?string $accountNumber): bool
