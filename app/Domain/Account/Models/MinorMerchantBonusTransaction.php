@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Domain\Account\Models;
 
+use App\Domain\Shared\Traits\UsesTenantConnection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MinorMerchantBonusTransaction extends Model
 {
+    use UsesTenantConnection;
     protected $table = 'minor_merchant_bonus_transactions';
 
     protected $keyType = 'string';
