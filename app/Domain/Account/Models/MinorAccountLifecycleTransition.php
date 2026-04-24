@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domain\Account\Models;
 
+use App\Domain\Account\Observers\MinorAccountLifecycleTransitionObserver;
+use App\Domain\Account\Observers\MinorAccountLifecycleTransitionStateObserver;
 use App\Domain\Shared\Traits\UsesTenantConnection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -23,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class MinorAccountLifecycleTransition extends Model
 {
+    use HasFactory;
     use HasUuids;
     use UsesTenantConnection;
 
@@ -38,6 +42,17 @@ class MinorAccountLifecycleTransition extends Model
     protected $table = 'minor_account_lifecycle_transitions';
 
     protected $guarded = [];
+
+    protected static function newFactory(): \Database\Factories\Domain\Account\MinorAccountLifecycleTransitionFactory
+    {
+        return \Database\Factories\Domain\Account\MinorAccountLifecycleTransitionFactory::new();
+    }
+
+    protected static function booted(): void
+    {
+        static::observe(MinorAccountLifecycleTransitionObserver::class);
+        static::observe(MinorAccountLifecycleTransitionStateObserver::class);
+    }
 
     /**
      * @return array<string, string>
