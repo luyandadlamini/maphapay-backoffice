@@ -210,6 +210,22 @@ class MinorAccountController extends Controller
             'created_at' => now(),
         ]);
 
+        // Dual-sided audit: also log on the guardian's account for their activity history
+        if ($account->parent_account_id !== null) {
+            AccountAuditLog::create([
+                'account_uuid'    => $account->parent_account_id,
+                'actor_user_uuid' => $user->uuid,
+                'action'          => 'minor_permission_level_changed',
+                'metadata'        => [
+                    'minor_account_uuid' => $account->uuid,
+                    'old_value'          => $previousLevel,
+                    'new_value'          => $newPermissionLevel,
+                    'reason'             => $request->string('reason', 'Guardian updated permission level')->toString(),
+                ],
+                'created_at' => now(),
+            ]);
+        }
+
         // Award level-unlock bonus points when guardian advances the child's level
         if ($newPermissionLevel > $previousLevel) {
             try {
