@@ -77,7 +77,7 @@ class MinorChoreController extends Controller
     public function store(Request $request, string $uuid): JsonResponse
     {
         $minorAccount = Account::query()->where('uuid', $uuid)->firstOrFail();
-        $userAccount = $this->requireGuardian($request, $minorAccount);
+        $userAccount = $this->requireGuardian($request, $minorAccount, 'create');
 
         $validated = $request->validate([
             'title'         => 'required|string|max:255',
@@ -132,7 +132,7 @@ class MinorChoreController extends Controller
     public function destroy(Request $request, string $uuid, string $choreId): JsonResponse
     {
         $minorAccount = Account::query()->where('uuid', $uuid)->firstOrFail();
-        $userAccount = $this->requireGuardian($request, $minorAccount);
+        $userAccount = $this->requireGuardian($request, $minorAccount, 'delete');
 
         $chore = MinorChore::query()
             ->where('id', $choreId)
@@ -216,7 +216,7 @@ class MinorChoreController extends Controller
     public function approve(Request $request, string $uuid, string $choreId, string $completionId): JsonResponse
     {
         $minorAccount = Account::query()->where('uuid', $uuid)->firstOrFail();
-        $userAccount = $this->requireGuardian($request, $minorAccount);
+        $userAccount = $this->requireGuardian($request, $minorAccount, 'approve');
 
         $chore = MinorChore::query()
             ->where('id', $choreId)
@@ -274,7 +274,7 @@ class MinorChoreController extends Controller
     public function reject(Request $request, string $uuid, string $choreId, string $completionId): JsonResponse
     {
         $minorAccount = Account::query()->where('uuid', $uuid)->firstOrFail();
-        $userAccount = $this->requireGuardian($request, $minorAccount);
+        $userAccount = $this->requireGuardian($request, $minorAccount, 'reject');
 
         $chore = MinorChore::query()
             ->where('id', $choreId)
@@ -341,7 +341,7 @@ class MinorChoreController extends Controller
             abort(401);
         }
 
-        $this->accessService->authorizeView($user, $minorAccount);
+        $this->authorize('view', [MinorChore::class, $minorAccount]);
 
         return Account::query()
             ->where('user_uuid', $user->uuid)
@@ -357,13 +357,15 @@ class MinorChoreController extends Controller
      * Ensures the authenticated user is a guardian of the minor account.
      * Throws 401 if not authenticated, 403 if not authorized.
      */
-    private function requireGuardian(Request $request, Account $minorAccount): Account
+    private function requireGuardian(Request $request, Account $minorAccount, string $ability = 'create'): Account
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
         if (! $user) {
             abort(401);
         }
+
+        $this->authorize($ability, [MinorChore::class, $minorAccount]);
 
         return $this->accessService->authorizeGuardian(
             $user,

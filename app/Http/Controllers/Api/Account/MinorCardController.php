@@ -69,7 +69,7 @@ class MinorCardController extends Controller
             ? Account::where('uuid', $minorUuid)->firstOrFail()
             : Account::where('user_uuid', $user->uuid)->where('type', 'minor')->firstOrFail();
 
-        $this->accessService->authorizeGuardian($user, $minor);
+        $this->authorize('request', [MinorCardRequest::class, $minor]);
 
         $result = $this->requestService->createRequest(
             $user,
@@ -92,7 +92,7 @@ class MinorCardController extends Controller
             return response()->json(['message' => 'Minor account not found'], 404);
         }
 
-        $this->accessService->authorizeGuardian($user, $minorAccount);
+        $this->authorize('approve', $minorCardRequest);
 
         $card = $this->cardService->createCardFromRequest($minorCardRequest);
 
@@ -112,7 +112,7 @@ class MinorCardController extends Controller
             return response()->json(['message' => 'Minor account not found'], 404);
         }
 
-        $this->accessService->authorizeGuardian($user, $minorAccount);
+        $this->authorize('deny', $minorCardRequest);
 
         $result = $this->requestService->deny($user, $minorCardRequest, $validated['reason']);
 
@@ -145,7 +145,7 @@ class MinorCardController extends Controller
         if ($card->minor_account_uuid) {
             $minorAccount = Account::where('uuid', $card->minor_account_uuid)->first();
             if ($minorAccount instanceof Account) {
-                $this->accessService->authorizeGuardian($user, $minorAccount);
+                $this->authorize('freeze', [MinorCardRequest::class, $minorAccount]);
             }
         }
 
@@ -180,7 +180,7 @@ class MinorCardController extends Controller
         if ($card->minor_account_uuid) {
             $minorAccount = Account::where('uuid', $card->minor_account_uuid)->first();
             if ($minorAccount instanceof Account) {
-                $this->accessService->authorizeGuardian($user, $minorAccount);
+                $this->authorize('unfreeze', [MinorCardRequest::class, $minorAccount]);
             }
         }
 
@@ -239,7 +239,7 @@ class MinorCardController extends Controller
             return response()->json(['message' => 'Minor account not found'], 404);
         }
 
-        $this->accessService->authorizeView($user, $minor);
+        $this->authorize('view', [MinorCardRequest::class, $minor]);
 
         $cards = $this->cardService->listMinorCards($minor);
 
@@ -259,7 +259,7 @@ class MinorCardController extends Controller
         if ($card->minor_account_uuid) {
             $minorAccount = Account::where('uuid', $card->minor_account_uuid)->first();
             if ($minorAccount instanceof Account) {
-                $this->accessService->authorizeView($user, $minorAccount);
+                $this->authorize('view', [MinorCardRequest::class, $minorAccount]);
             }
         }
 
@@ -280,7 +280,7 @@ class MinorCardController extends Controller
             return response()->json(['message' => 'Minor account not found'], 404);
         }
 
-        $this->accessService->authorizeView($user, $minor);
+        $this->authorize('view', [MinorCardRequest::class, $minor]);
 
         $requests = MinorCardRequest::where('minor_account_uuid', $minor->uuid)
             ->orderByDesc('created_at')
@@ -301,7 +301,7 @@ class MinorCardController extends Controller
             return response()->json(['message' => 'Minor account not found'], 404);
         }
 
-        $this->accessService->authorizeView($user, $minorAccount);
+        $this->authorize('view', $minorCardRequest);
 
         return response()->json($minorCardRequest);
     }

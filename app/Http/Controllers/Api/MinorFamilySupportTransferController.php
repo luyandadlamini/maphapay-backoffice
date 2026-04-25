@@ -65,15 +65,9 @@ class MinorFamilySupportTransferController extends Controller
             ], 422);
         }
 
-        $sourceAccount = $this->accessService->authorizeGuardian(
-            $actor,
-            $minorAccount,
-            $validated['source_account_uuid'],
-        );
-
-        if ($sourceAccount->uuid !== $validated['source_account_uuid']) {
-            abort(403);
-        }
+        $sourceAccount = Account::query()->where('uuid', $validated['source_account_uuid'])->firstOrFail();
+        $this->authorize('useAsSource', $sourceAccount);
+        $this->authorize('actAsGuardian', $minorAccount);
 
         try {
             $transfer = $this->integrationService->createOutboundSupportTransfer(

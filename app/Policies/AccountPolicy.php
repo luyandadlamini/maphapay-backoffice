@@ -115,6 +115,37 @@ class AccountPolicy
             ->exists();
     }
 
+    /**
+     * Determine whether the user can act as a guardian for a minor account.
+     *
+     * Returns true if user has active AccountMembership with role 'guardian' or 'co_guardian'.
+     */
+    public function actAsGuardian(User $user, Account $account): bool
+    {
+        return $this->accessService()->hasGuardianAccess($user, $account);
+    }
+
+    /**
+     * Determine whether the user can use an account as a transfer source.
+     *
+     * Returns true if the user owns the account.
+     */
+    public function useAsSource(User $user, Account $account): bool
+    {
+        return $account->user_uuid === $user->uuid;
+    }
+
+    /**
+     * Determine whether the user can perform admin-only actions on a minor account.
+     *
+     * This is intended for controller paths that already bypass for staff.
+     * Non-staff users will be denied.
+     */
+    public function administerMinor(User $user, Account $account): bool
+    {
+        return false;
+    }
+
     private function accessService(): MinorAccountAccessService
     {
         return $this->minorAccountAccessService ?? app(MinorAccountAccessService::class);
