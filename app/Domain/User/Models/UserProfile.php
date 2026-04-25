@@ -36,6 +36,10 @@ class UserProfile extends Model
         'metadata',
     ];
 
+    protected $hidden = [
+        'date_of_birth',
+    ];
+
     protected $casts = [
         'is_verified'              => 'boolean',
         'preferences'              => 'array',
