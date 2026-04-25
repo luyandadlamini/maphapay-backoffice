@@ -289,7 +289,7 @@ class MinorAccountController extends Controller
             $age <= config('minor_family.permission_level_age_3_max', 11) => 3,
             $age <= config('minor_family.permission_level_age_4_max', 13) => 4,
             $age <= config('minor_family.permission_level_age_5_max', 15) => 5,
-            default => config('minor_family.permission_level_default', 6),
+            default                                                       => config('minor_family.permission_level_default', 6),
         };
     }
 }

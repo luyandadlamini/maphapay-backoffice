@@ -13,9 +13,9 @@ return [
     |
     */
     'public_funding' => [
-        'attempt_window_minutes' => (int) env('MINOR_FAMILY_PUBLIC_FUNDING_WINDOW_MINUTES', 10),
+        'attempt_window_minutes'          => (int) env('MINOR_FAMILY_PUBLIC_FUNDING_WINDOW_MINUTES', 10),
         'sponsor_max_attempts_per_window' => (int) env('MINOR_FAMILY_PUBLIC_FUNDING_SPONSOR_MAX_ATTEMPTS', 5),
-        'link_max_attempts_per_window' => (int) env('MINOR_FAMILY_PUBLIC_FUNDING_LINK_MAX_ATTEMPTS', 25),
+        'link_max_attempts_per_window'    => (int) env('MINOR_FAMILY_PUBLIC_FUNDING_LINK_MAX_ATTEMPTS', 25),
     ],
 
     /*
@@ -32,8 +32,8 @@ return [
     | Age Eligibility
     |--------------------------------------------------------------------------
     */
-    'age_min'        => (int) env('MINOR_AGE_MIN', 6),
-    'age_max'        => (int) env('MINOR_AGE_MAX', 17),
+    'age_min'           => (int) env('MINOR_AGE_MIN', 6),
+    'age_max'           => (int) env('MINOR_AGE_MAX', 17),
     'tier_grow_max_age' => (int) env('MINOR_TIER_GROW_MAX_AGE', 12),
 
     /*
