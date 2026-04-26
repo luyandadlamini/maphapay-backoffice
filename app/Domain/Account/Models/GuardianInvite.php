@@ -19,7 +19,15 @@ class GuardianInvite extends Model
 
     public $incrementing = false;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'minor_account_uuid',
+        'invited_by_user_uuid',
+        'code',
+        'expires_at',
+        'claimed_at',
+        'claimed_by_user_uuid',
+        'status',
+    ];
 
     protected $casts = [
         'expires_at' => 'datetime',

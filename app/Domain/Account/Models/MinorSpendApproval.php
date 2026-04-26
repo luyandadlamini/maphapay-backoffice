@@ -34,7 +34,19 @@ class MinorSpendApproval extends Model
 
     protected $table = 'minor_spend_approvals';
 
-    public $guarded = [];
+    protected $fillable = [
+        'minor_account_uuid',
+        'guardian_account_uuid',
+        'from_account_uuid',
+        'to_account_uuid',
+        'amount',
+        'asset_code',
+        'note',
+        'merchant_category',
+        'status',
+        'expires_at',
+        'decided_at',
+    ];
 
     protected $casts = [
         'expires_at' => 'datetime',

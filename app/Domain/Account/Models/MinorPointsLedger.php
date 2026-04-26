@@ -26,7 +26,13 @@ class MinorPointsLedger extends Model
 
     protected $table = 'minor_points_ledger';
 
-    protected $guarded = [];
+    protected $fillable = [
+        'minor_account_uuid',
+        'points',
+        'source',
+        'description',
+        'reference_id',
+    ];
 
     protected $casts = [
         'points' => 'integer',

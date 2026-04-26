@@ -21,7 +21,19 @@ class MinorFamilyReconciliationException extends Model
 
     protected $table = 'minor_family_reconciliation_exceptions';
 
-    protected $guarded = [];
+    protected $fillable = [
+        'mtn_momo_transaction_id',
+        'reason_code',
+        'status',
+        'source',
+        'occurrence_count',
+        'metadata',
+        'first_seen_at',
+        'last_seen_at',
+        'sla_due_at',
+        'sla_escalated_at',
+        'resolved_at',
+    ];
 
     /**
      * @return array<string, string>
