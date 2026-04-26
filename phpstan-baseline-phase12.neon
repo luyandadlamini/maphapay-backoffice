@@ -1,0 +1,727 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Call to an undefined static method App\\Domain\\Account\\Aggregates\\MinorPointsAggregate\:\:new\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: app/Domain/Account/Aggregates/MinorPointsAggregate.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Events\\MinorAccountAdultTransitionCompleted\:\:__construct\(\) has parameter \$metadata with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Domain/Account/Events/MinorAccountAdultTransitionCompleted.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Events\\MinorAccountAdultTransitionFrozen\:\:__construct\(\) has parameter \$metadata with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Domain/Account/Events/MinorAccountAdultTransitionFrozen.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Events\\MinorAccountGuardianContinuityBroken\:\:__construct\(\) has parameter \$metadata with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Domain/Account/Events/MinorAccountGuardianContinuityBroken.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Events\\MinorAccountGuardianContinuityRestored\:\:__construct\(\) has parameter \$metadata with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Domain/Account/Events/MinorAccountGuardianContinuityRestored.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Events\\MinorAccountLifecycleExceptionOpened\:\:__construct\(\) has parameter \$metadata with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Domain/Account/Events/MinorAccountLifecycleExceptionOpened.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Events\\MinorAccountLifecycleExceptionResolved\:\:__construct\(\) has parameter \$metadata with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Domain/Account/Events/MinorAccountLifecycleExceptionResolved.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Events\\MinorAccountLifecycleTransitionBlocked\:\:__construct\(\) has parameter \$metadata with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Domain/Account/Events/MinorAccountLifecycleTransitionBlocked.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Events\\MinorAccountLifecycleTransitionScheduled\:\:__construct\(\) has parameter \$metadata with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Domain/Account/Events/MinorAccountLifecycleTransitionScheduled.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Events\\MinorAccountTierAdvanceBlocked\:\:__construct\(\) has parameter \$metadata with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Domain/Account/Events/MinorAccountTierAdvanceBlocked.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Events\\MinorAccountTierAdvanced\:\:__construct\(\) has parameter \$metadata with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Domain/Account/Events/MinorAccountTierAdvanced.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Models\\MinorCardLimit\:\:account\(\) should return Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\<App\\Domain\\Account\\Models\\Account, App\\Domain\\Account\\Models\\MinorCardLimit\> but returns Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\<App\\Domain\\Account\\Models\\Account, \$this\(App\\Domain\\Account\\Models\\MinorCardLimit\)\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Domain/Account/Models/MinorCardLimit.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Models\\MinorCardRequest\:\:minorAccount\(\) should return Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\<App\\Domain\\Account\\Models\\Account, App\\Domain\\Account\\Models\\MinorCardRequest\> but returns Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\<App\\Domain\\Account\\Models\\Account, \$this\(App\\Domain\\Account\\Models\\MinorCardRequest\)\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Domain/Account/Models/MinorCardRequest.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Models\\MinorMerchantBonusTransaction\:\:merchantPartner\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Domain/Account/Models/MinorMerchantBonusTransaction.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Services\\MinorAccountLifecyclePolicy\:\:dateOfBirth\(\) should return Illuminate\\Support\\Carbon\|null but returns Carbon\\Carbon\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Domain/Account/Services/MinorAccountLifecyclePolicy.php
+
+		-
+			message: '#^Call to new App\\Domain\\Account\\Events\\MinorAccountAdultTransitionCompleted\(\) on a separate line has no effect\.$#'
+			identifier: new.resultUnused
+			count: 1
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Call to new App\\Domain\\Account\\Events\\MinorAccountAdultTransitionFrozen\(\) on a separate line has no effect\.$#'
+			identifier: new.resultUnused
+			count: 1
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Call to new App\\Domain\\Account\\Events\\MinorAccountGuardianContinuityBroken\(\) on a separate line has no effect\.$#'
+			identifier: new.resultUnused
+			count: 1
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Call to new App\\Domain\\Account\\Events\\MinorAccountLifecycleExceptionOpened\(\) on a separate line has no effect\.$#'
+			identifier: new.resultUnused
+			count: 1
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Call to new App\\Domain\\Account\\Events\\MinorAccountLifecycleExceptionResolved\(\) on a separate line has no effect\.$#'
+			identifier: new.resultUnused
+			count: 2
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Call to new App\\Domain\\Account\\Events\\MinorAccountLifecycleTransitionBlocked\(\) on a separate line has no effect\.$#'
+			identifier: new.resultUnused
+			count: 3
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Call to new App\\Domain\\Account\\Events\\MinorAccountLifecycleTransitionScheduled\(\) on a separate line has no effect\.$#'
+			identifier: new.resultUnused
+			count: 1
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Call to new App\\Domain\\Account\\Events\\MinorAccountTierAdvanced\(\) on a separate line has no effect\.$#'
+			identifier: new.resultUnused
+			count: 1
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Services\\MinorAccountLifecycleService\:\:exceptionQueryForAccount\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Services\\MinorAccountLifecycleService\:\:nextActions\(\) has parameter \$adultTransition with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Services\\MinorAccountLifecycleService\:\:nextActions\(\) has parameter \$blockers with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Services\\MinorAccountLifecycleService\:\:nextActions\(\) has parameter \$guardianContinuity with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Services\\MinorAccountLifecycleService\:\:recordLifecycleException\(\) has parameter \$metadata with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Services\\MinorAccountLifecycleService\:\:resolveOpenExceptionsForReason\(\) has parameter \$metadata with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Services\\MinorAccountLifecycleService\:\:scheduleTransition\(\) has parameter \$metadata with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Services\\MinorAccountLifecycleService\:\:transitionQueryForAccount\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Property App\\Domain\\Account\\Services\\MinorAccountLifecycleService\:\:\$accountService is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Illuminate\\Support\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Domain/Account/Services/MinorAccountLifecycleService.php
+
+		-
+			message: '#^Parameter \#1 \$from of method App\\Domain\\Account\\Services\\MinorFamilyReconciliationExceptionQueueService\:\:slaDueAt\(\) expects Illuminate\\Support\\Carbon, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Domain/Account/Services/MinorFamilyReconciliationExceptionQueueService.php
+
+		-
+			message: '#^Method App\\Domain\\Account\\Services\\MinorMerchantBonusService\:\:getBonusDetails\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Domain/Account/Services/MinorMerchantBonusService.php
+
+		-
+			message: '#^Variable \$resolvedActor might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: app/Domain/Account/Services/MinorNotificationService.php
+
+		-
+			message: '#^Method App\\Domain\\CardIssuance\\Models\\Card\:\:minorAccount\(\) should return Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\<App\\Domain\\Account\\Models\\Account, App\\Domain\\CardIssuance\\Models\\Card\> but returns Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\<App\\Domain\\Account\\Models\\Account, \$this\(App\\Domain\\CardIssuance\\Models\\Card\)\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Domain/CardIssuance/Models/Card.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Domain/Monitoring/Services/MoneyMovementTransactionInspector.php
+
+		-
+			message: '#^Offset ''context_type'' on array\{\} on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Monitoring/Services/MoneyMovementTransactionInspector.php
+
+		-
+			message: '#^Offset ''context_uuid'' on array\{\} on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Monitoring/Services/MoneyMovementTransactionInspector.php
+
+		-
+			message: '#^Offset ''mtn_reference_id'' on array\{\} on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Monitoring/Services/MoneyMovementTransactionInspector.php
+
+		-
+			message: '#^Offset ''reconciliation…'' on array\{\} on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 3
+			path: app/Domain/Monitoring/Services/MoneyMovementTransactionInspector.php
+
+		-
+			message: '#^Offset ''resolution_path'' on array\{\} on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Monitoring/Services/MoneyMovementTransactionInspector.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Domain\\Account\\Models\\MinorFamilyReconciliationException\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Domain/Monitoring/Services/MoneyMovementTransactionInspector.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Support\\Collection\<int,array\<string, mixed\>\>\:\:all\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Domain/Monitoring/Services/MoneyMovementTransactionInspector.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Support\\Collection\<int,array\<string, mixed\>\>\:\:values\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Domain/Monitoring/Services/MoneyMovementTransactionInspector.php
+
+		-
+			message: '#^Unsafe call to private method App\\Filament\\Admin\\Resources\\MtnMomoTransactionResource\:\:getLinkedContextLabel\(\) through static\:\:\.$#'
+			identifier: staticClassAccess.privateMethod
+			count: 1
+			path: app/Filament/Admin/Resources/MtnMomoTransactionResource.php
+
+		-
+			message: '#^Unsafe call to private method App\\Filament\\Admin\\Resources\\MtnMomoTransactionResource\:\:getLinkedContextUrl\(\) through static\:\:\.$#'
+			identifier: staticClassAccess.privateMethod
+			count: 3
+			path: app/Filament/Admin/Resources/MtnMomoTransactionResource.php
+
+		-
+			message: '#^Unsafe call to private method App\\Filament\\Admin\\Resources\\MtnMomoTransactionResource\:\:resolveFundingAttempt\(\) through static\:\:\.$#'
+			identifier: staticClassAccess.privateMethod
+			count: 2
+			path: app/Filament/Admin/Resources/MtnMomoTransactionResource.php
+
+		-
+			message: '#^Unsafe call to private method App\\Filament\\Admin\\Resources\\MtnMomoTransactionResource\:\:resolveSupportTransfer\(\) through static\:\:\.$#'
+			identifier: staticClassAccess.privateMethod
+			count: 2
+			path: app/Filament/Admin/Resources/MtnMomoTransactionResource.php
+
+		-
+			message: '#^Property App\\Http\\Controllers\\Api\\Account\\MinorCardController\:\:\$accessService is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: app/Http/Controllers/Api/Account/MinorCardController.php
+
+		-
+			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Domain\\Account\\Models\\AccountAuditLog\>\:\:where\(\) expects array\<int\|model property of App\\Domain\\Account\\Models\\AccountAuditLog, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Domain\\Account\\Models\\AccountAuditLog\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Domain\\Account\\Models\\AccountAuditLog\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Domain\\Account\\Models\\AccountAuditLog\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Domain\\Account\\Models\\AccountAuditLog, ''metadata\-…'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/MinorAccountController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Pagination\\AbstractPaginator\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:through\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Api/MinorAccountLifecycleController.php
+
+		-
+			message: '#^Property App\\Http\\Controllers\\Api\\MinorAccountLifecycleController\:\:\$accessService is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: app/Http/Controllers/Api/MinorAccountLifecycleController.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Pagination\\AbstractPaginator\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:through\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Http/Controllers/Api/MinorAccountLifecycleController.php
+
+		-
+			message: '#^Property App\\Http\\Controllers\\Api\\MinorChoreController\:\:\$accessService is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: app/Http/Controllers/Api/MinorChoreController.php
+
+		-
+			message: '#^Property App\\Http\\Controllers\\Api\\MinorFamilySupportTransferController\:\:\$accessService is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: app/Http/Controllers/Api/MinorFamilySupportTransferController.php
+
+		-
+			message: '#^Property App\\Http\\Controllers\\Api\\MinorRewardsCatalogController\:\:\$accessService is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: app/Http/Controllers/Api/MinorRewardsCatalogController.php
+
+		-
+			message: '#^Method Tests\\Feature\\Console\\Commands\\ReconcileMtnMomoTransactionsMinorFamilyTest\:\:makeStuckFundingAttemptFixture\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: tests/Feature/Console/Commands/ReconcileMtnMomoTransactionsMinorFamilyTest.php
+
+		-
+			message: '#^Parameter \$mtnClient of method Tests\\Feature\\Console\\Commands\\ReconcileMtnMomoTransactionsMinorFamilyTest\:\:runCommandWithDoubles\(\) expects App\\Domain\\MtnMomo\\Services\\MtnMomoClient, Mockery\\MockInterface given\.$#'
+			identifier: argument.type
+			count: 3
+			path: tests/Feature/Console/Commands/ReconcileMtnMomoTransactionsMinorFamilyTest.php
+
+		-
+			message: '#^Parameter \$walletOps of method Tests\\Feature\\Console\\Commands\\ReconcileMtnMomoTransactionsMinorFamilyTest\:\:runCommandWithDoubles\(\) expects App\\Domain\\Wallet\\Services\\WalletOperationsService, Mockery\\MockInterface given\.$#'
+			identifier: argument.type
+			count: 3
+			path: tests/Feature/Console/Commands/ReconcileMtnMomoTransactionsMinorFamilyTest.php
+
+		-
+			message: '#^Cannot call method assertFailed\(\) on Illuminate\\Testing\\PendingCommand\|int\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: tests/Feature/Console/EvaluateMinorAccountLifecycleTransitionsTest.php
+
+		-
+			message: '#^Cannot call method assertSuccessful\(\) on Illuminate\\Testing\\PendingCommand\|int\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: tests/Feature/Console/EvaluateMinorAccountLifecycleTransitionsTest.php
+
+		-
+			message: '#^Method Tests\\Feature\\Console\\EvaluateMinorAccountLifecycleTransitionsTest\:\:connectionsToTransact\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: tests/Feature/Console/EvaluateMinorAccountLifecycleTransitionsTest.php
+
+		-
+			message: '#^Cannot call method diffInSeconds\(\) on string\|null\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: tests/Feature/Console/FlagMinorFamilyReconciliationExceptionSlaBreachesTest.php
+
+		-
+			message: '#^Method Tests\\Feature\\Database\\MinorFamilyPhase9SchemaTest\:\:insertMinorFamilyFundingAttempt\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: tests/Feature/Database/MinorFamilyPhase9SchemaTest.php
+
+		-
+			message: '#^Method Tests\\Feature\\Database\\MinorFamilyPhase9SchemaTest\:\:insertMinorFamilyFundingLink\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: tests/Feature/Database/MinorFamilyPhase9SchemaTest.php
+
+		-
+			message: '#^Method Tests\\Feature\\Database\\MinorFamilyPhase9SchemaTest\:\:insertMinorFamilySupportTransfer\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: tests/Feature/Database/MinorFamilyPhase9SchemaTest.php
+
+		-
+			message: '#^Cannot access property \$state on Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: tests/Feature/Domain/Account/MinorLifecycleStateMachineTest.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Factories\\Factory\<Illuminate\\Database\\Eloquent\\Model\>\:\:create\(\) expects array\<model property of Illuminate\\Database\\Eloquent\\Model, mixed\>\|\(callable\(array\<string, mixed\>\)\: array\<string, mixed\>\), array\{minor_account_uuid\: string, state\: ''completed''\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: tests/Feature/Domain/Account/MinorLifecycleStateMachineTest.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Factories\\Factory\<Illuminate\\Database\\Eloquent\\Model\>\:\:create\(\) expects array\<model property of Illuminate\\Database\\Eloquent\\Model, mixed\>\|\(callable\(array\<string, mixed\>\)\: array\<string, mixed\>\), array\{minor_account_uuid\: string, state\: ''pending''\} given\.$#'
+			identifier: argument.type
+			count: 4
+			path: tests/Feature/Domain/Account/MinorLifecycleStateMachineTest.php
+
+		-
+			message: '#^Cannot access property \$decided_at on Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: tests/Feature/Domain/Account/MinorSpendApprovalExpiryRaceTest.php
+
+		-
+			message: '#^Cannot access property \$status on Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: property.nonObject
+			count: 3
+			path: tests/Feature/Domain/Account/MinorSpendApprovalExpiryRaceTest.php
+
+		-
+			message: '#^Parameter \#1 \$attributes of method Illuminate\\Database\\Eloquent\\Factories\\Factory\<Illuminate\\Database\\Eloquent\\Model\>\:\:create\(\) expects array\<model property of Illuminate\\Database\\Eloquent\\Model, mixed\>\|\(callable\(array\<string, mixed\>\)\: array\<string, mixed\>\), array\{status\: ''pending'', expires_at\: Illuminate\\Support\\Carbon\} given\.$#'
+			identifier: argument.type
+			count: 3
+			path: tests/Feature/Domain/Account/MinorSpendApprovalExpiryRaceTest.php
+
+		-
+			message: '#^Unable to resolve the template type TAndValue in call to method Pest\\Expectation\<mixed\>\:\:and\(\)$#'
+			identifier: argument.templateType
+			count: 2
+			path: tests/Feature/Domain/Account/MinorSpendApprovalExpiryRaceTest.php
+
+		-
+			message: '#^Call to an undefined method Mockery\\ExpectationInterface\|Mockery\\HigherOrderMessage\:\:atLeast\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: tests/Feature/Domain/Account/MinorTierAdvanceRaceTest.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Testing\\TestResponse\:\:assertCanSeeTableRecords\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: tests/Feature/Filament/MinorAccountLifecycleExceptionResourceTest.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Filament\\Panel\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: tests/Feature/Filament/MinorAccountLifecycleExceptionResourceTest.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Testing\\TestResponse\:\:assertCanSeeTableRecords\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: tests/Feature/Filament/MinorAccountLifecycleTransitionResourceTest.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Filament\\Panel\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: tests/Feature/Filament/MinorAccountLifecycleTransitionResourceTest.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Testing\\TestResponse\:\:assertCanSeeTableRecords\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: tests/Feature/Filament/MinorFamilyFundingLinkResourceTest.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Testing\\TestResponse\:\:assertTableActionDoesNotExist\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: tests/Feature/Filament/MinorFamilyFundingLinkResourceTest.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Filament\\Panel\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: tests/Feature/Filament/MinorFamilyFundingLinkResourceTest.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Testing\\TestResponse\:\:assertCanSeeTableRecords\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: tests/Feature/Filament/MinorFamilyReconciliationExceptionResourceTest.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Testing\\TestResponse\:\:assertTableActionVisible\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: tests/Feature/Filament/MinorFamilyReconciliationExceptionResourceTest.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Filament\\Panel\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: tests/Feature/Filament/MinorFamilyReconciliationExceptionResourceTest.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Testing\\TestResponse\:\:assertCanSeeTableRecords\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: tests/Feature/Filament/MinorFamilySupportTransferResourceTest.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Testing\\TestResponse\:\:assertTableActionVisible\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: tests/Feature/Filament/MinorFamilySupportTransferResourceTest.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Filament\\Panel\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: tests/Feature/Filament/MinorFamilySupportTransferResourceTest.php
+
+		-
+			message: '#^Method Tests\\Feature\\Http\\Controllers\\Api\\CoGuardianScaTest\:\:connectionsToTransact\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: tests/Feature/Http/Controllers/Api/CoGuardianScaTest.php
+
+		-
+			message: '#^Parameter \#1 \$user of static method Laravel\\Sanctum\\Sanctum\<Laravel\\Sanctum\\PersonalAccessToken\>\:\:actingAs\(\) expects Illuminate\\Contracts\\Auth\\Authenticatable\|Laravel\\Sanctum\\HasApiTokens, App\\Models\\User\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: tests/Feature/Http/Controllers/Api/Compatibility/Mtn/MinorFamilyMtnCallbackIntegrationTest.php
+
+		-
+			message: '#^Method Tests\\Feature\\Http\\Controllers\\Api\\MinorAccountLifecycleControllerTest\:\:connectionsToTransact\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: tests/Feature/Http/Controllers/Api/MinorAccountLifecycleControllerTest.php
+
+		-
+			message: '#^Method Tests\\Feature\\Http\\Controllers\\Api\\MinorFamilyFundingLinkControllerTest\:\:connectionsToTransact\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: tests/Feature/Http/Controllers/Api/MinorFamilyFundingLinkControllerTest.php
+
+		-
+			message: '#^Method Tests\\Feature\\Http\\Controllers\\Api\\MinorFamilySupportTransferControllerTest\:\:connectionsToTransact\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: tests/Feature/Http/Controllers/Api/MinorFamilySupportTransferControllerTest.php
+
+		-
+			message: '#^Method Tests\\Feature\\Http\\Controllers\\Api\\MinorPermissionLevelIdempotencyTest\:\:connectionsToTransact\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: tests/Feature/Http/Controllers/Api/MinorPermissionLevelIdempotencyTest.php
+
+		-
+			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Domain\\Account\\Models\\AccountAuditLog\>\:\:where\(\) expects array\<int\|model property of App\\Domain\\Account\\Models\\AccountAuditLog, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Domain\\Account\\Models\\AccountAuditLog\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Domain\\Account\\Models\\AccountAuditLog\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Domain\\Account\\Models\\AccountAuditLog\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Domain\\Account\\Models\\AccountAuditLog, ''metadata\-…'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: tests/Feature/Http/Controllers/Api/MinorPermissionLevelIdempotencyTest.php
+
+		-
+			message: '#^Method Tests\\Feature\\Http\\Controllers\\Api\\PublicMinorFundingLinkControllerTest\:\:connectionsToTransact\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: tests/Feature/Http/Controllers/Api/PublicMinorFundingLinkControllerTest.php
+
+		-
+			message: '#^Method Tests\\Feature\\Http\\Controllers\\Api\\PublicMinorFundingLinkTokenHashTest\:\:connectionsToTransact\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: tests/Feature/Http/Controllers/Api/PublicMinorFundingLinkTokenHashTest.php
+
+		-
+			message: '#^Parameter \#2 \$data of function hash expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: tests/Feature/Http/Controllers/Api/PublicMinorFundingLinkTokenHashTest.php
+
+		-
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertTrue\(\) with true will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: tests/Unit/Domain/Account/MinorCardLimitMonthlyMultiplierTest.php
+
+		-
+			message: '#^Method Tests\\Unit\\Domain\\Account\\Services\\MinorAccountLifecyclePolicyTest\:\:connectionsToTransact\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: tests/Unit/Domain/Account/Services/MinorAccountLifecyclePolicyTest.php
+
+		-
+			message: '#^Method Tests\\Unit\\Domain\\Account\\Services\\MinorAccountLifecycleServiceTest\:\:connectionsToTransact\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: tests/Unit/Domain/Account/Services/MinorAccountLifecycleServiceTest.php
+
+		-
+			message: '#^Call to an undefined method App\\Domain\\Account\\Services\\MinorAccountAccessService\:\:shouldReceive\(\)\.$#'
+			identifier: method.notFound
+			count: 4
+			path: tests/Unit/Domain/Account/Services/MinorCardRequestServiceTest.php
+
+		-
+			message: '#^Property Tests\\Unit\\Domain\\Account\\Services\\MinorCardRequestServiceTest\:\:\$accessService \(App\\Domain\\Account\\Services\\MinorAccountAccessService\) does not accept Mockery\\MockInterface\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: tests/Unit/Domain/Account/Services/MinorCardRequestServiceTest.php
+
+		-
+			message: '#^Call to an undefined method App\\Domain\\Account\\Services\\MinorAccountAccessService\:\:shouldReceive\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: tests/Unit/Domain/Account/Services/MinorCardServiceTest.php
+
+		-
+			message: '#^Call to an undefined method App\\Domain\\CardIssuance\\Services\\CardProvisioningService\:\:shouldReceive\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: tests/Unit/Domain/Account/Services/MinorCardServiceTest.php
+
+		-
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertNotNull\(\) with App\\Domain\\CardIssuance\\Models\\Card will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: tests/Unit/Domain/Account/Services/MinorCardServiceTest.php
+
+		-
+			message: '#^Property Tests\\Unit\\Domain\\Account\\Services\\MinorCardServiceTest\:\:\$accessService \(App\\Domain\\Account\\Services\\MinorAccountAccessService\) does not accept Mockery\\MockInterface\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: tests/Unit/Domain/Account/Services/MinorCardServiceTest.php
+
+		-
+			message: '#^Property Tests\\Unit\\Domain\\Account\\Services\\MinorCardServiceTest\:\:\$cardProvisioning \(App\\Domain\\CardIssuance\\Services\\CardProvisioningService\) does not accept Mockery\\MockInterface\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: tests/Unit/Domain/Account/Services/MinorCardServiceTest.php
+
+		-
+			message: '#^Called ''Model\:\:make\(\)'' which performs unnecessary work, use ''new Model\(\)''\.$#'
+			identifier: larastan.noModelMake
+			count: 4
+			path: tests/Unit/Domain/Account/Services/MinorFamilyFundingPolicyTest.php
+
+		-
+			message: '#^Parameter \#1 \$minorAccountAccessService of class App\\Domain\\Account\\Services\\MinorFamilyFundingPolicy constructor expects App\\Domain\\Account\\Services\\MinorAccountAccessService\|null, Mockery\\MockInterface given\.$#'
+			identifier: argument.type
+			count: 7
+			path: tests/Unit/Domain/Account/Services/MinorFamilyFundingPolicyTest.php
+
+		-
+			message: '#^Parameter \#1 \$access of method Tests\\Unit\\Domain\\Account\\Services\\MinorFamilyIntegrationServiceTest\:\:makeService\(\) expects App\\Domain\\Account\\Services\\MinorAccountAccessService, Mockery\\MockInterface given\.$#'
+			identifier: argument.type
+			count: 8
+			path: tests/Unit/Domain/Account/Services/MinorFamilyIntegrationServiceTest.php
+
+		-
+			message: '#^Parameter \#1 \$telemetry of class App\\Domain\\Shared\\OperationRecord\\OperationRecordService constructor expects App\\Domain\\Monitoring\\Services\\MaphaPayMoneyMovementTelemetry, Mockery\\MockInterface given\.$#'
+			identifier: argument.type
+			count: 1
+			path: tests/Unit/Domain/Account/Services/MinorFamilyIntegrationServiceTest.php
+
+		-
+			message: '#^Parameter \#2 \$policy of method Tests\\Unit\\Domain\\Account\\Services\\MinorFamilyIntegrationServiceTest\:\:makeService\(\) expects App\\Domain\\Account\\Services\\MinorFamilyFundingPolicy, Mockery\\MockInterface given\.$#'
+			identifier: argument.type
+			count: 8
+			path: tests/Unit/Domain/Account/Services/MinorFamilyIntegrationServiceTest.php
+
+		-
+			message: '#^Parameter \#3 \$adapter of method Tests\\Unit\\Domain\\Account\\Services\\MinorFamilyIntegrationServiceTest\:\:makeService\(\) expects App\\Domain\\MtnMomo\\Services\\MtnMomoFamilyFundingAdapter, Mockery\\MockInterface given\.$#'
+			identifier: argument.type
+			count: 8
+			path: tests/Unit/Domain/Account/Services/MinorFamilyIntegrationServiceTest.php
+
+		-
+			message: '#^Parameter \#4 \$notifications of method Tests\\Unit\\Domain\\Account\\Services\\MinorFamilyIntegrationServiceTest\:\:makeService\(\) expects App\\Domain\\Account\\Services\\MinorNotificationService, Mockery\\MockInterface given\.$#'
+			identifier: argument.type
+			count: 8
+			path: tests/Unit/Domain/Account/Services/MinorFamilyIntegrationServiceTest.php
+
+		-
+			message: '#^Method Tests\\Unit\\Domain\\Account\\Services\\MinorFamilyReconciliationServiceExceptionQueueTest\:\:makeFundingAttemptFixture\(\) has parameter \$overrides with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: tests/Unit/Domain/Account/Services/MinorFamilyReconciliationServiceExceptionQueueTest.php
+
+		-
+			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertIsString\(\) with ''9747'' will always evaluate to true\.$#'
+			identifier: method.alreadyNarrowedType
+			count: 1
+			path: tests/Unit/Domain/SMS/SmsPricingServiceBcmathTest.php
+
+		-
+			message: '#^Parameter \#2 \$haystack of method PHPUnit\\Framework\\Assert\:\:assertStringContainsString\(\) expects string, string\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: tests/Unit/Domain/SMS/SmsPricingServiceBcmathTest.php
+
+		-
+			message: '#^Parameter \#2 \$haystack of method PHPUnit\\Framework\\Assert\:\:assertStringNotContainsString\(\) expects string, string\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: tests/Unit/Domain/SMS/SmsPricingServiceBcmathTest.php
+
+		-
+			message: '#^Parameter \#2 \$accountPayloadTransformer of class App\\Http\\Controllers\\Api\\Auth\\LoginController constructor expects App\\Domain\\Account\\Services\\AccountPayloadTransformer, Mockery\\MockInterface given\.$#'
+			identifier: argument.type
+			count: 1
+			path: tests/Unit/Http/Controllers/Api/Auth/MobileAuthCompatTest.php

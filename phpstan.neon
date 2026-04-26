@@ -21,6 +21,7 @@ includes:
     - phpstan-baseline-v61.neon
     - phpstan-baseline-pre-existing.neon
     - phpstan-baseline-level8-new.neon
+    - phpstan-baseline-phase12.neon
 
 parameters:
     level: 8
@@ -69,6 +70,7 @@ parameters:
         - '#Call to static method new\(\) on an unknown class Workflow\\Activity\\ActivityOptions#'
         
         # Laravel facades and helpers
+        - '#Call to an undefined static method Illuminate\\Support\\Facades\\Log::shouldHaveReceived\(\)#'
         - '#Call to static method [a-zA-Z]+\(\) on an unknown class Log#'
         - '#Call to static method [a-zA-Z]+\(\) on an unknown class Cache#'
         - '#Call to static method [a-zA-Z]+\(\) on an unknown class DB#'
