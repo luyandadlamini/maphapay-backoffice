@@ -62,6 +62,11 @@ class MinorCardRequestService
 
     public function approve(User $guardian, MinorCardRequest $request): MinorCardRequest
     {
+        $minor = $request->minorAccount;
+        if (! $minor instanceof Account || ! $this->accessService->hasGuardianAccess($guardian, $minor)) {
+            throw new InvalidArgumentException('Only guardians can approve a card request');
+        }
+
         if (! $request->canBeApproved()) {
             throw new InvalidArgumentException('Request cannot be approved in its current state');
         }
@@ -77,6 +82,11 @@ class MinorCardRequestService
 
     public function deny(User $guardian, MinorCardRequest $request, string $reason): MinorCardRequest
     {
+        $minor = $request->minorAccount;
+        if (! $minor instanceof Account || ! $this->accessService->hasGuardianAccess($guardian, $minor)) {
+            throw new InvalidArgumentException('Only guardians can deny a card request');
+        }
+
         if (! $request->canBeApproved()) {
             throw new InvalidArgumentException('Request cannot be denied in its current state');
         }

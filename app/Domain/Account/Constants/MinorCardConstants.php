@@ -8,12 +8,6 @@ final class MinorCardConstants
 {
     public const REQUEST_EXPIRY_HOURS = 72;
 
-    public const DEFAULT_DAILY_LIMIT = '2000.00';
-
-    public const DEFAULT_MONTHLY_LIMIT = '10000.00';
-
-    public const DEFAULT_SINGLE_TRANSACTION_LIMIT = '1500.00';
-
     public const REQUEST_TYPE_PARENT_INITIATED = 'parent_initiated';
 
     public const REQUEST_TYPE_CHILD_REQUESTED = 'child_requested';

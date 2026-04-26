@@ -59,7 +59,7 @@ class MinorCardService
     public function freezeCard(User $guardian, Card $card): Card
     {
         $minor = $card->minorAccount;
-        if ($minor instanceof Account && ! $this->accessService->hasGuardianAccess($guardian, $minor)) {
+        if (! $minor instanceof Account || ! $this->accessService->hasGuardianAccess($guardian, $minor)) {
             throw new InvalidArgumentException('Only guardians can freeze a minor card');
         }
 
@@ -71,7 +71,7 @@ class MinorCardService
     public function unfreezeCard(User $guardian, Card $card): Card
     {
         $minor = $card->minorAccount;
-        if ($minor instanceof Account && ! $this->accessService->hasGuardianAccess($guardian, $minor)) {
+        if (! $minor instanceof Account || ! $this->accessService->hasGuardianAccess($guardian, $minor)) {
             throw new InvalidArgumentException('Only guardians can unfreeze a minor card');
         }
 
@@ -103,9 +103,9 @@ class MinorCardService
     {
         $limitRecord = MinorCardLimit::where('minor_account_uuid', $minor->uuid)->first();
 
-        $defaultDaily = MinorCardConstants::DEFAULT_DAILY_LIMIT;
-        $defaultMonthly = MinorCardConstants::DEFAULT_MONTHLY_LIMIT;
-        $defaultSingle = MinorCardConstants::DEFAULT_SINGLE_TRANSACTION_LIMIT;
+        $defaultDaily = (string) config('minor_family.card_limits.daily_default', '2000.00');
+        $defaultMonthly = (string) config('minor_family.card_limits.monthly_default', '10000.00');
+        $defaultSingle = (string) config('minor_family.card_limits.single_transaction_default', '1500.00');
 
         $requestedDaily = $request->requested_daily_limit ?? $defaultDaily;
         $requestedMonthly = $request->requested_monthly_limit ?? $defaultMonthly;

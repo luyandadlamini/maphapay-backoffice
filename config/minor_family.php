@@ -90,4 +90,15 @@ return [
     |--------------------------------------------------------------------------
     */
     'card_limit_period_days' => (int) env('MINOR_CARD_LIMIT_PERIOD_DAYS', 30),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Virtual Card Spending Defaults (major-unit ZAR decimal strings)
+    |--------------------------------------------------------------------------
+    */
+    'card_limits' => [
+        'daily_default'              => env('MINOR_CARD_DAILY_LIMIT_DEFAULT', '2000.00'),
+        'monthly_default'            => env('MINOR_CARD_MONTHLY_LIMIT_DEFAULT', '10000.00'),
+        'single_transaction_default' => env('MINOR_CARD_SINGLE_LIMIT_DEFAULT', '1500.00'),
+    ],
 ];

@@ -107,6 +107,36 @@ class MinorCardServiceTest extends BaseTestCase
     }
 
     #[Test]
+    public function freeze_card_throws_when_minor_account_is_null(): void
+    {
+        $guardian = User::factory()->create();
+
+        $card = Mockery::mock(Card::class)->makePartial();
+        $card->shouldReceive('getAttribute')->with('minorAccount')->andReturn(null);
+        $card->shouldReceive('getAttribute')->with('issuer_card_token')->andReturn(Str::uuid()->toString());
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Only guardians can freeze a minor card');
+
+        $this->service->freezeCard($guardian, $card);
+    }
+
+    #[Test]
+    public function unfreeze_card_throws_when_minor_account_is_null(): void
+    {
+        $guardian = User::factory()->create();
+
+        $card = Mockery::mock(Card::class)->makePartial();
+        $card->shouldReceive('getAttribute')->with('minorAccount')->andReturn(null);
+        $card->shouldReceive('getAttribute')->with('issuer_card_token')->andReturn(Str::uuid()->toString());
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Only guardians can unfreeze a minor card');
+
+        $this->service->unfreezeCard($guardian, $card);
+    }
+
+    #[Test]
     public function freeze_card_uses_issuer_card_token(): void
     {
         $guardian = User::factory()->create();
