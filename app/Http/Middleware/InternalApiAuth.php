@@ -18,7 +18,7 @@ class InternalApiAuth
         if (empty($providedKey) || $providedKey !== $expectedKey) {
             return response()->json([
                 'success' => false,
-                'error' => ['code' => 'UNAUTHORIZED', 'message' => 'Invalid or missing API key'],
+                'error'   => ['code' => 'UNAUTHORIZED', 'message' => 'Invalid or missing API key'],
             ], 401);
         }
 

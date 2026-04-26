@@ -38,9 +38,9 @@ class MinorFamilyFundingLinkController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
+            'data'    => [
                 'minor_account_uuid' => $minorAccount->uuid,
-                'funding_links' => $links,
+                'funding_links'      => $links,
             ],
         ]);
     }
@@ -52,15 +52,15 @@ class MinorFamilyFundingLinkController extends Controller
 
         $validated = $request->validate([
             'created_by_account_uuid' => ['nullable', 'string', 'uuid'],
-            'title' => ['required', 'string', 'max:255'],
-            'note' => ['nullable', 'string', 'max:1000'],
-            'amount_mode' => ['required', 'string', 'in:fixed,capped'],
-            'fixed_amount' => ['nullable', 'numeric', 'gt:0'],
-            'target_amount' => ['nullable', 'numeric', 'gt:0'],
-            'asset_code' => ['nullable', 'string', 'max:10'],
-            'provider_options' => ['nullable', 'array'],
-            'provider_options.*' => ['string'],
-            'expires_at' => ['nullable', 'date'],
+            'title'                   => ['required', 'string', 'max:255'],
+            'note'                    => ['nullable', 'string', 'max:1000'],
+            'amount_mode'             => ['required', 'string', 'in:fixed,capped'],
+            'fixed_amount'            => ['nullable', 'numeric', 'gt:0'],
+            'target_amount'           => ['nullable', 'numeric', 'gt:0'],
+            'asset_code'              => ['nullable', 'string', 'max:10'],
+            'provider_options'        => ['nullable', 'array'],
+            'provider_options.*'      => ['string'],
+            'expires_at'              => ['nullable', 'date'],
         ]);
 
         $this->accessService->authorizeGuardian(
@@ -79,21 +79,21 @@ class MinorFamilyFundingLinkController extends Controller
             );
         } catch (OperationPayloadMismatchException) {
             return response()->json([
-                'error' => 'Idempotency key already used',
-                'message' => 'The provided idempotency key has already been used with different request parameters',
+                'error'      => 'Idempotency key already used',
+                'message'    => 'The provided idempotency key has already been used with different request parameters',
                 'error_code' => 'idempotency_key_payload_mismatch',
             ], 409);
         } catch (OperationInProgressException) {
             return response()->json([
-                'error' => 'Idempotency operation in progress',
-                'message' => 'An identical operation with this idempotency key is still in progress. Please retry shortly.',
+                'error'      => 'Idempotency operation in progress',
+                'message'    => 'An identical operation with this idempotency key is still in progress. Please retry shortly.',
                 'error_code' => 'idempotency_operation_in_progress',
             ], 409);
         }
 
         return response()->json([
             'success' => true,
-            'data' => $this->serializeFundingLinkSummary($link),
+            'data'    => $this->serializeFundingLinkSummary($link),
         ], 201);
     }
 
@@ -116,7 +116,7 @@ class MinorFamilyFundingLinkController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $this->serializeFundingLinkSummary($link),
+            'data'    => $this->serializeFundingLinkSummary($link),
         ]);
     }
 
@@ -126,24 +126,24 @@ class MinorFamilyFundingLinkController extends Controller
     private function serializeFundingLink(MinorFamilyFundingLink $link): array
     {
         return [
-            'id' => $link->id,
-            'minor_account_uuid' => $link->minor_account_uuid,
-            'created_by_user_uuid' => $link->created_by_user_uuid,
+            'id'                      => $link->id,
+            'minor_account_uuid'      => $link->minor_account_uuid,
+            'created_by_user_uuid'    => $link->created_by_user_uuid,
             'created_by_account_uuid' => $link->created_by_account_uuid,
-            'title' => $link->title,
-            'note' => $link->note,
-            'token' => $link->token,
-            'status' => $link->status,
-            'amount_mode' => $link->amount_mode,
-            'fixed_amount' => $link->fixed_amount,
-            'target_amount' => $link->target_amount,
-            'collected_amount' => $link->collected_amount,
-            'asset_code' => $link->asset_code,
-            'provider_options' => $link->provider_options,
-            'expires_at' => $link->expires_at?->toIso8601String(),
-            'last_funded_at' => $link->last_funded_at?->toIso8601String(),
-            'created_at' => $link->created_at?->toIso8601String(),
-            'updated_at' => $link->updated_at?->toIso8601String(),
+            'title'                   => $link->title,
+            'note'                    => $link->note,
+            'token'                   => $link->token,
+            'status'                  => $link->status,
+            'amount_mode'             => $link->amount_mode,
+            'fixed_amount'            => $link->fixed_amount,
+            'target_amount'           => $link->target_amount,
+            'collected_amount'        => $link->collected_amount,
+            'asset_code'              => $link->asset_code,
+            'provider_options'        => $link->provider_options,
+            'expires_at'              => $link->expires_at?->toIso8601String(),
+            'last_funded_at'          => $link->last_funded_at?->toIso8601String(),
+            'created_at'              => $link->created_at?->toIso8601String(),
+            'updated_at'              => $link->updated_at?->toIso8601String(),
         ];
     }
 
@@ -153,16 +153,16 @@ class MinorFamilyFundingLinkController extends Controller
     private function serializeFundingLinkSummary(MinorFamilyFundingLink $link): array
     {
         return [
-            'funding_link_uuid' => $link->id,
+            'funding_link_uuid'  => $link->id,
             'minor_account_uuid' => $link->minor_account_uuid,
-            'status' => $link->status,
-            'token' => $link->token,
-            'public_url' => "https://pay.maphapay.com/minor-support/{$link->token}",
-            'provider_options' => $link->provider_options ?? [MinorFamilyFundingLink::DEFAULT_PROVIDER],
-            'fixed_amount' => $link->fixed_amount,
-            'target_amount' => $link->target_amount,
-            'collected_amount' => $link->collected_amount,
-            'expires_at' => $link->expires_at?->toIso8601String(),
+            'status'             => $link->status,
+            'token'              => $link->token,
+            'public_url'         => "https://pay.maphapay.com/minor-support/{$link->token}",
+            'provider_options'   => $link->provider_options ?? [MinorFamilyFundingLink::DEFAULT_PROVIDER],
+            'fixed_amount'       => $link->fixed_amount,
+            'target_amount'      => $link->target_amount,
+            'collected_amount'   => $link->collected_amount,
+            'expires_at'         => $link->expires_at?->toIso8601String(),
         ];
     }
 

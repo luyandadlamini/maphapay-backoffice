@@ -29,7 +29,7 @@ class MinorAccountLifecycleController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $this->lifecycleService->lifecycleSnapshot($minorAccount),
+            'data'    => $this->lifecycleService->lifecycleSnapshot($minorAccount),
         ]);
     }
 
@@ -42,18 +42,18 @@ class MinorAccountLifecycleController extends Controller
         $items = $this->lifecycleService->transitionQueryForAccount($minorAccount)
             ->paginate(15)
             ->through(fn ($transition): array => [
-                'transition_uuid' => $transition->id,
-                'transition_type' => $transition->transition_type,
-                'state' => $transition->state,
-                'effective_at' => $transition->effective_at?->toIso8601String(),
-                'executed_at' => $transition->executed_at?->toIso8601String(),
+                'transition_uuid'     => $transition->id,
+                'transition_type'     => $transition->transition_type,
+                'state'               => $transition->state,
+                'effective_at'        => $transition->effective_at?->toIso8601String(),
+                'executed_at'         => $transition->executed_at?->toIso8601String(),
                 'blocked_reason_code' => $transition->blocked_reason_code,
-                'metadata' => $transition->metadata,
+                'metadata'            => $transition->metadata,
             ]);
 
         return response()->json([
             'success' => true,
-            'data' => $items,
+            'data'    => $items,
         ]);
     }
 
@@ -63,9 +63,9 @@ class MinorAccountLifecycleController extends Controller
         $minorAccount = Account::query()->where('uuid', $minorAccountUuid)->firstOrFail();
 
         $validated = $request->validate([
-            'action' => ['required', 'string', 'in:rerun_evaluation,acknowledge_exception,resolve_exception,mark_manual_verification_complete'],
+            'action'         => ['required', 'string', 'in:rerun_evaluation,acknowledge_exception,resolve_exception,mark_manual_verification_complete'],
             'exception_uuid' => ['nullable', 'string', 'uuid'],
-            'note' => ['nullable', 'string', 'max:500'],
+            'note'           => ['nullable', 'string', 'max:500'],
         ]);
 
         $action = (string) $validated['action'];
@@ -76,9 +76,9 @@ class MinorAccountLifecycleController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => [
+                'data'    => [
                     'transition_state' => $minorAccount->fresh()?->minor_transition_state,
-                    'result' => $result,
+                    'result'           => $result,
                 ],
             ], 202);
         }
@@ -103,9 +103,9 @@ class MinorAccountLifecycleController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => [
+                'data'    => [
                     'exception_uuid' => $exception->id,
-                    'status' => $exception->fresh()?->status,
+                    'status'         => $exception->fresh()?->status,
                 ],
             ], 202);
         }
@@ -120,9 +120,9 @@ class MinorAccountLifecycleController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
+            'data'    => [
                 'exception_uuid' => $resolved->id,
-                'status' => $resolved->status,
+                'status'         => $resolved->status,
             ],
         ], 202);
     }

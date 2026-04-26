@@ -267,12 +267,12 @@ class SendMoneyStoreController extends Controller
 
                 try {
                     $approvalResponse = DB::transaction(fn (): array => $this->operationRecordService->guardAndRun(
-                            userId: (int) $authUser->getAuthIdentifier(),
-                            type: self::MINOR_SPEND_APPROVAL_OPERATION,
-                            key: $idempotencyKey,
-                            payloadHash: $this->minorApprovalPayloadHash($approvalPayload),
-                            fn: fn (): array => $this->createMinorApprovalResponse($approvalPayload),
-                        ));
+                        userId: (int) $authUser->getAuthIdentifier(),
+                        type: self::MINOR_SPEND_APPROVAL_OPERATION,
+                        key: $idempotencyKey,
+                        payloadHash: $this->minorApprovalPayloadHash($approvalPayload),
+                        fn: fn (): array => $this->createMinorApprovalResponse($approvalPayload),
+                    ));
                 } catch (OperationPayloadMismatchException) {
                     return response()->json([
                         'error'   => 'Idempotency key already used',
@@ -454,7 +454,7 @@ class SendMoneyStoreController extends Controller
 
             // ── Saving milestone check (minor accounts only) ─────────────────────────────
             if ($fromAccount->type === 'minor') {
-                $totalSaved = (string) \Illuminate\Support\Facades\DB::table('transaction_projections')
+                $totalSaved = (string) DB::table('transaction_projections')
                     ->where('account_uuid', $fromAccount->uuid)
                     ->where('type', 'deposit')
                     ->sum('amount');

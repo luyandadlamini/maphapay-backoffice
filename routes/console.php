@@ -163,7 +163,7 @@ Schedule::command('liquidity:update-market-making --cancel-existing')
 
 // Demo Data Cleanup (only runs in demo environment)
 if (app()->environment('demo')) {
-    Schedule::command('demo:cleanup --days='.config('demo.cleanup.retention_days', 1))
+    Schedule::command('demo:cleanup --days=' . config('demo.cleanup.retention_days', 1))
         ->dailyAt(config('demo.cleanup.time', '03:00'))
         ->description('Clean up old demo data')
         ->appendOutputTo(storage_path('logs/demo-cleanup.log'))
@@ -190,38 +190,38 @@ Schedule::command('mtn:reconcile-disbursements')
 
 // Mobile Backend Jobs
 // Process scheduled mobile push notifications every minute
-Schedule::job(new ProcessScheduledNotifications)
+Schedule::job(new ProcessScheduledNotifications())
     ->everyMinute()
     ->description('Process scheduled mobile push notifications')
     ->withoutOverlapping();
 
 // Retry failed mobile push notifications every 5 minutes
-Schedule::job(new RetryFailedNotifications)
+Schedule::job(new RetryFailedNotifications())
     ->everyFiveMinutes()
     ->description('Retry failed mobile push notifications')
     ->withoutOverlapping();
 
 // Cleanup expired biometric challenges every 5 minutes
-Schedule::job(new CleanupExpiredChallenges)
+Schedule::job(new CleanupExpiredChallenges())
     ->everyFiveMinutes()
     ->description('Cleanup expired biometric authentication challenges')
     ->withoutOverlapping();
 
 // Cleanup stale mobile devices daily at 3 AM
-Schedule::job(new CleanupStaleDevices)
+Schedule::job(new CleanupStaleDevices())
     ->dailyAt('03:00')
     ->description('Cleanup stale mobile devices')
     ->appendOutputTo(storage_path('logs/mobile-cleanup.log'))
     ->withoutOverlapping();
 
 // Mobile Payment - Expire stale payment intents every minute
-Schedule::job(new ExpireStalePaymentIntents)
+Schedule::job(new ExpireStalePaymentIntents())
     ->everyMinute()
     ->description('Expire stale payment intents past their TTL')
     ->withoutOverlapping();
 
 // Fraud Anomaly Detection Batch Scan
-Schedule::command('fraud:scan-anomalies --hours='.config('fraud.batch.lookback_hours', 24).' --chunk='.config('fraud.batch.chunk_size', 100))
+Schedule::command('fraud:scan-anomalies --hours=' . config('fraud.batch.lookback_hours', 24) . ' --chunk=' . config('fraud.batch.chunk_size', 100))
     ->cron(config('fraud.batch.schedule', '0 */6 * * *'))
     ->description('Batch scan recent transactions for anomaly detection')
     ->appendOutputTo(storage_path('logs/fraud-anomaly-scan.log'))

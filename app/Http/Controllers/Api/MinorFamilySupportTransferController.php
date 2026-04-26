@@ -25,9 +25,8 @@ class MinorFamilySupportTransferController extends Controller
 
     public function index(Request $request, string $minorAccountUuid): JsonResponse
     {
-        $actor = $this->authenticatedUser($request);
         $minorAccount = Account::query()->where('uuid', $minorAccountUuid)->firstOrFail();
-        $this->accessService->authorizeView($actor, $minorAccount);
+        $this->authorize('view', $minorAccount);
 
         $transfers = MinorFamilySupportTransfer::query()
             ->where('minor_account_uuid', $minorAccount->uuid)
@@ -38,7 +37,7 @@ class MinorFamilySupportTransferController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $transfers,
+            'data'    => $transfers,
         ]);
     }
 
@@ -49,12 +48,12 @@ class MinorFamilySupportTransferController extends Controller
 
         $validated = $request->validate([
             'source_account_uuid' => ['required', 'string', 'uuid'],
-            'provider' => ['required', 'string', 'max:50'],
-            'recipient_name' => ['required', 'string', 'max:255'],
-            'recipient_msisdn' => ['required', 'string', 'max:50'],
-            'amount' => ['required', 'numeric', 'gt:0'],
-            'asset_code' => ['required', 'string', 'max:10'],
-            'note' => ['nullable', 'string', 'max:1000'],
+            'provider'            => ['required', 'string', 'max:50'],
+            'recipient_name'      => ['required', 'string', 'max:255'],
+            'recipient_msisdn'    => ['required', 'string', 'max:50'],
+            'amount'              => ['required', 'numeric', 'gt:0'],
+            'asset_code'          => ['required', 'string', 'max:10'],
+            'note'                => ['nullable', 'string', 'max:1000'],
         ]);
 
         $idempotencyKey = $request->header('Idempotency-Key') ?: $request->header('X-Idempotency-Key');
@@ -79,21 +78,21 @@ class MinorFamilySupportTransferController extends Controller
             );
         } catch (OperationPayloadMismatchException) {
             return response()->json([
-                'error' => 'Idempotency key already used',
-                'message' => 'The provided idempotency key has already been used with different request parameters',
+                'error'      => 'Idempotency key already used',
+                'message'    => 'The provided idempotency key has already been used with different request parameters',
                 'error_code' => 'idempotency_key_payload_mismatch',
             ], 409);
         } catch (OperationInProgressException) {
             return response()->json([
-                'error' => 'Idempotency operation in progress',
-                'message' => 'An identical operation with this idempotency key is still in progress. Please retry shortly.',
+                'error'      => 'Idempotency operation in progress',
+                'message'    => 'An identical operation with this idempotency key is still in progress. Please retry shortly.',
                 'error_code' => 'idempotency_operation_in_progress',
             ], 409);
         }
 
         return response()->json([
             'success' => true,
-            'data' => $this->serializeTransferSummary($transfer),
+            'data'    => $this->serializeTransferSummary($transfer),
         ], 202);
     }
 
@@ -104,15 +103,15 @@ class MinorFamilySupportTransferController extends Controller
     {
         return [
             'family_support_transfer_uuid' => $transfer->id,
-            'status' => $transfer->status,
-            'provider' => $transfer->provider_name,
-            'recipient_name' => $transfer->recipient_name,
-            'recipient_msisdn_masked' => $this->maskMsisdn($transfer->recipient_msisdn),
-            'amount' => $transfer->amount,
-            'asset_code' => $transfer->asset_code,
-            'provider_reference_id' => $transfer->provider_reference_id,
-            'created_at' => $transfer->created_at?->toIso8601String(),
-            'settled_at' => $transfer->isPendingProvider() ? null : $transfer->updated_at?->toIso8601String(),
+            'status'                       => $transfer->status,
+            'provider'                     => $transfer->provider_name,
+            'recipient_name'               => $transfer->recipient_name,
+            'recipient_msisdn_masked'      => $this->maskMsisdn($transfer->recipient_msisdn),
+            'amount'                       => $transfer->amount,
+            'asset_code'                   => $transfer->asset_code,
+            'provider_reference_id'        => $transfer->provider_reference_id,
+            'created_at'                   => $transfer->created_at?->toIso8601String(),
+            'settled_at'                   => $transfer->isPendingProvider() ? null : $transfer->updated_at?->toIso8601String(),
         ];
     }
 
@@ -123,13 +122,13 @@ class MinorFamilySupportTransferController extends Controller
     {
         return [
             'family_support_transfer_uuid' => $transfer->id,
-            'minor_account_uuid' => $transfer->minor_account_uuid,
-            'status' => $transfer->status,
-            'provider' => $transfer->provider_name,
-            'provider_reference_id' => $transfer->provider_reference_id,
-            'amount' => $transfer->amount,
-            'asset_code' => $transfer->asset_code,
-            'created_at' => $transfer->created_at?->toIso8601String(),
+            'minor_account_uuid'           => $transfer->minor_account_uuid,
+            'status'                       => $transfer->status,
+            'provider'                     => $transfer->provider_name,
+            'provider_reference_id'        => $transfer->provider_reference_id,
+            'amount'                       => $transfer->amount,
+            'asset_code'                   => $transfer->asset_code,
+            'created_at'                   => $transfer->created_at?->toIso8601String(),
         ];
     }
 

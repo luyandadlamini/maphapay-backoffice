@@ -21,12 +21,12 @@ class PublicMinorFundingLinkController extends Controller
 
     public function show(string $token): JsonResponse
     {
-        if (strlen($token) < 32) {
+        if (strlen($token) !== 64) {
             return $this->notFoundResponse();
         }
 
         $link = MinorFamilyFundingLink::query()
-            ->where('token', $token)
+            ->where('token', hash('sha256', $token))
             ->first();
 
         if ($link === null) {
@@ -41,28 +41,28 @@ class PublicMinorFundingLinkController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
+            'data'    => [
                 'funding_link_uuid' => $link->id,
-                'display_name' => $this->displayNameFor($link),
-                'title' => $link->title,
-                'note' => $link->note,
-                'provider_options' => $link->provider_options ?? [MinorFamilyFundingLink::DEFAULT_PROVIDER],
-                'amount_mode' => $link->amount_mode,
-                'remaining_amount' => $link->remainingAmount() ?? $link->fixed_amount,
-                'asset_code' => $link->asset_code,
-                'expires_at' => $link->expires_at?->toIso8601String(),
+                'display_name'      => $this->displayNameFor($link),
+                'title'             => $link->title,
+                'note'              => $link->note,
+                'provider_options'  => $link->provider_options ?? [MinorFamilyFundingLink::DEFAULT_PROVIDER],
+                'amount_mode'       => $link->amount_mode,
+                'remaining_amount'  => $link->remainingAmount() ?? $link->fixed_amount,
+                'asset_code'        => $link->asset_code,
+                'expires_at'        => $link->expires_at?->toIso8601String(),
             ],
         ]);
     }
 
     public function requestToPay(Request $request, string $token): JsonResponse
     {
-        if (strlen($token) < 32) {
+        if (strlen($token) !== 64) {
             return $this->notFoundResponse();
         }
 
         $link = MinorFamilyFundingLink::query()
-            ->where('token', $token)
+            ->where('token', hash('sha256', $token))
             ->first();
 
         if ($link === null) {
@@ -74,10 +74,10 @@ class PublicMinorFundingLinkController extends Controller
         }
 
         $validated = $request->validate([
-            'sponsor_name' => ['required', 'string', 'max:255'],
+            'sponsor_name'   => ['required', 'string', 'max:255'],
             'sponsor_msisdn' => ['required', 'string', 'max:50'],
-            'amount' => ['required', 'numeric', 'gt:0'],
-            'asset_code' => ['required', 'string', 'max:10'],
+            'amount'         => ['required', 'numeric', 'gt:0'],
+            'asset_code'     => ['required', 'string', 'max:10'],
         ]);
 
         if ($this->normaliseAssetCode($validated['asset_code']) !== $this->normaliseAssetCode($link->asset_code)) {
@@ -102,27 +102,27 @@ class PublicMinorFundingLinkController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'funding_attempt_uuid' => $attempt->id,
-                'funding_link_uuid' => $attempt->funding_link_uuid,
-                'status' => $attempt->status,
-                'provider' => $attempt->provider_name,
+            'data'    => [
+                'funding_attempt_uuid'  => $attempt->id,
+                'funding_link_uuid'     => $attempt->funding_link_uuid,
+                'status'                => $attempt->status,
+                'provider'              => $attempt->provider_name,
                 'provider_reference_id' => $attempt->provider_reference_id,
-                'amount' => $attempt->amount,
-                'asset_code' => $attempt->asset_code,
-                'expires_at' => $link->expires_at?->toIso8601String(),
+                'amount'                => $attempt->amount,
+                'asset_code'            => $attempt->asset_code,
+                'expires_at'            => $link->expires_at?->toIso8601String(),
             ],
         ], 202);
     }
 
     public function attemptStatus(string $token, string $attemptUuid): JsonResponse
     {
-        if (strlen($token) < 32) {
+        if (strlen($token) !== 64) {
             return $this->notFoundResponse();
         }
 
         $link = MinorFamilyFundingLink::query()
-            ->where('token', $token)
+            ->where('token', hash('sha256', $token))
             ->first();
 
         if ($link === null) {
@@ -140,13 +140,13 @@ class PublicMinorFundingLinkController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
+            'data'    => [
                 'funding_attempt_uuid' => $attempt->id,
-                'status' => $attempt->status,
-                'provider' => $attempt->provider_name,
-                'amount' => $attempt->amount,
-                'asset_code' => $attempt->asset_code,
-                'credited_at' => $attempt->wallet_credited_at?->toIso8601String(),
+                'status'               => $attempt->status,
+                'provider'             => $attempt->provider_name,
+                'amount'               => $attempt->amount,
+                'asset_code'           => $attempt->asset_code,
+                'credited_at'          => $attempt->wallet_credited_at?->toIso8601String(),
             ],
         ]);
     }
@@ -155,9 +155,9 @@ class PublicMinorFundingLinkController extends Controller
     {
         if ($link->isExpired()) {
             return response()->json([
-                'success' => false,
+                'success'    => false,
                 'error_code' => 'funding_link_expired',
-                'message' => 'Funding link has expired.',
+                'message'    => 'Funding link has expired.',
             ], 410);
         }
 
@@ -177,9 +177,9 @@ class PublicMinorFundingLinkController extends Controller
     private function notFoundResponse(): JsonResponse
     {
         return response()->json([
-            'success' => false,
+            'success'    => false,
             'error_code' => 'funding_link_not_found',
-            'message' => 'Funding link not found.',
+            'message'    => 'Funding link not found.',
         ], 404);
     }
 

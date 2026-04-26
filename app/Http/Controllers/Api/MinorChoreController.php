@@ -367,10 +367,30 @@ class MinorChoreController extends Controller
 
         $this->authorize($ability, [MinorChore::class, $minorAccount]);
 
-        return $this->accessService->authorizeGuardian(
-            $user,
-            $minorAccount,
-            $request->attributes->get('account_uuid')
-        );
+        $actingAccountUuid = $request->attributes->get('account_uuid');
+
+        if (is_string($actingAccountUuid) && $actingAccountUuid !== '' && $actingAccountUuid !== $minorAccount->uuid) {
+            $contextAccount = Account::query()
+                ->where('uuid', $actingAccountUuid)
+                ->where('user_uuid', $user->uuid)
+                ->first();
+
+            if ($contextAccount !== null) {
+                return $contextAccount;
+            }
+        }
+
+        $actingAccount = Account::query()
+            ->where('user_uuid', $user->uuid)
+            ->where('uuid', '!=', $minorAccount->uuid)
+            ->orderByRaw("case when type = 'personal' then 0 else 1 end")
+            ->orderBy('id')
+            ->first();
+
+        if ($actingAccount === null) {
+            abort(403, 'Forbidden. Guardian access requires a valid owned account context.');
+        }
+
+        return $actingAccount;
     }
 }

@@ -10,8 +10,8 @@ use App\Domain\Account\Workflows\FreezeAccountWorkflow;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Workflow\WorkflowStub;
 
 class FreezeAccountMutation

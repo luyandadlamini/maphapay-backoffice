@@ -161,7 +161,7 @@ class MinorAccountController extends Controller
 
         $validated = $request->validate([
             'permission_level' => ['required', 'integer', 'min:' . config('minor_family.permission_level_min', 1), 'max:' . config('minor_family.permission_level_max_rise', 7)],
-            'idempotency_key' => ['nullable', 'string', 'uuid', 'max:36'],
+            'idempotency_key'  => ['nullable', 'string', 'uuid', 'max:36'],
         ]);
 
         $idempotencyKey = $validated['idempotency_key'] ?? null;
@@ -231,10 +231,10 @@ class MinorAccountController extends Controller
         ];
 
         $auditMetadata = [
-            'old_value' => $previousLevel,
-            'new_value' => $newPermissionLevel,
-            'reason'    => $request->string('reason', 'Guardian updated permission level')->toString(),
-            'response'  => $responsePayload,
+            'old_value'       => $previousLevel,
+            'new_value'       => $newPermissionLevel,
+            'reason'          => $request->string('reason', 'Guardian updated permission level')->toString(),
+            'response'        => $responsePayload,
             'response_status' => 200,
         ];
 
@@ -247,7 +247,7 @@ class MinorAccountController extends Controller
             'actor_user_uuid' => $user->uuid,
             'action'          => 'permission_level_changed',
             'metadata'        => $auditMetadata,
-            'created_at' => now(),
+            'created_at'      => now(),
         ]);
 
         // Dual-sided audit: also log on the guardian's account for their activity history

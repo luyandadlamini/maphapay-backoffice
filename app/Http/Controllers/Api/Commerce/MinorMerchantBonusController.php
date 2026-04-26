@@ -38,11 +38,11 @@ class MinorMerchantBonusController extends Controller
     public function award(Request $request): JsonResponse
     {
         $request->validate([
-            'transaction_uuid' => ['required', 'string'],
+            'transaction_uuid'    => ['required', 'string'],
             'merchant_partner_id' => ['required', 'integer'],
-            'minor_account_uuid' => ['required', 'string'],
-            'amount_szl' => ['required', 'numeric', 'min:0'],
-            'minor_age' => ['nullable', 'integer', 'min:0', 'max:17'],
+            'minor_account_uuid'  => ['required', 'string'],
+            'amount_szl'          => ['required', 'numeric', 'min:0'],
+            'minor_age'           => ['nullable', 'integer', 'min:0', 'max:17'],
         ]);
 
         try {
@@ -56,17 +56,17 @@ class MinorMerchantBonusController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => [
+                'data'    => [
                     'bonus_points_awarded' => $result['bonus_points_awarded'],
-                    'multiplier_applied' => $result['multiplier_applied'],
-                    'reason' => $result['reason'] ?? null,
+                    'multiplier_applied'   => $result['multiplier_applied'],
+                    'reason'               => $result['reason'] ?? null,
                 ],
             ]);
         } catch (Throwable $e) {
             return response()->json([
                 'success' => false,
-                'error' => [
-                    'code' => 'BONUS_CALCULATION_ERROR',
+                'error'   => [
+                    'code'    => 'BONUS_CALCULATION_ERROR',
                     'message' => $e->getMessage(),
                 ],
             ], 500);

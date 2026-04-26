@@ -6,9 +6,9 @@ namespace App\GraphQL\Queries\Fraud;
 
 use App\Domain\Fraud\Models\FraudCase;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Database\Eloquent\Builder;
 
 class FraudCaseQuery
 {

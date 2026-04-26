@@ -6,8 +6,8 @@ namespace App\GraphQL\Queries\Payment;
 
 use App\Domain\Payment\Models\PaymentTransaction;
 use Illuminate\Auth\AuthenticationException;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class PaymentQuery
 {

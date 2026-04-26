@@ -14,11 +14,11 @@ use App\Domain\CardIssuance\Enums\WalletType;
 use App\Domain\CardIssuance\Models\Card;
 use App\Domain\CardIssuance\Services\CardProvisioningService;
 use App\Http\Controllers\Controller;
-use Illuminate\Validation\UnauthorizedException;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\UnauthorizedException;
 
 class MinorCardController extends Controller
 {
@@ -28,7 +28,8 @@ class MinorCardController extends Controller
         private readonly MinorCardService $cardService,
         private readonly CardProvisioningService $cardProvisioning,
         private readonly ScaVerificationService $scaVerificationService,
-    ) {}
+    ) {
+    }
 
     private function verifySca(User $user, ?string $scaToken, ?string $scaType, ?string $deviceId): void
     {
@@ -39,7 +40,7 @@ class MinorCardController extends Controller
         $scaMethod = $scaType ?? 'otp';
 
         $result = match ($scaMethod) {
-            'otp' => $this->scaVerificationService->verifyOtp($user->uuid, $scaToken),
+            'otp'       => $this->scaVerificationService->verifyOtp($user->uuid, $scaToken),
             'biometric' => $this->scaVerificationService->verifyBiometric(
                 $user->uuid,
                 $deviceId ?? '',
@@ -57,8 +58,8 @@ class MinorCardController extends Controller
     {
         $validated = $request->validate([
             'minor_account_uuid' => 'required_without:self_request|uuid|exists:accounts,uuid',
-            'network' => 'in:visa,mastercard',
-            'requested_limits' => 'nullable|array',
+            'network'            => 'in:visa,mastercard',
+            'requested_limits'   => 'nullable|array',
         ]);
 
         /** @var User $user */
@@ -123,7 +124,7 @@ class MinorCardController extends Controller
     {
         $validated = $request->validate([
             'sca_token' => 'required|string',
-            'sca_type' => 'nullable|string|in:otp,biometric',
+            'sca_type'  => 'nullable|string|in:otp,biometric',
             'device_id' => 'nullable|string',
         ]);
 
@@ -158,7 +159,7 @@ class MinorCardController extends Controller
     {
         $validated = $request->validate([
             'sca_token' => 'required|string',
-            'sca_type' => 'nullable|string|in:otp,biometric',
+            'sca_type'  => 'nullable|string|in:otp,biometric',
             'device_id' => 'nullable|string',
         ]);
 
@@ -192,10 +193,10 @@ class MinorCardController extends Controller
     public function provision(Request $request, string $cardId): JsonResponse
     {
         $validated = $request->validate([
-            'wallet_type' => 'required|in:apple_pay,google_pay',
-            'device_id' => 'required|string',
-            'sca_token' => 'required|string',
-            'sca_type' => 'nullable|string|in:otp,biometric',
+            'wallet_type'   => 'required|in:apple_pay,google_pay',
+            'device_id'     => 'required|string',
+            'sca_token'     => 'required|string',
+            'sca_type'      => 'nullable|string|in:otp,biometric',
             'sca_device_id' => 'nullable|string',
         ]);
 
