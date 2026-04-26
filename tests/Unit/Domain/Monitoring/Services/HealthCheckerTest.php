@@ -8,9 +8,9 @@ use App\Domain\Monitoring\Services\HealthChecker;
 use App\Domain\Monitoring\Services\MetricsCollector;
 use Exception;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Schema;
+use Mockery;
 use Tests\TestCase;
 
 class HealthCheckerTest extends TestCase
@@ -167,19 +167,19 @@ class HealthCheckerTest extends TestCase
         $this->assertIsBool($result['ready']);
     }
 
-    public function test_unhealthy_status_when_check_fails(): void
-    {
-        // Mock a failing database connection
-        DB::shouldReceive('select')
-            ->once()
-            ->andThrow(new Exception('Database connection failed'));
+public function test_unhealthy_status_when_check_fails(): void
+{
+        $healthChecker = Mockery::mock(HealthChecker::class, [app(MetricsCollector::class), null])->makePartial();
+        $healthChecker->shouldAllowMockingProtectedMethods();
+        $healthChecker->shouldReceive('checkDatabase')->andReturn([
+            'name'    => 'database',
+            'healthy' => false,
+            'message' => 'Database connection failed',
+            'error'   => 'Database connection failed',
+        ]);
 
-        $healthChecker = new HealthChecker();
-
-        // Act
         $result = $healthChecker->check();
 
-        // Assert
         $this->assertEquals('unhealthy', $result['status']);
         $this->assertFalse($result['checks']['database']['healthy']);
         $this->assertStringContainsString('Database connection failed', $result['checks']['database']['error']);

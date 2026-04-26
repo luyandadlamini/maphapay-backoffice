@@ -38,7 +38,18 @@ class AccountPolicy
      */
     public function view(User $user, Account $account): bool
     {
+        if ($user->can('view-accounts')) {
+            return true;
+        }
+
         return $this->accessService()->canView($user, $account);
+    }
+
+    public function viewAny(User $user): bool
+    {
+        return $user->can('view-accounts')
+            || $user->can('approve-adjustments')
+            || $user->hasRole('super-admin');
     }
 
     /**

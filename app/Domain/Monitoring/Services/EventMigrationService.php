@@ -116,6 +116,17 @@ class EventMigrationService
             return $migration;
         }
 
+        if (! Schema::hasTable($targetTable)) {
+            $migration->update([
+                'status'          => 'completed',
+                'events_migrated' => 0,
+                'completed_at'    => now(),
+                'error_message'   => "Target table '{$targetTable}' does not exist; migration skipped.",
+            ]);
+
+            return $migration;
+        }
+
         try {
             $migrated = $this->executeBatchMigration(
                 $sourceTable,

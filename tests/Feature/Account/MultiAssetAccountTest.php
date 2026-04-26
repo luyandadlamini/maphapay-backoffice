@@ -70,11 +70,14 @@ class MultiAssetAccountTest extends TestCase
     #[Test]
     public function it_maintains_backward_compatibility_with_balance_attribute()
     {
+        config(['banking.default_currency' => 'USD']);
+
         AccountBalance::create(['account_uuid' => $this->testAccount->uuid, 'asset_code' => 'USD', 'balance' => 12345]);
 
-        // The balance attribute should return USD balance
-        expect($this->testAccount->balance)->toBe(12345);
-        expect($this->testAccount->toArray()['balance'])->toBe(12345);
+        $account = $this->testAccount->refresh();
+
+        expect($account->balance)->toBe(12345);
+        expect($account->toArray()['balance'])->toBe(12345);
     }
 
     // Money manipulation methods removed - use event sourcing via WalletService instead
