@@ -161,7 +161,28 @@ class MinorAccountController extends Controller
 
         $validated = $request->validate([
             'permission_level' => ['required', 'integer', 'min:' . config('minor_family.permission_level_min', 1), 'max:' . config('minor_family.permission_level_max_rise', 7)],
+            'idempotency_key' => ['nullable', 'string', 'uuid', 'max:36'],
         ]);
+
+        $idempotencyKey = $validated['idempotency_key'] ?? null;
+
+        if ($idempotencyKey !== null) {
+            $existing = AccountAuditLog::query()
+                ->where('account_uuid', $account->uuid)
+                ->where('action', 'permission_level_changed')
+                ->where('metadata->idempotency_key', $idempotencyKey)
+                ->first();
+
+            if ($existing !== null) {
+                /** @var array<string, mixed> $responseMeta */
+                $responseMeta = is_array($existing->metadata) ? $existing->metadata : [];
+
+                return response()->json(
+                    $responseMeta['response'] ?? ['success' => true],
+                    $responseMeta['response_status'] ?? 200
+                );
+            }
+        }
 
         $previousLevel = (int) $account->permission_level;
         $newPermissionLevel = (int) $validated['permission_level'];
@@ -198,15 +219,34 @@ class MinorAccountController extends Controller
             'permission_level' => $newPermissionLevel,
         ])->save();
 
+        $responsePayload = [
+            'success' => true,
+            'data'    => [
+                'uuid'              => $account->uuid,
+                'account_type'      => $account->type,
+                'account_tier'      => $account->tier,
+                'permission_level'  => $account->permission_level,
+                'parent_account_id' => $account->parent_account_id,
+            ],
+        ];
+
+        $auditMetadata = [
+            'old_value' => $previousLevel,
+            'new_value' => $newPermissionLevel,
+            'reason'    => $request->string('reason', 'Guardian updated permission level')->toString(),
+            'response'  => $responsePayload,
+            'response_status' => 200,
+        ];
+
+        if ($idempotencyKey !== null) {
+            $auditMetadata['idempotency_key'] = $idempotencyKey;
+        }
+
         AccountAuditLog::create([
             'account_uuid'    => $account->uuid,
             'actor_user_uuid' => $user->uuid,
             'action'          => 'permission_level_changed',
-            'metadata'        => [
-                'old_value' => $previousLevel,
-                'new_value' => $newPermissionLevel,
-                'reason'    => $request->string('reason', 'Guardian updated permission level')->toString(),
-            ],
+            'metadata'        => $auditMetadata,
             'created_at' => now(),
         ]);
 
@@ -241,16 +281,7 @@ class MinorAccountController extends Controller
             }
         }
 
-        return response()->json([
-            'success' => true,
-            'data'    => [
-                'uuid'              => $account->uuid,
-                'account_type'      => $account->type,
-                'account_tier'      => $account->tier,
-                'permission_level'  => $account->permission_level,
-                'parent_account_id' => $account->parent_account_id,
-            ],
-        ]);
+        return response()->json($responsePayload);
     }
 
     /**
