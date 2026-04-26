@@ -187,17 +187,17 @@ class MobileCommerceDetailTest extends TestCase
     public function test_merchant_bonus_details_returns_full_info(): void
     {
         $partner = MerchantPartner::create([
-            'name' => 'Test Store',
-            'category' => 'grocery',
-            'is_active' => true,
-            'bonus_multiplier' => 2.0,
-            'min_age_allowance' => 12,
+            'name'                 => 'Test Store',
+            'category'             => 'grocery',
+            'is_active'            => true,
+            'bonus_multiplier'     => 2.0,
+            'min_age_allowance'    => 12,
             'is_active_for_minors' => true,
-            'bonus_terms' => 'Earn 2x points on all purchases',
+            'bonus_terms'          => 'Earn 2x points on all purchases',
         ]);
 
         $response = $this->withToken($this->token)
-            ->getJson('/api/v1/commerce/partners/'.$partner->id.'/bonus-details');
+            ->getJson('/api/v1/commerce/partners/' . $partner->id . '/bonus-details');
 
         $response->assertOk()
             ->assertJson([

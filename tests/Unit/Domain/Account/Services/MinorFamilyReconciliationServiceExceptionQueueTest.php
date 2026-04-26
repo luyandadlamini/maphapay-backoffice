@@ -37,8 +37,8 @@ class MinorFamilyReconciliationServiceExceptionQueueTest extends TestCase
         Asset::firstOrCreate(
             ['code' => 'SZL'],
             [
-                'name' => 'Swazi Lilangeni',
-                'type' => 'fiat',
+                'name'      => 'Swazi Lilangeni',
+                'type'      => 'fiat',
                 'precision' => 2,
                 'is_active' => true,
             ],
@@ -63,10 +63,10 @@ class MinorFamilyReconciliationServiceExceptionQueueTest extends TestCase
         $this->assertFalse($outcome->isReconciled());
         $this->assertDatabaseHas('minor_family_reconciliation_exceptions', [
             'mtn_momo_transaction_id' => $txn->id,
-            'reason_code' => 'missing_tenant_context',
-            'source' => 'callback',
-            'status' => 'open',
-            'occurrence_count' => 1,
+            'reason_code'             => 'missing_tenant_context',
+            'source'                  => 'callback',
+            'status'                  => 'open',
+            'occurrence_count'        => 1,
         ]);
 
         $this->assertSame(
@@ -105,14 +105,14 @@ class MinorFamilyReconciliationServiceExceptionQueueTest extends TestCase
         $user = User::factory()->create();
 
         $txn = MtnMomoTransaction::query()->create([
-            'id' => (string) Str::uuid(),
-            'user_id' => $user->id,
-            'idempotency_key' => (string) Str::uuid(),
-            'type' => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
-            'amount' => '50.00',
-            'currency' => 'SZL',
-            'status' => MtnMomoTransaction::STATUS_SUCCESSFUL,
-            'party_msisdn' => '26876120000',
+            'id'               => (string) Str::uuid(),
+            'user_id'          => $user->id,
+            'idempotency_key'  => (string) Str::uuid(),
+            'type'             => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
+            'amount'           => '50.00',
+            'currency'         => 'SZL',
+            'status'           => MtnMomoTransaction::STATUS_SUCCESSFUL,
+            'party_msisdn'     => '26876120000',
             'mtn_reference_id' => (string) Str::uuid(),
         ]);
         $txn->forceFill([
@@ -142,10 +142,10 @@ class MinorFamilyReconciliationServiceExceptionQueueTest extends TestCase
 
         $this->assertDatabaseHas('minor_family_reconciliation_exceptions', [
             'mtn_momo_transaction_id' => $txn->id,
-            'reason_code' => 'unresolved_outcome',
-            'source' => 'reconcile_command',
-            'status' => 'open',
-            'occurrence_count' => 2,
+            'reason_code'             => 'unresolved_outcome',
+            'source'                  => 'reconcile_command',
+            'status'                  => 'open',
+            'occurrence_count'        => 2,
         ]);
 
         $exceptionRow = DB::table('minor_family_reconciliation_exceptions')
@@ -169,20 +169,20 @@ class MinorFamilyReconciliationServiceExceptionQueueTest extends TestCase
         [$minorAccount, $attempt, $txn] = $this->makeFundingAttemptFixture();
 
         DB::table('minor_family_reconciliation_exceptions')->insert([
-            'id' => (string) Str::uuid(),
+            'id'                      => (string) Str::uuid(),
             'mtn_momo_transaction_id' => $txn->id,
-            'reason_code' => 'unresolved_outcome',
-            'status' => 'open',
-            'source' => 'reconcile_command',
-            'occurrence_count' => 1,
-            'metadata' => json_encode(['seed' => true], JSON_THROW_ON_ERROR),
-            'first_seen_at' => now()->subMinutes(10),
-            'last_seen_at' => now()->subMinutes(5),
-            'sla_due_at' => now()->addHours(4),
-            'sla_escalated_at' => null,
-            'resolved_at' => null,
-            'created_at' => now()->subMinutes(10),
-            'updated_at' => now()->subMinutes(5),
+            'reason_code'             => 'unresolved_outcome',
+            'status'                  => 'open',
+            'source'                  => 'reconcile_command',
+            'occurrence_count'        => 1,
+            'metadata'                => json_encode(['seed' => true], JSON_THROW_ON_ERROR),
+            'first_seen_at'           => now()->subMinutes(10),
+            'last_seen_at'            => now()->subMinutes(5),
+            'sla_due_at'              => now()->addHours(4),
+            'sla_escalated_at'        => null,
+            'resolved_at'             => null,
+            'created_at'              => now()->subMinutes(10),
+            'updated_at'              => now()->subMinutes(5),
         ]);
 
         $walletOps = Mockery::mock(WalletOperationsService::class);
@@ -204,9 +204,9 @@ class MinorFamilyReconciliationServiceExceptionQueueTest extends TestCase
         $this->assertTrue($outcome->isReconciled());
         $this->assertDatabaseHas('minor_family_reconciliation_exceptions', [
             'mtn_momo_transaction_id' => $txn->id,
-            'reason_code' => 'unresolved_outcome',
-            'status' => 'resolved',
-            'source' => 'status_poll',
+            'reason_code'             => 'unresolved_outcome',
+            'status'                  => 'resolved',
+            'source'                  => 'status_poll',
         ]);
 
         $row = DB::table('minor_family_reconciliation_exceptions')
@@ -226,42 +226,42 @@ class MinorFamilyReconciliationServiceExceptionQueueTest extends TestCase
         $minorOwner = User::factory()->create();
         $creatorAccount = Account::factory()->create([
             'user_uuid' => $creator->uuid,
-            'type' => 'personal',
+            'type'      => 'personal',
         ]);
         $minorAccount = Account::factory()->create([
             'user_uuid' => $minorOwner->uuid,
-            'type' => 'minor',
+            'type'      => 'minor',
         ]);
 
         $link = MinorFamilyFundingLink::query()->create([
-            'id' => (string) Str::uuid(),
-            'tenant_id' => (string) Str::uuid(),
-            'minor_account_uuid' => $minorAccount->uuid,
-            'created_by_user_uuid' => $creator->uuid,
+            'id'                      => (string) Str::uuid(),
+            'tenant_id'               => (string) Str::uuid(),
+            'minor_account_uuid'      => $minorAccount->uuid,
+            'created_by_user_uuid'    => $creator->uuid,
             'created_by_account_uuid' => $creatorAccount->uuid,
-            'title' => 'Support fee',
-            'note' => 'Family support',
-            'token' => (string) Str::uuid(),
-            'status' => MinorFamilyFundingLink::STATUS_ACTIVE,
-            'amount_mode' => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
-            'fixed_amount' => '100.00',
-            'target_amount' => null,
-            'collected_amount' => '0.00',
-            'asset_code' => 'SZL',
-            'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay(),
+            'title'                   => 'Support fee',
+            'note'                    => 'Family support',
+            'token'                   => (string) Str::uuid(),
+            'status'                  => MinorFamilyFundingLink::STATUS_ACTIVE,
+            'amount_mode'             => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
+            'fixed_amount'            => '100.00',
+            'target_amount'           => null,
+            'collected_amount'        => '0.00',
+            'asset_code'              => 'SZL',
+            'provider_options'        => ['mtn_momo'],
+            'expires_at'              => now()->addDay(),
         ]);
 
         $attemptId = (string) Str::uuid();
         $txn = MtnMomoTransaction::query()->create([
-            'id' => (string) Str::uuid(),
-            'user_id' => $creator->id,
-            'idempotency_key' => (string) Str::uuid(),
-            'type' => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
-            'amount' => '100.00',
-            'currency' => 'SZL',
-            'status' => MtnMomoTransaction::STATUS_SUCCESSFUL,
-            'party_msisdn' => '26876123456',
+            'id'               => (string) Str::uuid(),
+            'user_id'          => $creator->id,
+            'idempotency_key'  => (string) Str::uuid(),
+            'type'             => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
+            'amount'           => '100.00',
+            'currency'         => 'SZL',
+            'status'           => MtnMomoTransaction::STATUS_SUCCESSFUL,
+            'party_msisdn'     => '26876123456',
             'mtn_reference_id' => (string) Str::uuid(),
         ]);
         $txn->forceFill([
@@ -270,19 +270,19 @@ class MinorFamilyReconciliationServiceExceptionQueueTest extends TestCase
         ])->save();
 
         $attempt = MinorFamilyFundingAttempt::query()->create([
-            'id' => $attemptId,
-            'tenant_id' => $overrides['attempt_tenant_id'] ?? $link->tenant_id,
-            'funding_link_uuid' => $link->id,
-            'minor_account_uuid' => $minorAccount->uuid,
-            'status' => MinorFamilyFundingAttempt::STATUS_PENDING_PROVIDER,
-            'sponsor_name' => 'Auntie',
-            'sponsor_msisdn' => '26876123456',
-            'amount' => '100.00',
-            'asset_code' => 'SZL',
-            'provider_name' => 'mtn_momo',
-            'provider_reference_id' => $txn->mtn_reference_id,
+            'id'                      => $attemptId,
+            'tenant_id'               => $overrides['attempt_tenant_id'] ?? $link->tenant_id,
+            'funding_link_uuid'       => $link->id,
+            'minor_account_uuid'      => $minorAccount->uuid,
+            'status'                  => MinorFamilyFundingAttempt::STATUS_PENDING_PROVIDER,
+            'sponsor_name'            => 'Auntie',
+            'sponsor_msisdn'          => '26876123456',
+            'amount'                  => '100.00',
+            'asset_code'              => 'SZL',
+            'provider_name'           => 'mtn_momo',
+            'provider_reference_id'   => $txn->mtn_reference_id,
             'mtn_momo_transaction_id' => $txn->id,
-            'dedupe_hash' => hash('sha256', (string) Str::uuid()),
+            'dedupe_hash'             => hash('sha256', (string) Str::uuid()),
         ]);
 
         return [$minorAccount, $attempt, $txn];
@@ -292,28 +292,28 @@ class MinorFamilyReconciliationServiceExceptionQueueTest extends TestCase
     {
         if (! Schema::hasTable('minor_family_funding_links')) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/2026_04_23_100000_create_minor_family_funding_links_table.php',
+                '--path'  => 'database/migrations/2026_04_23_100000_create_minor_family_funding_links_table.php',
                 '--force' => true,
             ]);
         }
 
         if (! Schema::hasTable('minor_family_funding_attempts')) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/2026_04_23_100100_create_minor_family_funding_attempts_table.php',
+                '--path'  => 'database/migrations/2026_04_23_100100_create_minor_family_funding_attempts_table.php',
                 '--force' => true,
             ]);
         }
 
         if (! Schema::hasColumns('mtn_momo_transactions', ['context_type', 'context_uuid'])) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/2026_04_23_100300_add_minor_family_context_to_mtn_momo_transactions_table.php',
+                '--path'  => 'database/migrations/2026_04_23_100300_add_minor_family_context_to_mtn_momo_transactions_table.php',
                 '--force' => true,
             ]);
         }
 
         if (! Schema::hasTable('minor_family_reconciliation_exceptions')) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/2026_04_23_100400_create_minor_family_reconciliation_exceptions_table.php',
+                '--path'  => 'database/migrations/2026_04_23_100400_create_minor_family_reconciliation_exceptions_table.php',
                 '--force' => true,
             ]);
         }
@@ -321,7 +321,7 @@ class MinorFamilyReconciliationServiceExceptionQueueTest extends TestCase
         if (Schema::hasTable('minor_family_reconciliation_exceptions')
             && ! Schema::hasColumns('minor_family_reconciliation_exceptions', ['sla_due_at', 'sla_escalated_at'])) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/2026_04_23_100410_add_sla_columns_to_minor_family_reconciliation_exceptions_table.php',
+                '--path'  => 'database/migrations/2026_04_23_100410_add_sla_columns_to_minor_family_reconciliation_exceptions_table.php',
                 '--force' => true,
             ]);
         }
@@ -329,14 +329,14 @@ class MinorFamilyReconciliationServiceExceptionQueueTest extends TestCase
         if (Schema::hasTable('minor_family_reconciliation_exceptions')
             && ! Schema::hasColumns('minor_family_reconciliation_exceptions', ['resolved_at'])) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/2026_04_23_100430_add_resolved_at_to_minor_family_reconciliation_exceptions_table.php',
+                '--path'  => 'database/migrations/2026_04_23_100430_add_resolved_at_to_minor_family_reconciliation_exceptions_table.php',
                 '--force' => true,
             ]);
         }
 
         if (! Schema::hasTable('minor_family_reconciliation_exception_acknowledgments')) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/2026_04_23_100420_create_minor_family_reconciliation_exception_acknowledgments_table.php',
+                '--path'  => 'database/migrations/2026_04_23_100420_create_minor_family_reconciliation_exception_acknowledgments_table.php',
                 '--force' => true,
             ]);
         }

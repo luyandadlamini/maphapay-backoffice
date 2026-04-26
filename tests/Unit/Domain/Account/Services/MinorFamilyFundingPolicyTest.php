@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests\Unit\Domain\Account\Services;
 
 use App\Domain\Account\Models\Account;
-use App\Domain\Account\Models\MinorFamilyFundingLink;
 use App\Domain\Account\Models\MinorFamilyFundingAttempt;
+use App\Domain\Account\Models\MinorFamilyFundingLink;
 use App\Domain\Account\Models\MinorFamilySupportTransfer;
 use App\Domain\Account\Services\MinorAccountAccessService;
 use App\Domain\Account\Services\MinorFamilyFundingPolicy;
@@ -76,11 +76,11 @@ class MinorFamilyFundingPolicyTest extends TestCase
         $policy = new MinorFamilyFundingPolicy(Mockery::mock(MinorAccountAccessService::class));
 
         $link = new MinorFamilyFundingLink([
-            'status' => 'active',
-            'amount_mode' => 'fixed',
-            'fixed_amount' => '100.00',
+            'status'           => 'active',
+            'amount_mode'      => 'fixed',
+            'fixed_amount'     => '100.00',
             'provider_options' => ['mtn_momo'],
-            'expires_at' => CarbonImmutable::now()->subMinute(),
+            'expires_at'       => CarbonImmutable::now()->subMinute(),
         ]);
 
         $result = $policy->validateFundingAttempt(
@@ -99,12 +99,12 @@ class MinorFamilyFundingPolicyTest extends TestCase
         $policy = new MinorFamilyFundingPolicy(Mockery::mock(MinorAccountAccessService::class));
 
         $link = new MinorFamilyFundingLink([
-            'status' => 'active',
-            'amount_mode' => 'capped',
-            'target_amount' => '200.00',
+            'status'           => 'active',
+            'amount_mode'      => 'capped',
+            'target_amount'    => '200.00',
             'collected_amount' => '150.00',
             'provider_options' => ['mtn_momo'],
-            'expires_at' => CarbonImmutable::now()->addDay(),
+            'expires_at'       => CarbonImmutable::now()->addDay(),
         ]);
 
         $result = $policy->validateFundingAttempt(
@@ -151,10 +151,10 @@ class MinorFamilyFundingPolicyTest extends TestCase
         $minorAccount = $this->makeMinorAccount();
         $actor = User::factory()->make();
         $sourceAccount = Account::make([
-            'uuid' => 'other-guardian-account-uuid',
+            'uuid'      => 'other-guardian-account-uuid',
             'user_uuid' => 'different-user-uuid',
-            'type' => 'personal',
-            'name' => 'Different Guardian Personal',
+            'type'      => 'personal',
+            'name'      => 'Different Guardian Personal',
         ]);
 
         $accessService = Mockery::mock(MinorAccountAccessService::class);
@@ -183,10 +183,10 @@ class MinorFamilyFundingPolicyTest extends TestCase
         $minorAccount = $this->makeMinorAccount();
         $actor = User::factory()->make();
         $sourceAccount = Account::make([
-            'uuid' => 'source-account-uuid',
+            'uuid'      => 'source-account-uuid',
             'user_uuid' => $minorAccount->user_uuid,
-            'type' => 'personal',
-            'name' => 'Minor Owned Personal',
+            'type'      => 'personal',
+            'name'      => 'Minor Owned Personal',
         ]);
 
         $accessService = Mockery::mock(MinorAccountAccessService::class);
@@ -236,12 +236,12 @@ class MinorFamilyFundingPolicyTest extends TestCase
         );
 
         $fundingAttemptLink = new MinorFamilyFundingLink([
-            'status' => 'active',
-            'amount_mode' => 'capped',
-            'target_amount' => '200.00',
+            'status'           => 'active',
+            'amount_mode'      => 'capped',
+            'target_amount'    => '200.00',
             'collected_amount' => '10.00',
             'provider_options' => ['mtn_momo'],
-            'expires_at' => CarbonImmutable::now()->addDay(),
+            'expires_at'       => CarbonImmutable::now()->addDay(),
         ]);
 
         $fundingAttemptResult = $policy->validateFundingAttempt(
@@ -254,10 +254,10 @@ class MinorFamilyFundingPolicyTest extends TestCase
             actor: $actor,
             minorAccount: $minorAccount,
             sourceAccount: Account::make([
-                'uuid' => 'guardian-source-account-uuid',
+                'uuid'      => 'guardian-source-account-uuid',
                 'user_uuid' => $actor->uuid,
-                'type' => 'personal',
-                'name' => 'Guardian Personal',
+                'type'      => 'personal',
+                'name'      => 'Guardian Personal',
             ]),
             provider: 'mtn_momo',
             amount: 'still-not-a-number',
@@ -284,7 +284,7 @@ class MinorFamilyFundingPolicyTest extends TestCase
             'status' => MinorFamilyFundingLink::STATUS_COMPLETED,
         ]);
         $activeLink = new MinorFamilyFundingLink([
-            'status' => MinorFamilyFundingLink::STATUS_ACTIVE,
+            'status'     => MinorFamilyFundingLink::STATUS_ACTIVE,
             'expires_at' => CarbonImmutable::now()->addMinute(),
         ]);
 
@@ -313,7 +313,7 @@ class MinorFamilyFundingPolicyTest extends TestCase
             'status' => MinorFamilySupportTransfer::STATUS_PENDING_PROVIDER,
         ]);
         $failedRefundedTransfer = new MinorFamilySupportTransfer([
-            'status' => MinorFamilySupportTransfer::STATUS_FAILED_REFUNDED,
+            'status'             => MinorFamilySupportTransfer::STATUS_FAILED_REFUNDED,
             'wallet_refunded_at' => CarbonImmutable::now(),
         ]);
         $successfulTransfer = new MinorFamilySupportTransfer([
@@ -335,10 +335,10 @@ class MinorFamilyFundingPolicyTest extends TestCase
     private function makeMinorAccount(): Account
     {
         return Account::make([
-            'uuid' => 'minor-account-uuid',
+            'uuid'      => 'minor-account-uuid',
             'user_uuid' => 'minor-user-uuid',
-            'type' => 'minor',
-            'name' => 'Minor Wallet',
+            'type'      => 'minor',
+            'name'      => 'Minor Wallet',
         ]);
     }
 }

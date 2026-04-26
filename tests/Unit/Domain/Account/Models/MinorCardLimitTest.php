@@ -6,6 +6,7 @@ namespace Tests\Unit\Domain\Account\Models;
 
 use App\Domain\Account\Models\MinorCardLimit;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use InvalidArgumentException;
 use Tests\CreatesApplication;
 
 class MinorCardLimitTest extends BaseTestCase
@@ -16,10 +17,10 @@ class MinorCardLimitTest extends BaseTestCase
     public function valid_limits_pass_validation(): void
     {
         $limit = new MinorCardLimit([
-            'daily_limit' => 100.00,
-            'monthly_limit' => 1400.00,
+            'daily_limit'              => 100.00,
+            'monthly_limit'            => 1400.00,
             'single_transaction_limit' => 50.00,
-            'is_active' => true,
+            'is_active'                => true,
         ]);
 
         expect($limit->isValid())->toBeTrue();
@@ -29,69 +30,69 @@ class MinorCardLimitTest extends BaseTestCase
     public function daily_limit_exceeding_monthly_limit_throws(): void
     {
         $limit = new MinorCardLimit([
-            'daily_limit' => 5000.00,
-            'monthly_limit' => 3000.00,
+            'daily_limit'              => 5000.00,
+            'monthly_limit'            => 3000.00,
             'single_transaction_limit' => 50.00,
-            'is_active' => true,
+            'is_active'                => true,
         ]);
 
         expect(fn () => $limit->validateHierarchy())
-            ->toThrow(\InvalidArgumentException::class, 'Daily limit cannot exceed monthly limit');
+            ->toThrow(InvalidArgumentException::class, 'Daily limit cannot exceed monthly limit');
     }
 
     #[\PHPUnit\Framework\Attributes\Test]
     public function single_transaction_times_days_in_month_exceeding_monthly_limit_throws(): void
     {
         $limit = new MinorCardLimit([
-            'daily_limit' => 100.00,
-            'monthly_limit' => 1000.00,
+            'daily_limit'              => 100.00,
+            'monthly_limit'            => 1000.00,
             'single_transaction_limit' => 30.00,
-            'is_active' => true,
+            'is_active'                => true,
         ]);
 
         expect(fn () => $limit->validateHierarchy())
-            ->toThrow(\InvalidArgumentException::class, 'Monthly limit cannot exceed single transaction limit multiplied by days in current month');
+            ->toThrow(InvalidArgumentException::class, 'Monthly limit cannot exceed single transaction limit multiplied by days in current month');
     }
 
     #[\PHPUnit\Framework\Attributes\Test]
     public function zero_daily_limit_throws(): void
     {
         $limit = new MinorCardLimit([
-            'daily_limit' => 0,
-            'monthly_limit' => 3000.00,
+            'daily_limit'              => 0,
+            'monthly_limit'            => 3000.00,
             'single_transaction_limit' => 50.00,
-            'is_active' => true,
+            'is_active'                => true,
         ]);
 
         expect(fn () => $limit->validateHierarchy())
-            ->toThrow(\InvalidArgumentException::class);
+            ->toThrow(InvalidArgumentException::class);
     }
 
     #[\PHPUnit\Framework\Attributes\Test]
     public function zero_monthly_limit_throws(): void
     {
         $limit = new MinorCardLimit([
-            'daily_limit' => 100.00,
-            'monthly_limit' => 0,
+            'daily_limit'              => 100.00,
+            'monthly_limit'            => 0,
             'single_transaction_limit' => 50.00,
-            'is_active' => true,
+            'is_active'                => true,
         ]);
 
         expect(fn () => $limit->validateHierarchy())
-            ->toThrow(\InvalidArgumentException::class);
+            ->toThrow(InvalidArgumentException::class);
     }
 
     #[\PHPUnit\Framework\Attributes\Test]
     public function negative_limits_throw(): void
     {
         $limit = new MinorCardLimit([
-            'daily_limit' => -100.00,
-            'monthly_limit' => 3000.00,
+            'daily_limit'              => -100.00,
+            'monthly_limit'            => 3000.00,
             'single_transaction_limit' => 50.00,
-            'is_active' => true,
+            'is_active'                => true,
         ]);
 
         expect(fn () => $limit->validateHierarchy())
-            ->toThrow(\InvalidArgumentException::class);
+            ->toThrow(InvalidArgumentException::class);
     }
 }

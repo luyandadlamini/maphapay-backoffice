@@ -28,7 +28,7 @@ class MinorFamilyAuditLogTest extends ControllerTestCase
 
         if (! Schema::hasTable('account_audit_logs')) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/tenant/2026_04_15_100003_create_account_audit_logs_table.php',
+                '--path'  => 'database/migrations/tenant/2026_04_15_100003_create_account_audit_logs_table.php',
                 '--force' => true,
             ]);
         }
@@ -37,7 +37,7 @@ class MinorFamilyAuditLogTest extends ControllerTestCase
         $this->actor = User::factory()->create();
         $this->minorAccount = Account::factory()->create([
             'user_uuid' => User::factory()->create()->uuid,
-            'type' => 'minor',
+            'type'      => 'minor',
         ]);
     }
 
@@ -45,15 +45,15 @@ class MinorFamilyAuditLogTest extends ControllerTestCase
     public function it_persists_durable_audit_log_rows_for_phase_9a_minor_family_actions(): void
     {
         $cases = [
-            MinorNotificationService::TYPE_FAMILY_FUNDING_LINK_CREATED => 'minor.family_funding_link.created',
-            MinorNotificationService::TYPE_FAMILY_FUNDING_LINK_EXPIRED => 'minor.family_funding_link.expired',
-            MinorNotificationService::TYPE_FAMILY_FUNDING_ATTEMPT_INITIATED => 'minor.family_funding_attempt.initiated',
-            MinorNotificationService::TYPE_FAMILY_FUNDING_ATTEMPT_SUCCEEDED => 'minor.family_funding_attempt.succeeded',
-            MinorNotificationService::TYPE_FAMILY_FUNDING_ATTEMPT_FAILED => 'minor.family_funding_attempt.failed',
+            MinorNotificationService::TYPE_FAMILY_FUNDING_LINK_CREATED       => 'minor.family_funding_link.created',
+            MinorNotificationService::TYPE_FAMILY_FUNDING_LINK_EXPIRED       => 'minor.family_funding_link.expired',
+            MinorNotificationService::TYPE_FAMILY_FUNDING_ATTEMPT_INITIATED  => 'minor.family_funding_attempt.initiated',
+            MinorNotificationService::TYPE_FAMILY_FUNDING_ATTEMPT_SUCCEEDED  => 'minor.family_funding_attempt.succeeded',
+            MinorNotificationService::TYPE_FAMILY_FUNDING_ATTEMPT_FAILED     => 'minor.family_funding_attempt.failed',
             MinorNotificationService::TYPE_FAMILY_SUPPORT_TRANSFER_INITIATED => 'minor.family_support_transfer.initiated',
             MinorNotificationService::TYPE_FAMILY_SUPPORT_TRANSFER_SUCCEEDED => 'minor.family_support_transfer.succeeded',
-            MinorNotificationService::TYPE_FAMILY_SUPPORT_TRANSFER_FAILED => 'minor.family_support_transfer.failed',
-            MinorNotificationService::TYPE_FAMILY_SUPPORT_TRANSFER_REFUNDED => 'minor.family_support_transfer.refunded',
+            MinorNotificationService::TYPE_FAMILY_SUPPORT_TRANSFER_FAILED    => 'minor.family_support_transfer.failed',
+            MinorNotificationService::TYPE_FAMILY_SUPPORT_TRANSFER_REFUNDED  => 'minor.family_support_transfer.refunded',
         ];
 
         foreach ($cases as $type => $action) {

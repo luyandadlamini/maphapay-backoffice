@@ -8,8 +8,8 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Models\MinorFamilyFundingLink;
 use App\Domain\Account\Services\MinorFamilyIntegrationService;
-use App\Domain\Shared\OperationRecord\Exceptions\OperationPayloadMismatchException;
 use App\Domain\Shared\OperationRecord\Exceptions\OperationInProgressException;
+use App\Domain\Shared\OperationRecord\Exceptions\OperationPayloadMismatchException;
 use App\Http\Middleware\ResolveAccountContext;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
@@ -58,14 +58,14 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
 
         $this->tenantId = (string) Str::uuid();
         DB::connection('central')->table('tenants')->insert([
-            'id' => $this->tenantId,
-            'name' => 'Minor Family Funding Link Test Tenant',
-            'plan' => 'default',
-            'team_id' => null,
+            'id'            => $this->tenantId,
+            'name'          => 'Minor Family Funding Link Test Tenant',
+            'plan'          => 'default',
+            'team_id'       => null,
             'trial_ends_at' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-            'data' => json_encode([]),
+            'created_at'    => now(),
+            'updated_at'    => now(),
+            'data'          => json_encode([]),
         ]);
 
         $this->guardianUser = User::factory()->create();
@@ -76,9 +76,9 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
         $this->coGuardianAccount = $this->createOwnedPersonalAccount($this->coGuardianUser);
 
         $this->minorAccount = Account::factory()->create([
-            'user_uuid' => $this->childUser->uuid,
-            'type' => 'minor',
-            'permission_level' => 3,
+            'user_uuid'         => $this->childUser->uuid,
+            'type'              => 'minor',
+            'permission_level'  => 3,
             'parent_account_id' => $this->guardianAccount->uuid,
         ]);
 
@@ -90,21 +90,21 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
     public function guardian_can_list_funding_links_for_the_minor_account(): void
     {
         MinorFamilyFundingLink::query()->create([
-            'tenant_id' => $this->tenantId,
-            'minor_account_uuid' => $this->minorAccount->uuid,
-            'created_by_user_uuid' => $this->guardianUser->uuid,
+            'tenant_id'               => $this->tenantId,
+            'minor_account_uuid'      => $this->minorAccount->uuid,
+            'created_by_user_uuid'    => $this->guardianUser->uuid,
             'created_by_account_uuid' => $this->guardianAccount->uuid,
-            'title' => 'School fund',
-            'note' => 'For next term',
-            'token' => (string) Str::uuid(),
-            'status' => MinorFamilyFundingLink::STATUS_ACTIVE,
-            'amount_mode' => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
-            'fixed_amount' => '150.00',
-            'target_amount' => null,
-            'collected_amount' => '0.00',
-            'asset_code' => 'SZL',
-            'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay(),
+            'title'                   => 'School fund',
+            'note'                    => 'For next term',
+            'token'                   => (string) Str::uuid(),
+            'status'                  => MinorFamilyFundingLink::STATUS_ACTIVE,
+            'amount_mode'             => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
+            'fixed_amount'            => '150.00',
+            'target_amount'           => null,
+            'collected_amount'        => '0.00',
+            'asset_code'              => 'SZL',
+            'provider_options'        => ['mtn_momo'],
+            'expires_at'              => now()->addDay(),
         ]);
 
         Sanctum::actingAs($this->guardianUser, ['read', 'write', 'delete']);
@@ -119,21 +119,21 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
     public function co_guardian_can_list_funding_links_for_the_minor_account(): void
     {
         MinorFamilyFundingLink::query()->create([
-            'tenant_id' => $this->tenantId,
-            'minor_account_uuid' => $this->minorAccount->uuid,
-            'created_by_user_uuid' => $this->guardianUser->uuid,
+            'tenant_id'               => $this->tenantId,
+            'minor_account_uuid'      => $this->minorAccount->uuid,
+            'created_by_user_uuid'    => $this->guardianUser->uuid,
             'created_by_account_uuid' => $this->guardianAccount->uuid,
-            'title' => 'School fund',
-            'note' => 'For next term',
-            'token' => (string) Str::uuid(),
-            'status' => MinorFamilyFundingLink::STATUS_ACTIVE,
-            'amount_mode' => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
-            'fixed_amount' => '150.00',
-            'target_amount' => null,
-            'collected_amount' => '0.00',
-            'asset_code' => 'SZL',
-            'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay(),
+            'title'                   => 'School fund',
+            'note'                    => 'For next term',
+            'token'                   => (string) Str::uuid(),
+            'status'                  => MinorFamilyFundingLink::STATUS_ACTIVE,
+            'amount_mode'             => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
+            'fixed_amount'            => '150.00',
+            'target_amount'           => null,
+            'collected_amount'        => '0.00',
+            'asset_code'              => 'SZL',
+            'provider_options'        => ['mtn_momo'],
+            'expires_at'              => now()->addDay(),
         ]);
 
         Sanctum::actingAs($this->coGuardianUser, ['read', 'write', 'delete']);
@@ -160,24 +160,24 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
                     && ! array_key_exists('asset_code', $attributes);
             })
             ->andReturn(new MinorFamilyFundingLink([
-                'id' => $linkId,
-                'tenant_id' => $this->tenantId,
-                'minor_account_uuid' => $this->minorAccount->uuid,
-                'created_by_user_uuid' => $this->guardianUser->uuid,
+                'id'                      => $linkId,
+                'tenant_id'               => $this->tenantId,
+                'minor_account_uuid'      => $this->minorAccount->uuid,
+                'created_by_user_uuid'    => $this->guardianUser->uuid,
                 'created_by_account_uuid' => $this->guardianAccount->uuid,
-                'title' => 'Trip support',
-                'note' => 'One-time support collection',
-                'token' => $token,
-                'status' => MinorFamilyFundingLink::STATUS_ACTIVE,
-                'amount_mode' => MinorFamilyFundingLink::AMOUNT_MODE_CAPPED,
-                'fixed_amount' => null,
-                'target_amount' => '1000.00',
-                'collected_amount' => '0.00',
-                'asset_code' => 'SZL',
-                'provider_options' => ['mtn_momo'],
-                'expires_at' => now()->addDay(),
-                'created_at' => now(),
-                'updated_at' => now(),
+                'title'                   => 'Trip support',
+                'note'                    => 'One-time support collection',
+                'token'                   => $token,
+                'status'                  => MinorFamilyFundingLink::STATUS_ACTIVE,
+                'amount_mode'             => MinorFamilyFundingLink::AMOUNT_MODE_CAPPED,
+                'fixed_amount'            => null,
+                'target_amount'           => '1000.00',
+                'collected_amount'        => '0.00',
+                'asset_code'              => 'SZL',
+                'provider_options'        => ['mtn_momo'],
+                'expires_at'              => now()->addDay(),
+                'created_at'              => now(),
+                'updated_at'              => now(),
             ]));
         $this->app->instance(MinorFamilyIntegrationService::class, $service);
 
@@ -185,12 +185,12 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
 
         $this->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/funding-links", [
             'created_by_account_uuid' => $this->guardianAccount->uuid,
-            'title' => 'Trip support',
-            'note' => 'One-time support collection',
-            'amount_mode' => 'capped',
-            'target_amount' => '1000.00',
-            'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay()->toIso8601String(),
+            'title'                   => 'Trip support',
+            'note'                    => 'One-time support collection',
+            'amount_mode'             => 'capped',
+            'target_amount'           => '1000.00',
+            'provider_options'        => ['mtn_momo'],
+            'expires_at'              => now()->addDay()->toIso8601String(),
         ])->assertCreated()
             ->assertJsonPath('data.funding_link_uuid', $linkId)
             ->assertJsonPath('data.minor_account_uuid', $this->minorAccount->uuid)
@@ -221,24 +221,24 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
                     && $attributes['fixed_amount'] === '100.00';
             })
             ->andReturn(new MinorFamilyFundingLink([
-                'id' => $linkId,
-                'tenant_id' => $this->tenantId,
-                'minor_account_uuid' => $this->minorAccount->uuid,
-                'created_by_user_uuid' => $this->coGuardianUser->uuid,
+                'id'                      => $linkId,
+                'tenant_id'               => $this->tenantId,
+                'minor_account_uuid'      => $this->minorAccount->uuid,
+                'created_by_user_uuid'    => $this->coGuardianUser->uuid,
                 'created_by_account_uuid' => $this->coGuardianAccount->uuid,
-                'title' => 'Family support',
-                'note' => 'Birthday support',
-                'token' => $token,
-                'status' => MinorFamilyFundingLink::STATUS_ACTIVE,
-                'amount_mode' => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
-                'fixed_amount' => '100.00',
-                'target_amount' => null,
-                'collected_amount' => '0.00',
-                'asset_code' => 'SZL',
-                'provider_options' => ['mtn_momo'],
-                'expires_at' => now()->addDay(),
-                'created_at' => now(),
-                'updated_at' => now(),
+                'title'                   => 'Family support',
+                'note'                    => 'Birthday support',
+                'token'                   => $token,
+                'status'                  => MinorFamilyFundingLink::STATUS_ACTIVE,
+                'amount_mode'             => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
+                'fixed_amount'            => '100.00',
+                'target_amount'           => null,
+                'collected_amount'        => '0.00',
+                'asset_code'              => 'SZL',
+                'provider_options'        => ['mtn_momo'],
+                'expires_at'              => now()->addDay(),
+                'created_at'              => now(),
+                'updated_at'              => now(),
             ]));
 
         $this->app->instance(MinorFamilyIntegrationService::class, $service);
@@ -247,13 +247,13 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
 
         $this->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/funding-links", [
             'created_by_account_uuid' => $this->coGuardianAccount->uuid,
-            'title' => 'Family support',
-            'note' => 'Birthday support',
-            'amount_mode' => 'fixed',
-            'fixed_amount' => '100.00',
-            'asset_code' => 'SZL',
-            'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay()->toIso8601String(),
+            'title'                   => 'Family support',
+            'note'                    => 'Birthday support',
+            'amount_mode'             => 'fixed',
+            'fixed_amount'            => '100.00',
+            'asset_code'              => 'SZL',
+            'provider_options'        => ['mtn_momo'],
+            'expires_at'              => now()->addDay()->toIso8601String(),
         ])->assertCreated()
             ->assertJsonPath('data.funding_link_uuid', $linkId)
             ->assertJsonPath('data.minor_account_uuid', $this->minorAccount->uuid)
@@ -273,16 +273,16 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
 
         $payload = [
             'created_by_account_uuid' => $this->guardianAccount->uuid,
-            'title' => 'School fundraiser',
-            'note' => 'Class contribution',
-            'amount_mode' => 'fixed',
-            'fixed_amount' => '100.00',
-            'asset_code' => 'SZL',
-            'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay()->toIso8601String(),
+            'title'                   => 'School fundraiser',
+            'note'                    => 'Class contribution',
+            'amount_mode'             => 'fixed',
+            'fixed_amount'            => '100.00',
+            'asset_code'              => 'SZL',
+            'provider_options'        => ['mtn_momo'],
+            'expires_at'              => now()->addDay()->toIso8601String(),
         ];
 
-        $idempotencyKey = 'idem-funding-link-replay-'.Str::uuid();
+        $idempotencyKey = 'idem-funding-link-replay-' . Str::uuid();
 
         $firstResponse = $this->withHeaders([
             'Idempotency-Key' => $idempotencyKey,
@@ -312,17 +312,17 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
     {
         Sanctum::actingAs($this->guardianUser, ['read', 'write', 'delete']);
 
-        $idempotencyKey = 'idem-funding-link-mismatch-'.Str::uuid();
+        $idempotencyKey = 'idem-funding-link-mismatch-' . Str::uuid();
 
         $firstPayload = [
             'created_by_account_uuid' => $this->guardianAccount->uuid,
-            'title' => 'School fundraiser',
-            'note' => 'Class contribution',
-            'amount_mode' => 'fixed',
-            'fixed_amount' => '100.00',
-            'asset_code' => 'SZL',
-            'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay()->toIso8601String(),
+            'title'                   => 'School fundraiser',
+            'note'                    => 'Class contribution',
+            'amount_mode'             => 'fixed',
+            'fixed_amount'            => '100.00',
+            'asset_code'              => 'SZL',
+            'provider_options'        => ['mtn_momo'],
+            'expires_at'              => now()->addDay()->toIso8601String(),
         ];
 
         $this->withHeaders([
@@ -352,16 +352,16 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
         Sanctum::actingAs($this->guardianUser, ['read', 'write', 'delete']);
 
         $this->withHeaders([
-            'Idempotency-Key' => 'idem-funding-link-pending-'.Str::uuid(),
+            'Idempotency-Key' => 'idem-funding-link-pending-' . Str::uuid(),
         ])->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/funding-links", [
             'created_by_account_uuid' => $this->guardianAccount->uuid,
-            'title' => 'School fundraiser',
-            'note' => 'Class contribution',
-            'amount_mode' => 'fixed',
-            'fixed_amount' => '100.00',
-            'asset_code' => 'SZL',
-            'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay()->toIso8601String(),
+            'title'                   => 'School fundraiser',
+            'note'                    => 'Class contribution',
+            'amount_mode'             => 'fixed',
+            'fixed_amount'            => '100.00',
+            'asset_code'              => 'SZL',
+            'provider_options'        => ['mtn_momo'],
+            'expires_at'              => now()->addDay()->toIso8601String(),
         ])->assertStatus(409)
             ->assertJsonPath('error', 'Idempotency operation in progress')
             ->assertJsonPath('error_code', 'idempotency_operation_in_progress');
@@ -379,16 +379,16 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
         Sanctum::actingAs($this->guardianUser, ['read', 'write', 'delete']);
 
         $this->withHeaders([
-            'Idempotency-Key' => 'idem-funding-link-mismatch-'.Str::uuid(),
+            'Idempotency-Key' => 'idem-funding-link-mismatch-' . Str::uuid(),
         ])->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/funding-links", [
             'created_by_account_uuid' => $this->guardianAccount->uuid,
-            'title' => 'School fundraiser',
-            'note' => 'Class contribution',
-            'amount_mode' => 'fixed',
-            'fixed_amount' => '100.00',
-            'asset_code' => 'SZL',
-            'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay()->toIso8601String(),
+            'title'                   => 'School fundraiser',
+            'note'                    => 'Class contribution',
+            'amount_mode'             => 'fixed',
+            'fixed_amount'            => '100.00',
+            'asset_code'              => 'SZL',
+            'provider_options'        => ['mtn_momo'],
+            'expires_at'              => now()->addDay()->toIso8601String(),
         ])->assertStatus(409)
             ->assertJsonPath('error', 'Idempotency key already used')
             ->assertJsonPath('error_code', 'idempotency_key_payload_mismatch');
@@ -405,12 +405,12 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
 
         $this->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/funding-links", [
             'created_by_account_uuid' => $this->minorAccount->uuid,
-            'title' => 'Blocked link',
-            'amount_mode' => 'fixed',
-            'fixed_amount' => '50.00',
-            'asset_code' => 'SZL',
-            'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay()->toIso8601String(),
+            'title'                   => 'Blocked link',
+            'amount_mode'             => 'fixed',
+            'fixed_amount'            => '50.00',
+            'asset_code'              => 'SZL',
+            'provider_options'        => ['mtn_momo'],
+            'expires_at'              => now()->addDay()->toIso8601String(),
         ])->assertForbidden();
     }
 
@@ -418,26 +418,26 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
     public function guardian_can_expire_a_funding_link(): void
     {
         $link = MinorFamilyFundingLink::query()->create([
-            'tenant_id' => $this->tenantId,
-            'minor_account_uuid' => $this->minorAccount->uuid,
-            'created_by_user_uuid' => $this->guardianUser->uuid,
+            'tenant_id'               => $this->tenantId,
+            'minor_account_uuid'      => $this->minorAccount->uuid,
+            'created_by_user_uuid'    => $this->guardianUser->uuid,
             'created_by_account_uuid' => $this->guardianAccount->uuid,
-            'title' => 'School fund',
-            'note' => 'For next term',
-            'token' => (string) Str::uuid(),
-            'status' => MinorFamilyFundingLink::STATUS_ACTIVE,
-            'amount_mode' => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
-            'fixed_amount' => '150.00',
-            'target_amount' => null,
-            'collected_amount' => '0.00',
-            'asset_code' => 'SZL',
-            'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay(),
+            'title'                   => 'School fund',
+            'note'                    => 'For next term',
+            'token'                   => (string) Str::uuid(),
+            'status'                  => MinorFamilyFundingLink::STATUS_ACTIVE,
+            'amount_mode'             => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
+            'fixed_amount'            => '150.00',
+            'target_amount'           => null,
+            'collected_amount'        => '0.00',
+            'asset_code'              => 'SZL',
+            'provider_options'        => ['mtn_momo'],
+            'expires_at'              => now()->addDay(),
         ]);
 
         $expired = tap($link->replicate())->forceFill([
-            'id' => $link->id,
-            'status' => MinorFamilyFundingLink::STATUS_EXPIRED,
+            'id'         => $link->id,
+            'status'     => MinorFamilyFundingLink::STATUS_EXPIRED,
             'expires_at' => now(),
             'updated_at' => now(),
         ]);
@@ -466,25 +466,25 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
     {
         $otherMinor = Account::factory()->create([
             'user_uuid' => User::factory()->create()->uuid,
-            'type' => 'minor',
+            'type'      => 'minor',
         ]);
 
         $foreignLink = MinorFamilyFundingLink::query()->create([
-            'tenant_id' => $this->tenantId,
-            'minor_account_uuid' => $otherMinor->uuid,
-            'created_by_user_uuid' => $this->guardianUser->uuid,
+            'tenant_id'               => $this->tenantId,
+            'minor_account_uuid'      => $otherMinor->uuid,
+            'created_by_user_uuid'    => $this->guardianUser->uuid,
             'created_by_account_uuid' => $this->guardianAccount->uuid,
-            'title' => 'Foreign link',
-            'note' => null,
-            'token' => (string) Str::uuid(),
-            'status' => MinorFamilyFundingLink::STATUS_ACTIVE,
-            'amount_mode' => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
-            'fixed_amount' => '50.00',
-            'target_amount' => null,
-            'collected_amount' => '0.00',
-            'asset_code' => 'SZL',
-            'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay(),
+            'title'                   => 'Foreign link',
+            'note'                    => null,
+            'token'                   => (string) Str::uuid(),
+            'status'                  => MinorFamilyFundingLink::STATUS_ACTIVE,
+            'amount_mode'             => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
+            'fixed_amount'            => '50.00',
+            'target_amount'           => null,
+            'collected_amount'        => '0.00',
+            'asset_code'              => 'SZL',
+            'provider_options'        => ['mtn_momo'],
+            'expires_at'              => now()->addDay(),
         ]);
 
         Sanctum::actingAs($this->guardianUser, ['read', 'write', 'delete']);
@@ -497,18 +497,18 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
     {
         $account = Account::factory()->create([
             'user_uuid' => $user->uuid,
-            'type' => 'personal',
+            'type'      => 'personal',
         ]);
 
         AccountMembership::query()->create([
-            'id' => (string) Str::uuid(),
-            'user_uuid' => $user->uuid,
-            'tenant_id' => $this->tenantId,
+            'id'           => (string) Str::uuid(),
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $this->tenantId,
             'account_uuid' => $account->uuid,
             'account_type' => 'personal',
-            'role' => 'owner',
-            'status' => 'active',
-            'joined_at' => now(),
+            'role'         => 'owner',
+            'status'       => 'active',
+            'joined_at'    => now(),
         ]);
 
         return $account;
@@ -517,14 +517,14 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
     private function createMinorMembership(User $user, Account $minorAccount, string $role): void
     {
         AccountMembership::query()->create([
-            'id' => (string) Str::uuid(),
-            'user_uuid' => $user->uuid,
-            'tenant_id' => $this->tenantId,
+            'id'           => (string) Str::uuid(),
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $this->tenantId,
             'account_uuid' => $minorAccount->uuid,
             'account_type' => 'minor',
-            'role' => $role,
-            'status' => 'active',
-            'joined_at' => now(),
+            'role'         => $role,
+            'status'       => 'active',
+            'joined_at'    => now(),
         ]);
     }
 
@@ -532,7 +532,7 @@ class MinorFamilyFundingLinkControllerTest extends TestCase
     {
         if (! Schema::hasTable('minor_family_funding_links')) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/2026_04_23_100000_create_minor_family_funding_links_table.php',
+                '--path'  => 'database/migrations/2026_04_23_100000_create_minor_family_funding_links_table.php',
                 '--force' => true,
             ]);
         }

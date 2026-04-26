@@ -9,7 +9,6 @@ use App\Models\Team;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Resolvers\TeamTenantResolver;
-use Illuminate\Database\QueryException;
 use Stancl\Tenancy\Tenancy;
 use Tests\TestCase;
 
@@ -38,36 +37,6 @@ class TeamTenantResolverTest extends TestCase
         }
 
         $this->resolver = app(TeamTenantResolver::class);
-    }
-
-    /**
-     * Check if we're using in-memory SQLite.
-     */
-    protected function isInMemorySqlite(): bool
-    {
-        $connection = config('database.default');
-        $driver = config("database.connections.{$connection}.driver");
-        $database = config("database.connections.{$connection}.database");
-
-        return $driver === 'sqlite' && $database === ':memory:';
-    }
-
-    protected function canCreateTenantDatabases(): bool
-    {
-        try {
-            $user = User::factory()->create();
-            $team = Team::factory()->create(['user_id' => $user->id]);
-            $tenant = Tenant::createFromTeam($team);
-
-            $tenant->delete();
-            $team->delete();
-            $user->delete();
-
-            return true;
-        } catch (QueryException $e) {
-            return ! str_contains($e->getMessage(), 'CREATE DATABASE')
-                && ! str_contains($e->getMessage(), 'Access denied for user');
-        }
     }
 
     protected function tearDown(): void

@@ -13,14 +13,16 @@ use App\Models\Role;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
-use Illuminate\Support\Facades\ParallelTesting;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Mockery;
 use ReflectionClass;
 use Tests\Concerns\LazilyRefreshExistingMySqlSchema;
+use Tests\Support\TenantDatabasePrivileges;
 use Throwable;
 
 abstract class TestCase extends BaseTestCase
@@ -85,6 +87,26 @@ abstract class TestCase extends BaseTestCase
         }
 
         return true;
+    }
+
+    /**
+     * True when the default connection is SQLite :memory: (cannot share tables across connections).
+     */
+    protected function isInMemorySqlite(): bool
+    {
+        return TenantDatabasePrivileges::isInMemorySqlite();
+    }
+
+    /**
+     * True when the DB user can create stancl tenant databases (CREATE DATABASE tenant…).
+     *
+     * Used by multi-tenancy tests and tenant-aware feature tests.
+     * Local MySQL: run {@see scripts/reset-local-mysql-test-access.sh} (grants CREATE, DROP on *.* to the test user).
+     * CI feature tests: use root (already privileged).
+     */
+    protected function canCreateTenantDatabases(): bool
+    {
+        return TenantDatabasePrivileges::canCreateTenantDatabases();
     }
 
     /**
@@ -450,35 +472,93 @@ abstract class TestCase extends BaseTestCase
         // Ensure Phase 9A schemas exist when reusing persistent MySQL test schemas.
         if (! Schema::hasTable('minor_family_funding_links')) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/2026_04_23_100000_create_minor_family_funding_links_table.php',
+                '--path'  => 'database/migrations/2026_04_23_100000_create_minor_family_funding_links_table.php',
                 '--force' => true,
             ]);
         }
 
         if (! Schema::hasTable('minor_family_funding_attempts')) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/2026_04_23_100100_create_minor_family_funding_attempts_table.php',
+                '--path'  => 'database/migrations/2026_04_23_100100_create_minor_family_funding_attempts_table.php',
                 '--force' => true,
             ]);
         }
 
         if (! Schema::hasTable('minor_family_support_transfers')) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/2026_04_23_100200_create_minor_family_support_transfers_table.php',
+                '--path'  => 'database/migrations/2026_04_23_100200_create_minor_family_support_transfers_table.php',
                 '--force' => true,
             ]);
         }
 
         Artisan::call('migrate', [
-            '--path' => 'database/migrations/2026_04_23_100250_scope_minor_family_support_transfer_idempotency_unique.php',
+            '--path'  => 'database/migrations/2026_04_23_100250_scope_minor_family_support_transfer_idempotency_unique.php',
             '--force' => true,
         ]);
 
         if (! Schema::hasColumns('mtn_momo_transactions', ['context_type', 'context_uuid'])) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/2026_04_23_100300_add_minor_family_context_to_mtn_momo_transactions_table.php',
+                '--path'  => 'database/migrations/2026_04_23_100300_add_minor_family_context_to_mtn_momo_transactions_table.php',
                 '--force' => true,
             ]);
+        }
+
+        // Phase 12 minor card tables live under database/migrations/tenant/ (stancl tenant DBs).
+        // Filament admin uses the default connection when tenancy is not initialized; persistent
+        // MySQL test DBs and single-DB local setups only run php artisan migrate, so apply these
+        // files explicitly when missing (same pattern as Phase 9A minor family migrations above).
+        if (Schema::hasTable('accounts') && Schema::hasTable('cards')) {
+            if (! Schema::hasTable('minor_card_limits')) {
+                Artisan::call('migrate', [
+                    '--path'  => 'database/migrations/tenant/2026_04_24_002653_create_minor_card_limits_table.php',
+                    '--force' => true,
+                ]);
+            }
+
+            if (! Schema::hasTable('minor_card_requests')) {
+                Artisan::call('migrate', [
+                    '--path'  => 'database/migrations/tenant/2026_04_24_002653_create_minor_card_requests_table.php',
+                    '--force' => true,
+                ]);
+            }
+
+            if (! Schema::hasColumns('cards', ['minor_account_uuid'])) {
+                Artisan::call('migrate', [
+                    '--path'  => 'database/migrations/tenant/2026_04_24_002653_add_minor_account_uuid_to_cards_table.php',
+                    '--force' => true,
+                ]);
+            }
+        }
+
+        // Phase 11 minor account lifecycle (tenant migrations; Filament uses default DB without tenant).
+        if (Schema::hasTable('accounts')) {
+            if (! Schema::hasTable('minor_account_lifecycle_transitions')) {
+                Artisan::call('migrate', [
+                    '--path'  => 'database/migrations/tenant/2026_04_23_110000_create_minor_account_lifecycle_transitions_table.php',
+                    '--force' => true,
+                ]);
+            }
+
+            if (! Schema::hasTable('minor_account_lifecycle_exceptions')) {
+                Artisan::call('migrate', [
+                    '--path'  => 'database/migrations/tenant/2026_04_23_110100_create_minor_account_lifecycle_exceptions_table.php',
+                    '--force' => true,
+                ]);
+            }
+
+            if (! Schema::hasTable('minor_account_lifecycle_exception_acknowledgments')) {
+                Artisan::call('migrate', [
+                    '--path'  => 'database/migrations/tenant/2026_04_23_110110_create_minor_account_lifecycle_exception_acknowledgments_table.php',
+                    '--force' => true,
+                ]);
+            }
+
+            if (! Schema::hasColumns('accounts', ['minor_transition_state', 'minor_transition_effective_at'])) {
+                Artisan::call('migrate', [
+                    '--path'  => 'database/migrations/tenant/2026_04_23_110120_add_minor_transition_columns_to_accounts_table.php',
+                    '--force' => true,
+                ]);
+            }
         }
     }
 
@@ -540,7 +620,6 @@ abstract class TestCase extends BaseTestCase
      *
      * @param  User  $user  The user to authenticate
      * @param  array<string>  $scopes  The scopes to grant (defaults to read, write, delete)
-     * @return void
      */
     protected function actingAsWithScopes(User $user, array $scopes = ['read', 'write', 'delete']): void
     {
@@ -551,7 +630,7 @@ abstract class TestCase extends BaseTestCase
      * Filament testing helper to satisfy static analysis for table record assertions.
      * Note: These are usually called on the Livewire test response via macros.
      *
-     * @param  array|\Illuminate\Support\Collection  $records
+     * @param  array|Collection  $records
      * @return $this
      */
     public function assertCanSeeTableRecords($records): self
@@ -562,7 +641,7 @@ abstract class TestCase extends BaseTestCase
     /**
      * Filament testing helper to satisfy static analysis for table record assertions.
      *
-     * @param  array|\Illuminate\Support\Collection  $records
+     * @param  array|Collection  $records
      * @return $this
      */
     public function assertCanNotSeeTableRecords($records): self
@@ -584,9 +663,7 @@ abstract class TestCase extends BaseTestCase
     /**
      * Filament testing helper to satisfy static analysis for table action assertions.
      *
-     * @param  string  $action
      * @param  mixed  $record
-     * @param  array  $data
      * @return $this
      */
     public function callTableAction(string $action, $record = null, array $data = []): self

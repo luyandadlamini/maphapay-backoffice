@@ -55,7 +55,7 @@ it('does not register WaterlineServiceProvider in testing environment', function
 
 it('has boot method that can be called', function () {
     // Mock callbacks and environment checks used in boot()
-    $this->app->shouldReceive('resolving')->once()->with(\L5Swagger\GeneratorFactory::class, Mockery::type(Closure::class));
+    $this->app->shouldReceive('resolving')->once()->with(L5Swagger\GeneratorFactory::class, Mockery::type(Closure::class));
     $this->app->shouldReceive('environment')->with('demo')->andReturn(false);
     $this->app->shouldReceive('bound')->with('request')->andReturn(false);
 

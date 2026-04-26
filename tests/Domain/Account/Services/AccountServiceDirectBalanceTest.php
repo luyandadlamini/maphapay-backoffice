@@ -13,7 +13,9 @@ use Tests\DomainTestCase;
 class AccountServiceDirectBalanceTest extends DomainTestCase
 {
     private AccountService $accountService;
+
     private string $accountUuid;
+
     private string $assetCode = 'SZL';
 
     protected function setUp(): void

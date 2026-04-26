@@ -8,8 +8,8 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Models\MinorFamilySupportTransfer;
 use App\Domain\Account\Services\MinorFamilyIntegrationService;
-use App\Domain\Shared\OperationRecord\Exceptions\OperationPayloadMismatchException;
 use App\Domain\Shared\OperationRecord\Exceptions\OperationInProgressException;
+use App\Domain\Shared\OperationRecord\Exceptions\OperationPayloadMismatchException;
 use App\Http\Middleware\ResolveAccountContext;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
@@ -62,14 +62,14 @@ class MinorFamilySupportTransferControllerTest extends TestCase
 
         $this->tenantId = (string) Str::uuid();
         DB::connection('central')->table('tenants')->insert([
-            'id' => $this->tenantId,
-            'name' => 'Minor Family Support Transfer Test Tenant',
-            'plan' => 'default',
-            'team_id' => null,
+            'id'            => $this->tenantId,
+            'name'          => 'Minor Family Support Transfer Test Tenant',
+            'plan'          => 'default',
+            'team_id'       => null,
             'trial_ends_at' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-            'data' => json_encode([]),
+            'created_at'    => now(),
+            'updated_at'    => now(),
+            'data'          => json_encode([]),
         ]);
 
         $this->guardianUser = User::factory()->create();
@@ -82,9 +82,9 @@ class MinorFamilySupportTransferControllerTest extends TestCase
         $this->outsiderAccount = $this->createOwnedPersonalAccount($this->outsiderUser);
 
         $this->minorAccount = Account::factory()->create([
-            'user_uuid' => $this->childUser->uuid,
-            'type' => 'minor',
-            'permission_level' => 3,
+            'user_uuid'         => $this->childUser->uuid,
+            'type'              => 'minor',
+            'permission_level'  => 3,
             'parent_account_id' => $this->guardianAccount->uuid,
         ]);
 
@@ -140,22 +140,22 @@ class MinorFamilySupportTransferControllerTest extends TestCase
         $service->shouldReceive('createOutboundSupportTransfer')
             ->once()
             ->andReturn(new MinorFamilySupportTransfer([
-                'id' => $transferId,
-                'tenant_id' => $this->tenantId,
-                'minor_account_uuid' => $this->minorAccount->uuid,
-                'actor_user_uuid' => $this->guardianUser->uuid,
-                'source_account_uuid' => $this->guardianAccount->uuid,
-                'status' => MinorFamilySupportTransfer::STATUS_PENDING_PROVIDER,
-                'provider_name' => 'mtn_momo',
-                'recipient_name' => 'Gogo Dlamini',
-                'recipient_msisdn' => '26876123456',
-                'amount' => '250.00',
-                'asset_code' => 'SZL',
-                'note' => 'School support',
+                'id'                    => $transferId,
+                'tenant_id'             => $this->tenantId,
+                'minor_account_uuid'    => $this->minorAccount->uuid,
+                'actor_user_uuid'       => $this->guardianUser->uuid,
+                'source_account_uuid'   => $this->guardianAccount->uuid,
+                'status'                => MinorFamilySupportTransfer::STATUS_PENDING_PROVIDER,
+                'provider_name'         => 'mtn_momo',
+                'recipient_name'        => 'Gogo Dlamini',
+                'recipient_msisdn'      => '26876123456',
+                'amount'                => '250.00',
+                'asset_code'            => 'SZL',
+                'note'                  => 'School support',
                 'provider_reference_id' => 'provider-transfer-guardian',
-                'idempotency_key' => 'idem-transfer-guardian',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'idempotency_key'       => 'idem-transfer-guardian',
+                'created_at'            => now(),
+                'updated_at'            => now(),
             ]));
         $this->app->instance(MinorFamilyIntegrationService::class, $service);
 
@@ -165,12 +165,12 @@ class MinorFamilySupportTransferControllerTest extends TestCase
             'Idempotency-Key' => 'idem-transfer-guardian',
         ])->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/family-support-transfers", [
             'source_account_uuid' => $this->guardianAccount->uuid,
-            'provider' => 'mtn_momo',
-            'recipient_name' => 'Gogo Dlamini',
-            'recipient_msisdn' => '26876123456',
-            'amount' => '250.00',
-            'asset_code' => 'SZL',
-            'note' => 'School support',
+            'provider'            => 'mtn_momo',
+            'recipient_name'      => 'Gogo Dlamini',
+            'recipient_msisdn'    => '26876123456',
+            'amount'              => '250.00',
+            'asset_code'          => 'SZL',
+            'note'                => 'School support',
         ])->assertStatus(202)
             ->assertJsonPath('data.family_support_transfer_uuid', $transferId)
             ->assertJsonPath('data.minor_account_uuid', $this->minorAccount->uuid)
@@ -197,22 +197,22 @@ class MinorFamilySupportTransferControllerTest extends TestCase
                     && $attributes['recipient_msisdn'] === '+26876123456';
             })
             ->andReturn(new MinorFamilySupportTransfer([
-                'id' => $transferId,
-                'tenant_id' => $this->tenantId,
-                'minor_account_uuid' => $this->minorAccount->uuid,
-                'actor_user_uuid' => $this->coGuardianUser->uuid,
-                'source_account_uuid' => $this->coGuardianAccount->uuid,
-                'status' => MinorFamilySupportTransfer::STATUS_PENDING_PROVIDER,
-                'provider_name' => 'mtn_momo',
-                'recipient_name' => 'Gogo Dlamini',
-                'recipient_msisdn' => '+26876123456',
-                'amount' => '250.00',
-                'asset_code' => 'SZL',
-                'note' => 'School support',
+                'id'                    => $transferId,
+                'tenant_id'             => $this->tenantId,
+                'minor_account_uuid'    => $this->minorAccount->uuid,
+                'actor_user_uuid'       => $this->coGuardianUser->uuid,
+                'source_account_uuid'   => $this->coGuardianAccount->uuid,
+                'status'                => MinorFamilySupportTransfer::STATUS_PENDING_PROVIDER,
+                'provider_name'         => 'mtn_momo',
+                'recipient_name'        => 'Gogo Dlamini',
+                'recipient_msisdn'      => '+26876123456',
+                'amount'                => '250.00',
+                'asset_code'            => 'SZL',
+                'note'                  => 'School support',
                 'provider_reference_id' => 'provider-transfer-001',
-                'idempotency_key' => 'idem-transfer-123',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'idempotency_key'       => 'idem-transfer-123',
+                'created_at'            => now(),
+                'updated_at'            => now(),
             ]));
         $this->app->instance(MinorFamilyIntegrationService::class, $service);
 
@@ -222,12 +222,12 @@ class MinorFamilySupportTransferControllerTest extends TestCase
             'Idempotency-Key' => 'idem-transfer-123',
         ])->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/family-support-transfers", [
             'source_account_uuid' => $this->coGuardianAccount->uuid,
-            'provider' => 'mtn_momo',
-            'recipient_name' => 'Gogo Dlamini',
-            'recipient_msisdn' => '+26876123456',
-            'amount' => '250.00',
-            'asset_code' => 'SZL',
-            'note' => 'School support',
+            'provider'            => 'mtn_momo',
+            'recipient_name'      => 'Gogo Dlamini',
+            'recipient_msisdn'    => '+26876123456',
+            'amount'              => '250.00',
+            'asset_code'          => 'SZL',
+            'note'                => 'School support',
         ])->assertStatus(202)
             ->assertJsonPath('data.family_support_transfer_uuid', $transferId)
             ->assertJsonPath('data.minor_account_uuid', $this->minorAccount->uuid)
@@ -250,15 +250,15 @@ class MinorFamilySupportTransferControllerTest extends TestCase
         Sanctum::actingAs($this->guardianUser, ['read', 'write', 'delete']);
 
         $this->withHeaders([
-            'Idempotency-Key' => 'idem-transfer-mismatch-'.Str::uuid(),
+            'Idempotency-Key' => 'idem-transfer-mismatch-' . Str::uuid(),
         ])->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/family-support-transfers", [
             'source_account_uuid' => $this->guardianAccount->uuid,
-            'provider' => 'mtn_momo',
-            'recipient_name' => 'Gogo Dlamini',
-            'recipient_msisdn' => '+26876123456',
-            'amount' => '250.00',
-            'asset_code' => 'SZL',
-            'note' => 'School support',
+            'provider'            => 'mtn_momo',
+            'recipient_name'      => 'Gogo Dlamini',
+            'recipient_msisdn'    => '+26876123456',
+            'amount'              => '250.00',
+            'asset_code'          => 'SZL',
+            'note'                => 'School support',
         ])->assertStatus(409)
             ->assertJsonPath('error', 'Idempotency key already used')
             ->assertJsonPath('message', 'The provided idempotency key has already been used with different request parameters')
@@ -277,15 +277,15 @@ class MinorFamilySupportTransferControllerTest extends TestCase
         Sanctum::actingAs($this->guardianUser, ['read', 'write', 'delete']);
 
         $this->withHeaders([
-            'Idempotency-Key' => 'idem-transfer-pending-'.Str::uuid(),
+            'Idempotency-Key' => 'idem-transfer-pending-' . Str::uuid(),
         ])->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/family-support-transfers", [
             'source_account_uuid' => $this->guardianAccount->uuid,
-            'provider' => 'mtn_momo',
-            'recipient_name' => 'Gogo Dlamini',
-            'recipient_msisdn' => '+26876123456',
-            'amount' => '250.00',
-            'asset_code' => 'SZL',
-            'note' => 'School support',
+            'provider'            => 'mtn_momo',
+            'recipient_name'      => 'Gogo Dlamini',
+            'recipient_msisdn'    => '+26876123456',
+            'amount'              => '250.00',
+            'asset_code'          => 'SZL',
+            'note'                => 'School support',
         ])->assertStatus(409)
             ->assertJsonPath('error', 'Idempotency operation in progress')
             ->assertJsonPath('message', 'An identical operation with this idempotency key is still in progress. Please retry shortly.')
@@ -305,11 +305,11 @@ class MinorFamilySupportTransferControllerTest extends TestCase
             'Idempotency-Key' => 'idem-transfer-unauthorized-source',
         ])->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/family-support-transfers", [
             'source_account_uuid' => $this->outsiderAccount->uuid,
-            'provider' => 'mtn_momo',
-            'recipient_name' => 'Gogo Dlamini',
-            'recipient_msisdn' => '+26876123456',
-            'amount' => '250.00',
-            'asset_code' => 'SZL',
+            'provider'            => 'mtn_momo',
+            'recipient_name'      => 'Gogo Dlamini',
+            'recipient_msisdn'    => '+26876123456',
+            'amount'              => '250.00',
+            'asset_code'          => 'SZL',
         ])->assertForbidden();
     }
 
@@ -326,11 +326,11 @@ class MinorFamilySupportTransferControllerTest extends TestCase
             'Idempotency-Key' => 'idem-transfer-child-blocked',
         ])->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/family-support-transfers", [
             'source_account_uuid' => $this->guardianAccount->uuid,
-            'provider' => 'mtn_momo',
-            'recipient_name' => 'Gogo Dlamini',
-            'recipient_msisdn' => '+26876123456',
-            'amount' => '250.00',
-            'asset_code' => 'SZL',
+            'provider'            => 'mtn_momo',
+            'recipient_name'      => 'Gogo Dlamini',
+            'recipient_msisdn'    => '+26876123456',
+            'amount'              => '250.00',
+            'asset_code'          => 'SZL',
         ])->assertForbidden();
     }
 
@@ -347,11 +347,11 @@ class MinorFamilySupportTransferControllerTest extends TestCase
             'Idempotency-Key' => 'idem-transfer-outsider-blocked',
         ])->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/family-support-transfers", [
             'source_account_uuid' => $this->outsiderAccount->uuid,
-            'provider' => 'mtn_momo',
-            'recipient_name' => 'Gogo Dlamini',
-            'recipient_msisdn' => '+26876123456',
-            'amount' => '250.00',
-            'asset_code' => 'SZL',
+            'provider'            => 'mtn_momo',
+            'recipient_name'      => 'Gogo Dlamini',
+            'recipient_msisdn'    => '+26876123456',
+            'amount'              => '250.00',
+            'asset_code'          => 'SZL',
         ])->assertForbidden();
     }
 
@@ -366,11 +366,11 @@ class MinorFamilySupportTransferControllerTest extends TestCase
 
         $this->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/family-support-transfers", [
             'source_account_uuid' => $this->guardianAccount->uuid,
-            'provider' => 'mtn_momo',
-            'recipient_name' => 'Gogo Dlamini',
-            'recipient_msisdn' => '+26876123456',
-            'amount' => '250.00',
-            'asset_code' => 'SZL',
+            'provider'            => 'mtn_momo',
+            'recipient_name'      => 'Gogo Dlamini',
+            'recipient_msisdn'    => '+26876123456',
+            'amount'              => '250.00',
+            'asset_code'          => 'SZL',
         ])->assertStatus(422)
             ->assertJsonPath('message.0', 'Idempotency-Key header is required for family support transfer requests.');
     }
@@ -379,18 +379,18 @@ class MinorFamilySupportTransferControllerTest extends TestCase
     {
         $account = Account::factory()->create([
             'user_uuid' => $user->uuid,
-            'type' => 'personal',
+            'type'      => 'personal',
         ]);
 
         AccountMembership::query()->create([
-            'id' => (string) Str::uuid(),
-            'user_uuid' => $user->uuid,
-            'tenant_id' => $this->tenantId,
+            'id'           => (string) Str::uuid(),
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $this->tenantId,
             'account_uuid' => $account->uuid,
             'account_type' => 'personal',
-            'role' => 'owner',
-            'status' => 'active',
-            'joined_at' => now(),
+            'role'         => 'owner',
+            'status'       => 'active',
+            'joined_at'    => now(),
         ]);
 
         return $account;
@@ -399,14 +399,14 @@ class MinorFamilySupportTransferControllerTest extends TestCase
     private function createMinorMembership(User $user, Account $minorAccount, string $role): void
     {
         AccountMembership::query()->create([
-            'id' => (string) Str::uuid(),
-            'user_uuid' => $user->uuid,
-            'tenant_id' => $this->tenantId,
+            'id'           => (string) Str::uuid(),
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $this->tenantId,
             'account_uuid' => $minorAccount->uuid,
             'account_type' => 'minor',
-            'role' => $role,
-            'status' => 'active',
-            'joined_at' => now(),
+            'role'         => $role,
+            'status'       => 'active',
+            'joined_at'    => now(),
         ]);
     }
 
@@ -414,7 +414,7 @@ class MinorFamilySupportTransferControllerTest extends TestCase
     {
         if (! Schema::hasTable('minor_family_support_transfers')) {
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/2026_04_23_100200_create_minor_family_support_transfers_table.php',
+                '--path'  => 'database/migrations/2026_04_23_100200_create_minor_family_support_transfers_table.php',
                 '--force' => true,
             ]);
         }
@@ -423,21 +423,21 @@ class MinorFamilySupportTransferControllerTest extends TestCase
     private function createTransfer(): MinorFamilySupportTransfer
     {
         return MinorFamilySupportTransfer::query()->create([
-            'tenant_id' => $this->tenantId,
-            'minor_account_uuid' => $this->minorAccount->uuid,
-            'actor_user_uuid' => $this->guardianUser->uuid,
-            'source_account_uuid' => $this->guardianAccount->uuid,
-            'status' => MinorFamilySupportTransfer::STATUS_SUCCESSFUL,
-            'provider_name' => 'mtn_momo',
-            'recipient_name' => 'Gogo Dlamini',
-            'recipient_msisdn' => '26876123456',
-            'amount' => '250.00',
-            'asset_code' => 'SZL',
-            'note' => 'School support',
+            'tenant_id'             => $this->tenantId,
+            'minor_account_uuid'    => $this->minorAccount->uuid,
+            'actor_user_uuid'       => $this->guardianUser->uuid,
+            'source_account_uuid'   => $this->guardianAccount->uuid,
+            'status'                => MinorFamilySupportTransfer::STATUS_SUCCESSFUL,
+            'provider_name'         => 'mtn_momo',
+            'recipient_name'        => 'Gogo Dlamini',
+            'recipient_msisdn'      => '26876123456',
+            'amount'                => '250.00',
+            'asset_code'            => 'SZL',
+            'note'                  => 'School support',
             'provider_reference_id' => 'provider-transfer-001',
-            'idempotency_key' => 'idem-transfer-'.Str::uuid(),
-            'created_at' => now(),
-            'updated_at' => now(),
+            'idempotency_key'       => 'idem-transfer-' . Str::uuid(),
+            'created_at'            => now(),
+            'updated_at'            => now(),
         ]);
     }
 }

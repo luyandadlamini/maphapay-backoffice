@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Domain\Account\Services\AccountPayloadTransformer;
 use App\Domain\Mobile\Services\MobileDeviceService;
 use App\Domain\Mobile\Services\PasskeyAuthenticationService;
-use App\Domain\Account\Services\AccountPayloadTransformer;
 use App\Http\Controllers\Api\Auth\AccountDeletionController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\PasskeyController;

@@ -59,3 +59,10 @@ Event::assertDispatched(OrderPlaced::class, function ($event) {
 - **Event faking**: Remember to fake before actions
 - **Mocking**: Use PHPDoc for type hints
 - **Cleanup**: Close Mockery in tearDown
+
+### Stancl tenant databases (`CREATE DATABASE tenant…`)
+Tests that call `Tenant::createFromTeam()` or `revenue:scan-anomalies:for-tenants` need a MySQL user with **`CREATE` (and usually `DROP`) on `*.*`**, not only `GRANT ALL` on the main test database.
+
+- **Local:** after resetting MySQL test access, `scripts/reset-local-mysql-test-access.sh` grants `CREATE, DROP ON *.*` to `maphapay_test@localhost` (see that script).
+- **CI:** `.github/workflows/03-test-suite.yml` feature job runs MySQL as **`root`**, which already satisfies this.
+- **Probe in tests:** `Tests\Support\TenantDatabasePrivileges::canCreateTenantDatabases()` (also exposed as `Tests\TestCase::canCreateTenantDatabases()` for PHPUnit tests).

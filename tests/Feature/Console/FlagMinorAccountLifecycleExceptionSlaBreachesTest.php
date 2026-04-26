@@ -23,18 +23,18 @@ beforeEach(function (): void {
 
 it('sets sla_escalated_at on overdue open lifecycle exceptions', function (): void {
     $exception = MinorAccountLifecycleException::query()->create([
-        'id' => (string) Str::uuid(),
-        'tenant_id' => 'tenant-lifecycle',
+        'id'                 => (string) Str::uuid(),
+        'tenant_id'          => 'tenant-lifecycle',
         'minor_account_uuid' => (string) Str::uuid(),
-        'reason_code' => 'adult_kyc_not_ready',
-        'status' => MinorAccountLifecycleException::STATUS_OPEN,
-        'source' => 'scheduler',
-        'occurrence_count' => 1,
-        'metadata' => [],
-        'first_seen_at' => now()->subDay(),
-        'last_seen_at' => now()->subHour(),
-        'sla_due_at' => now()->subMinute(),
-        'sla_escalated_at' => null,
+        'reason_code'        => 'adult_kyc_not_ready',
+        'status'             => MinorAccountLifecycleException::STATUS_OPEN,
+        'source'             => 'scheduler',
+        'occurrence_count'   => 1,
+        'metadata'           => [],
+        'first_seen_at'      => now()->subDay(),
+        'last_seen_at'       => now()->subHour(),
+        'sla_due_at'         => now()->subMinute(),
+        'sla_escalated_at'   => null,
     ]);
 
     $this->artisan('minor-accounts:lifecycle-exceptions-flag-sla-breaches')

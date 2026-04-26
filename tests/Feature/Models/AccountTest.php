@@ -63,8 +63,11 @@ class AccountTest extends TestCase
     {
         $account = new Account();
 
-        // Account uses $guarded = [] which means all attributes are fillable
-        $this->assertEmpty($account->getGuarded());
+        // Account uses $fillable instead of $guarded = [] for security
+        $this->assertNotEmpty($account->getFillable());
+        $this->assertContains('uuid', $account->getFillable());
+        $this->assertContains('user_uuid', $account->getFillable());
+        $this->assertContains('name', $account->getFillable());
 
         // Create an account with various attributes to ensure they're fillable
         $user = User::factory()->create();

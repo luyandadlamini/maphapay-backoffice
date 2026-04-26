@@ -41,14 +41,14 @@ class MinorAccountLifecyclePolicyTest extends TestCase
         }
 
         $central->table('tenants')->insert([
-            'id' => $tenantId,
-            'name' => 'Lifecycle policy test tenant',
-            'plan' => 'default',
-            'team_id' => null,
+            'id'            => $tenantId,
+            'name'          => 'Lifecycle policy test tenant',
+            'plan'          => 'default',
+            'team_id'       => null,
             'trial_ends_at' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-            'data' => json_encode([]),
+            'created_at'    => now(),
+            'updated_at'    => now(),
+            'data'          => json_encode([]),
         ]);
     }
 
@@ -57,19 +57,19 @@ class MinorAccountLifecyclePolicyTest extends TestCase
     {
         $child = User::factory()->create(['kyc_status' => 'approved']);
         $account = Account::factory()->create([
-            'user_uuid' => $child->uuid,
-            'type' => 'minor',
-            'tier' => 'grow',
+            'user_uuid'        => $child->uuid,
+            'type'             => 'minor',
+            'tier'             => 'grow',
             'permission_level' => 3,
         ]);
 
         UserProfile::query()->create([
-            'user_id' => $child->id,
-            'email' => $child->email,
-            'first_name' => 'Child',
-            'status' => 'active',
+            'user_id'       => $child->id,
+            'email'         => $child->email,
+            'first_name'    => 'Child',
+            'status'        => 'active',
             'date_of_birth' => now()->subYears(13)->toDateString(),
-            'is_verified' => false,
+            'is_verified'   => false,
         ]);
 
         $result = app(MinorAccountLifecyclePolicy::class)->evaluateTierAdvance($account);
@@ -84,19 +84,19 @@ class MinorAccountLifecyclePolicyTest extends TestCase
     {
         $child = User::factory()->create(['kyc_status' => 'pending']);
         $account = Account::factory()->create([
-            'user_uuid' => $child->uuid,
-            'type' => 'minor',
-            'tier' => 'rise',
+            'user_uuid'        => $child->uuid,
+            'type'             => 'minor',
+            'tier'             => 'rise',
             'permission_level' => 6,
         ]);
 
         UserProfile::query()->create([
-            'user_id' => $child->id,
-            'email' => $child->email,
-            'first_name' => 'Teen',
-            'status' => 'active',
+            'user_id'       => $child->id,
+            'email'         => $child->email,
+            'first_name'    => 'Teen',
+            'status'        => 'active',
             'date_of_birth' => now()->subYears(18)->toDateString(),
-            'is_verified' => false,
+            'is_verified'   => false,
         ]);
 
         $result = app(MinorAccountLifecyclePolicy::class)->evaluateAdultTransition($account);
@@ -112,16 +112,16 @@ class MinorAccountLifecyclePolicyTest extends TestCase
         $guardian = User::factory()->create(['frozen_at' => now()]);
         $account = Account::factory()->create([
             'user_uuid' => $child->uuid,
-            'type' => 'minor',
-            'tier' => 'grow',
+            'type'      => 'minor',
+            'tier'      => 'grow',
         ]);
 
         AccountMembership::query()->create([
-            'tenant_id' => 'tenant-lifecycle',
+            'tenant_id'    => 'tenant-lifecycle',
             'account_uuid' => $account->uuid,
-            'user_uuid' => $guardian->uuid,
-            'role' => 'guardian',
-            'status' => 'active',
+            'user_uuid'    => $guardian->uuid,
+            'role'         => 'guardian',
+            'status'       => 'active',
             'account_type' => 'minor',
         ]);
 

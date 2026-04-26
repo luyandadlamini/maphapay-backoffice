@@ -1,11 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Domain\Account\Services;
 
-use App\Domain\Account\Models\MinorMerchantBonusTransaction;
 use App\Domain\Account\Services\MinorMerchantBonusService;
 use App\Models\MerchantPartner;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class MinorMerchantBonusServiceTest extends TestCase
@@ -23,10 +23,10 @@ class MinorMerchantBonusServiceTest extends TestCase
     {
         $result = $this->service->calculateBonusPoints(15.00, 2.0);
         $this->assertEquals(3, $result);
-        
+
         $result = $this->service->calculateBonusPoints(20.00, 2.0);
         $this->assertEquals(4, $result);
-        
+
         $result = $this->service->calculateBonusPoints(25.00, 2.0);
         $this->assertEquals(5, $result);
     }
@@ -40,11 +40,11 @@ class MinorMerchantBonusServiceTest extends TestCase
     public function test_award_bonus_caps_multiplier_at_max(): void
     {
         $partner = MerchantPartner::create([
-            'id' => 1,
-            'name' => 'Test Merchant',
+            'id'                   => 1,
+            'name'                 => 'Test Merchant',
             'is_active_for_minors' => true,
-            'bonus_multiplier' => 6.0,
-            'min_age_allowance' => 12,
+            'bonus_multiplier'     => 6.0,
+            'min_age_allowance'    => 12,
         ]);
 
         $result = $this->service->awardBonus(
@@ -61,11 +61,11 @@ class MinorMerchantBonusServiceTest extends TestCase
     public function test_award_bonus_checks_idempotency(): void
     {
         $partner = MerchantPartner::create([
-            'id' => 1,
-            'name' => 'Test Merchant',
+            'id'                   => 1,
+            'name'                 => 'Test Merchant',
             'is_active_for_minors' => true,
-            'bonus_multiplier' => 2.0,
-            'min_age_allowance' => 12,
+            'bonus_multiplier'     => 2.0,
+            'min_age_allowance'    => 12,
         ]);
 
         $result = $this->service->awardBonus(
@@ -75,7 +75,7 @@ class MinorMerchantBonusServiceTest extends TestCase
             25.00
         );
         $this->assertEquals(5, $result['bonus_points_awarded']);
-        
+
         $result = $this->service->awardBonus(
             'trx-123',
             1,
@@ -88,11 +88,11 @@ class MinorMerchantBonusServiceTest extends TestCase
     public function test_award_bonus_checks_minor_age(): void
     {
         $partner = MerchantPartner::create([
-            'id' => 1,
-            'name' => 'Test Merchant',
+            'id'                   => 1,
+            'name'                 => 'Test Merchant',
             'is_active_for_minors' => true,
-            'bonus_multiplier' => 2.0,
-            'min_age_allowance' => 12,
+            'bonus_multiplier'     => 2.0,
+            'min_age_allowance'    => 12,
         ]);
 
         $result = $this->service->awardBonus(
@@ -103,7 +103,7 @@ class MinorMerchantBonusServiceTest extends TestCase
             10
         );
         $this->assertEquals(0, $result['bonus_points_awarded']);
-        
+
         $result = $this->service->awardBonus(
             'trx-new-2',
             1,
@@ -117,15 +117,15 @@ class MinorMerchantBonusServiceTest extends TestCase
     public function test_get_bonus_details_returns_correct_structure(): void
     {
         $partner = MerchantPartner::create([
-            'id' => 1,
-            'name' => 'Test Merchant',
+            'id'                   => 1,
+            'name'                 => 'Test Merchant',
             'is_active_for_minors' => true,
-            'bonus_multiplier' => 2.0,
-            'min_age_allowance' => 12,
+            'bonus_multiplier'     => 2.0,
+            'min_age_allowance'    => 12,
         ]);
 
         $result = $this->service->getBonusDetails(1);
-        
+
         $this->assertArrayHasKey('bonus_multiplier', $result);
         $this->assertArrayHasKey('min_age_allowance', $result);
         $this->assertArrayHasKey('is_active_for_minors', $result);

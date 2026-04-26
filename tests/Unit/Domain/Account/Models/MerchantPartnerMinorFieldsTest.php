@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Domain\Account\Models;
 
 use App\Models\MerchantPartner;
@@ -11,7 +13,7 @@ class MerchantPartnerMinorFieldsTest extends TestCase
     {
         $partner = new MerchantPartner();
         $fillable = $partner->getFillable();
-        
+
         $this->assertContains('bonus_multiplier', $fillable);
         $this->assertContains('min_age_allowance', $fillable);
         $this->assertContains('category_slugs', $fillable);

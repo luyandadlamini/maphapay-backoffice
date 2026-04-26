@@ -14,7 +14,7 @@ it('allows PENDING to transition to COMPLETED', function (): void {
     ]);
 
     expect(fn () => $transition->forceFill(['state' => MinorAccountLifecycleTransition::STATE_COMPLETED])->save())
-        ->not->toThrow(\App\Domain\Account\Exceptions\InvalidLifecycleStateTransitionException::class);
+        ->not->toThrow(App\Domain\Account\Exceptions\InvalidLifecycleStateTransitionException::class);
 
     expect($transition->fresh()->state)->toBe(MinorAccountLifecycleTransition::STATE_COMPLETED);
 });
@@ -28,7 +28,7 @@ it('allows PENDING to transition to BLOCKED', function (): void {
     ]);
 
     expect(fn () => $transition->forceFill(['state' => MinorAccountLifecycleTransition::STATE_BLOCKED])->save())
-        ->not->toThrow(\App\Domain\Account\Exceptions\InvalidLifecycleStateTransitionException::class);
+        ->not->toThrow(App\Domain\Account\Exceptions\InvalidLifecycleStateTransitionException::class);
 
     expect($transition->fresh()->state)->toBe(MinorAccountLifecycleTransition::STATE_BLOCKED);
 });
@@ -44,7 +44,7 @@ it('blocks COMPLETED from regressing to PENDING', function (): void {
     $transition->forceFill(['state' => MinorAccountLifecycleTransition::STATE_COMPLETED])->save();
 
     expect(fn () => $transition->forceFill(['state' => MinorAccountLifecycleTransition::STATE_PENDING])->save())
-        ->toThrow(\App\Domain\Account\Exceptions\InvalidLifecycleStateTransitionException::class);
+        ->toThrow(App\Domain\Account\Exceptions\InvalidLifecycleStateTransitionException::class);
 });
 
 it('blocks BLOCKED from advancing to COMPLETED', function (): void {
@@ -58,7 +58,7 @@ it('blocks BLOCKED from advancing to COMPLETED', function (): void {
     $transition->forceFill(['state' => MinorAccountLifecycleTransition::STATE_BLOCKED])->save();
 
     expect(fn () => $transition->forceFill(['state' => MinorAccountLifecycleTransition::STATE_COMPLETED])->save())
-        ->toThrow(\App\Domain\Account\Exceptions\InvalidLifecycleStateTransitionException::class);
+        ->toThrow(App\Domain\Account\Exceptions\InvalidLifecycleStateTransitionException::class);
 });
 
 it('blocks new records from starting in a non-PENDING state', function (): void {
@@ -67,5 +67,5 @@ it('blocks new records from starting in a non-PENDING state', function (): void 
     expect(fn () => MinorAccountLifecycleTransition::factory()->create([
         'minor_account_uuid' => $account->uuid,
         'state'              => MinorAccountLifecycleTransition::STATE_COMPLETED,
-    ]))->toThrow(\App\Domain\Account\Exceptions\InvalidLifecycleStateTransitionException::class);
+    ]))->toThrow(App\Domain\Account\Exceptions\InvalidLifecycleStateTransitionException::class);
 });

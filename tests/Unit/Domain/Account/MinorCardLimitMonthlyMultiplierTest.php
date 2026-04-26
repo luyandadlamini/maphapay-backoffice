@@ -6,6 +6,7 @@ namespace Tests\Unit\Domain\Account;
 
 use App\Domain\Account\Models\MinorCardLimit;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use InvalidArgumentException;
 use Tests\CreatesApplication;
 
 class MinorCardLimitMonthlyMultiplierTest extends BaseTestCase
@@ -39,7 +40,7 @@ class MinorCardLimitMonthlyMultiplierTest extends BaseTestCase
             'monthly_limit'            => 1000 * ($daysInMonth + 1),
         ]);
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $limit->validateHierarchy();
     }
 }

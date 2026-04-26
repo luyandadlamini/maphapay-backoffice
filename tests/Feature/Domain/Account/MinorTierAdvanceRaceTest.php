@@ -9,8 +9,8 @@ use App\Domain\Account\Services\MinorAccountLifecycleService;
 
 it('schedules at most one tier-advance transition even when evaluateAccount is called concurrently', function (): void {
     $account = Account::factory()->create([
-        'type' => 'minor',
-        'tier' => 'grow',
+        'type'             => 'minor',
+        'tier'             => 'grow',
         'permission_level' => 4,
     ]);
 
@@ -18,10 +18,10 @@ it('schedules at most one tier-advance transition even when evaluateAccount is c
     $policy->shouldReceive('evaluateTierAdvance')
         ->atLeast()->times(1)
         ->andReturn([
-            'eligible' => true,
-            'target_tier' => 'rise',
+            'eligible'                => true,
+            'target_tier'             => 'rise',
             'target_permission_level' => 5,
-            'reason_code' => null,
+            'reason_code'             => null,
         ]);
     $policy->shouldReceive('evaluateGuardianContinuity')
         ->atLeast()->times(1)

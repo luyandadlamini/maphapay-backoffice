@@ -42,44 +42,44 @@ class CoGuardianScaTest extends TestCase
         $this->tenantId = (string) Str::uuid();
 
         DB::connection('central')->table('tenants')->insert([
-            'id' => $this->tenantId,
-            'name' => 'T',
-            'plan' => 'default',
-            'team_id' => null,
+            'id'            => $this->tenantId,
+            'name'          => 'T',
+            'plan'          => 'default',
+            'team_id'       => null,
             'trial_ends_at' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-            'data' => json_encode([]),
+            'created_at'    => now(),
+            'updated_at'    => now(),
+            'data'          => json_encode([]),
         ]);
 
         $guardianAccount = Account::factory()->create([
             'user_uuid' => $this->guardian->uuid,
-            'type' => 'personal',
+            'type'      => 'personal',
         ]);
         AccountMembership::create([
-            'user_uuid' => $this->guardian->uuid,
+            'user_uuid'    => $this->guardian->uuid,
             'account_uuid' => $guardianAccount->uuid,
-            'tenant_id' => $this->tenantId,
+            'tenant_id'    => $this->tenantId,
             'account_type' => 'personal',
-            'role' => 'owner',
-            'status' => 'active',
+            'role'         => 'owner',
+            'status'       => 'active',
         ]);
 
         $child = User::factory()->create();
         $this->minorAccount = Account::factory()->create([
-            'user_uuid' => $child->uuid,
-            'type' => 'minor',
-            'tier' => 'rise',
-            'permission_level' => 3,
+            'user_uuid'         => $child->uuid,
+            'type'              => 'minor',
+            'tier'              => 'rise',
+            'permission_level'  => 3,
             'parent_account_id' => $guardianAccount->uuid,
         ]);
         AccountMembership::create([
-            'user_uuid' => $this->guardian->uuid,
+            'user_uuid'    => $this->guardian->uuid,
             'account_uuid' => $this->minorAccount->uuid,
-            'tenant_id' => $this->tenantId,
+            'tenant_id'    => $this->tenantId,
             'account_type' => 'minor',
-            'role' => 'guardian',
-            'status' => 'active',
+            'role'         => 'guardian',
+            'status'       => 'active',
         ]);
     }
 
@@ -108,7 +108,7 @@ class CoGuardianScaTest extends TestCase
             "/api/accounts/minor/{$this->minorAccount->uuid}/invite-co-guardian",
             [
                 'sca_token' => '123456',
-                'sca_type' => 'otp',
+                'sca_type'  => 'otp',
             ]
         );
 

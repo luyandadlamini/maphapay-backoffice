@@ -7,7 +7,6 @@ use App\Filament\Admin\Resources\MinorAccountLifecycleTransitionResource\Pages\L
 use App\Filament\Admin\Resources\MinorAccountLifecycleTransitionResource\Pages\ViewMinorAccountLifecycleTransition;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -41,13 +40,13 @@ it('allows operators to list and view lifecycle transitions', function (): void 
     $this->actingAs($operator);
 
     $transition = MinorAccountLifecycleTransition::query()->create([
-        'id' => (string) Str::uuid(),
-        'tenant_id' => 'tenant-filament',
+        'id'                 => (string) Str::uuid(),
+        'tenant_id'          => 'tenant-filament',
         'minor_account_uuid' => (string) Str::uuid(),
-        'transition_type' => MinorAccountLifecycleTransition::TYPE_TIER_ADVANCE,
-        'state' => MinorAccountLifecycleTransition::STATE_PENDING,
-        'effective_at' => now(),
-        'metadata' => ['target_tier' => 'rise'],
+        'transition_type'    => MinorAccountLifecycleTransition::TYPE_TIER_ADVANCE,
+        'state'              => MinorAccountLifecycleTransition::STATE_PENDING,
+        'effective_at'       => now(),
+        'metadata'           => ['target_tier' => 'rise'],
     ]);
 
     livewire(ListMinorAccountLifecycleTransitions::class)

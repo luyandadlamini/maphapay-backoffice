@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Domain\Account\Services;
 
-use App\Domain\Account\Events\MinorFamilyFundingAttemptInitiated;
-use App\Domain\Account\Events\MinorFamilySupportTransferInitiated;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\MinorFamilyFundingAttempt;
 use App\Domain\Account\Models\MinorFamilyFundingLink;
@@ -15,8 +13,8 @@ use App\Domain\Account\Services\MinorFamilyFundingPolicy;
 use App\Domain\Account\Services\MinorFamilyFundingPolicyResult;
 use App\Domain\Account\Services\MinorFamilyIntegrationService;
 use App\Domain\Account\Services\MinorNotificationService;
-use App\Domain\MtnMomo\Services\MtnMomoFamilyFundingAdapter;
 use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
+use App\Domain\MtnMomo\Services\MtnMomoFamilyFundingAdapter;
 use App\Domain\Shared\OperationRecord\OperationRecord;
 use App\Domain\Shared\OperationRecord\OperationRecordService;
 use App\Models\MtnMomoTransaction;
@@ -27,6 +25,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Mockery;
+use RuntimeException;
 use Tests\TestCase;
 
 class MinorFamilyIntegrationServiceTest extends TestCase
@@ -55,12 +54,12 @@ class MinorFamilyIntegrationServiceTest extends TestCase
 
         $minorAccount = Account::factory()->create([
             'user_uuid' => $minorOwner->uuid,
-            'type' => 'minor',
+            'type'      => 'minor',
         ]);
 
         $sourceAccount = Account::factory()->create([
             'user_uuid' => $actor->uuid,
-            'type' => 'personal',
+            'type'      => 'personal',
         ]);
 
         $access = Mockery::mock(MinorAccountAccessService::class);
@@ -92,15 +91,15 @@ class MinorFamilyIntegrationServiceTest extends TestCase
                     && $payload['source_account_uuid'] === $sourceAccount->uuid;
             }))
             ->andReturn([
-                'provider_name' => 'mtn_momo',
+                'provider_name'         => 'mtn_momo',
                 'provider_reference_id' => 'provider-transfer-001',
-                'provider_status' => 'pending',
-                'transaction_type' => MtnMomoTransaction::TYPE_DISBURSEMENT,
-                'party_msisdn' => '+26876123456',
-                'amount' => '250.00',
-                'asset_code' => 'SZL',
-                'note' => 'School support',
-                'idempotency_key' => 'idem-transfer-1',
+                'provider_status'       => 'pending',
+                'transaction_type'      => MtnMomoTransaction::TYPE_DISBURSEMENT,
+                'party_msisdn'          => '+26876123456',
+                'amount'                => '250.00',
+                'asset_code'            => 'SZL',
+                'note'                  => 'School support',
+                'idempotency_key'       => 'idem-transfer-1',
             ]);
 
         $notifications = Mockery::mock(MinorNotificationService::class);
@@ -129,41 +128,41 @@ class MinorFamilyIntegrationServiceTest extends TestCase
             ->count();
 
         $transfer = $service->createOutboundSupportTransfer($actor, $minorAccount, [
-            'tenant_id' => 'tenant-test-1',
+            'tenant_id'           => 'tenant-test-1',
             'source_account_uuid' => $sourceAccount->uuid,
-            'provider' => 'mtn_momo',
-            'recipient_name' => 'Gogo Dlamini',
-            'recipient_msisdn' => '+26876123456',
-            'amount' => '250.00',
-            'asset_code' => 'SZL',
-            'note' => 'School support',
-            'idempotency_key' => 'idem-transfer-1',
+            'provider'            => 'mtn_momo',
+            'recipient_name'      => 'Gogo Dlamini',
+            'recipient_msisdn'    => '+26876123456',
+            'amount'              => '250.00',
+            'asset_code'          => 'SZL',
+            'note'                => 'School support',
+            'idempotency_key'     => 'idem-transfer-1',
         ]);
 
         $this->assertSame(MinorFamilySupportTransfer::STATUS_PENDING_PROVIDER, $transfer->status);
         $this->assertSame('provider-transfer-001', $transfer->provider_reference_id);
 
         $this->assertDatabaseHas('minor_family_support_transfers', [
-            'id' => $transfer->id,
-            'tenant_id' => 'tenant-test-1',
-            'minor_account_uuid' => $minorAccount->uuid,
-            'actor_user_uuid' => $actor->uuid,
-            'source_account_uuid' => $sourceAccount->uuid,
-            'provider_name' => 'mtn_momo',
+            'id'                    => $transfer->id,
+            'tenant_id'             => 'tenant-test-1',
+            'minor_account_uuid'    => $minorAccount->uuid,
+            'actor_user_uuid'       => $actor->uuid,
+            'source_account_uuid'   => $sourceAccount->uuid,
+            'provider_name'         => 'mtn_momo',
             'provider_reference_id' => 'provider-transfer-001',
-            'idempotency_key' => 'idem-transfer-1',
-            'status' => MinorFamilySupportTransfer::STATUS_PENDING_PROVIDER,
+            'idempotency_key'       => 'idem-transfer-1',
+            'status'                => MinorFamilySupportTransfer::STATUS_PENDING_PROVIDER,
         ]);
 
         $this->assertDatabaseHas('mtn_momo_transactions', [
-            'id' => $transfer->mtn_momo_transaction_id,
-            'user_id' => $actor->id,
-            'idempotency_key' => 'idem-transfer-1',
-            'type' => MtnMomoTransaction::TYPE_DISBURSEMENT,
-            'status' => MtnMomoTransaction::STATUS_PENDING,
+            'id'               => $transfer->mtn_momo_transaction_id,
+            'user_id'          => $actor->id,
+            'idempotency_key'  => 'idem-transfer-1',
+            'type'             => MtnMomoTransaction::TYPE_DISBURSEMENT,
+            'status'           => MtnMomoTransaction::STATUS_PENDING,
             'mtn_reference_id' => 'provider-transfer-001',
-            'context_type' => MinorFamilySupportTransfer::class,
-            'context_uuid' => $transfer->id,
+            'context_type'     => MinorFamilySupportTransfer::class,
+            'context_uuid'     => $transfer->id,
         ]);
 
         $this->assertSame($beforeEvents + 1, DB::table('stored_events')
@@ -178,28 +177,28 @@ class MinorFamilyIntegrationServiceTest extends TestCase
 
         $minorAccount = Account::factory()->create([
             'user_uuid' => $minorOwner->uuid,
-            'type' => 'minor',
+            'type'      => 'minor',
         ]);
 
         $link = MinorFamilyFundingLink::query()->create([
-            'tenant_id' => 'tenant-test-1',
-            'minor_account_uuid' => $minorAccount->uuid,
-            'created_by_user_uuid' => $creator->uuid,
+            'tenant_id'               => 'tenant-test-1',
+            'minor_account_uuid'      => $minorAccount->uuid,
+            'created_by_user_uuid'    => $creator->uuid,
             'created_by_account_uuid' => Account::factory()->create([
                 'user_uuid' => $creator->uuid,
-                'type' => 'personal',
+                'type'      => 'personal',
             ])->uuid,
-            'title' => 'Family support',
-            'note' => 'Help Nomcebo',
-            'token' => (string) Str::uuid(),
-            'status' => MinorFamilyFundingLink::STATUS_ACTIVE,
-            'amount_mode' => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
-            'fixed_amount' => '100.00',
-            'target_amount' => null,
+            'title'            => 'Family support',
+            'note'             => 'Help Nomcebo',
+            'token'            => (string) Str::uuid(),
+            'status'           => MinorFamilyFundingLink::STATUS_ACTIVE,
+            'amount_mode'      => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
+            'fixed_amount'     => '100.00',
+            'target_amount'    => null,
             'collected_amount' => '0.00',
-            'asset_code' => 'SZL',
+            'asset_code'       => 'SZL',
             'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay(),
+            'expires_at'       => now()->addDay(),
         ]);
 
         $access = Mockery::mock(MinorAccountAccessService::class);
@@ -229,15 +228,15 @@ class MinorFamilyIntegrationServiceTest extends TestCase
                     && $payload['asset_code'] === 'SZL';
             }))
             ->andReturn([
-                'provider_name' => 'mtn_momo',
+                'provider_name'         => 'mtn_momo',
                 'provider_reference_id' => 'provider-attempt-001',
-                'provider_status' => 'pending',
-                'transaction_type' => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
-                'party_msisdn' => '+26876111111',
-                'amount' => '100.00',
-                'asset_code' => 'SZL',
-                'note' => 'Help Nomcebo',
-                'idempotency_key' => hash('sha256', implode('|', [
+                'provider_status'       => 'pending',
+                'transaction_type'      => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
+                'party_msisdn'          => '+26876111111',
+                'amount'                => '100.00',
+                'asset_code'            => 'SZL',
+                'note'                  => 'Help Nomcebo',
+                'idempotency_key'       => hash('sha256', implode('|', [
                     $link->id,
                     '26876111111',
                     '100.00',
@@ -272,11 +271,11 @@ class MinorFamilyIntegrationServiceTest extends TestCase
             ->count();
 
         $attempt = $service->createPublicFundingAttempt($link, [
-            'sponsor_name' => 'MaDlamini',
+            'sponsor_name'   => 'MaDlamini',
             'sponsor_msisdn' => '+26876111111',
-            'amount' => '100.00',
-            'asset_code' => 'SZL',
-            'provider' => 'mtn_momo',
+            'amount'         => '100.00',
+            'asset_code'     => 'SZL',
+            'provider'       => 'mtn_momo',
         ]);
 
         $expectedDedupe = hash('sha256', implode('|', [
@@ -292,25 +291,25 @@ class MinorFamilyIntegrationServiceTest extends TestCase
         $this->assertSame($expectedDedupe, $attempt->dedupe_hash);
 
         $this->assertDatabaseHas('minor_family_funding_attempts', [
-            'id' => $attempt->id,
-            'tenant_id' => 'tenant-test-1',
-            'funding_link_uuid' => $link->id,
-            'minor_account_uuid' => $minorAccount->uuid,
-            'provider_name' => 'mtn_momo',
+            'id'                    => $attempt->id,
+            'tenant_id'             => 'tenant-test-1',
+            'funding_link_uuid'     => $link->id,
+            'minor_account_uuid'    => $minorAccount->uuid,
+            'provider_name'         => 'mtn_momo',
             'provider_reference_id' => 'provider-attempt-001',
-            'dedupe_hash' => $expectedDedupe,
-            'status' => MinorFamilyFundingAttempt::STATUS_PENDING_PROVIDER,
+            'dedupe_hash'           => $expectedDedupe,
+            'status'                => MinorFamilyFundingAttempt::STATUS_PENDING_PROVIDER,
         ]);
 
         $this->assertDatabaseHas('mtn_momo_transactions', [
-            'id' => $attempt->mtn_momo_transaction_id,
-            'user_id' => $creator->id,
-            'idempotency_key' => $expectedDedupe,
-            'type' => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
-            'status' => MtnMomoTransaction::STATUS_PENDING,
+            'id'               => $attempt->mtn_momo_transaction_id,
+            'user_id'          => $creator->id,
+            'idempotency_key'  => $expectedDedupe,
+            'type'             => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
+            'status'           => MtnMomoTransaction::STATUS_PENDING,
             'mtn_reference_id' => 'provider-attempt-001',
-            'context_type' => MinorFamilyFundingAttempt::class,
-            'context_uuid' => $attempt->id,
+            'context_type'     => MinorFamilyFundingAttempt::class,
+            'context_uuid'     => $attempt->id,
         ]);
 
         $this->assertSame($beforeEvents + 1, DB::table('stored_events')
@@ -324,33 +323,33 @@ class MinorFamilyIntegrationServiceTest extends TestCase
         $minorOwner = User::factory()->create();
         $minorAccount = Account::factory()->create([
             'user_uuid' => $minorOwner->uuid,
-            'type' => 'minor',
+            'type'      => 'minor',
         ]);
         $sourceAccount = Account::factory()->create([
             'user_uuid' => $actor->uuid,
-            'type' => 'personal',
+            'type'      => 'personal',
         ]);
 
         $creator = User::factory()->create();
         $link = MinorFamilyFundingLink::query()->create([
-            'tenant_id' => 'tenant-test-1',
-            'minor_account_uuid' => $minorAccount->uuid,
-            'created_by_user_uuid' => $creator->uuid,
+            'tenant_id'               => 'tenant-test-1',
+            'minor_account_uuid'      => $minorAccount->uuid,
+            'created_by_user_uuid'    => $creator->uuid,
             'created_by_account_uuid' => Account::factory()->create([
                 'user_uuid' => $creator->uuid,
-                'type' => 'personal',
+                'type'      => 'personal',
             ])->uuid,
-            'title' => 'Family support',
-            'note' => null,
-            'token' => (string) Str::uuid(),
-            'status' => MinorFamilyFundingLink::STATUS_ACTIVE,
-            'amount_mode' => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
-            'fixed_amount' => '80.00',
-            'target_amount' => null,
+            'title'            => 'Family support',
+            'note'             => null,
+            'token'            => (string) Str::uuid(),
+            'status'           => MinorFamilyFundingLink::STATUS_ACTIVE,
+            'amount_mode'      => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
+            'fixed_amount'     => '80.00',
+            'target_amount'    => null,
             'collected_amount' => '0.00',
-            'asset_code' => 'SZL',
+            'asset_code'       => 'SZL',
             'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay(),
+            'expires_at'       => now()->addDay(),
         ]);
 
         $access = Mockery::mock(MinorAccountAccessService::class);
@@ -370,28 +369,28 @@ class MinorFamilyIntegrationServiceTest extends TestCase
         $adapter->shouldReceive('initiateOutboundDisbursement')
             ->once()
             ->andReturn([
-                'provider_name' => 'mtn_momo',
+                'provider_name'         => 'mtn_momo',
                 'provider_reference_id' => 'provider-transfer-replay',
-                'provider_status' => 'pending',
-                'transaction_type' => MtnMomoTransaction::TYPE_DISBURSEMENT,
-                'party_msisdn' => '+26876122222',
-                'amount' => '80.00',
-                'asset_code' => 'SZL',
-                'note' => null,
-                'idempotency_key' => 'idem-transfer-replay',
+                'provider_status'       => 'pending',
+                'transaction_type'      => MtnMomoTransaction::TYPE_DISBURSEMENT,
+                'party_msisdn'          => '+26876122222',
+                'amount'                => '80.00',
+                'asset_code'            => 'SZL',
+                'note'                  => null,
+                'idempotency_key'       => 'idem-transfer-replay',
             ]);
         $adapter->shouldReceive('initiateInboundCollection')
             ->once()
             ->andReturn([
-                'provider_name' => 'mtn_momo',
+                'provider_name'         => 'mtn_momo',
                 'provider_reference_id' => 'provider-attempt-replay',
-                'provider_status' => 'pending',
-                'transaction_type' => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
-                'party_msisdn' => '+26876133333',
-                'amount' => '80.00',
-                'asset_code' => 'SZL',
-                'note' => null,
-                'idempotency_key' => hash('sha256', implode('|', [
+                'provider_status'       => 'pending',
+                'transaction_type'      => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
+                'party_msisdn'          => '+26876133333',
+                'amount'                => '80.00',
+                'asset_code'            => 'SZL',
+                'note'                  => null,
+                'idempotency_key'       => hash('sha256', implode('|', [
                     $link->id,
                     '26876133333',
                     '80.00',
@@ -406,41 +405,41 @@ class MinorFamilyIntegrationServiceTest extends TestCase
         $service = $this->makeService($access, $policy, $adapter, $notifications);
 
         $firstTransfer = $service->createOutboundSupportTransfer($actor, $minorAccount, [
-            'tenant_id' => 'tenant-test-1',
+            'tenant_id'           => 'tenant-test-1',
             'source_account_uuid' => $sourceAccount->uuid,
-            'provider' => 'mtn_momo',
-            'recipient_name' => 'Gogo Dlamini',
-            'recipient_msisdn' => '+26876122222',
-            'amount' => '80.00',
-            'asset_code' => 'SZL',
-            'idempotency_key' => 'idem-transfer-replay',
+            'provider'            => 'mtn_momo',
+            'recipient_name'      => 'Gogo Dlamini',
+            'recipient_msisdn'    => '+26876122222',
+            'amount'              => '80.00',
+            'asset_code'          => 'SZL',
+            'idempotency_key'     => 'idem-transfer-replay',
         ]);
 
         $replayedTransfer = $service->createOutboundSupportTransfer($actor, $minorAccount, [
-            'tenant_id' => 'tenant-test-1',
+            'tenant_id'           => 'tenant-test-1',
             'source_account_uuid' => $sourceAccount->uuid,
-            'provider' => 'mtn_momo',
-            'recipient_name' => 'Gogo Dlamini',
-            'recipient_msisdn' => '+26876122222',
-            'amount' => '80.00',
-            'asset_code' => 'SZL',
-            'idempotency_key' => 'idem-transfer-replay',
+            'provider'            => 'mtn_momo',
+            'recipient_name'      => 'Gogo Dlamini',
+            'recipient_msisdn'    => '+26876122222',
+            'amount'              => '80.00',
+            'asset_code'          => 'SZL',
+            'idempotency_key'     => 'idem-transfer-replay',
         ]);
 
         $firstAttempt = $service->createPublicFundingAttempt($link, [
-            'sponsor_name' => 'Replay Sponsor',
+            'sponsor_name'   => 'Replay Sponsor',
             'sponsor_msisdn' => '+26876133333',
-            'amount' => '80.00',
-            'asset_code' => 'SZL',
-            'provider' => 'mtn_momo',
+            'amount'         => '80.00',
+            'asset_code'     => 'SZL',
+            'provider'       => 'mtn_momo',
         ]);
 
         $replayedAttempt = $service->createPublicFundingAttempt($link, [
-            'sponsor_name' => 'Replay Sponsor',
+            'sponsor_name'   => 'Replay Sponsor',
             'sponsor_msisdn' => '+26876133333',
-            'amount' => '80.00',
-            'asset_code' => 'SZL',
-            'provider' => 'mtn_momo',
+            'amount'         => '80.00',
+            'asset_code'     => 'SZL',
+            'provider'       => 'mtn_momo',
         ]);
 
         $this->assertSame($firstTransfer->id, $replayedTransfer->id);
@@ -475,17 +474,17 @@ class MinorFamilyIntegrationServiceTest extends TestCase
 
         $minorAccount = Account::factory()->create([
             'user_uuid' => $minorOwner->uuid,
-            'type' => 'minor',
+            'type'      => 'minor',
         ]);
 
         $firstSourceAccount = Account::factory()->create([
             'user_uuid' => $firstActor->uuid,
-            'type' => 'personal',
+            'type'      => 'personal',
         ]);
 
         $secondSourceAccount = Account::factory()->create([
             'user_uuid' => $secondActor->uuid,
-            'type' => 'personal',
+            'type'      => 'personal',
         ]);
 
         $access = Mockery::mock(MinorAccountAccessService::class);
@@ -507,28 +506,28 @@ class MinorFamilyIntegrationServiceTest extends TestCase
         $adapter->shouldReceive('initiateOutboundDisbursement')
             ->once()
             ->andReturn([
-                'provider_name' => 'mtn_momo',
+                'provider_name'         => 'mtn_momo',
                 'provider_reference_id' => 'provider-transfer-actor-1',
-                'provider_status' => 'pending',
-                'transaction_type' => MtnMomoTransaction::TYPE_DISBURSEMENT,
-                'party_msisdn' => '+26876120001',
-                'amount' => '60.00',
-                'asset_code' => 'SZL',
-                'note' => null,
-                'idempotency_key' => 'idem-transfer-shared',
+                'provider_status'       => 'pending',
+                'transaction_type'      => MtnMomoTransaction::TYPE_DISBURSEMENT,
+                'party_msisdn'          => '+26876120001',
+                'amount'                => '60.00',
+                'asset_code'            => 'SZL',
+                'note'                  => null,
+                'idempotency_key'       => 'idem-transfer-shared',
             ]);
         $adapter->shouldReceive('initiateOutboundDisbursement')
             ->once()
             ->andReturn([
-                'provider_name' => 'mtn_momo',
+                'provider_name'         => 'mtn_momo',
                 'provider_reference_id' => 'provider-transfer-actor-2',
-                'provider_status' => 'pending',
-                'transaction_type' => MtnMomoTransaction::TYPE_DISBURSEMENT,
-                'party_msisdn' => '+26876120002',
-                'amount' => '60.00',
-                'asset_code' => 'SZL',
-                'note' => null,
-                'idempotency_key' => 'idem-transfer-shared',
+                'provider_status'       => 'pending',
+                'transaction_type'      => MtnMomoTransaction::TYPE_DISBURSEMENT,
+                'party_msisdn'          => '+26876120002',
+                'amount'                => '60.00',
+                'asset_code'            => 'SZL',
+                'note'                  => null,
+                'idempotency_key'       => 'idem-transfer-shared',
             ]);
 
         $notifications = Mockery::mock(MinorNotificationService::class);
@@ -537,25 +536,25 @@ class MinorFamilyIntegrationServiceTest extends TestCase
         $service = $this->makeService($access, $policy, $adapter, $notifications);
 
         $firstTransfer = $service->createOutboundSupportTransfer($firstActor, $minorAccount, [
-            'tenant_id' => 'tenant-test-1',
+            'tenant_id'           => 'tenant-test-1',
             'source_account_uuid' => $firstSourceAccount->uuid,
-            'provider' => 'mtn_momo',
-            'recipient_name' => 'Relative One',
-            'recipient_msisdn' => '+26876120001',
-            'amount' => '60.00',
-            'asset_code' => 'SZL',
-            'idempotency_key' => 'idem-transfer-shared',
+            'provider'            => 'mtn_momo',
+            'recipient_name'      => 'Relative One',
+            'recipient_msisdn'    => '+26876120001',
+            'amount'              => '60.00',
+            'asset_code'          => 'SZL',
+            'idempotency_key'     => 'idem-transfer-shared',
         ]);
 
         $secondTransfer = $service->createOutboundSupportTransfer($secondActor, $minorAccount, [
-            'tenant_id' => 'tenant-test-1',
+            'tenant_id'           => 'tenant-test-1',
             'source_account_uuid' => $secondSourceAccount->uuid,
-            'provider' => 'mtn_momo',
-            'recipient_name' => 'Relative Two',
-            'recipient_msisdn' => '+26876120002',
-            'amount' => '60.00',
-            'asset_code' => 'SZL',
-            'idempotency_key' => 'idem-transfer-shared',
+            'provider'            => 'mtn_momo',
+            'recipient_name'      => 'Relative Two',
+            'recipient_msisdn'    => '+26876120002',
+            'amount'              => '60.00',
+            'asset_code'          => 'SZL',
+            'idempotency_key'     => 'idem-transfer-shared',
         ]);
 
         $this->assertNotSame($firstTransfer->id, $secondTransfer->id);
@@ -579,12 +578,12 @@ class MinorFamilyIntegrationServiceTest extends TestCase
 
         $minorAccount = Account::factory()->create([
             'user_uuid' => $minorOwner->uuid,
-            'type' => 'minor',
+            'type'      => 'minor',
         ]);
 
         $actingAccount = Account::factory()->create([
             'user_uuid' => $actor->uuid,
-            'type' => 'personal',
+            'type'      => 'personal',
         ]);
 
         $access = Mockery::mock(MinorAccountAccessService::class);
@@ -608,27 +607,27 @@ class MinorFamilyIntegrationServiceTest extends TestCase
             ->count();
 
         $firstLink = $service->createFundingLink($actor, $minorAccount, [
-            'tenant_id' => 'tenant-test-1',
+            'tenant_id'               => 'tenant-test-1',
             'created_by_account_uuid' => $actingAccount->uuid,
-            'title' => 'School trip',
-            'note' => 'One-time support collection',
-            'amount_mode' => 'capped',
-            'target_amount' => '1000.00',
-            'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay()->toIso8601String(),
-            'idempotency_key' => 'idem-funding-link-1',
+            'title'                   => 'School trip',
+            'note'                    => 'One-time support collection',
+            'amount_mode'             => 'capped',
+            'target_amount'           => '1000.00',
+            'provider_options'        => ['mtn_momo'],
+            'expires_at'              => now()->addDay()->toIso8601String(),
+            'idempotency_key'         => 'idem-funding-link-1',
         ]);
 
         $replayedLink = $service->createFundingLink($actor, $minorAccount, [
-            'tenant_id' => 'tenant-test-1',
+            'tenant_id'               => 'tenant-test-1',
             'created_by_account_uuid' => $actingAccount->uuid,
-            'title' => 'School trip',
-            'note' => 'One-time support collection',
-            'amount_mode' => 'capped',
-            'target_amount' => '1000.00',
-            'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay()->toIso8601String(),
-            'idempotency_key' => 'idem-funding-link-1',
+            'title'                   => 'School trip',
+            'note'                    => 'One-time support collection',
+            'amount_mode'             => 'capped',
+            'target_amount'           => '1000.00',
+            'provider_options'        => ['mtn_momo'],
+            'expires_at'              => now()->addDay()->toIso8601String(),
+            'idempotency_key'         => 'idem-funding-link-1',
         ]);
 
         $this->assertSame($firstLink->id, $replayedLink->id);
@@ -653,12 +652,12 @@ class MinorFamilyIntegrationServiceTest extends TestCase
 
         $minorAccount = Account::factory()->create([
             'user_uuid' => $minorOwner->uuid,
-            'type' => 'minor',
+            'type'      => 'minor',
         ]);
 
         $sourceAccount = Account::factory()->create([
             'user_uuid' => $actor->uuid,
-            'type' => 'personal',
+            'type'      => 'personal',
         ]);
 
         $access = Mockery::mock(MinorAccountAccessService::class);
@@ -674,19 +673,19 @@ class MinorFamilyIntegrationServiceTest extends TestCase
         $adapter = Mockery::mock(MtnMomoFamilyFundingAdapter::class);
         $adapter->shouldReceive('initiateOutboundDisbursement')
             ->once()
-            ->andThrow(new \RuntimeException('transient provider failure'));
+            ->andThrow(new RuntimeException('transient provider failure'));
         $adapter->shouldReceive('initiateOutboundDisbursement')
             ->once()
             ->andReturn([
-                'provider_name' => 'mtn_momo',
+                'provider_name'         => 'mtn_momo',
                 'provider_reference_id' => 'provider-transfer-retry',
-                'provider_status' => 'pending',
-                'transaction_type' => MtnMomoTransaction::TYPE_DISBURSEMENT,
-                'party_msisdn' => '+26876123456',
-                'amount' => '250.00',
-                'asset_code' => 'SZL',
-                'note' => 'School support',
-                'idempotency_key' => 'idem-transfer-retry',
+                'provider_status'       => 'pending',
+                'transaction_type'      => MtnMomoTransaction::TYPE_DISBURSEMENT,
+                'party_msisdn'          => '+26876123456',
+                'amount'                => '250.00',
+                'asset_code'            => 'SZL',
+                'note'                  => 'School support',
+                'idempotency_key'       => 'idem-transfer-retry',
             ]);
 
         $notifications = Mockery::mock(MinorNotificationService::class);
@@ -696,38 +695,38 @@ class MinorFamilyIntegrationServiceTest extends TestCase
 
         try {
             $service->createOutboundSupportTransfer($actor, $minorAccount, [
-                'tenant_id' => 'tenant-test-1',
+                'tenant_id'           => 'tenant-test-1',
                 'source_account_uuid' => $sourceAccount->uuid,
-                'provider' => 'mtn_momo',
-                'recipient_name' => 'Gogo Dlamini',
-                'recipient_msisdn' => '+26876123456',
-                'amount' => '250.00',
-                'asset_code' => 'SZL',
-                'note' => 'School support',
-                'idempotency_key' => 'idem-transfer-retry',
+                'provider'            => 'mtn_momo',
+                'recipient_name'      => 'Gogo Dlamini',
+                'recipient_msisdn'    => '+26876123456',
+                'amount'              => '250.00',
+                'asset_code'          => 'SZL',
+                'note'                => 'School support',
+                'idempotency_key'     => 'idem-transfer-retry',
             ]);
 
             $this->fail('Expected the first provider initiation to fail.');
-        } catch (\RuntimeException $exception) {
+        } catch (RuntimeException $exception) {
             $this->assertSame('transient provider failure', $exception->getMessage());
         }
 
         $this->assertDatabaseMissing('operation_records', [
-            'user_id' => $actor->id,
-            'operation_type' => 'minor_family_support_transfer',
+            'user_id'         => $actor->id,
+            'operation_type'  => 'minor_family_support_transfer',
             'idempotency_key' => 'idem-transfer-retry',
         ]);
 
         $transfer = $service->createOutboundSupportTransfer($actor, $minorAccount, [
-            'tenant_id' => 'tenant-test-1',
+            'tenant_id'           => 'tenant-test-1',
             'source_account_uuid' => $sourceAccount->uuid,
-            'provider' => 'mtn_momo',
-            'recipient_name' => 'Gogo Dlamini',
-            'recipient_msisdn' => '+26876123456',
-            'amount' => '250.00',
-            'asset_code' => 'SZL',
-            'note' => 'School support',
-            'idempotency_key' => 'idem-transfer-retry',
+            'provider'            => 'mtn_momo',
+            'recipient_name'      => 'Gogo Dlamini',
+            'recipient_msisdn'    => '+26876123456',
+            'amount'              => '250.00',
+            'asset_code'          => 'SZL',
+            'note'                => 'School support',
+            'idempotency_key'     => 'idem-transfer-retry',
         ]);
 
         $this->assertSame('provider-transfer-retry', $transfer->provider_reference_id);
@@ -742,28 +741,28 @@ class MinorFamilyIntegrationServiceTest extends TestCase
 
         $minorAccount = Account::factory()->create([
             'user_uuid' => $minorOwner->uuid,
-            'type' => 'minor',
+            'type'      => 'minor',
         ]);
 
         $link = MinorFamilyFundingLink::query()->create([
-            'tenant_id' => 'tenant-test-1',
-            'minor_account_uuid' => $minorAccount->uuid,
-            'created_by_user_uuid' => $creator->uuid,
+            'tenant_id'               => 'tenant-test-1',
+            'minor_account_uuid'      => $minorAccount->uuid,
+            'created_by_user_uuid'    => $creator->uuid,
             'created_by_account_uuid' => Account::factory()->create([
                 'user_uuid' => $creator->uuid,
-                'type' => 'personal',
+                'type'      => 'personal',
             ])->uuid,
-            'title' => 'Family support',
-            'note' => 'Help Sipho',
-            'token' => (string) Str::uuid(),
-            'status' => MinorFamilyFundingLink::STATUS_ACTIVE,
-            'amount_mode' => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
-            'fixed_amount' => '120.00',
-            'target_amount' => null,
+            'title'            => 'Family support',
+            'note'             => 'Help Sipho',
+            'token'            => (string) Str::uuid(),
+            'status'           => MinorFamilyFundingLink::STATUS_ACTIVE,
+            'amount_mode'      => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
+            'fixed_amount'     => '120.00',
+            'target_amount'    => null,
             'collected_amount' => '0.00',
-            'asset_code' => 'SZL',
+            'asset_code'       => 'SZL',
             'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay(),
+            'expires_at'       => now()->addDay(),
         ]);
 
         $access = Mockery::mock(MinorAccountAccessService::class);
@@ -776,19 +775,19 @@ class MinorFamilyIntegrationServiceTest extends TestCase
         $adapter = Mockery::mock(MtnMomoFamilyFundingAdapter::class);
         $adapter->shouldReceive('initiateInboundCollection')
             ->once()
-            ->andThrow(new \RuntimeException('transient provider failure'));
+            ->andThrow(new RuntimeException('transient provider failure'));
         $adapter->shouldReceive('initiateInboundCollection')
             ->once()
             ->andReturn([
-                'provider_name' => 'mtn_momo',
+                'provider_name'         => 'mtn_momo',
                 'provider_reference_id' => 'provider-attempt-retry',
-                'provider_status' => 'pending',
-                'transaction_type' => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
-                'party_msisdn' => '+26876123456',
-                'amount' => '120.00',
-                'asset_code' => 'SZL',
-                'note' => 'Help Sipho',
-                'idempotency_key' => hash('sha256', implode('|', [
+                'provider_status'       => 'pending',
+                'transaction_type'      => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
+                'party_msisdn'          => '+26876123456',
+                'amount'                => '120.00',
+                'asset_code'            => 'SZL',
+                'note'                  => 'Help Sipho',
+                'idempotency_key'       => hash('sha256', implode('|', [
                     $link->id,
                     '26876123456',
                     '120.00',
@@ -804,15 +803,15 @@ class MinorFamilyIntegrationServiceTest extends TestCase
 
         try {
             $service->createPublicFundingAttempt($link, [
-                'sponsor_name' => 'Auntie',
+                'sponsor_name'   => 'Auntie',
                 'sponsor_msisdn' => '+26876123456',
-                'amount' => '120.00',
-                'asset_code' => 'SZL',
-                'provider' => 'mtn_momo',
+                'amount'         => '120.00',
+                'asset_code'     => 'SZL',
+                'provider'       => 'mtn_momo',
             ]);
 
             $this->fail('Expected the first provider initiation to fail.');
-        } catch (\RuntimeException $exception) {
+        } catch (RuntimeException $exception) {
             $this->assertSame('transient provider failure', $exception->getMessage());
         }
 
@@ -825,21 +824,21 @@ class MinorFamilyIntegrationServiceTest extends TestCase
         ]));
 
         $this->assertDatabaseMissing('minor_family_funding_attempts', [
-            'dedupe_hash' => $expectedDedupe,
-            'status' => MinorFamilyFundingAttempt::STATUS_FAILED,
+            'dedupe_hash'   => $expectedDedupe,
+            'status'        => MinorFamilyFundingAttempt::STATUS_FAILED,
             'failed_reason' => 'provider_initiation_failed',
         ]);
         $this->assertDatabaseMissing('mtn_momo_transactions', [
             'idempotency_key' => $expectedDedupe,
-            'status' => MtnMomoTransaction::STATUS_FAILED,
+            'status'          => MtnMomoTransaction::STATUS_FAILED,
         ]);
 
         $retry = $service->createPublicFundingAttempt($link, [
-            'sponsor_name' => 'Auntie',
+            'sponsor_name'   => 'Auntie',
             'sponsor_msisdn' => '+26876123456',
-            'amount' => '120.00',
-            'asset_code' => 'SZL',
-            'provider' => 'mtn_momo',
+            'amount'         => '120.00',
+            'asset_code'     => 'SZL',
+            'provider'       => 'mtn_momo',
         ]);
 
         $this->assertSame('provider-attempt-retry', $retry->provider_reference_id);
@@ -853,28 +852,28 @@ class MinorFamilyIntegrationServiceTest extends TestCase
 
         $minorAccount = Account::factory()->create([
             'user_uuid' => $minorOwner->uuid,
-            'type' => 'minor',
+            'type'      => 'minor',
         ]);
 
         $link = MinorFamilyFundingLink::query()->create([
-            'tenant_id' => 'tenant-test-1',
-            'minor_account_uuid' => $minorAccount->uuid,
-            'created_by_user_uuid' => $creator->uuid,
+            'tenant_id'               => 'tenant-test-1',
+            'minor_account_uuid'      => $minorAccount->uuid,
+            'created_by_user_uuid'    => $creator->uuid,
             'created_by_account_uuid' => Account::factory()->create([
                 'user_uuid' => $creator->uuid,
-                'type' => 'personal',
+                'type'      => 'personal',
             ])->uuid,
-            'title' => 'Family support',
-            'note' => 'Help Sipho',
-            'token' => (string) Str::uuid(),
-            'status' => MinorFamilyFundingLink::STATUS_ACTIVE,
-            'amount_mode' => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
-            'fixed_amount' => '120.00',
-            'target_amount' => null,
+            'title'            => 'Family support',
+            'note'             => 'Help Sipho',
+            'token'            => (string) Str::uuid(),
+            'status'           => MinorFamilyFundingLink::STATUS_ACTIVE,
+            'amount_mode'      => MinorFamilyFundingLink::AMOUNT_MODE_FIXED,
+            'fixed_amount'     => '120.00',
+            'target_amount'    => null,
             'collected_amount' => '0.00',
-            'asset_code' => 'SZL',
+            'asset_code'       => 'SZL',
             'provider_options' => ['mtn_momo'],
-            'expires_at' => now()->addDay(),
+            'expires_at'       => now()->addDay(),
         ]);
 
         $access = Mockery::mock(MinorAccountAccessService::class);
@@ -894,11 +893,11 @@ class MinorFamilyIntegrationServiceTest extends TestCase
         $this->expectExceptionMessage('Requested asset code must match the funding link asset code.');
 
         $service->createPublicFundingAttempt($link, [
-            'sponsor_name' => 'Auntie',
+            'sponsor_name'   => 'Auntie',
             'sponsor_msisdn' => '+26876123456',
-            'amount' => '120.00',
-            'asset_code' => 'USD',
-            'provider' => 'mtn_momo',
+            'amount'         => '120.00',
+            'asset_code'     => 'USD',
+            'provider'       => 'mtn_momo',
         ]);
     }
 
@@ -927,7 +926,7 @@ class MinorFamilyIntegrationServiceTest extends TestCase
                 ->where('migration', '2026_04_23_100000_create_minor_family_funding_links_table')
                 ->delete();
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/2026_04_23_100000_create_minor_family_funding_links_table.php',
+                '--path'  => 'database/migrations/2026_04_23_100000_create_minor_family_funding_links_table.php',
                 '--force' => true,
             ]);
         }
@@ -937,7 +936,7 @@ class MinorFamilyIntegrationServiceTest extends TestCase
                 ->where('migration', '2026_04_23_100100_create_minor_family_funding_attempts_table')
                 ->delete();
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/2026_04_23_100100_create_minor_family_funding_attempts_table.php',
+                '--path'  => 'database/migrations/2026_04_23_100100_create_minor_family_funding_attempts_table.php',
                 '--force' => true,
             ]);
         }
@@ -947,18 +946,18 @@ class MinorFamilyIntegrationServiceTest extends TestCase
                 ->where('migration', '2026_04_23_100200_create_minor_family_support_transfers_table')
                 ->delete();
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/2026_04_23_100200_create_minor_family_support_transfers_table.php',
+                '--path'  => 'database/migrations/2026_04_23_100200_create_minor_family_support_transfers_table.php',
                 '--force' => true,
             ]);
         }
 
         Artisan::call('migrate', [
-            '--path' => 'database/migrations/2026_04_23_100250_scope_minor_family_support_transfer_idempotency_unique.php',
+            '--path'  => 'database/migrations/2026_04_23_100250_scope_minor_family_support_transfer_idempotency_unique.php',
             '--force' => true,
         ]);
 
         Artisan::call('migrate', [
-            '--path' => 'database/migrations/2026_04_23_100350_update_minor_family_status_defaults_to_pending_provider.php',
+            '--path'  => 'database/migrations/2026_04_23_100350_update_minor_family_status_defaults_to_pending_provider.php',
             '--force' => true,
         ]);
 
@@ -967,7 +966,7 @@ class MinorFamilyIntegrationServiceTest extends TestCase
                 ->where('migration', '2026_04_23_100300_add_minor_family_context_to_mtn_momo_transactions_table')
                 ->delete();
             Artisan::call('migrate', [
-                '--path' => 'database/migrations/2026_04_23_100300_add_minor_family_context_to_mtn_momo_transactions_table.php',
+                '--path'  => 'database/migrations/2026_04_23_100300_add_minor_family_context_to_mtn_momo_transactions_table.php',
                 '--force' => true,
             ]);
         }

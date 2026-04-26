@@ -13,10 +13,10 @@ beforeEach(function (): void {
     $adapter = Mockery::mock(MtnMomoFamilyFundingAdapter::class);
     $adapter->shouldReceive('initiateInboundCollection')
         ->andReturn([
-            'provider_name' => 'mtn_momo',
+            'provider_name'         => 'mtn_momo',
             'provider_reference_id' => 'prov-ref-' . uniqid(),
-            'provider_status' => 'pending',
-            'transaction_type' => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
+            'provider_status'       => 'pending',
+            'transaction_type'      => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
         ])
         ->byDefault();
     $this->app->instance(MtnMomoFamilyFundingAdapter::class, $adapter);
@@ -26,10 +26,10 @@ beforeEach(function (): void {
     $adapter = Mockery::mock(MtnMomoFamilyFundingAdapter::class);
     $adapter->shouldReceive('initiateInboundCollection')
         ->andReturn([
-            'provider_name' => 'mtn_momo',
+            'provider_name'         => 'mtn_momo',
             'provider_reference_id' => 'prov-ref-' . uniqid(),
-            'provider_status' => 'pending',
-            'transaction_type' => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
+            'provider_status'       => 'pending',
+            'transaction_type'      => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
         ])
         ->byDefault();
     $this->app->instance(MtnMomoFamilyFundingAdapter::class, $adapter);
@@ -39,17 +39,17 @@ it('returns the existing funding attempt on deduplicated concurrent requests', f
     $parent = Account::factory()->create(['type' => 'personal']);
 
     $link = MinorFamilyFundingLink::query()->create([
-        'tenant_id' => 'test-tenant',
-        'minor_account_uuid' => $parent->uuid,
-        'created_by_user_uuid' => $parent->user_uuid,
+        'tenant_id'               => 'test-tenant',
+        'minor_account_uuid'      => $parent->uuid,
+        'created_by_user_uuid'    => $parent->user_uuid,
         'created_by_account_uuid' => $parent->uuid,
-        'title' => 'Test Link',
-        'token' => 'test-token-' . uniqid(),
-        'status' => 'active',
-        'amount_mode' => 'fixed',
-        'fixed_amount' => '100.00',
-        'collected_amount' => '0',
-        'asset_code' => 'SZL',
+        'title'                   => 'Test Link',
+        'token'                   => 'test-token-' . uniqid(),
+        'status'                  => 'active',
+        'amount_mode'             => 'fixed',
+        'fixed_amount'            => '100.00',
+        'collected_amount'        => '0',
+        'asset_code'              => 'SZL',
     ]);
 
     $attributes = [
@@ -66,7 +66,8 @@ it('returns the existing funding attempt on deduplicated concurrent requests', f
     $attempt2 = $service->createPublicFundingAttempt($link, $attributes);
 
     expect($attempt1->id)->toBe($attempt2->id);
-    expect(MinorFamilyFundingAttempt::query()
+    expect(
+        MinorFamilyFundingAttempt::query()
         ->where('dedupe_hash', $attempt1->dedupe_hash)
         ->count()
     )->toBe(1);

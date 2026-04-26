@@ -7,7 +7,6 @@ use App\Filament\Admin\Resources\MinorAccountLifecycleExceptionResource\Pages\Li
 use App\Filament\Admin\Resources\MinorAccountLifecycleExceptionResource\Pages\ViewMinorAccountLifecycleException;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -41,18 +40,18 @@ it('allows operators to review and resolve lifecycle exceptions', function (): v
     $this->actingAs($operator);
 
     $exception = MinorAccountLifecycleException::query()->create([
-        'id' => (string) Str::uuid(),
-        'tenant_id' => 'tenant-filament',
+        'id'                 => (string) Str::uuid(),
+        'tenant_id'          => 'tenant-filament',
         'minor_account_uuid' => (string) Str::uuid(),
-        'transition_id' => null,
-        'reason_code' => 'adult_kyc_not_ready',
-        'status' => MinorAccountLifecycleException::STATUS_OPEN,
-        'source' => 'scheduler',
-        'occurrence_count' => 1,
-        'metadata' => [],
-        'first_seen_at' => now()->subHour(),
-        'last_seen_at' => now(),
-        'sla_due_at' => now()->addDay(),
+        'transition_id'      => null,
+        'reason_code'        => 'adult_kyc_not_ready',
+        'status'             => MinorAccountLifecycleException::STATUS_OPEN,
+        'source'             => 'scheduler',
+        'occurrence_count'   => 1,
+        'metadata'           => [],
+        'first_seen_at'      => now()->subHour(),
+        'last_seen_at'       => now(),
+        'sla_due_at'         => now()->addDay(),
     ]);
 
     livewire(ListMinorAccountLifecycleExceptions::class)

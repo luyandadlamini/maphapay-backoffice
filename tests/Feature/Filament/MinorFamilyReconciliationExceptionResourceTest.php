@@ -19,14 +19,14 @@ beforeEach(function (): void {
     if (Schema::hasTable('minor_family_reconciliation_exceptions')
         && ! Schema::hasColumns('minor_family_reconciliation_exceptions', ['sla_due_at', 'sla_escalated_at'])) {
         Artisan::call('migrate', [
-            '--path' => 'database/migrations/2026_04_23_100410_add_sla_columns_to_minor_family_reconciliation_exceptions_table.php',
+            '--path'  => 'database/migrations/2026_04_23_100410_add_sla_columns_to_minor_family_reconciliation_exceptions_table.php',
             '--force' => true,
         ]);
     }
 
     if (! Schema::hasTable('minor_family_reconciliation_exception_acknowledgments')) {
         Artisan::call('migrate', [
-            '--path' => 'database/migrations/2026_04_23_100420_create_minor_family_reconciliation_exception_acknowledgments_table.php',
+            '--path'  => 'database/migrations/2026_04_23_100420_create_minor_family_reconciliation_exception_acknowledgments_table.php',
             '--force' => true,
         ]);
     }
@@ -34,7 +34,7 @@ beforeEach(function (): void {
     if (Schema::hasTable('minor_family_reconciliation_exceptions')
         && ! Schema::hasColumns('minor_family_reconciliation_exceptions', ['resolved_at'])) {
         Artisan::call('migrate', [
-            '--path' => 'database/migrations/2026_04_23_100430_add_resolved_at_to_minor_family_reconciliation_exceptions_table.php',
+            '--path'  => 'database/migrations/2026_04_23_100430_add_resolved_at_to_minor_family_reconciliation_exceptions_table.php',
             '--force' => true,
         ]);
     }
@@ -54,27 +54,27 @@ it('allows operators to list and view reconciliation exception artifacts', funct
 
     $transactionOwner = User::factory()->create();
     $mtnTransaction = MtnMomoTransaction::query()->create([
-        'id' => (string) Str::uuid(),
-        'user_id' => $transactionOwner->id,
-        'idempotency_key' => (string) Str::uuid(),
-        'type' => MtnMomoTransaction::TYPE_DISBURSEMENT,
-        'amount' => '450.00',
-        'currency' => 'SZL',
-        'status' => MtnMomoTransaction::STATUS_FAILED,
-        'party_msisdn' => '26876123456',
+        'id'               => (string) Str::uuid(),
+        'user_id'          => $transactionOwner->id,
+        'idempotency_key'  => (string) Str::uuid(),
+        'type'             => MtnMomoTransaction::TYPE_DISBURSEMENT,
+        'amount'           => '450.00',
+        'currency'         => 'SZL',
+        'status'           => MtnMomoTransaction::STATUS_FAILED,
+        'party_msisdn'     => '26876123456',
         'mtn_reference_id' => 'recon-ref-001',
     ]);
 
     $exception = MinorFamilyReconciliationException::query()->create([
-        'id' => (string) Str::uuid(),
+        'id'                      => (string) Str::uuid(),
         'mtn_momo_transaction_id' => $mtnTransaction->id,
-        'reason_code' => 'unresolved_outcome',
-        'status' => MinorFamilyReconciliationException::STATUS_OPEN,
-        'source' => 'callback',
-        'occurrence_count' => 1,
-        'metadata' => ['transaction_status' => 'failed'],
-        'first_seen_at' => now()->subMinutes(5),
-        'last_seen_at' => now(),
+        'reason_code'             => 'unresolved_outcome',
+        'status'                  => MinorFamilyReconciliationException::STATUS_OPEN,
+        'source'                  => 'callback',
+        'occurrence_count'        => 1,
+        'metadata'                => ['transaction_status' => 'failed'],
+        'first_seen_at'           => now()->subMinutes(5),
+        'last_seen_at'            => now(),
     ]);
 
     livewire(ListMinorFamilyReconciliationExceptions::class)
@@ -93,27 +93,27 @@ it('supports conservative acknowledge-manual-review action with audit trail meta
 
     $transactionOwner = User::factory()->create();
     $mtnTransaction = MtnMomoTransaction::query()->create([
-        'id' => (string) Str::uuid(),
-        'user_id' => $transactionOwner->id,
-        'idempotency_key' => (string) Str::uuid(),
-        'type' => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
-        'amount' => '300.00',
-        'currency' => 'SZL',
-        'status' => MtnMomoTransaction::STATUS_SUCCESSFUL,
-        'party_msisdn' => '26876000123',
+        'id'               => (string) Str::uuid(),
+        'user_id'          => $transactionOwner->id,
+        'idempotency_key'  => (string) Str::uuid(),
+        'type'             => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
+        'amount'           => '300.00',
+        'currency'         => 'SZL',
+        'status'           => MtnMomoTransaction::STATUS_SUCCESSFUL,
+        'party_msisdn'     => '26876000123',
         'mtn_reference_id' => 'recon-ref-002',
     ]);
 
     $exception = MinorFamilyReconciliationException::query()->create([
-        'id' => (string) Str::uuid(),
+        'id'                      => (string) Str::uuid(),
         'mtn_momo_transaction_id' => $mtnTransaction->id,
-        'reason_code' => 'unresolved_outcome',
-        'status' => MinorFamilyReconciliationException::STATUS_OPEN,
-        'source' => 'status_poll',
-        'occurrence_count' => 2,
-        'metadata' => ['transaction_status' => 'successful'],
-        'first_seen_at' => now()->subMinutes(8),
-        'last_seen_at' => now(),
+        'reason_code'             => 'unresolved_outcome',
+        'status'                  => MinorFamilyReconciliationException::STATUS_OPEN,
+        'source'                  => 'status_poll',
+        'occurrence_count'        => 2,
+        'metadata'                => ['transaction_status' => 'successful'],
+        'first_seen_at'           => now()->subMinutes(8),
+        'last_seen_at'            => now(),
     ]);
 
     livewire(ListMinorFamilyReconciliationExceptions::class)
@@ -151,27 +151,27 @@ it('supports explicit resolve and reopen lifecycle actions with audit trail', fu
 
     $transactionOwner = User::factory()->create();
     $mtnTransaction = MtnMomoTransaction::query()->create([
-        'id' => (string) Str::uuid(),
-        'user_id' => $transactionOwner->id,
-        'idempotency_key' => (string) Str::uuid(),
-        'type' => MtnMomoTransaction::TYPE_DISBURSEMENT,
-        'amount' => '210.00',
-        'currency' => 'SZL',
-        'status' => MtnMomoTransaction::STATUS_FAILED,
-        'party_msisdn' => '26876009999',
+        'id'               => (string) Str::uuid(),
+        'user_id'          => $transactionOwner->id,
+        'idempotency_key'  => (string) Str::uuid(),
+        'type'             => MtnMomoTransaction::TYPE_DISBURSEMENT,
+        'amount'           => '210.00',
+        'currency'         => 'SZL',
+        'status'           => MtnMomoTransaction::STATUS_FAILED,
+        'party_msisdn'     => '26876009999',
         'mtn_reference_id' => 'recon-ref-003',
     ]);
 
     $exception = MinorFamilyReconciliationException::query()->create([
-        'id' => (string) Str::uuid(),
+        'id'                      => (string) Str::uuid(),
         'mtn_momo_transaction_id' => $mtnTransaction->id,
-        'reason_code' => 'unresolved_outcome',
-        'status' => MinorFamilyReconciliationException::STATUS_OPEN,
-        'source' => 'callback',
-        'occurrence_count' => 1,
-        'metadata' => ['transaction_status' => 'failed'],
-        'first_seen_at' => now()->subMinutes(30),
-        'last_seen_at' => now()->subMinutes(10),
+        'reason_code'             => 'unresolved_outcome',
+        'status'                  => MinorFamilyReconciliationException::STATUS_OPEN,
+        'source'                  => 'callback',
+        'occurrence_count'        => 1,
+        'metadata'                => ['transaction_status' => 'failed'],
+        'first_seen_at'           => now()->subMinutes(30),
+        'last_seen_at'            => now()->subMinutes(10),
     ]);
 
     livewire(ListMinorFamilyReconciliationExceptions::class)

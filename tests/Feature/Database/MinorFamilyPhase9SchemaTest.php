@@ -171,7 +171,7 @@ class MinorFamilyPhase9SchemaTest extends TestCase
 
         // Same actor + key is allowed when tenant scope differs.
         $this->insertMinorFamilySupportTransfer([
-            'tenant_id' => 'tenant-2',
+            'tenant_id'       => 'tenant-2',
             'idempotency_key' => $idempotencyKey,
             'actor_user_uuid' => $actorUserUuid,
         ]);
@@ -227,73 +227,73 @@ class MinorFamilyPhase9SchemaTest extends TestCase
     private function insertMinorFamilyFundingLink(array $overrides = []): void
     {
         DB::table('minor_family_funding_links')->insert(array_merge([
-            'id' => (string) Str::uuid(),
-            'tenant_id' => 'tenant-1',
-            'minor_account_uuid' => (string) Str::uuid(),
-            'created_by_user_uuid' => (string) Str::uuid(),
+            'id'                      => (string) Str::uuid(),
+            'tenant_id'               => 'tenant-1',
+            'minor_account_uuid'      => (string) Str::uuid(),
+            'created_by_user_uuid'    => (string) Str::uuid(),
             'created_by_account_uuid' => (string) Str::uuid(),
-            'title' => 'Family support',
-            'note' => null,
-            'token' => (string) Str::uuid(),
-            'status' => 'active',
-            'amount_mode' => 'fixed',
-            'fixed_amount' => '100.00',
-            'target_amount' => null,
-            'collected_amount' => '0',
-            'asset_code' => 'SZL',
-            'provider_options' => null,
-            'expires_at' => null,
-            'last_funded_at' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
+            'title'                   => 'Family support',
+            'note'                    => null,
+            'token'                   => (string) Str::uuid(),
+            'status'                  => 'active',
+            'amount_mode'             => 'fixed',
+            'fixed_amount'            => '100.00',
+            'target_amount'           => null,
+            'collected_amount'        => '0',
+            'asset_code'              => 'SZL',
+            'provider_options'        => null,
+            'expires_at'              => null,
+            'last_funded_at'          => null,
+            'created_at'              => now(),
+            'updated_at'              => now(),
         ], $overrides));
     }
 
     private function insertMinorFamilyFundingAttempt(array $overrides = []): void
     {
         DB::table('minor_family_funding_attempts')->insert(array_merge([
-            'id' => (string) Str::uuid(),
-            'tenant_id' => 'tenant-1',
-            'funding_link_uuid' => (string) Str::uuid(),
-            'minor_account_uuid' => (string) Str::uuid(),
-            'status' => 'pending_provider',
-            'sponsor_name' => 'Sponsor',
-            'sponsor_msisdn' => '+26876000000',
-            'amount' => '100.00',
-            'asset_code' => 'SZL',
-            'provider_name' => 'mtn_momo',
-            'provider_reference_id' => null,
+            'id'                      => (string) Str::uuid(),
+            'tenant_id'               => 'tenant-1',
+            'funding_link_uuid'       => (string) Str::uuid(),
+            'minor_account_uuid'      => (string) Str::uuid(),
+            'status'                  => 'pending_provider',
+            'sponsor_name'            => 'Sponsor',
+            'sponsor_msisdn'          => '+26876000000',
+            'amount'                  => '100.00',
+            'asset_code'              => 'SZL',
+            'provider_name'           => 'mtn_momo',
+            'provider_reference_id'   => null,
             'mtn_momo_transaction_id' => null,
-            'wallet_credited_at' => null,
-            'failed_reason' => null,
-            'dedupe_hash' => (string) Str::uuid(),
-            'created_at' => now(),
-            'updated_at' => now(),
+            'wallet_credited_at'      => null,
+            'failed_reason'           => null,
+            'dedupe_hash'             => (string) Str::uuid(),
+            'created_at'              => now(),
+            'updated_at'              => now(),
         ], $overrides));
     }
 
     private function insertMinorFamilySupportTransfer(array $overrides = []): void
     {
         DB::table('minor_family_support_transfers')->insert(array_merge([
-            'id' => (string) Str::uuid(),
-            'tenant_id' => 'tenant-1',
-            'minor_account_uuid' => (string) Str::uuid(),
-            'actor_user_uuid' => (string) Str::uuid(),
-            'source_account_uuid' => (string) Str::uuid(),
-            'status' => 'pending_provider',
-            'provider_name' => 'mtn_momo',
-            'recipient_name' => 'Recipient',
-            'recipient_msisdn' => '+26876000001',
-            'amount' => '50.00',
-            'asset_code' => 'SZL',
-            'note' => null,
-            'provider_reference_id' => null,
+            'id'                      => (string) Str::uuid(),
+            'tenant_id'               => 'tenant-1',
+            'minor_account_uuid'      => (string) Str::uuid(),
+            'actor_user_uuid'         => (string) Str::uuid(),
+            'source_account_uuid'     => (string) Str::uuid(),
+            'status'                  => 'pending_provider',
+            'provider_name'           => 'mtn_momo',
+            'recipient_name'          => 'Recipient',
+            'recipient_msisdn'        => '+26876000001',
+            'amount'                  => '50.00',
+            'asset_code'              => 'SZL',
+            'note'                    => null,
+            'provider_reference_id'   => null,
             'mtn_momo_transaction_id' => null,
-            'wallet_refunded_at' => null,
-            'failed_reason' => null,
-            'idempotency_key' => (string) Str::uuid(),
-            'created_at' => now(),
-            'updated_at' => now(),
+            'wallet_refunded_at'      => null,
+            'failed_reason'           => null,
+            'idempotency_key'         => (string) Str::uuid(),
+            'created_at'              => now(),
+            'updated_at'              => now(),
         ], $overrides));
     }
 
@@ -355,7 +355,7 @@ class MinorFamilyPhase9SchemaTest extends TestCase
         }
 
         $fallback = DB::selectOne(
-            sprintf("SHOW COLUMNS FROM `%s` WHERE Field = ?", $table),
+            sprintf('SHOW COLUMNS FROM `%s` WHERE Field = ?', $table),
             [$column],
         );
 

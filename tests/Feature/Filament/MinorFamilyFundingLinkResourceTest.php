@@ -30,34 +30,34 @@ it('allows authorized operators to list and view funding links', function (): vo
     $creator = User::factory()->create();
 
     $minorAccount = Account::query()->create([
-        'uuid' => (string) Str::uuid(),
-        'name' => 'Minor Wallet',
+        'uuid'      => (string) Str::uuid(),
+        'name'      => 'Minor Wallet',
         'user_uuid' => $minorOwner->uuid,
     ]);
 
     $creatorAccount = Account::query()->create([
-        'uuid' => (string) Str::uuid(),
-        'name' => 'Guardian Wallet',
+        'uuid'      => (string) Str::uuid(),
+        'name'      => 'Guardian Wallet',
         'user_uuid' => $creator->uuid,
     ]);
 
     $fundingLink = MinorFamilyFundingLink::query()->create([
-        'id' => (string) Str::uuid(),
-        'tenant_id' => 'tenant-filament-tests',
-        'minor_account_uuid' => $minorAccount->uuid,
-        'created_by_user_uuid' => $creator->uuid,
+        'id'                      => (string) Str::uuid(),
+        'tenant_id'               => 'tenant-filament-tests',
+        'minor_account_uuid'      => $minorAccount->uuid,
+        'created_by_user_uuid'    => $creator->uuid,
         'created_by_account_uuid' => $creatorAccount->uuid,
-        'title' => 'School transport support',
-        'note' => 'Family contribution for school transport',
-        'token' => 'minor-link-'.Str::lower(Str::random(16)),
-        'status' => MinorFamilyFundingLink::STATUS_ACTIVE,
-        'amount_mode' => MinorFamilyFundingLink::AMOUNT_MODE_CAPPED,
-        'fixed_amount' => null,
-        'target_amount' => '500.00',
-        'collected_amount' => '150.00',
-        'asset_code' => 'SZL',
-        'provider_options' => [MinorFamilyFundingLink::DEFAULT_PROVIDER],
-        'expires_at' => now()->addDays(5),
+        'title'                   => 'School transport support',
+        'note'                    => 'Family contribution for school transport',
+        'token'                   => 'minor-link-' . Str::lower(Str::random(16)),
+        'status'                  => MinorFamilyFundingLink::STATUS_ACTIVE,
+        'amount_mode'             => MinorFamilyFundingLink::AMOUNT_MODE_CAPPED,
+        'fixed_amount'            => null,
+        'target_amount'           => '500.00',
+        'collected_amount'        => '150.00',
+        'asset_code'              => 'SZL',
+        'provider_options'        => [MinorFamilyFundingLink::DEFAULT_PROVIDER],
+        'expires_at'              => now()->addDays(5),
     ]);
 
     livewire(ListMinorFamilyFundingLinks::class)

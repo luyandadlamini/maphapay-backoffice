@@ -21,9 +21,13 @@ use Tests\TestCase;
 class MinorAccountLifecycleControllerTest extends TestCase
 {
     private string $tenantId;
+
     private User $guardianUser;
+
     private User $childUser;
+
     private Account $guardianAccount;
+
     private Account $minorAccount;
 
     protected function shouldCreateDefaultAccountsInSetup(): bool
@@ -57,46 +61,46 @@ class MinorAccountLifecycleControllerTest extends TestCase
 
         $this->tenantId = (string) Str::uuid();
         DB::connection('central')->table('tenants')->insert([
-            'id' => $this->tenantId,
-            'name' => 'Minor Lifecycle API Tenant',
-            'plan' => 'default',
-            'team_id' => null,
+            'id'            => $this->tenantId,
+            'name'          => 'Minor Lifecycle API Tenant',
+            'plan'          => 'default',
+            'team_id'       => null,
             'trial_ends_at' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-            'data' => json_encode([]),
+            'created_at'    => now(),
+            'updated_at'    => now(),
+            'data'          => json_encode([]),
         ]);
 
         $this->guardianUser = User::factory()->create();
         $this->childUser = User::factory()->create(['kyc_status' => 'pending']);
         $this->guardianAccount = Account::factory()->create([
             'user_uuid' => $this->guardianUser->uuid,
-            'type' => 'personal',
+            'type'      => 'personal',
         ]);
         $this->minorAccount = Account::factory()->create([
-            'user_uuid' => $this->childUser->uuid,
-            'type' => 'minor',
-            'tier' => 'rise',
-            'permission_level' => 6,
+            'user_uuid'         => $this->childUser->uuid,
+            'type'              => 'minor',
+            'tier'              => 'rise',
+            'permission_level'  => 6,
             'parent_account_id' => $this->guardianAccount->uuid,
         ]);
 
         AccountMembership::query()->create([
-            'tenant_id' => $this->tenantId,
+            'tenant_id'    => $this->tenantId,
             'account_uuid' => $this->minorAccount->uuid,
-            'user_uuid' => $this->guardianUser->uuid,
-            'role' => 'guardian',
-            'status' => 'active',
+            'user_uuid'    => $this->guardianUser->uuid,
+            'role'         => 'guardian',
+            'status'       => 'active',
             'account_type' => 'minor',
         ]);
 
         UserProfile::query()->create([
-            'user_id' => $this->childUser->id,
-            'email' => $this->childUser->email,
-            'first_name' => 'Teen',
-            'status' => 'active',
+            'user_id'       => $this->childUser->id,
+            'email'         => $this->childUser->email,
+            'first_name'    => 'Teen',
+            'status'        => 'active',
             'date_of_birth' => now()->subYears(18)->toDateString(),
-            'is_verified' => false,
+            'is_verified'   => false,
         ]);
     }
 
@@ -139,15 +143,15 @@ class MinorAccountLifecycleControllerTest extends TestCase
             ->firstOrFail();
 
         $this->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/lifecycle/review-actions", [
-            'action' => 'acknowledge_exception',
+            'action'         => 'acknowledge_exception',
             'exception_uuid' => $exception->id,
-            'note' => 'Investigating the lifecycle blocker.',
+            'note'           => 'Investigating the lifecycle blocker.',
         ])->assertStatus(202);
 
         $this->postJson("/api/accounts/minor/{$this->minorAccount->uuid}/lifecycle/review-actions", [
-            'action' => 'resolve_exception',
+            'action'         => 'resolve_exception',
             'exception_uuid' => $exception->id,
-            'note' => 'Manual resolution recorded.',
+            'note'           => 'Manual resolution recorded.',
         ])->assertStatus(202);
 
         $this->assertSame(
