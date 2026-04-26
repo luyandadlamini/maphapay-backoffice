@@ -11,17 +11,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('accounts', function (Blueprint $table): void {
-            try {
-                $table->dropForeign(['parent_account_id']);
-            } catch (\Exception $e) {
+            if (! Schema::hasColumn('accounts', 'parent_account_id')) {
+                $table->uuid('parent_account_id')->nullable();
             }
 
-            $table->foreignUuid('parent_account_id')
-                ->nullable()
-                ->change();
+            $foreignKeys = Schema::getForeignKeys('accounts');
+            $hasFk = collect($foreignKeys)->contains(fn (array $fk): bool => in_array('parent_account_id', $fk['columns'] ?? [], true));
 
-            $table->foreignUuid('parent_account_id')
-                ->constrained('accounts')
+            if ($hasFk) {
+                try {
+                    $table->dropForeign(['parent_account_id']);
+                } catch (\Exception) {
+                    // FK may not exist under this name
+                }
+            }
+
+            $table->foreign('parent_account_id')
+                ->references('uuid')
+                ->on('accounts')
                 ->onDelete('restrict');
         });
     }
@@ -29,14 +36,20 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('accounts', function (Blueprint $table): void {
-            $table->dropForeign(['parent_account_id']);
+            $foreignKeys = Schema::getForeignKeys('accounts');
+            $hasFk = collect($foreignKeys)->contains(fn (array $fk): bool => in_array('parent_account_id', $fk['columns'] ?? [], true));
 
-            $table->foreignUuid('parent_account_id')
-                ->nullable()
-                ->change();
+            if ($hasFk) {
+                try {
+                    $table->dropForeign(['parent_account_id']);
+                } catch (\Exception) {
+                    // FK may not exist under this name
+                }
+            }
 
-            $table->foreignUuid('parent_account_id')
-                ->constrained('accounts')
+            $table->foreign('parent_account_id')
+                ->references('uuid')
+                ->on('accounts')
                 ->onDelete('cascade');
         });
     }
