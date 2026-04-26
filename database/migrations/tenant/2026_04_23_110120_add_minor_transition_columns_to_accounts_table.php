@@ -10,8 +10,9 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasColumn('accounts', 'minor_transition_state')) {
-            Schema::table('accounts', function (Blueprint $table): void {
-                $table->string('minor_transition_state')->nullable()->after('permission_level');
+            $anchor = $this->firstExistingAccountsColumn(['permission_level', 'tier', 'type', 'name']);
+            Schema::table('accounts', function (Blueprint $table) use ($anchor): void {
+                $table->string('minor_transition_state')->nullable()->after($anchor);
             });
         }
 
@@ -33,5 +34,19 @@ return new class () extends Migration {
                 $table->dropColumn('minor_transition_state');
             }
         });
+    }
+
+    /**
+     * @param  array<int, string>  $candidates
+     */
+    private function firstExistingAccountsColumn(array $candidates): string
+    {
+        foreach ($candidates as $column) {
+            if (Schema::hasColumn('accounts', $column)) {
+                return $column;
+            }
+        }
+
+        return 'name';
     }
 };

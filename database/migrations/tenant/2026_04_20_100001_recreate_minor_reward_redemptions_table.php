@@ -16,7 +16,7 @@ return new class () extends Migration {
         Schema::create('minor_reward_redemptions', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('minor_account_id');
-            $table->unsignedBigInteger('reward_id');
+            $table->uuid('reward_id');
             $table->enum('status', ['awaiting_approval', 'approved', 'processing', 'in_transit', 'delivered', 'redeemed', 'cancelled', 'failed', 'expired'])
                 ->default('processing');
             $table->integer('points_redeemed');

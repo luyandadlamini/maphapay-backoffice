@@ -22,7 +22,7 @@ return new class () extends Migration {
             $table->string('error_reason')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamps();
-            
+
             $table->foreign('merchant_partner_id')->references('id')->on('merchant_partners')->onDelete('cascade');
             $table->index(['tenant_id', 'minor_account_uuid'], 'idx_bonus_tenant_minor');
             $table->index(['merchant_partner_id', 'created_at'], 'idx_bonus_merchant_date');
