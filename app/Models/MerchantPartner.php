@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Domain\Account\Models\MinorMerchantBonusTransaction;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MerchantPartner extends Model
 {
     public const DEFAULT_BONUS_MULTIPLIER = 2.0;
+
     public const DEFAULT_MIN_AGE_ALLOWANCE = 0;
+
     public const DEFAULT_IS_ACTIVE_FOR_MINORS = true;
 
     protected $table = 'merchant_partners';
@@ -41,8 +42,8 @@ class MerchantPartner extends Model
         'category_slugs'       => 'array',
         'is_active'            => 'boolean',
         'is_active_for_minors' => 'boolean',
-        'created_at'          => 'datetime',
-        'updated_at'          => 'datetime',
+        'created_at'           => 'datetime',
+        'updated_at'           => 'datetime',
     ];
 
     public function getBonusMultiplier(): float
@@ -84,7 +85,7 @@ class MerchantPartner extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany<MinorMerchantBonusTransaction, $this>
+     * @return HasMany<MinorMerchantBonusTransaction, $this>
      */
     public function minorBonusTransactions(): HasMany
     {

@@ -32,6 +32,16 @@ class AccountPolicy
     }
 
     /**
+     * Determine whether the user can view an account.
+     *
+     * For minor accounts, delegates to canView (child or guardian access).
+     */
+    public function view(User $user, Account $account): bool
+    {
+        return $this->accessService()->canView($user, $account);
+    }
+
+    /**
      * Determine whether the user can view any minor accounts.
      *
      * Returns true if user has ANY active AccountMembership with role = 'guardian' or 'co_guardian'

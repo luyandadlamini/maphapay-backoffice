@@ -9,6 +9,42 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class BackofficeWorkspaceAccess
 {
+    /**
+     * Ordered list of all known workspaces (used for stable dashboard composition).
+     *
+     * @var list<string>
+     */
+    public const ORDERED_WORKSPACES = [
+        'platform_administration',
+        'finance',
+        'compliance',
+        'support',
+    ];
+
+    /**
+     * Workspaces the user may access, in canonical order. Delegates only to {@see self::canAccess()}.
+     *
+     * @return list<string>
+     */
+    public function activeWorkspaces(?Authenticatable $user = null): array
+    {
+        $user ??= auth()->user();
+
+        if ($user === null) {
+            return [];
+        }
+
+        $active = [];
+
+        foreach (self::ORDERED_WORKSPACES as $workspace) {
+            if ($this->canAccess($workspace, $user)) {
+                $active[] = $workspace;
+            }
+        }
+
+        return $active;
+    }
+
     public function canAccess(string $workspace, ?Authenticatable $user = null): bool
     {
         $user ??= auth()->user();
