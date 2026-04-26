@@ -4,8 +4,15 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Domain\CrossChain\Enums\CrossChainNetwork;
+use App\Domain\DeFi\Enums\DeFiPositionStatus;
+use App\Domain\DeFi\Enums\DeFiPositionType;
+use App\Domain\DeFi\Enums\DeFiProtocol;
 use App\Domain\DeFi\Models\DeFiPosition;
 use App\Filament\Admin\Resources\DeFiPositionResource\Pages;
+use App\Filament\Admin\Support\LegacyAdminNavigation;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
+use App\Support\BankingDisplay;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -14,13 +21,13 @@ use Filament\Tables\Table;
 
 class DeFiPositionResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = DeFiPosition::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
 
-    protected static ?string $navigationGroup = 'DeFi';
+    protected static ?string $navigationGroup = LegacyAdminNavigation::NAVIGATION_GROUP;
 
     protected static ?int $navigationSort = 1;
 
@@ -61,7 +68,7 @@ class DeFiPositionResource extends Resource
                                     ->disabled(),
                                 Forms\Components\TextInput::make('value_usd')
                                     ->label('Value (USD)')
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->disabled(),
                             ]
                         )->columns(4),
@@ -166,25 +173,25 @@ class DeFiPositionResource extends Resource
                 [
                     Tables\Filters\SelectFilter::make('status')
                         ->options(
-                            collect(\App\Domain\DeFi\Enums\DeFiPositionStatus::cases())
+                            collect(DeFiPositionStatus::cases())
                                 ->mapWithKeys(fn ($case) => [$case->value => ucfirst($case->value)])
                                 ->all()
                         ),
                     Tables\Filters\SelectFilter::make('protocol')
                         ->options(
-                            collect(\App\Domain\DeFi\Enums\DeFiProtocol::cases())
+                            collect(DeFiProtocol::cases())
                                 ->mapWithKeys(fn ($case) => [$case->value => $case->getDisplayName()])
                                 ->all()
                         ),
                     Tables\Filters\SelectFilter::make('type')
                         ->options(
-                            collect(\App\Domain\DeFi\Enums\DeFiPositionType::cases())
+                            collect(DeFiPositionType::cases())
                                 ->mapWithKeys(fn ($case) => [$case->value => ucfirst($case->value)])
                                 ->all()
                         ),
                     Tables\Filters\SelectFilter::make('chain')
                         ->options(
-                            collect(\App\Domain\CrossChain\Enums\CrossChainNetwork::cases())
+                            collect(CrossChainNetwork::cases())
                                 ->mapWithKeys(fn ($case) => [$case->value => ucfirst($case->value)])
                                 ->all()
                         ),

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
-use App\Domain\Account\Models\MinorFamilySupportTransfer;
 use App\Domain\Account\Models\MinorFamilyReconciliationException;
+use App\Domain\Account\Models\MinorFamilySupportTransfer;
 use App\Domain\Account\Services\MinorFamilyReconciliationService;
 use App\Filament\Admin\Resources\MinorFamilySupportTransferResource\Pages;
 use Filament\Forms\Components\Textarea;
@@ -23,7 +23,9 @@ class MinorFamilySupportTransferResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-arrows-right-left';
 
-    protected static ?string $navigationGroup = 'Transactions';
+    protected static ?string $navigationGroup = 'Youth & family accounts';
+
+    protected static ?int $navigationSort = 4;
 
     protected static ?string $modelLabel = 'Minor Family Support Transfer';
 
@@ -95,9 +97,9 @@ class MinorFamilySupportTransferResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        MinorFamilySupportTransfer::STATUS_PENDING_PROVIDER => 'Pending Provider',
-                        MinorFamilySupportTransfer::STATUS_SUCCESSFUL => 'Successful',
-                        MinorFamilySupportTransfer::STATUS_FAILED_REFUNDED => 'Failed Refunded',
+                        MinorFamilySupportTransfer::STATUS_PENDING_PROVIDER    => 'Pending Provider',
+                        MinorFamilySupportTransfer::STATUS_SUCCESSFUL          => 'Successful',
+                        MinorFamilySupportTransfer::STATUS_FAILED_REFUNDED     => 'Failed Refunded',
                         MinorFamilySupportTransfer::STATUS_FAILED_UNRECONCILED => 'Failed Unreconciled',
                     ]),
             ])
@@ -146,7 +148,7 @@ class MinorFamilySupportTransferResource extends Resource
     {
         return [
             'index' => Pages\ListMinorFamilySupportTransfers::route('/'),
-            'view' => Pages\ViewMinorFamilySupportTransfer::route('/{record}'),
+            'view'  => Pages\ViewMinorFamilySupportTransfer::route('/{record}'),
         ];
     }
 

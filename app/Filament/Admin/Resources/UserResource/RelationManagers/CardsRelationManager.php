@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\UserResource\RelationManagers;
 
+use App\Support\BankingDisplay;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -45,7 +46,7 @@ class CardsRelationManager extends RelationManager
                     ->sortable(),
                 Tables\Columns\TextColumn::make('spend_limit_cents')
                     ->label('Spend Limit')
-                    ->formatStateUsing(fn (int|null $state): string => $state !== null ? '$' . number_format($state / 100, 2) : 'No limit')
+                    ->formatStateUsing(fn (?int $state): string => $state !== null ? BankingDisplay::minorUnitsAsString($state) : 'No limit')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('spend_limit_interval')
                     ->label('Limit Interval')

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\AccountResource\RelationManagers;
 
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
@@ -28,17 +29,17 @@ class TurnoversRelationManager extends RelationManager
                         ->sortable(),
                     Tables\Columns\TextColumn::make('debit')
                         ->label('Total Debit')
-                        ->money('USD', 100)
+                        ->money(config('banking.default_currency', 'SZL'), 100)
                         ->color('danger')
                         ->weight('bold'),
                     Tables\Columns\TextColumn::make('credit')
                         ->label('Total Credit')
-                        ->money('USD', 100)
+                        ->money(config('banking.default_currency', 'SZL'), 100)
                         ->color('success')
                         ->weight('bold'),
                     Tables\Columns\TextColumn::make('net_turnover')
                         ->label('Net Turnover')
-                        ->money('USD', 100)
+                        ->money(config('banking.default_currency', 'SZL'), 100)
                         ->getStateUsing(fn ($record) => $record->credit - $record->debit)
                         ->color(fn ($state): string => $state >= 0 ? 'success' : 'danger')
                         ->weight('bold'),
@@ -82,10 +83,10 @@ class TurnoversRelationManager extends RelationManager
                             function (array $data): array {
                                 $indicators = [];
                                 if ($data['created_from'] ?? null) {
-                                    $indicators['created_from'] = 'From ' . \Carbon\Carbon::parse($data['created_from'])->toFormattedDateString();
+                                    $indicators['created_from'] = 'From ' . Carbon::parse($data['created_from'])->toFormattedDateString();
                                 }
                                 if ($data['created_until'] ?? null) {
-                                    $indicators['created_until'] = 'Until ' . \Carbon\Carbon::parse($data['created_until'])->toFormattedDateString();
+                                    $indicators['created_until'] = 'Until ' . Carbon::parse($data['created_until'])->toFormattedDateString();
                                 }
 
                                 return $indicators;

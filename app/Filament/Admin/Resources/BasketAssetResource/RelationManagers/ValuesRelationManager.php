@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\BasketAssetResource\RelationManagers;
 
+use App\Support\BankingDisplay;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -45,7 +46,7 @@ class ValuesRelationManager extends RelationManager
                     Tables\Columns\TextColumn::make('value')
                         ->label('Value (USD)')
                         ->numeric(decimalPlaces: 4)
-                        ->prefix('$')
+                        ->prefix(BankingDisplay::currencySymbolForForms())
                         ->weight('bold')
                         ->color('primary'),
 

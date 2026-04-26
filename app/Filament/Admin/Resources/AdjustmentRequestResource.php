@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources;
 
 use App\Domain\Account\Models\AdjustmentRequest;
+use App\Domain\Account\Services\AccountService;
 use App\Filament\Admin\Resources\AdjustmentRequestResource\Pages;
 use Exception;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
@@ -23,6 +25,8 @@ class AdjustmentRequestResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-document-plus';
 
     protected static ?string $navigationGroup = 'Transactions';
+
+    protected static ?int $navigationSort = 4;
 
     protected static ?string $modelLabel = 'Adjustment Request';
 
@@ -113,7 +117,7 @@ class AdjustmentRequestResource extends Resource
                     ->visible(fn (AdjustmentRequest $record) => $record->status === 'pending')
                     ->action(function (AdjustmentRequest $record) {
                         if ($record->requester_id === auth()->id()) {
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->danger()
                                 ->title('Maker-Checker Enforcement')
                                 ->body('You cannot approve an adjustment request that you initiated.')
@@ -122,7 +126,7 @@ class AdjustmentRequestResource extends Resource
                             return;
                         }
 
-                        $accountService = app(\App\Domain\Account\Services\AccountService::class);
+                        $accountService = app(AccountService::class);
                         $description = $record->reason . ' (Adjustment Request #' . $record->id . ')';
 
                         try {
@@ -138,13 +142,13 @@ class AdjustmentRequestResource extends Resource
                                 'reviewed_at' => now(),
                             ]);
 
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->success()
                                 ->title('Adjustment Approved')
                                 ->body('The ledger adjustment has been successfully processed.')
                                 ->send();
                         } catch (Exception $e) {
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->danger()
                                 ->title('Adjustment Failed')
                                 ->body($e->getMessage())
@@ -159,7 +163,7 @@ class AdjustmentRequestResource extends Resource
                     ->visible(fn (AdjustmentRequest $record) => $record->status === 'pending')
                     ->action(function (AdjustmentRequest $record) {
                         if ($record->requester_id === auth()->id()) {
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->danger()
                                 ->title('Maker-Checker Enforcement')
                                 ->body('You cannot reject your own adjustment request.')
@@ -174,7 +178,7 @@ class AdjustmentRequestResource extends Resource
                             'reviewed_at' => now(),
                         ]);
 
-                        \Filament\Notifications\Notification::make()
+                        Notification::make()
                             ->success()
                             ->title('Adjustment Rejected')
                             ->send();

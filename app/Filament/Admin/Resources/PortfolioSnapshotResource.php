@@ -6,6 +6,8 @@ namespace App\Filament\Admin\Resources;
 
 use App\Domain\Treasury\Models\PortfolioSnapshot;
 use App\Filament\Admin\Resources\PortfolioSnapshotResource\Pages;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
+use App\Support\BankingDisplay;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -14,7 +16,7 @@ use Filament\Tables\Table;
 
 class PortfolioSnapshotResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = PortfolioSnapshot::class;
 
@@ -57,7 +59,7 @@ class PortfolioSnapshotResource extends Resource
                                     ->disabled(),
                                 Forms\Components\TextInput::make('state.totalValue')
                                     ->label('Total Value')
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->disabled(),
                                 Forms\Components\TextInput::make('state.status')
                                     ->label('Status')

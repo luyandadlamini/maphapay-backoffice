@@ -8,6 +8,9 @@ use App\Domain\Account\Models\AdjustmentRequest;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Compliance\Models\KycDocument;
 use App\Domain\Support\Models\SupportCase;
+use App\Filament\Admin\Resources\AdjustmentRequestResource;
+use App\Filament\Admin\Resources\KycDocumentResource;
+use App\Filament\Admin\Resources\SupportCaseResource;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Carbon;
@@ -15,6 +18,11 @@ use Illuminate\Support\Carbon;
 class OperationsStatsOverview extends BaseWidget
 {
     protected static ?string $pollingInterval = '30s';
+
+    public static function canView(): bool
+    {
+        return auth()->check();
+    }
 
     protected function getStats(): array
     {
@@ -53,19 +61,19 @@ class OperationsStatsOverview extends BaseWidget
                 ->description($urgentCases > 0 ? "{$urgentCases} urgent — needs attention" : 'No urgent cases')
                 ->descriptionIcon($urgentCases > 0 ? 'heroicon-m-fire' : 'heroicon-m-chat-bubble-left-ellipsis')
                 ->color($urgentCases > 0 ? 'danger' : ($openCases > 0 ? 'warning' : 'success'))
-                ->url(\App\Filament\Admin\Resources\SupportCaseResource::getUrl('index')),
+                ->url(SupportCaseResource::getUrl('index')),
 
             Stat::make('KYC Pending Review', number_format($pendingKyc))
                 ->description($pendingKyc > 0 ? 'Documents awaiting verification' : 'All clear')
                 ->descriptionIcon($pendingKyc > 0 ? 'heroicon-m-document-check' : 'heroicon-m-check-badge')
                 ->color($pendingKyc > 10 ? 'danger' : ($pendingKyc > 0 ? 'warning' : 'success'))
-                ->url(\App\Filament\Admin\Resources\KycDocumentResource::getUrl('index')),
+                ->url(KycDocumentResource::getUrl('index')),
 
             Stat::make('Pending Adjustments', number_format($pendingAdjustments))
                 ->description($pendingAdjustments > 0 ? 'Awaiting finance-lead approval' : 'Queue empty')
                 ->descriptionIcon($pendingAdjustments > 0 ? 'heroicon-m-clock' : 'heroicon-m-check-circle')
                 ->color($pendingAdjustments > 0 ? 'warning' : 'success')
-                ->url(\App\Filament\Admin\Resources\AdjustmentRequestResource::getUrl('index')),
+                ->url(AdjustmentRequestResource::getUrl('index')),
         ];
     }
 }

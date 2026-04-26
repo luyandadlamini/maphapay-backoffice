@@ -23,13 +23,17 @@ class MtnMomoTransactionResource extends Resource
 
     protected static ?string $navigationGroup = 'Transactions';
 
+    protected static ?int $navigationSort = 3;
+
     protected static ?string $modelLabel = 'Mtn MoMo Transaction';
 
     protected static ?string $pluralModelLabel = 'Mtn MoMo Transactions';
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::where('status', MtnMomoTransaction::STATUS_FAILED)->count() ?: null;
+        $count = static::getModel()::where('status', MtnMomoTransaction::STATUS_FAILED)->count();
+
+        return $count > 0 ? (string) $count : null;
     }
 
     public static function getNavigationBadgeColor(): ?string

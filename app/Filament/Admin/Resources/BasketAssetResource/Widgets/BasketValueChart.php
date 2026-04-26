@@ -6,6 +6,7 @@ namespace App\Filament\Admin\Resources\BasketAssetResource\Widgets;
 
 use App\Domain\Basket\Models\BasketAsset;
 use App\Domain\Basket\Models\BasketValue;
+use App\Support\BankingDisplay;
 use Filament\Widgets\ChartWidget;
 
 class BasketValueChart extends ChartWidget
@@ -60,7 +61,7 @@ class BasketValueChart extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label'           => 'Value (USD)',
+                    'label'           => 'Value (' . config('banking.default_currency', 'SZL') . ')',
                     'data'            => $data,
                     'borderColor'     => 'rgb(75, 192, 192)',
                     'backgroundColor' => 'rgba(75, 192, 192, 0.1)',
@@ -78,6 +79,8 @@ class BasketValueChart extends ChartWidget
 
     protected function getOptions(): array
     {
+        $currencyJs = json_encode(BankingDisplay::currencySymbolForForms());
+
         return [
             'plugins' => [
                 'legend' => [
@@ -88,7 +91,7 @@ class BasketValueChart extends ChartWidget
                 'y' => [
                     'beginAtZero' => false,
                     'ticks'       => [
-                        'callback' => "function(value) { return '$' + value.toFixed(2); }",
+                        'callback' => "function(value) { return {$currencyJs} + Number(value).toFixed(2); }",
                     ],
                 ],
             ],

@@ -4,15 +4,20 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Domain\Asset\Models\Asset;
 use App\Domain\Basket\Models\BasketAsset;
+use App\Domain\Basket\Services\BasketRebalancingService;
 use App\Domain\Basket\Services\BasketValueCalculationService;
 use App\Filament\Admin\Resources\BasketAssetResource\Pages;
 use App\Filament\Admin\Resources\BasketAssetResource\RelationManagers;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
+use App\Support\BankingDisplay;
 use Exception;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -20,7 +25,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class BasketAssetResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = BasketAsset::class;
 
@@ -103,7 +108,7 @@ class BasketAssetResource extends Resource
                                                 ->label('Asset')
                                                 ->required()
                                                 ->options(
-                                                    fn () => \App\Domain\Asset\Models\Asset::where('is_active', true)
+                                                    fn () => Asset::where('is_active', true)
                                                         ->pluck('name', 'code')
                                                 )
                                                 ->searchable()
@@ -166,7 +171,7 @@ class BasketAssetResource extends Resource
                                             $components = $get('components') ?? [];
                                             $totalWeight = collect($components)->sum('weight');
                                             if (abs($totalWeight - 100) > 0.01 && count($components) > 0) {
-                                                \Filament\Notifications\Notification::make()
+                                                Notification::make()
                                                     ->warning()
                                                     ->title('Weight Warning')
                                                     ->body("Total weight is {$totalWeight}%. Components must sum to 100%.")
@@ -233,7 +238,7 @@ class BasketAssetResource extends Resource
                     Tables\Columns\TextColumn::make('latestValue.value')
                         ->label('Current Value')
                         ->numeric(decimalPlaces: 4)
-                        ->prefix('$')
+                        ->prefix(BankingDisplay::currencySymbolForForms())
                         ->placeholder('—')
                         ->tooltip(
                             fn ($record) => $record->latestValue
@@ -366,13 +371,13 @@ class BasketAssetResource extends Resource
                                     $service = app(BasketValueCalculationService::class);
                                     $value = $service->calculateValue($record, false);
 
-                                    \Filament\Notifications\Notification::make()
+                                    Notification::make()
                                         ->success()
                                         ->title('Value Calculated')
                                         ->body("Current value: \${$value->value}")
                                         ->send();
                                 } catch (Exception $e) {
-                                    \Filament\Notifications\Notification::make()
+                                    Notification::make()
                                         ->danger()
                                         ->title('Calculation Failed')
                                         ->body($e->getMessage())
@@ -393,16 +398,16 @@ class BasketAssetResource extends Resource
                         ->action(
                             function (BasketAsset $record) {
                                 try {
-                                    $service = app(\App\Domain\Basket\Services\BasketRebalancingService::class);
+                                    $service = app(BasketRebalancingService::class);
                                     $result = $service->rebalance($record);
 
-                                    \Filament\Notifications\Notification::make()
+                                    Notification::make()
                                         ->success()
                                         ->title('Basket Rebalanced')
                                         ->body("Adjusted {$result['adjustments_count']} components")
                                         ->send();
                                 } catch (Exception $e) {
-                                    \Filament\Notifications\Notification::make()
+                                    Notification::make()
                                         ->danger()
                                         ->title('Rebalancing Failed')
                                         ->body($e->getMessage())
@@ -453,7 +458,7 @@ class BasketAssetResource extends Resource
                                             }
                                         }
 
-                                        \Filament\Notifications\Notification::make()
+                                        Notification::make()
                                             ->success()
                                             ->title('Values Calculated')
                                             ->body("Success: {$success}, Failed: {$failed}")
@@ -518,7 +523,7 @@ class BasketAssetResource extends Resource
                                 Infolists\Components\TextEntry::make('latestValue.value')
                                     ->label('Value (USD)')
                                     ->numeric(decimalPlaces: 4)
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->placeholder('Not calculated')
                                     ->size('lg')
                                     ->weight('bold'),

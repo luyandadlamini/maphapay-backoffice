@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Pages;
 
 use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
+use App\Filament\Admin\Support\SettingsFieldFactory;
 use App\Models\Setting;
 use App\Services\SettingsService;
 use App\Support\Backoffice\AdminActionGovernance;
+use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -80,34 +82,7 @@ class Settings extends Page
             $fields = [];
 
             foreach ($groupConfig['settings'] as $key => $config) {
-                $field = match ($config['type']) {
-                    'boolean' => Forms\Components\Toggle::make($key)
-                        ->label($config['label'])
-                        ->helperText($config['description']),
-                    'integer' => Forms\Components\TextInput::make($key)
-                        ->label($config['label'])
-                        ->numeric()
-                        ->helperText($config['description']),
-                    'float' => Forms\Components\TextInput::make($key)
-                        ->label($config['label'])
-                        ->numeric()
-                        ->step(0.01)
-                        ->helperText($config['description']),
-                    'string' => Forms\Components\TextInput::make($key)
-                        ->label($config['label'])
-                        ->helperText($config['description']),
-                    'array' => Forms\Components\TagsInput::make($key)
-                        ->label($config['label'])
-                        ->helperText($config['description']),
-                    'json' => Forms\Components\KeyValue::make($key)
-                        ->label($config['label'])
-                        ->helperText($config['description']),
-                    default => Forms\Components\TextInput::make($key)
-                        ->label($config['label'])
-                        ->helperText($config['description']),
-                };
-
-                $fields[] = $field;
+                $fields[] = SettingsFieldFactory::make($key, $config);
             }
 
             $schema[] = Forms\Components\Section::make($groupConfig['label'])
@@ -259,7 +234,7 @@ class Settings extends Page
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\Action::make('requestReset')
+            Action::make('requestReset')
                 ->label('Reset to Defaults')
                 ->icon('heroicon-o-arrow-uturn-left')
                 ->color('warning')
@@ -275,7 +250,7 @@ class Settings extends Page
                 ])
                 ->action(fn (array $data) => $this->requestResetToDefaults($data['reason'])),
 
-            \Filament\Actions\Action::make('export')
+            Action::make('export')
                 ->label('Export Settings')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('success')

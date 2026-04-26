@@ -7,6 +7,7 @@ namespace App\Filament\Admin\Resources\UserResource\RelationManagers;
 use App\Domain\Account\Exceptions\NotEnoughFunds;
 use App\Domain\Mobile\Models\Pocket;
 use App\Domain\Mobile\Services\PocketTransferService;
+use App\Support\BankingDisplay;
 use Exception;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -59,11 +60,11 @@ class PocketsRelationManager extends RelationManager
                     ->view('filament.tables.columns.pocket-progress'),
                 Tables\Columns\TextColumn::make('current_amount')
                     ->label('Saved')
-                    ->money('USD', 100)
+                    ->money(config('banking.default_currency', 'SZL'), 100)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('target_amount')
                     ->label('Target')
-                    ->money('USD', 100)
+                    ->money(config('banking.default_currency', 'SZL'), 100)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('target_date')
                     ->label('Target Date')
@@ -127,7 +128,7 @@ class PocketsRelationManager extends RelationManager
                             Notification::make()
                                 ->title('Funds Added')
                                 ->success()
-                                ->body('$' . number_format((float) $data['amount'], 2) . ' added to ' . $record->name)
+                                ->body(BankingDisplay::majorUnitsAsString((float) $data['amount']) . ' added to ' . $record->name)
                                 ->send();
                         } catch (NotEnoughFunds) {
                             Notification::make()
@@ -166,7 +167,7 @@ class PocketsRelationManager extends RelationManager
                             Notification::make()
                                 ->title('Funds Withdrawn')
                                 ->success()
-                                ->body('$' . number_format((float) $data['amount'], 2) . ' withdrawn from ' . $record->name)
+                                ->body(BankingDisplay::majorUnitsAsString((float) $data['amount']) . ' withdrawn from ' . $record->name)
                                 ->send();
                         } catch (Exception $e) {
                             Notification::make()

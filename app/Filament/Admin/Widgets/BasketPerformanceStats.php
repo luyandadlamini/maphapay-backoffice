@@ -6,6 +6,7 @@ namespace App\Filament\Admin\Widgets;
 
 use App\Domain\Basket\Models\BasketAsset;
 use App\Domain\Basket\Services\BasketPerformanceService;
+use App\Support\BankingDisplay;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Cache;
@@ -47,8 +48,8 @@ class BasketPerformanceStats extends BaseWidget
         $stats = [];
 
         // Current Value
-        $stats[] = Stat::make('GCU Current Value', '$' . number_format($summary['current_value'], 4))
-            ->description('Per unit value in USD')
+        $stats[] = Stat::make('GCU Current Value', BankingDisplay::majorUnitsAsString($summary['current_value'], 4))
+            ->description('Per unit (' . config('banking.default_currency', 'SZL') . ')')
             ->descriptionIcon('heroicon-m-currency-dollar')
             ->color('primary');
 

@@ -26,7 +26,9 @@ class MinorFamilyReconciliationExceptionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-exclamation-triangle';
 
-    protected static ?string $navigationGroup = 'Transactions';
+    protected static ?string $navigationGroup = 'Youth & family accounts';
+
+    protected static ?int $navigationSort = 5;
 
     protected static ?string $modelLabel = 'Minor Family Reconciliation Exception';
 
@@ -117,18 +119,18 @@ class MinorFamilyReconciliationExceptionResource extends Resource
                         'escalated', 'breached' => 'danger',
                         'on_track' => 'success',
                         'resolved' => 'gray',
-                        default => 'gray',
+                        default    => 'gray',
                     }),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        MinorFamilyReconciliationException::STATUS_OPEN => 'Open',
+                        MinorFamilyReconciliationException::STATUS_OPEN     => 'Open',
                         MinorFamilyReconciliationException::STATUS_RESOLVED => 'Resolved',
                     ]),
                 Tables\Filters\SelectFilter::make('reason_code')
                     ->options([
-                        'unresolved_outcome' => 'Unresolved Outcome',
+                        'unresolved_outcome'     => 'Unresolved Outcome',
                         'missing_tenant_context' => 'Missing Tenant Context',
                     ]),
             ])
@@ -183,7 +185,7 @@ class MinorFamilyReconciliationExceptionResource extends Resource
                             source: 'filament_manual_resolve',
                             metadata: [
                                 'resolved_by_user_uuid' => $user->uuid,
-                                'note' => $note,
+                                'note'                  => $note,
                             ],
                         );
                     }),
@@ -214,7 +216,7 @@ class MinorFamilyReconciliationExceptionResource extends Resource
                             source: 'filament_manual_reopen',
                             metadata: [
                                 'reopened_by_user_uuid' => $user->uuid,
-                                'note' => $note,
+                                'note'                  => $note,
                             ],
                         );
                     }),
@@ -234,7 +236,7 @@ class MinorFamilyReconciliationExceptionResource extends Resource
     {
         return [
             'index' => Pages\ListMinorFamilyReconciliationExceptions::route('/'),
-            'view' => Pages\ViewMinorFamilyReconciliationException::route('/{record}'),
+            'view'  => Pages\ViewMinorFamilyReconciliationException::route('/{record}'),
         ];
     }
 
@@ -253,17 +255,17 @@ class MinorFamilyReconciliationExceptionResource extends Resource
             /** @var MinorFamilyReconciliationExceptionAcknowledgment $ack */
             $ack = MinorFamilyReconciliationExceptionAcknowledgment::query()->create([
                 'minor_family_reconciliation_exception_id' => $lockedRecord->id,
-                'acknowledged_by_user_uuid' => $userUuid,
-                'note' => $note,
+                'acknowledged_by_user_uuid'                => $userUuid,
+                'note'                                     => $note,
             ]);
 
             /** @var array<string, mixed> $metadata */
             $metadata = is_array($lockedRecord->metadata) ? $lockedRecord->metadata : [];
             $metadata['manual_review'] = [
                 'acknowledged_by_user_uuid' => $userUuid,
-                'acknowledged_at' => now()->toIso8601String(),
-                'note' => $note,
-                'latest_acknowledgment_id' => $ack->id,
+                'acknowledged_at'           => now()->toIso8601String(),
+                'note'                      => $note,
+                'latest_acknowledgment_id'  => $ack->id,
             ];
 
             $lockedRecord->forceFill([

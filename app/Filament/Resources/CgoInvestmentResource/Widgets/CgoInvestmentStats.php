@@ -6,6 +6,7 @@ namespace App\Filament\Resources\CgoInvestmentResource\Widgets;
 
 use App\Domain\Cgo\Models\CgoInvestment;
 use App\Domain\Cgo\Models\CgoPricingRound;
+use App\Support\BankingDisplay;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Number;
@@ -20,7 +21,7 @@ class CgoInvestmentStats extends BaseWidget
         $activeRound = CgoPricingRound::active()->first();
 
         return [
-            Stat::make('Total Raised', '$' . Number::abbreviate($totalRaised, 2))
+            Stat::make('Total Raised', BankingDisplay::prefixAbbreviatedFigures((string) (Number::abbreviate((float) $totalRaised, 2) ?: '0')))
                 ->description('All-time CGO investments')
                 ->descriptionIcon('heroicon-m-arrow-trending-up')
                 ->color('success'),

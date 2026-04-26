@@ -7,6 +7,7 @@ namespace App\Filament\Resources;
 use App\Domain\Cgo\Aggregates\RefundAggregate;
 use App\Domain\Cgo\Models\CgoRefund;
 use App\Filament\Resources\CgoRefundResource\Pages;
+use App\Support\BankingDisplay;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -54,7 +55,7 @@ class CgoRefundResource extends Resource
 
                                 Forms\Components\TextInput::make('amount')
                                     ->label('Amount')
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->disabled()
                                     ->formatStateUsing(fn ($state) => number_format($state / 100, 2)),
 

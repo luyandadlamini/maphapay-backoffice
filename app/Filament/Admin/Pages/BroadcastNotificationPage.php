@@ -12,6 +12,7 @@ use App\Support\Backoffice\BackofficeWorkspaceAccess;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\Component;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -23,11 +24,11 @@ use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
 
-class BroadcastNotificationPage extends Page implements HasForms, HasActions
+class BroadcastNotificationPage extends Page implements HasActions, HasForms
 {
     use HasBackofficeWorkspace;
-    use InteractsWithForms;
     use InteractsWithActions;
+    use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-megaphone';
 
@@ -59,7 +60,7 @@ class BroadcastNotificationPage extends Page implements HasForms, HasActions
     }
 
     /**
-     * @return array<int, \Filament\Forms\Components\Component>
+     * @return array<int, Component>
      */
     public function getBroadcastFormSchema(): array
     {
@@ -132,7 +133,7 @@ class BroadcastNotificationPage extends Page implements HasForms, HasActions
         ];
     }
 
-    protected function getActions(): array
+    protected function getHeaderActions(): array
     {
         return [
             Action::make('send')
@@ -157,7 +158,7 @@ class BroadcastNotificationPage extends Page implements HasForms, HasActions
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function dispatchBroadcast(array $data): void
     {

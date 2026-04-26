@@ -6,6 +6,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Domain\Newsletter\Models\Subscriber;
 use App\Filament\Admin\Resources\SubscriberResource\Pages;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use Filament\Forms;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Form;
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class SubscriberResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = Subscriber::class;
 
@@ -313,7 +314,9 @@ class SubscriberResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::where('status', Subscriber::STATUS_ACTIVE)->count();
+        $count = static::getModel()::where('status', Subscriber::STATUS_ACTIVE)->count();
+
+        return $count > 0 ? (string) $count : null;
     }
 
     public static function getNavigationBadgeColor(): ?string

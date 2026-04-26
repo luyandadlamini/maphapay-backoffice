@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Widgets;
 
 use App\Domain\Banking\Models\UserBankPreference;
+use App\Filament\Admin\Concerns\VisibleOnlyOnFinanceAdminSurface;
 use Filament\Widgets\Widget;
 
 class MultiBankDistributionWidget extends Widget
 {
+    use VisibleOnlyOnFinanceAdminSurface;
+
     protected static string $view = 'filament.admin.widgets.multi-bank-distribution-widget';
 
     protected int|string|array $columnSpan = 'full';
@@ -20,7 +23,10 @@ class MultiBankDistributionWidget extends Widget
      */
     public static function canView(): bool
     {
-        // Show this widget when GCU is enabled or when there are bank preferences
+        if (! self::userMayViewFinanceAdminSurface()) {
+            return false;
+        }
+
         return config('app.gcu_enabled', false) || UserBankPreference::exists();
     }
 

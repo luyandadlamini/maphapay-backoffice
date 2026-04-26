@@ -20,7 +20,9 @@ class MinorAccountLifecycleTransitionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path';
 
-    protected static ?string $navigationGroup = 'Transactions';
+    protected static ?string $navigationGroup = 'Youth & family accounts';
+
+    protected static ?int $navigationSort = 6;
 
     protected static ?string $modelLabel = 'Minor Account Lifecycle Transition';
 
@@ -65,16 +67,16 @@ class MinorAccountLifecycleTransitionResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('state')
                     ->options([
-                        MinorAccountLifecycleTransition::STATE_PENDING => 'Pending',
+                        MinorAccountLifecycleTransition::STATE_PENDING   => 'Pending',
                         MinorAccountLifecycleTransition::STATE_COMPLETED => 'Completed',
-                        MinorAccountLifecycleTransition::STATE_BLOCKED => 'Blocked',
+                        MinorAccountLifecycleTransition::STATE_BLOCKED   => 'Blocked',
                     ]),
                 Tables\Filters\SelectFilter::make('transition_type')
                     ->options([
-                        MinorAccountLifecycleTransition::TYPE_TIER_ADVANCE => 'Tier Advance',
+                        MinorAccountLifecycleTransition::TYPE_TIER_ADVANCE            => 'Tier Advance',
                         MinorAccountLifecycleTransition::TYPE_ADULT_TRANSITION_REVIEW => 'Adult Transition Review',
                         MinorAccountLifecycleTransition::TYPE_ADULT_TRANSITION_CUTOFF => 'Adult Transition Cutoff',
-                        MinorAccountLifecycleTransition::TYPE_GUARDIAN_CONTINUITY => 'Guardian Continuity',
+                        MinorAccountLifecycleTransition::TYPE_GUARDIAN_CONTINUITY     => 'Guardian Continuity',
                     ]),
             ])
             ->actions([
@@ -88,7 +90,7 @@ class MinorAccountLifecycleTransitionResource extends Resource
     {
         return [
             'index' => Pages\ListMinorAccountLifecycleTransitions::route('/'),
-            'view' => Pages\ViewMinorAccountLifecycleTransition::route('/{record}'),
+            'view'  => Pages\ViewMinorAccountLifecycleTransition::route('/{record}'),
         ];
     }
 }

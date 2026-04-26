@@ -7,6 +7,7 @@ namespace App\Filament\Admin\Pages;
 use App\Domain\Custodian\Services\CustodianHealthMonitor;
 use App\Domain\Custodian\Services\CustodianRegistry;
 use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
+use App\Filament\Admin\Models\BankOperationTableRow;
 use App\Support\Backoffice\AdminActionGovernance;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Forms\Components\Textarea;
@@ -17,14 +18,15 @@ use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class BankOperations extends Page implements HasTable
 {
     use HasBackofficeWorkspace;
-    use InteractsWithTable;
     use InteractsWithActions;
     use InteractsWithForms;
+    use InteractsWithTable;
 
     protected static ?string $navigationIcon = 'heroicon-o-building-office-2';
 
@@ -48,7 +50,8 @@ class BankOperations extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->records($this->getBankOperationsQuery())
+            ->query($this->getBankOperationsTableQuery())
+            ->paginated(false)
             ->columns([
                 Tables\Columns\TextColumn::make('custodian')
                     ->label('Bank/Custodian')
@@ -127,12 +130,42 @@ class BankOperations extends Page implements HasTable
         return app(AdminActionGovernance::class);
     }
 
-    protected function getBankOperationsQuery(): Collection
+    /**
+     * @return Builder<BankOperationTableRow>
+     */
+    protected function getBankOperationsTableQuery(): Builder
     {
-        $monitor = $this->getHealthMonitor();
-        $healthData = $monitor->getAllCustodiansHealth();
+        $rows = array_values($this->getHealthMonitor()->getAllCustodiansHealth());
 
-        return collect($healthData);
+        if ($rows === []) {
+            return BankOperationTableRow::query()->fromSub(
+                DB::query()
+                    ->selectRaw(
+                        '0 as id, ? as custodian, ? as status, ? as overall_failure_rate, ? as reconciliation_status',
+                        ['', 'healthy', 0, 'synced']
+                    )
+                    ->whereRaw('0 = 1'),
+                'bank_operation_rows'
+            );
+        }
+
+        $union = null;
+        foreach ($rows as $index => $row) {
+            $part = DB::query()->selectRaw(
+                '? as id, ? as custodian, ? as status, ? as overall_failure_rate, ? as reconciliation_status',
+                [
+                    $index,
+                    $row['custodian'],
+                    $row['status'],
+                    $row['overall_failure_rate'],
+                    $row['reconciliation_status'] ?? 'synced',
+                ]
+            );
+
+            $union = $union === null ? $part : $union->unionAll($part);
+        }
+
+        return BankOperationTableRow::query()->fromSub($union, 'bank_operation_rows');
     }
 
     protected function get24hAvailability(string $custodian): string

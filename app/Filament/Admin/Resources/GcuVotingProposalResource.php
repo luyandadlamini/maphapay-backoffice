@@ -6,6 +6,8 @@ namespace App\Filament\Admin\Resources;
 
 use App\Domain\Governance\Models\GcuVotingProposal;
 use App\Filament\Admin\Resources\GcuVotingProposalResource\Pages;
+use App\Filament\Admin\Support\LegacyAdminNavigation;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -14,13 +16,13 @@ use Filament\Tables\Table;
 
 class GcuVotingProposalResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = GcuVotingProposal::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-archive-box';
 
-    protected static ?string $navigationGroup = 'GCU Management';
+    protected static ?string $navigationGroup = LegacyAdminNavigation::NAVIGATION_GROUP;
 
     protected static ?int $navigationSort = 2;
 
@@ -31,7 +33,9 @@ class GcuVotingProposalResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::where('status', 'active')->count() ?: null;
+        $count = static::getModel()::where('status', 'active')->count();
+
+        return $count > 0 ? (string) $count : null;
     }
 
     public static function form(Form $form): Form

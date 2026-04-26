@@ -6,6 +6,8 @@ namespace App\Filament\Admin\Resources;
 
 use App\Domain\Lending\Models\Loan;
 use App\Filament\Admin\Resources\LoanResource\Pages;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
+use App\Support\BankingDisplay;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -14,7 +16,7 @@ use Filament\Tables\Table;
 
 class LoanResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = Loan::class;
 
@@ -48,7 +50,7 @@ class LoanResource extends Resource
                         ->schema(
                             [
                                 Forms\Components\TextInput::make('principal')
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->disabled(),
                                 Forms\Components\TextInput::make('interest_rate')
                                     ->suffix('%')
@@ -58,11 +60,11 @@ class LoanResource extends Resource
                                     ->disabled(),
                                 Forms\Components\TextInput::make('funded_amount')
                                     ->label('Funded')
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->disabled(),
                                 Forms\Components\TextInput::make('disbursed_amount')
                                     ->label('Disbursed')
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->disabled(),
                                 Forms\Components\TextInput::make('missed_payments')
                                     ->label('Missed Payments')
@@ -75,11 +77,11 @@ class LoanResource extends Resource
                             [
                                 Forms\Components\TextInput::make('total_principal_paid')
                                     ->label('Principal Paid')
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->disabled(),
                                 Forms\Components\TextInput::make('total_interest_paid')
                                     ->label('Interest Paid')
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->disabled(),
                                 Forms\Components\TextInput::make('last_payment_date')
                                     ->label('Last Payment')

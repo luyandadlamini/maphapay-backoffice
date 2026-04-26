@@ -7,15 +7,17 @@ namespace App\Filament\Admin\Resources;
 use App\Domain\MobilePayment\Enums\PaymentIntentStatus;
 use App\Domain\MobilePayment\Models\PaymentIntent;
 use App\Filament\Admin\Resources\PaymentIntentResource\Pages;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class PaymentIntentResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = PaymentIntent::class;
 
@@ -23,7 +25,7 @@ class PaymentIntentResource extends Resource
 
     protected static ?string $navigationGroup = 'Transactions';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {
@@ -162,7 +164,7 @@ class PaymentIntentResource extends Resource
                         ->action(function (PaymentIntent $record): void {
                             $record->transitionTo(PaymentIntentStatus::CANCELLED);
 
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->title('Payment Link Cancelled')
                                 ->success()
                                 ->send();

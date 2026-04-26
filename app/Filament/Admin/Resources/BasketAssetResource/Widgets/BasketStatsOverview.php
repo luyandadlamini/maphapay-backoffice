@@ -6,10 +6,10 @@ namespace App\Filament\Admin\Resources\BasketAssetResource\Widgets;
 
 use App\Domain\Basket\Models\BasketAsset;
 use App\Domain\Basket\Models\BasketValue;
+use App\Support\BankingDisplay;
 use DB;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Number;
 
 class BasketStatsOverview extends BaseWidget
 {
@@ -49,7 +49,7 @@ class BasketStatsOverview extends BaseWidget
                 ->descriptionIcon($needsRebalancing > 0 ? 'heroicon-m-exclamation-triangle' : 'heroicon-m-check-circle')
                 ->color($needsRebalancing > 0 ? 'warning' : 'success'),
 
-            Stat::make('Total Value', '$' . Number::format($totalValue, 2))
+            Stat::make('Total Value', BankingDisplay::majorUnitsAsString((float) $totalValue))
                 ->description('Across all active baskets')
                 ->descriptionIcon('heroicon-m-currency-dollar')
                 ->color('success'),

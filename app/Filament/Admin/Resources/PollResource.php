@@ -10,6 +10,8 @@ use App\Domain\Governance\Models\Poll;
 use App\Domain\Governance\Services\GovernanceService;
 use App\Filament\Admin\Resources\PollResource\Pages;
 use App\Filament\Admin\Resources\PollResource\RelationManagers;
+use App\Filament\Admin\Support\LegacyAdminNavigation;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use Exception;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -22,13 +24,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class PollResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = Poll::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
 
-    protected static ?string $navigationGroup = 'Governance';
+    protected static ?string $navigationGroup = LegacyAdminNavigation::NAVIGATION_GROUP;
 
     protected static ?int $navigationSort = 1;
 

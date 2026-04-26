@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\MerchantPartnerResource\RelationManagers;
 
-use App\Domain\Account\Models\MinorMerchantBonusTransaction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;

@@ -9,8 +9,10 @@ use App\Domain\Account\Services\AccountService;
 use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Filament\Admin\Resources\AccountResource\Pages;
 use App\Filament\Admin\Resources\AccountResource\RelationManagers;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use App\Support\Backoffice\AdminActionGovernance;
 use App\Support\Backoffice\BackofficeWorkspaceAccess;
+use App\Support\BankingDisplay;
 use Filament\Forms;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
@@ -27,7 +29,7 @@ use Illuminate\Support\Collection;
 class AccountResource extends Resource
 {
     use HasBackofficeWorkspace;
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = Account::class;
 
@@ -104,7 +106,7 @@ class AccountResource extends Resource
                                     ->required()
                                     ->numeric()
                                     ->default(0)
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->disabled()
                                     ->dehydrated(false)
                                     ->helperText('Balance can only be modified through transactions'),
@@ -150,7 +152,7 @@ class AccountResource extends Resource
                         ->toggleable(),
                     Tables\Columns\TextColumn::make('balance')
                         ->label('Balance')
-                        ->money('USD', 100)
+                        ->money(config('banking.default_currency', 'SZL'), 100)
                         ->sortable()
                         ->color(fn ($state): string => $state < 0 ? 'danger' : 'success')
                         ->weight('bold'),
@@ -202,7 +204,7 @@ class AccountResource extends Resource
                                     ->label('Amount')
                                     ->numeric()
                                     ->default(0)
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->required(),
                             ]
                         )
@@ -225,7 +227,7 @@ class AccountResource extends Resource
                                     return null;
                                 }
 
-                                return 'Balance ' . $data['balance_operator'] . ' $' . number_format($data['balance_amount'], 2);
+                                return 'Balance ' . $data['balance_operator'] . ' ' . BankingDisplay::majorUnitsAsString((float) $data['balance_amount']);
                             }
                         ),
                 ]
@@ -244,7 +246,7 @@ class AccountResource extends Resource
                                     ->numeric()
                                     ->required()
                                     ->minValue(0.01)
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->helperText('Enter the amount to deposit'),
                                 Forms\Components\Textarea::make('reason')
                                     ->label('Reason')
@@ -293,7 +295,7 @@ class AccountResource extends Resource
                                     ->numeric()
                                     ->required()
                                     ->minValue(0.01)
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->helperText('Enter the amount to withdraw'),
                                 Forms\Components\Textarea::make('reason')
                                     ->label('Reason')
@@ -527,7 +529,7 @@ class AccountResource extends Resource
     {
         return [
             'User'    => $record->user_uuid,
-            'Balance' => '$' . number_format($record->balance / 100, 2),
+            'Balance' => BankingDisplay::minorUnitsAsString($record->balance),
             'Status'  => $record->frozen ? 'Frozen' : 'Active',
         ];
     }

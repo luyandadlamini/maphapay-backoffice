@@ -94,12 +94,12 @@ class PocketResource extends Resource
 
                 Tables\Columns\TextColumn::make('current_amount')
                     ->label('Saved')
-                    ->money('USD')
+                    ->money(config('banking.default_currency', 'SZL'))
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('target_amount')
                     ->label('Target')
-                    ->money('USD')
+                    ->money(config('banking.default_currency', 'SZL'))
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('progress_percentage')

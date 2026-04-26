@@ -24,7 +24,9 @@ class MinorAccountLifecycleExceptionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-exclamation-triangle';
 
-    protected static ?string $navigationGroup = 'Transactions';
+    protected static ?string $navigationGroup = 'Youth & family accounts';
+
+    protected static ?int $navigationSort = 7;
 
     protected static ?string $modelLabel = 'Minor Account Lifecycle Exception';
 
@@ -89,7 +91,7 @@ class MinorAccountLifecycleExceptionResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        MinorAccountLifecycleException::STATUS_OPEN => 'Open',
+                        MinorAccountLifecycleException::STATUS_OPEN     => 'Open',
                         MinorAccountLifecycleException::STATUS_RESOLVED => 'Resolved',
                     ]),
             ])
@@ -154,7 +156,7 @@ class MinorAccountLifecycleExceptionResource extends Resource
     {
         return [
             'index' => Pages\ListMinorAccountLifecycleExceptions::route('/'),
-            'view' => Pages\ViewMinorAccountLifecycleException::route('/{record}'),
+            'view'  => Pages\ViewMinorAccountLifecycleException::route('/{record}'),
         ];
     }
 }

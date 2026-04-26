@@ -8,6 +8,7 @@ use App\Domain\Account\Models\Transfer;
 use App\Domain\Custodian\Models\CustodianAccount;
 use App\Domain\Custodian\Services\CustodianHealthMonitor;
 use App\Domain\Custodian\Services\DailyReconciliationService;
+use App\Support\BankingDisplay;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -52,7 +53,7 @@ class BankOperationsDashboard extends BaseWidget
                 ->color($discrepancies === 0 ? 'success' : 'danger'),
 
             Stat::make('Today\'s Transfers', number_format($todayTransfers))
-                ->description('$' . number_format($todayVolume / 100, 2) . ' total volume')
+                ->description(BankingDisplay::minorUnitsAsString($todayVolume) . ' total volume')
                 ->descriptionIcon('heroicon-m-arrow-trending-up')
                 ->chart($this->getTransferVolumeChart())
                 ->color('primary'),

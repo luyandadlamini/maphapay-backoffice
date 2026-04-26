@@ -5,10 +5,18 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Widgets;
 
 use App\Domain\Basket\Models\BasketAsset;
+use App\Filament\Admin\Concerns\VisibleOnlyOnFinanceAdminSurface;
 use Filament\Widgets\Widget;
 
 class PrimaryBasketWidget extends Widget
 {
+    use VisibleOnlyOnFinanceAdminSurface;
+
+    public static function canView(): bool
+    {
+        return self::userMayViewFinanceAdminSurface();
+    }
+
     protected static string $view = 'filament.admin.widgets.primary-basket-widget';
 
     protected int|string|array $columnSpan = 'full';

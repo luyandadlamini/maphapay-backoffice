@@ -23,7 +23,9 @@ class MinorFamilyFundingAttemptResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
 
-    protected static ?string $navigationGroup = 'Transactions';
+    protected static ?string $navigationGroup = 'Youth & family accounts';
+
+    protected static ?int $navigationSort = 3;
 
     protected static ?string $modelLabel = 'Minor Family Funding Attempt';
 
@@ -92,12 +94,12 @@ class MinorFamilyFundingAttemptResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        MinorFamilyFundingAttempt::STATUS_PENDING_PROVIDER => 'Pending Provider',
-                        MinorFamilyFundingAttempt::STATUS_SUCCESSFUL => 'Successful',
-                        MinorFamilyFundingAttempt::STATUS_SUCCESSFUL_UNCREDITED => 'Successful Uncredited',
-                        MinorFamilyFundingAttempt::STATUS_CREDITED => 'Credited',
-                        MinorFamilyFundingAttempt::STATUS_FAILED => 'Failed',
-                        MinorFamilyFundingAttempt::STATUS_EXPIRED => 'Expired',
+                        MinorFamilyFundingAttempt::STATUS_PENDING_PROVIDER         => 'Pending Provider',
+                        MinorFamilyFundingAttempt::STATUS_SUCCESSFUL               => 'Successful',
+                        MinorFamilyFundingAttempt::STATUS_SUCCESSFUL_UNCREDITED    => 'Successful Uncredited',
+                        MinorFamilyFundingAttempt::STATUS_CREDITED                 => 'Credited',
+                        MinorFamilyFundingAttempt::STATUS_FAILED                   => 'Failed',
+                        MinorFamilyFundingAttempt::STATUS_EXPIRED                  => 'Expired',
                         MinorFamilyFundingAttempt::STATUS_EXPIRED_PROVIDER_PENDING => 'Expired Provider Pending',
                     ]),
             ])
@@ -146,7 +148,7 @@ class MinorFamilyFundingAttemptResource extends Resource
     {
         return [
             'index' => Pages\ListMinorFamilyFundingAttempts::route('/'),
-            'view' => Pages\ViewMinorFamilyFundingAttempt::route('/{record}'),
+            'view'  => Pages\ViewMinorFamilyFundingAttempt::route('/{record}'),
         ];
     }
 

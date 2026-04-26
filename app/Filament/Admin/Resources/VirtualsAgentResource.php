@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources;
 
 use App\Domain\VirtualsAgent\Enums\AgentStatus;
+use App\Domain\VirtualsAgent\Events\VirtualsAgentActivated;
 use App\Domain\VirtualsAgent\Models\VirtualsAgentProfile;
 use App\Domain\VirtualsAgent\Services\AgentOnboardingService;
 use App\Filament\Admin\Resources\VirtualsAgentResource\Pages;
+use App\Filament\Admin\Support\LegacyAdminNavigation;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -16,13 +19,13 @@ use Filament\Tables\Table;
 
 class VirtualsAgentResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = VirtualsAgentProfile::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-cpu-chip';
 
-    protected static ?string $navigationGroup = 'AI Agents';
+    protected static ?string $navigationGroup = LegacyAdminNavigation::NAVIGATION_GROUP;
 
     protected static ?int $navigationSort = 1;
 
@@ -210,7 +213,7 @@ class VirtualsAgentResource extends Resource
                         ))
                         ->action(function ($record): void {
                             $record->update(['status' => AgentStatus::ACTIVE]);
-                            event(new \App\Domain\VirtualsAgent\Events\VirtualsAgentActivated(
+                            event(new VirtualsAgentActivated(
                                 agentProfileId: $record->id,
                                 virtualsAgentId: $record->virtuals_agent_id,
                             ));

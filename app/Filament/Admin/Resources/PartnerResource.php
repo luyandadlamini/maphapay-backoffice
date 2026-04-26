@@ -6,6 +6,8 @@ namespace App\Filament\Admin\Resources;
 
 use App\Domain\FinancialInstitution\Models\FinancialInstitutionPartner;
 use App\Filament\Admin\Resources\PartnerResource\Pages;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
+use App\Support\BankingDisplay;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -14,7 +16,7 @@ use Filament\Tables\Table;
 
 class PartnerResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = FinancialInstitutionPartner::class;
 
@@ -90,7 +92,7 @@ class PartnerResource extends Resource
                                     ->disabled(),
                                 Forms\Components\TextInput::make('total_volume')
                                     ->label('Total Volume')
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->disabled(),
                                 Forms\Components\TextInput::make('last_activity_at')
                                     ->label('Last Activity At')

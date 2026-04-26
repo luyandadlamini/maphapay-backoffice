@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Resources\MtnMomoTransactionResource;
 use App\Models\MtnMomoTransaction;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -15,6 +16,11 @@ class FailedMomoTransactionsWidget extends BaseWidget
     protected static ?string $heading = 'Failed MTN MoMo Transactions';
 
     protected int|string|array $columnSpan = 'full';
+
+    public static function canView(): bool
+    {
+        return auth()->check();
+    }
 
     protected function getTableQuery(): Builder
     {
@@ -61,7 +67,7 @@ class FailedMomoTransactionsWidget extends BaseWidget
                     ->label('View')
                     ->icon('heroicon-o-eye')
                     ->url(
-                        fn (MtnMomoTransaction $record): string => \App\Filament\Admin\Resources\MtnMomoTransactionResource::getUrl('edit', ['record' => $record])
+                        fn (MtnMomoTransaction $record): string => MtnMomoTransactionResource::getUrl('edit', ['record' => $record])
                     ),
             ])
             ->emptyStateIcon('heroicon-o-check-circle')

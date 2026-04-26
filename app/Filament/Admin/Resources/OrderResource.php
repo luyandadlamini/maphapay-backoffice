@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Domain\Asset\Models\Asset;
 use App\Domain\Exchange\Projections\Order;
+use App\Domain\Exchange\Services\ExchangeService;
 use App\Filament\Admin\Resources\OrderResource\Pages;
+use App\Filament\Admin\Support\LegacyAdminNavigation;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -14,13 +18,13 @@ use Filament\Tables\Table;
 
 class OrderResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = Order::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-trending-up';
 
-    protected static ?string $navigationGroup = 'Exchange';
+    protected static ?string $navigationGroup = LegacyAdminNavigation::NAVIGATION_GROUP;
 
     protected static ?int $navigationSort = 1;
 
@@ -142,7 +146,7 @@ class OrderResource extends Resource
                             ]
                         ),
                     Tables\Filters\SelectFilter::make('base_currency')
-                        ->options(fn () => \App\Domain\Asset\Models\Asset::where('is_tradeable', true)->pluck('code', 'code')),
+                        ->options(fn () => Asset::where('is_tradeable', true)->pluck('code', 'code')),
                 ]
             )
             ->actions(
@@ -154,7 +158,7 @@ class OrderResource extends Resource
                         ->color('danger')
                         ->requiresConfirmation()
                         ->visible(fn (Order $record): bool => $record->canBeCancelled())
-                        ->action(fn (Order $record) => app(\App\Domain\Exchange\Services\ExchangeService::class)->cancelOrder($record->order_id)),
+                        ->action(fn (Order $record) => app(ExchangeService::class)->cancelOrder($record->order_id)),
                 ]
             )
             ->bulkActions(

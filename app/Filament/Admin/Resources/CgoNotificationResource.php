@@ -6,6 +6,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Domain\Cgo\Models\CgoNotification;
 use App\Filament\Admin\Resources\CgoNotificationResource\Pages;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -14,7 +15,7 @@ use Filament\Tables\Table;
 
 class CgoNotificationResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = CgoNotification::class;
 
@@ -91,7 +92,9 @@ class CgoNotificationResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::count();
+        $count = static::getModel()::count();
+
+        return $count > 0 ? (string) $count : null;
     }
 
     public static function getPages(): array

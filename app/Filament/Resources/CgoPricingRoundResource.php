@@ -6,6 +6,7 @@ namespace App\Filament\Resources;
 
 use App\Domain\Cgo\Models\CgoPricingRound;
 use App\Filament\Resources\CgoPricingRoundResource\Pages;
+use App\Support\BankingDisplay;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -43,7 +44,7 @@ class CgoPricingRoundResource extends Resource
                                     ->minValue(1),
                                 Forms\Components\TextInput::make('share_price')
                                     ->label('Share Price')
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->numeric()
                                     ->required()
                                     ->minValue(0.01)
@@ -82,7 +83,7 @@ class CgoPricingRoundResource extends Resource
                                     ->step(0.0001),
                                 Forms\Components\TextInput::make('total_raised')
                                     ->label('Total Raised')
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->numeric()
                                     ->disabled(),
                                 Forms\Components\Placeholder::make('remaining_shares')

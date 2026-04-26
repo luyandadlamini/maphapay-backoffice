@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Domain\Cgo\Actions\RequestRefundAction;
+use App\Domain\Cgo\Jobs\VerifyCgoPayment;
 use App\Domain\Cgo\Models\CgoInvestment;
 use App\Filament\Resources\CgoInvestmentResource\Pages;
+use App\Support\BankingDisplay;
 use Exception;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -65,7 +67,7 @@ class CgoInvestmentResource extends Resource
                                     ->disabled(fn ($record) => $record !== null),
                                 Forms\Components\TextInput::make('amount')
                                     ->label('Investment Amount')
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->numeric()
                                     ->required()
                                     ->disabled(fn ($record) => $record !== null),
@@ -362,7 +364,7 @@ class CgoInvestmentResource extends Resource
                         ->action(
                             function (CgoInvestment $record) {
                                 // Dispatch verification job
-                                \App\Domain\Cgo\Jobs\VerifyCgoPayment::dispatch($record);
+                                VerifyCgoPayment::dispatch($record);
                             }
                         )
                         ->visible(
@@ -453,7 +455,7 @@ class CgoInvestmentResource extends Resource
                                     function ($records) {
                                         foreach ($records as $record) {
                                             if ($record->payment_status === 'pending' && $record->payment_method !== 'bank_transfer') {
-                                                \App\Domain\Cgo\Jobs\VerifyCgoPayment::dispatch($record);
+                                                VerifyCgoPayment::dispatch($record);
                                             }
                                         }
                                     }

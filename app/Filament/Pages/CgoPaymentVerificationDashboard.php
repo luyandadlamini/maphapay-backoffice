@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Filament\Pages;
 
 use App\Domain\Cgo\Models\CgoInvestment;
+use App\Jobs\VerifyCgoPayment;
+use App\Support\BankingDisplay;
 use Exception;
 use Filament\Forms;
 use Filament\Notifications\Notification;
@@ -172,7 +174,7 @@ class CgoPaymentVerificationDashboard extends Page implements Tables\Contracts\H
                                 Forms\Components\TextInput::make('amount_received')
                                     ->label('Amount Received')
                                     ->numeric()
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->required(),
                                 Forms\Components\Textarea::make('notes')
                                     ->label('Verification Notes')
@@ -246,7 +248,7 @@ class CgoPaymentVerificationDashboard extends Page implements Tables\Contracts\H
     protected function verifyPayment(CgoInvestment $investment): void
     {
         try {
-            Queue::push(new \App\Jobs\VerifyCgoPayment($investment));
+            Queue::push(new VerifyCgoPayment($investment));
 
             Notification::make()
                 ->title('Payment Verification Queued')

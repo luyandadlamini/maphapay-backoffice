@@ -5,11 +5,19 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Widgets;
 
 use App\Domain\Banking\Models\UserBankPreference;
+use App\Filament\Admin\Concerns\VisibleOnlyOnFinanceAdminSurface;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Number;
 
 class BankAllocationWidget extends Widget
 {
+    use VisibleOnlyOnFinanceAdminSurface;
+
+    public static function canView(): bool
+    {
+        return self::userMayViewFinanceAdminSurface();
+    }
+
     protected static string $view = 'filament.admin.widgets.bank-allocation-widget';
 
     protected int|string|array $columnSpan = 'full';

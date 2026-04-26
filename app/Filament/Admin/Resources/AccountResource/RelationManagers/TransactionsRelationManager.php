@@ -40,12 +40,12 @@ class TransactionsRelationManager extends RelationManager
                         ),
                     Tables\Columns\TextColumn::make('amount')
                         ->label('Amount')
-                        ->money('USD', 100)
+                        ->money(config('banking.default_currency', 'SZL'), 100)
                         ->color(fn ($record): string => in_array($record->type, ['deposit', 'transfer_in']) ? 'success' : 'danger')
                         ->weight('bold'),
                     Tables\Columns\TextColumn::make('balance_after')
                         ->label('Balance After')
-                        ->money('USD', 100),
+                        ->money(config('banking.default_currency', 'SZL'), 100),
                     Tables\Columns\TextColumn::make('reference')
                         ->label('Reference')
                         ->searchable()

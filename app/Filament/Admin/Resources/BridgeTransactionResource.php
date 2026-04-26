@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Domain\CrossChain\Enums\BridgeProvider;
+use App\Domain\CrossChain\Enums\BridgeStatus;
+use App\Domain\CrossChain\Enums\CrossChainNetwork;
 use App\Domain\CrossChain\Models\BridgeTransaction;
 use App\Filament\Admin\Resources\BridgeTransactionResource\Pages;
+use App\Filament\Admin\Support\LegacyAdminNavigation;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -14,13 +19,13 @@ use Filament\Tables\Table;
 
 class BridgeTransactionResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = BridgeTransaction::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-arrows-right-left';
 
-    protected static ?string $navigationGroup = 'Cross-Chain';
+    protected static ?string $navigationGroup = LegacyAdminNavigation::NAVIGATION_GROUP;
 
     protected static ?int $navigationSort = 1;
 
@@ -153,20 +158,20 @@ class BridgeTransactionResource extends Resource
                 [
                     Tables\Filters\SelectFilter::make('status')
                         ->options(
-                            collect(\App\Domain\CrossChain\Enums\BridgeStatus::cases())
+                            collect(BridgeStatus::cases())
                                 ->mapWithKeys(fn ($case) => [$case->value => ucfirst($case->value)])
                                 ->all()
                         ),
                     Tables\Filters\SelectFilter::make('provider')
                         ->options(
-                            collect(\App\Domain\CrossChain\Enums\BridgeProvider::cases())
+                            collect(BridgeProvider::cases())
                                 ->mapWithKeys(fn ($case) => [$case->value => $case->getDisplayName()])
                                 ->all()
                         ),
                     Tables\Filters\SelectFilter::make('source_chain')
                         ->label('Source Chain')
                         ->options(
-                            collect(\App\Domain\CrossChain\Enums\CrossChainNetwork::cases())
+                            collect(CrossChainNetwork::cases())
                                 ->mapWithKeys(fn ($case) => [$case->value => ucfirst($case->value)])
                                 ->all()
                         ),

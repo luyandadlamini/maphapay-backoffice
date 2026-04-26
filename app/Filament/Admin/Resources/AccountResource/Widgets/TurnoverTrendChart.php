@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\AccountResource\Widgets;
 
 use App\Domain\Account\Models\Turnover;
+use App\Support\BankingDisplay;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\DB;
 
@@ -64,12 +65,14 @@ class TurnoverTrendChart extends ChartWidget
 
     protected function getOptions(): array
     {
+        $currencyJs = json_encode(BankingDisplay::currencySymbolForForms());
+
         return [
             'scales' => [
                 'y' => [
                     'beginAtZero' => true,
                     'ticks'       => [
-                        'callback' => "function(value) { return '$' + value.toLocaleString(); }",
+                        'callback' => "function(value) { return {$currencyJs} + Number(value).toLocaleString(); }",
                     ],
                 ],
             ],
@@ -86,7 +89,7 @@ class TurnoverTrendChart extends ChartWidget
                                 label += ': ';
                             }
                             if (context.parsed.y !== null) {
-                                label += '$' + context.parsed.y.toLocaleString();
+                                label += {$currencyJs} + context.parsed.y.toLocaleString();
                             }
                             return label;
                         }",

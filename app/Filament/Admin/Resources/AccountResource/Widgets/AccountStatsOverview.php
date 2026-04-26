@@ -8,6 +8,8 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Account\Models\Transaction;
 use App\Domain\Account\Models\Turnover;
+use App\Support\BankingDisplay;
+use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Model;
@@ -32,11 +34,11 @@ class AccountStatsOverview extends BaseWidget
                     ->description($activeAccounts . ' active, ' . $frozenAccounts . ' frozen')
                     ->descriptionIcon('heroicon-m-arrow-trending-up')
                     ->color('success'),
-                Stat::make('Total Balance', '$' . number_format($totalBalance / 100, 2))
+                Stat::make('Total Balance', BankingDisplay::minorUnitsAsString($totalBalance))
                     ->description('Across all accounts')
                     ->descriptionIcon('heroicon-m-banknotes')
                     ->color('primary'),
-                Stat::make('Average Balance', '$' . number_format($totalAccounts > 0 ? ($totalBalance / 100) / $totalAccounts : 0, 2))
+                Stat::make('Average Balance', BankingDisplay::minorUnitsAsString($totalAccounts > 0 ? $totalBalance / $totalAccounts : 0))
                     ->description('Per account')
                     ->descriptionIcon('heroicon-m-calculator')
                     ->color('info'),
@@ -62,19 +64,19 @@ class AccountStatsOverview extends BaseWidget
         $totalTransactions = Transaction::where('account_uuid', $account->uuid)->count();
 
         return [
-            Stat::make('Current Balance', '$' . number_format($account->balance / 100, 2))
+            Stat::make('Current Balance', BankingDisplay::minorUnitsAsString($account->balance))
                 ->description($account->frozen ? 'Account Frozen' : 'Account Active')
                 ->descriptionIcon($account->frozen ? 'heroicon-m-lock-closed' : 'heroicon-m-lock-open')
                 ->color($account->frozen ? 'danger' : 'success'),
             Stat::make('Total Transactions', number_format($totalTransactions))
-                ->description($lastTransaction ? 'Last: ' . \Carbon\Carbon::parse($lastTransaction->created_at)->diffForHumans() : 'No transactions')
+                ->description($lastTransaction ? 'Last: ' . Carbon::parse($lastTransaction->created_at)->diffForHumans() : 'No transactions')
                 ->descriptionIcon('heroicon-m-arrow-path')
                 ->color('info'),
-            Stat::make('Monthly Credit', '$' . number_format(($monthlyTurnover?->credit ?? 0) / 100, 2))
+            Stat::make('Monthly Credit', BankingDisplay::minorUnitsAsString($monthlyTurnover?->credit ?? 0))
                 ->description('This month')
                 ->descriptionIcon('heroicon-m-arrow-down-tray')
                 ->color('success'),
-            Stat::make('Monthly Debit', '$' . number_format(($monthlyTurnover?->debit ?? 0) / 100, 2))
+            Stat::make('Monthly Debit', BankingDisplay::minorUnitsAsString($monthlyTurnover?->debit ?? 0))
                 ->description('This month')
                 ->descriptionIcon('heroicon-m-arrow-up-tray')
                 ->color('warning'),

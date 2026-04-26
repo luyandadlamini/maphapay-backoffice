@@ -20,7 +20,9 @@ class MinorFamilyFundingLinkResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-link';
 
-    protected static ?string $navigationGroup = 'Transactions';
+    protected static ?string $navigationGroup = 'Youth & family accounts';
+
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $modelLabel = 'Minor Family Funding Link';
 
@@ -83,10 +85,10 @@ class MinorFamilyFundingLinkResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        MinorFamilyFundingLink::STATUS_DRAFT => 'Draft',
-                        MinorFamilyFundingLink::STATUS_ACTIVE => 'Active',
-                        MinorFamilyFundingLink::STATUS_PAUSED => 'Paused',
-                        MinorFamilyFundingLink::STATUS_EXPIRED => 'Expired',
+                        MinorFamilyFundingLink::STATUS_DRAFT     => 'Draft',
+                        MinorFamilyFundingLink::STATUS_ACTIVE    => 'Active',
+                        MinorFamilyFundingLink::STATUS_PAUSED    => 'Paused',
+                        MinorFamilyFundingLink::STATUS_EXPIRED   => 'Expired',
                         MinorFamilyFundingLink::STATUS_COMPLETED => 'Completed',
                         MinorFamilyFundingLink::STATUS_CANCELLED => 'Cancelled',
                     ]),
@@ -107,7 +109,7 @@ class MinorFamilyFundingLinkResource extends Resource
     {
         return [
             'index' => Pages\ListMinorFamilyFundingLinks::route('/'),
-            'view' => Pages\ViewMinorFamilyFundingLink::route('/{record}'),
+            'view'  => Pages\ViewMinorFamilyFundingLink::route('/{record}'),
         ];
     }
 }

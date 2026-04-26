@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\MerchantPartnerResource\Pages;
+use App\Filament\Admin\Resources\MerchantPartnerResource\RelationManagers;
 use App\Models\MerchantPartner;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Actions\BulkAction;
-use App\Filament\Admin\Resources\MerchantPartnerResource\RelationManagers;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Table;
 
 class MerchantPartnerResource extends Resource
 {
@@ -99,9 +99,9 @@ class MerchantPartnerResource extends Resource
                                 Forms\Components\CheckboxList::make('category_slugs')
                                     ->label('Eligible Categories')
                                     ->options([
-                                        'grocery'      => 'Grocery',
-                                        'airtime'     => 'Airtime',
-                                        'retail'      => 'Retail',
+                                        'grocery'       => 'Grocery',
+                                        'airtime'       => 'Airtime',
+                                        'retail'        => 'Retail',
                                         'food_beverage' => 'Food & Beverage',
                                     ]),
                                 Forms\Components\Toggle::make('is_active_for_minors')
@@ -179,8 +179,8 @@ class MerchantPartnerResource extends Resource
                     Tables\Filters\SelectFilter::make('category')
                         ->options([
                             'grocery'       => 'Grocery',
-                            'airtime'      => 'Airtime',
-                            'retail'       => 'Retail',
+                            'airtime'       => 'Airtime',
+                            'retail'        => 'Retail',
                             'food_beverage' => 'Food & Beverage',
                         ]),
                 ]

@@ -8,6 +8,8 @@ use App\Domain\TrustCert\Enums\CertificateStatus;
 use App\Domain\TrustCert\Enums\IssuerType;
 use App\Domain\TrustCert\Models\Certificate;
 use App\Filament\Admin\Resources\CertificateResource\Pages;
+use App\Filament\Admin\Support\LegacyAdminNavigation;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -17,13 +19,13 @@ use Illuminate\Support\Carbon;
 
 class CertificateResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = Certificate::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shield-check';
 
-    protected static ?string $navigationGroup = 'TrustCert';
+    protected static ?string $navigationGroup = LegacyAdminNavigation::NAVIGATION_GROUP;
 
     protected static ?int $navigationSort = 1;
 

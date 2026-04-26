@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Pages;
 
-use App\Filament\Admin\Resources\AccountResource\Widgets\AccountBalanceChart;
-use App\Filament\Admin\Resources\AccountResource\Widgets\AccountStatsOverview;
-use App\Filament\Admin\Resources\AccountResource\Widgets\RecentTransactionsChart;
-use App\Filament\Admin\Resources\AccountResource\Widgets\SystemHealthWidget;
-use App\Filament\Admin\Widgets\BankAllocationWidget;
-use App\Filament\Admin\Widgets\MultiBankDistributionWidget;
-use App\Filament\Admin\Widgets\PrimaryBasketWidget;
+use App\Filament\Admin\Support\AdminDashboardWidgets;
+use App\Models\User;
 use Filament\Pages\Dashboard as BaseDashboard;
+use Filament\Widgets\Widget;
+use Filament\Widgets\WidgetConfiguration;
 
 class Dashboard extends BaseDashboard
 {
@@ -19,17 +16,17 @@ class Dashboard extends BaseDashboard
 
     protected static string $view = 'filament.admin.pages.dashboard';
 
+    /**
+     * @return array<class-string<Widget>|WidgetConfiguration>
+     */
     public function getWidgets(): array
     {
-        return [
-            PrimaryBasketWidget::class,
-            MultiBankDistributionWidget::class,
-            BankAllocationWidget::class,
-            AccountStatsOverview::class,
-            RecentTransactionsChart::class,
-            AccountBalanceChart::class,
-            SystemHealthWidget::class,
-        ];
+        $user = auth()->user();
+
+        /** @var list<class-string<Widget>> $widgets */
+        $widgets = app(AdminDashboardWidgets::class)->widgetsFor($user instanceof User ? $user : null);
+
+        return $widgets;
     }
 
     public function getColumns(): int|string|array

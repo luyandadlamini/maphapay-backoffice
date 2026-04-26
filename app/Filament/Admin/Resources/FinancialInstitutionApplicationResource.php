@@ -6,6 +6,8 @@ namespace App\Filament\Admin\Resources;
 
 use App\Domain\FinancialInstitution\Models\FinancialInstitutionApplication;
 use App\Filament\Admin\Resources\FinancialInstitutionApplicationResource\Pages;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
+use App\Support\BankingDisplay;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -16,7 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class FinancialInstitutionApplicationResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = FinancialInstitutionApplication::class;
 
@@ -78,7 +80,7 @@ class FinancialInstitutionApplicationResource extends Resource
                                     ->label('Assets Under Management (USD)')
                                     ->required()
                                     ->numeric()
-                                    ->prefix('$')
+                                    ->prefix(BankingDisplay::currencySymbolForForms())
                                     ->maxLength(255),
                             ]
                         )
