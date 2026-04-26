@@ -65,17 +65,20 @@ class MinorAccountController extends Controller
         $dateOfBirth = Carbon::parse((string) $validated['date_of_birth'])->startOfDay();
         $age = (int) floor($dateOfBirth->diffInYears(now(), true));
 
-        if ($age < 6 || $age > 17) {
+        $ageMin = config('minor_family.age_min', 6);
+        $ageMax = config('minor_family.age_max', 17);
+
+        if ($age < $ageMin || $age > $ageMax) {
             return response()->json([
                 'success' => false,
                 'errors'  => [
-                    'date_of_birth' => ['Child must be between 6 and 17 years old.'],
+                    'date_of_birth' => ["Child must be between {$ageMin} and {$ageMax} years old."],
                 ],
             ], 422);
         }
 
-        // Determine tier: grow (6-12) or rise (13-17)
-        $tier = $age < 13 ? 'grow' : 'rise';
+        // Determine tier: grow or rise
+        $tier = $age <= config('minor_family.tier_grow_max_age', 12) ? 'grow' : 'rise';
 
         // Determine permission level based on age
         $permissionLevel = $this->getPermissionLevel($age);
@@ -96,11 +99,11 @@ class MinorAccountController extends Controller
             UserProfile::query()->updateOrCreate(
                 ['user_id' => $child->id],
                 [
-                    'email' => $child->email ?? sprintf('%s@minor.local', $child->uuid),
-                    'first_name' => $sanitizedName,
-                    'status' => 'active',
+                    'email'         => $child->email ?? sprintf('%s@minor.local', $child->uuid),
+                    'first_name'    => $sanitizedName,
+                    'status'        => 'active',
                     'date_of_birth' => $dateOfBirth->toDateString(),
-                    'is_verified' => false,
+                    'is_verified'   => false,
                 ],
             );
 
@@ -157,8 +160,29 @@ class MinorAccountController extends Controller
         abort_unless($this->accountPolicy->updateMinor($user, $account), 403);
 
         $validated = $request->validate([
-            'permission_level' => ['required', 'integer', 'min:1', 'max:7'],
+            'permission_level' => ['required', 'integer', 'min:' . config('minor_family.permission_level_min', 1), 'max:' . config('minor_family.permission_level_max_rise', 7)],
+            'idempotency_key' => ['nullable', 'string', 'uuid', 'max:36'],
         ]);
+
+        $idempotencyKey = $validated['idempotency_key'] ?? null;
+
+        if ($idempotencyKey !== null) {
+            $existing = AccountAuditLog::query()
+                ->where('account_uuid', $account->uuid)
+                ->where('action', 'permission_level_changed')
+                ->where('metadata->idempotency_key', $idempotencyKey)
+                ->first();
+
+            if ($existing !== null) {
+                /** @var array<string, mixed> $responseMeta */
+                $responseMeta = is_array($existing->metadata) ? $existing->metadata : [];
+
+                return response()->json(
+                    $responseMeta['response'] ?? ['success' => true],
+                    $responseMeta['response_status'] ?? 200
+                );
+            }
+        }
 
         $previousLevel = (int) $account->permission_level;
         $newPermissionLevel = (int) $validated['permission_level'];
@@ -173,20 +197,20 @@ class MinorAccountController extends Controller
             ], 422);
         }
 
-        if ($account->tier === 'grow' && $newPermissionLevel > 4) {
+        if ($account->tier === 'grow' && $newPermissionLevel > config('minor_family.permission_level_max_grow', 4)) {
             return response()->json([
-                'message' => 'Grow tier accounts cannot exceed permission level 4.',
+                'message' => 'Grow tier accounts cannot exceed permission level ' . config('minor_family.permission_level_max_grow', 4) . '.',
                 'errors'  => [
-                    'permission_level' => ['Grow tier accounts cannot exceed permission level 4.'],
+                    'permission_level' => ['Grow tier accounts cannot exceed permission level ' . config('minor_family.permission_level_max_grow', 4) . '.'],
                 ],
             ], 422);
         }
 
-        if ($account->tier === 'rise' && $newPermissionLevel > 7) {
+        if ($account->tier === 'rise' && $newPermissionLevel > config('minor_family.permission_level_max_rise', 7)) {
             return response()->json([
-                'message' => 'Rise tier accounts cannot exceed permission level 7.',
+                'message' => 'Rise tier accounts cannot exceed permission level ' . config('minor_family.permission_level_max_rise', 7) . '.',
                 'errors'  => [
-                    'permission_level' => ['Rise tier accounts cannot exceed permission level 7.'],
+                    'permission_level' => ['Rise tier accounts cannot exceed permission level ' . config('minor_family.permission_level_max_rise', 7) . '.'],
                 ],
             ], 422);
         }
@@ -195,17 +219,52 @@ class MinorAccountController extends Controller
             'permission_level' => $newPermissionLevel,
         ])->save();
 
-        AccountAuditLog::create([
-            'account_uuid'     => $account->uuid,
-            'actor_user_uuid' => $user->uuid,
-            'action'        => 'permission_level_changed',
-            'metadata'      => [
-                'old_value' => $previousLevel,
-                'new_value' => $newPermissionLevel,
-                'reason' => $request->string('reason', 'Guardian updated permission level')->toString(),
+        $responsePayload = [
+            'success' => true,
+            'data'    => [
+                'uuid'              => $account->uuid,
+                'account_type'      => $account->type,
+                'account_tier'      => $account->tier,
+                'permission_level'  => $account->permission_level,
+                'parent_account_id' => $account->parent_account_id,
             ],
-            'created_at'    => now(),
+        ];
+
+        $auditMetadata = [
+            'old_value' => $previousLevel,
+            'new_value' => $newPermissionLevel,
+            'reason'    => $request->string('reason', 'Guardian updated permission level')->toString(),
+            'response'  => $responsePayload,
+            'response_status' => 200,
+        ];
+
+        if ($idempotencyKey !== null) {
+            $auditMetadata['idempotency_key'] = $idempotencyKey;
+        }
+
+        AccountAuditLog::create([
+            'account_uuid'    => $account->uuid,
+            'actor_user_uuid' => $user->uuid,
+            'action'          => 'permission_level_changed',
+            'metadata'        => $auditMetadata,
+            'created_at' => now(),
         ]);
+
+        // Dual-sided audit: also log on the guardian's account for their activity history
+        if ($account->parent_account_id !== null) {
+            AccountAuditLog::create([
+                'account_uuid'    => $account->parent_account_id,
+                'actor_user_uuid' => $user->uuid,
+                'action'          => 'minor_permission_level_changed',
+                'metadata'        => [
+                    'minor_account_uuid' => $account->uuid,
+                    'old_value'          => $previousLevel,
+                    'new_value'          => $newPermissionLevel,
+                    'reason'             => $request->string('reason', 'Guardian updated permission level')->toString(),
+                ],
+                'created_at' => now(),
+            ]);
+        }
 
         // Award level-unlock bonus points when guardian advances the child's level
         if ($newPermissionLevel > $previousLevel) {
@@ -222,16 +281,7 @@ class MinorAccountController extends Controller
             }
         }
 
-        return response()->json([
-            'success' => true,
-            'data'    => [
-                'uuid'              => $account->uuid,
-                'account_type'      => $account->type,
-                'account_tier'      => $account->tier,
-                'permission_level'  => $account->permission_level,
-                'parent_account_id' => $account->parent_account_id,
-            ],
-        ]);
+        return response()->json($responsePayload);
     }
 
     /**
@@ -249,7 +299,7 @@ class MinorAccountController extends Controller
         abort_unless($this->accountPolicy->updateMinor($user, $account), 403);
 
         $validated = $request->validate([
-            'amount' => ['required', 'integer', 'min:0', 'max:100000'],
+            'amount' => ['required', 'integer', 'min:0', 'max:' . config('minor_family.emergency_allowance_max', 100000)],
         ]);
 
         $amount = (int) $validated['amount'];
@@ -281,12 +331,12 @@ class MinorAccountController extends Controller
     private function getPermissionLevel(int $age): int
     {
         return match (true) {
-            $age <= 7  => 1,
-            $age <= 9  => 2,
-            $age <= 11 => 3,
-            $age <= 13 => 4,
-            $age <= 15 => 5,
-            default    => 6,
+            $age <= config('minor_family.permission_level_age_1_max', 7)  => 1,
+            $age <= config('minor_family.permission_level_age_2_max', 9)  => 2,
+            $age <= config('minor_family.permission_level_age_3_max', 11) => 3,
+            $age <= config('minor_family.permission_level_age_4_max', 13) => 4,
+            $age <= config('minor_family.permission_level_age_5_max', 15) => 5,
+            default                                                       => config('minor_family.permission_level_default', 6),
         };
     }
 }

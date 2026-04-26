@@ -6,6 +6,7 @@ namespace App\Domain\Account\Models;
 
 use App\Domain\Shared\Traits\UsesTenantConnection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -26,12 +27,26 @@ use Illuminate\Database\Eloquent\Model;
  */
 class MinorSpendApproval extends Model
 {
+    /** @use HasFactory<\Database\Factories\Domain\Account\MinorSpendApprovalFactory> */
+    use HasFactory;
     use HasUuids;
     use UsesTenantConnection;
 
     protected $table = 'minor_spend_approvals';
 
-    public $guarded = [];
+    protected $fillable = [
+        'minor_account_uuid',
+        'guardian_account_uuid',
+        'from_account_uuid',
+        'to_account_uuid',
+        'amount',
+        'asset_code',
+        'note',
+        'merchant_category',
+        'status',
+        'expires_at',
+        'decided_at',
+    ];
 
     protected $casts = [
         'expires_at' => 'datetime',
@@ -53,5 +68,10 @@ class MinorSpendApproval extends Model
     {
         return $query->where('status', 'pending')
                      ->where('expires_at', '>', now());
+    }
+
+    protected static function newFactory(): \Database\Factories\Domain\Account\MinorSpendApprovalFactory
+    {
+        return \Database\Factories\Domain\Account\MinorSpendApprovalFactory::new();
     }
 }

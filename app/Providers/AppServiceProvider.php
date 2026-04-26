@@ -4,19 +4,31 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domain\Analytics\Contracts\CorMarginBridgeDataPort;
+use App\Domain\Analytics\Contracts\UnitEconomicsDataPort;
+use App\Domain\Analytics\Infrastructure\LocalDevCorMarginBridgeStubDataPort;
+use App\Domain\Analytics\Infrastructure\LocalDevUnitEconomicsStubDataPort;
+use App\Domain\Analytics\Infrastructure\NullCorMarginBridgeDataPort;
+use App\Domain\Analytics\Infrastructure\NullUnitEconomicsDataPort;
 use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderInterface;
 use App\Domain\AuthorizedTransaction\Services\DatabaseMoneyMovementRiskSignalProvider;
+use App\Domain\Governance\Strategies\AssetWeightedVoteStrategy;
+use App\Domain\Governance\Strategies\AssetWeightedVotingStrategy;
+use App\Domain\Governance\Strategies\OneUserOneVoteStrategy;
 use App\Domain\Mobile\Contracts\AppAttestVerifierInterface;
 use App\Domain\Mobile\Services\AppAttestVerifier;
 use App\Models\Thread;
 use App\Observers\ThreadGroupSavingsObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Kreait\Firebase\Contract\Messaging;
 use Kreait\Laravel\Firebase\FirebaseProjectManager;
+use L5Swagger\GeneratorFactory;
 use OpenApi\Analysers\AttributeAnnotationFactory;
 use OpenApi\Analysers\DocBlockAnnotationFactory;
 use OpenApi\Analysers\ReflectionAnalyser;
@@ -35,9 +47,9 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // Register voting power strategies
-        $this->app->bind('asset_weighted_vote', \App\Domain\Governance\Strategies\AssetWeightedVoteStrategy::class);
-        $this->app->bind('one_user_one_vote', \App\Domain\Governance\Strategies\OneUserOneVoteStrategy::class);
-        $this->app->bind(\App\Domain\Governance\Strategies\AssetWeightedVotingStrategy::class, \App\Domain\Governance\Strategies\AssetWeightedVotingStrategy::class);
+        $this->app->bind('asset_weighted_vote', AssetWeightedVoteStrategy::class);
+        $this->app->bind('one_user_one_vote', OneUserOneVoteStrategy::class);
+        $this->app->bind(AssetWeightedVotingStrategy::class, AssetWeightedVotingStrategy::class);
 
         // Register blockchain service provider
         $this->app->register(BlockchainServiceProvider::class);
@@ -57,6 +69,39 @@ class AppServiceProvider extends ServiceProvider
         );
 
         $this->app->bind(AppAttestVerifierInterface::class, AppAttestVerifier::class);
+
+        $this->registerRevenueAdvancedDataPorts();
+    }
+
+    /**
+     * REQ-REV-003 / 004: use bind() so tests and local .env can toggle stub readers without
+     * caching the first concrete implementation for the whole process.
+     */
+    private function registerRevenueAdvancedDataPorts(): void
+    {
+        $this->app->bind(CorMarginBridgeDataPort::class, function (): CorMarginBridgeDataPort {
+            if ($this->app->isProduction()) {
+                return new NullCorMarginBridgeDataPort;
+            }
+
+            if ((bool) config('maphapay.revenue_cor_bridge_stub_reader', false)) {
+                return new LocalDevCorMarginBridgeStubDataPort;
+            }
+
+            return new NullCorMarginBridgeDataPort;
+        });
+
+        $this->app->bind(UnitEconomicsDataPort::class, function (): UnitEconomicsDataPort {
+            if ($this->app->isProduction()) {
+                return new NullUnitEconomicsDataPort;
+            }
+
+            if ((bool) config('maphapay.revenue_unit_economics_stub_reader', false)) {
+                return new LocalDevUnitEconomicsStubDataPort;
+            }
+
+            return new NullUnitEconomicsDataPort;
+        });
     }
 
     /**
@@ -66,25 +111,25 @@ class AppServiceProvider extends ServiceProvider
     {
         // L5-Swagger: inject the analyser at generation time (not in config) so
         // config:cache / optimize works. Object instances are not serializable.
-        $this->app->resolving(\L5Swagger\GeneratorFactory::class, function () {
+        $this->app->resolving(GeneratorFactory::class, function () {
             if (config('l5-swagger.defaults.scanOptions.analyser') === null) {
                 config(['l5-swagger.defaults.scanOptions.analyser' => new ReflectionAnalyser([
-                    new DocBlockAnnotationFactory(),
-                    new AttributeAnnotationFactory(),
+                    new DocBlockAnnotationFactory,
+                    new AttributeAnnotationFactory,
                 ])]);
             }
         });
 
         // Configure factory namespace resolution for domain models
         /**
-         * @param class-string<\Illuminate\Database\Eloquent\Model> $modelName
+         * @param  class-string<Model>  $modelName
          * @return class-string<Factory>
          */
         Factory::guessFactoryNamesUsing(function (string $modelName): string {
             // For domain models, preserve the full path structure
             if (str_starts_with($modelName, 'App\\Domain\\')) {
                 // Replace App\ with Database\Factories\ and append Factory
-                $factoryName = str_replace('App\\', 'Database\\Factories\\', $modelName) . 'Factory';
+                $factoryName = str_replace('App\\', 'Database\\Factories\\', $modelName).'Factory';
 
                 /** @var class-string<Factory> */
                 return $factoryName;
@@ -94,7 +139,7 @@ class AppServiceProvider extends ServiceProvider
             $modelBaseName = class_basename($modelName);
 
             /** @var class-string<Factory> */
-            return 'Database\\Factories\\' . $modelBaseName . 'Factory';
+            return 'Database\\Factories\\'.$modelBaseName.'Factory';
         });
 
         // MaphaPay compatibility: per-user rate limits for money-moving endpoints.
@@ -162,5 +207,18 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Thread::observe(ThreadGroupSavingsObserver::class);
+
+        \App\Domain\Account\Models\MinorAccountLifecycleTransition::observe(
+            \App\Domain\Account\Observers\MinorAccountLifecycleTransitionObserver::class
+        );
+
+        // Fortify omits route('register') when REGISTRATION_ENABLED=false; marketing views still link to it.
+        $this->app->booted(function (): void {
+            if (! config('fortify.registration_enabled') && ! Route::has('register')) {
+                Route::middleware(config('fortify.middleware', ['web']))
+                    ->get('/register', fn () => redirect()->route('app.landing'))
+                    ->name('register');
+            }
+        });
     }
 }

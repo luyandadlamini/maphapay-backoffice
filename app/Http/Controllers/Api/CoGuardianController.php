@@ -8,27 +8,81 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Models\GuardianInvite;
 use App\Domain\Account\Services\AccountMembershipService;
+use App\Domain\Account\Services\ScaVerificationService;
 use App\Http\Controllers\Controller;
 use App\Policies\AccountPolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Validation\UnauthorizedException;
 
 class CoGuardianController extends Controller
 {
     public function __construct(
         private readonly AccountMembershipService $membershipService,
         private readonly AccountPolicy $accountPolicy,
+        private readonly ScaVerificationService $scaService,
     ) {
+    }
+
+    private function verifySca(\App\Models\User $user, ?string $scaToken, ?string $scaType, ?string $deviceId): void
+    {
+        if (! $scaToken) {
+            throw new UnauthorizedException('SCA token is required for this operation.');
+        }
+
+        $scaMethod = $scaType ?? 'otp';
+
+        $result = match ($scaMethod) {
+            'otp'       => $this->scaService->verifyOtp($user->uuid, $scaToken),
+            'biometric' => $this->scaService->verifyBiometric(
+                $user->uuid,
+                $deviceId ?? '',
+                $scaToken
+            ),
+            default => throw new UnauthorizedException('Unsupported SCA method.'),
+        };
+
+        if (! $result) {
+            throw new UnauthorizedException('SCA verification failed.');
+        }
     }
 
     public function storeInvite(Request $request, string $minorAccountUuid): JsonResponse
     {
+        $validated = $request->validate([
+            'sca_token' => ['nullable', 'string'],
+            'sca_type'  => ['nullable', 'string', 'in:otp,biometric'],
+            'device_id' => ['nullable', 'string'],
+        ]);
+
         /** @var \App\Models\User $user */
         $user = $request->user();
         $minorAccount = Account::query()->where('uuid', $minorAccountUuid)->firstOrFail();
 
         abort_unless($this->accountPolicy->updateMinor($user, $minorAccount), 403);
+
+        $scaToken = $validated['sca_token'] ?? null;
+
+        if ($scaToken === null || $scaToken === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'SCA token is required for this operation.',
+            ], 428);
+        }
+
+        try {
+            $this->verifySca(
+                $user,
+                $scaToken,
+                $validated['sca_type'] ?? null,
+                $validated['device_id'] ?? null
+            );
+        } catch (UnauthorizedException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 428);
+        }
 
         $invite = GuardianInvite::query()->create([
             'minor_account_uuid'   => $minorAccount->uuid,

@@ -133,7 +133,7 @@ class MinorAccountLifecycleController extends Controller
             return;
         }
 
-        $this->accessService->authorizeView($actor, $minorAccount);
+        $this->authorize('viewMinor', $minorAccount);
     }
 
     private function authorizeMutation(User $actor, Account $minorAccount, bool $allowGuardian): void
@@ -142,11 +142,8 @@ class MinorAccountLifecycleController extends Controller
             return;
         }
 
-        if (! $allowGuardian) {
-            abort(403);
-        }
-
-        $this->accessService->authorizeGuardian($actor, $minorAccount);
+        $ability = $allowGuardian ? 'actAsGuardian' : 'administerMinor';
+        $this->authorize($ability, $minorAccount);
     }
 
     private function authenticatedUser(Request $request): User

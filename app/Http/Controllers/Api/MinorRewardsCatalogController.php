@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\MinorReward;
 use App\Domain\Account\Services\MinorAccountAccessService;
 use App\Domain\Account\Services\MinorPointsService;
 use App\Domain\Account\Services\MinorRewardService;
@@ -25,7 +26,7 @@ class MinorRewardsCatalogController extends Controller
     {
         $minorAccount = Account::query()->where('uuid', $uuid)->firstOrFail();
 
-        $this->accessService->authorizeView($request->user(), $minorAccount);
+        $this->authorize('view', [MinorReward::class, $minorAccount]);
 
         $rewards = $this->rewardService->availableCatalog($minorAccount)
             ->map(fn ($reward) => $this->rewardService->catalogPayload($minorAccount, $reward))
@@ -46,7 +47,7 @@ class MinorRewardsCatalogController extends Controller
     {
         $minorAccount = Account::query()->where('uuid', $uuid)->firstOrFail();
 
-        $this->accessService->authorizeView($request->user(), $minorAccount);
+        $this->authorize('view', [MinorReward::class, $minorAccount]);
 
         $reward = $this->rewardService->findCatalogReward($minorAccount, $rewardId);
 
