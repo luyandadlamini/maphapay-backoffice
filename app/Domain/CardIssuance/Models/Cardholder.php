@@ -6,6 +6,7 @@ namespace App\Domain\CardIssuance\Models;
 
 use App\Domain\Shared\Traits\UsesTenantConnection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -34,6 +35,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Cardholder extends Model
 {
+    /** @use HasFactory<\Database\Factories\Domain\CardIssuance\Models\CardholderFactory> */
+    use HasFactory;
     use HasUuids;
     use UsesTenantConnection;
 

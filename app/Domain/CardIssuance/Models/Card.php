@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domain\CardIssuance\Models;
 
+use App\Domain\Account\Models\Account;
 use App\Domain\Shared\Traits\UsesTenantConnection;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Persistent card model for tracking issued cards.
@@ -26,14 +30,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $spend_limit_cents
  * @property string|null $spend_limit_interval
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon|null $expires_at
- * @property \Illuminate\Support\Carbon|null $frozen_at
- * @property \Illuminate\Support\Carbon|null $cancelled_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $expires_at
+ * @property Carbon|null $frozen_at
+ * @property Carbon|null $cancelled_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class Card extends Model
 {
+    /** @use HasFactory<\Database\Factories\Domain\CardIssuance\Models\CardFactory> */
+    use HasFactory;
     use HasUuids;
     use UsesTenantConnection;
 
@@ -56,6 +62,7 @@ class Card extends Model
         'expires_at',
         'frozen_at',
         'cancelled_at',
+        'minor_account_uuid',
     ];
 
     /**
@@ -83,11 +90,11 @@ class Card extends Model
     }
 
     /**
-     * @return BelongsTo<\App\Models\User, $this>
+     * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class);
+        return $this->belongsTo(User::class);
     }
 
     /**
@@ -101,5 +108,11 @@ class Card extends Model
     public function getMaskedNumber(): string
     {
         return '**** **** **** ' . $this->last4;
+    }
+
+    /** @return BelongsTo<Account, self> */
+    public function minorAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'minor_account_uuid', 'uuid');
     }
 }
