@@ -2,9 +2,16 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\Mobile\ModuleSettingController;
 use App\Http\Controllers\Api\Mobile\UserPreferencesController;
 use App\Http\Controllers\Api\MobileController;
 use Illuminate\Support\Facades\Route;
+
+// Module settings — mobile uses this to toggle features at runtime (OTA).
+// Authenticated — each user may get different flags based on user_map in the future.
+Route::prefix('module-setting')->name('api.mobile.module-setting.')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/', [ModuleSettingController::class, 'index'])->name('index');
+});
 
 // App status endpoint (no auth required, used by mobile for version/maintenance check)
 Route::prefix('v1/app')->name('api.app.')->group(function () {
