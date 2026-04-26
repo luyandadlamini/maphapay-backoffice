@@ -97,11 +97,11 @@ class ReconcileMtnMomoTransactions extends Command
             $outcome = $this->reconcileOne((string) $txnId, $dryRun);
 
             match ($outcome) {
-                'refunded' => $refunded++,
-                'settled'  => $reconciled++,
-                'pending'  => null,
+                'refunded'     => $refunded++,
+                'settled'      => $reconciled++,
+                'pending'      => null,
                 'unreconciled' => $unreconciled++,
-                default    => $errors++,
+                default        => $errors++,
             };
         }
 
@@ -178,8 +178,8 @@ class ReconcileMtnMomoTransactions extends Command
 
                 return match ($normalisedStatus) {
                     MtnMomoTransaction::STATUS_SUCCESSFUL => $this->markSuccessful($txn, $remoteStatus),
-                    MtnMomoTransaction::STATUS_FAILED => $this->refundAndFail($txn, $remoteStatus),
-                    default => $this->updateLastStatus($txn, $remoteStatus),
+                    MtnMomoTransaction::STATUS_FAILED     => $this->refundAndFail($txn, $remoteStatus),
+                    default                               => $this->updateLastStatus($txn, $remoteStatus),
                 };
             });
         } catch (Throwable $e) {
@@ -363,7 +363,7 @@ class ReconcileMtnMomoTransactions extends Command
         }
 
         $txn->update([
-            'status' => $normalisedStatus,
+            'status'          => $normalisedStatus,
             'last_mtn_status' => $remoteStatus,
         ]);
 

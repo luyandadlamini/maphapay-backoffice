@@ -7,9 +7,12 @@ namespace App\Filament\Admin\Resources;
 use App\Domain\Governance\Models\Poll;
 use App\Domain\Governance\Models\Vote;
 use App\Filament\Admin\Resources\VoteResource\Pages;
+use App\Filament\Admin\Support\LegacyAdminNavigation;
+use App\Filament\Admin\Traits\RespectsModuleVisibility;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -18,13 +21,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class VoteResource extends Resource
 {
-    use \App\Filament\Admin\Traits\RespectsModuleVisibility;
+    use RespectsModuleVisibility;
 
     protected static ?string $model = Vote::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-hand-raised';
 
-    protected static ?string $navigationGroup = 'Governance';
+    protected static ?string $navigationGroup = LegacyAdminNavigation::NAVIGATION_GROUP;
 
     protected static ?int $navigationSort = 2;
 
@@ -213,7 +216,7 @@ class VoteResource extends Resource
                             function (Vote $record) {
                                 $isValid = $record->verifySignature();
 
-                                \Filament\Notifications\Notification::make()
+                                Notification::make()
                                     ->title($isValid ? 'Signature Valid' : 'Signature Invalid')
                                     ->body($isValid ? 'Vote signature is cryptographically valid' : 'Vote signature verification failed')
                                     ->color($isValid ? 'success' : 'danger')
@@ -245,7 +248,7 @@ class VoteResource extends Resource
                                             }
                                         }
 
-                                        \Filament\Notifications\Notification::make()
+                                        Notification::make()
                                             ->title('Signature Verification Complete')
                                             ->body("Valid: {$valid}, Invalid: {$invalid}")
                                             ->color($invalid > 0 ? 'warning' : 'success')

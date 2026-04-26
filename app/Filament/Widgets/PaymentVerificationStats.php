@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Widgets;
 
 use App\Domain\Cgo\Models\CgoInvestment;
+use App\Support\BankingDisplay;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Number;
@@ -38,7 +39,7 @@ class PaymentVerificationStats extends BaseWidget
                 ->color($pendingPayments > 10 ? 'warning' : 'primary')
                 ->chart([7, 5, 8, 12, 10, 9, $pendingPayments]),
 
-            Stat::make('Pending Amount', '$' . Number::abbreviate($pendingAmount, 2))
+            Stat::make('Pending Amount', BankingDisplay::prefixAbbreviatedFigures((string) (Number::abbreviate((float) $pendingAmount, 2) ?: '0')))
                 ->description('Total value awaiting verification')
                 ->descriptionIcon('heroicon-m-currency-dollar')
                 ->color('info'),
