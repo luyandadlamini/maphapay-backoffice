@@ -39,6 +39,8 @@ CREATE DATABASE IF NOT EXISTS \`${TEST_DB_NAME}\`
 CREATE USER IF NOT EXISTS '${TEST_DB_USER}'@'localhost' IDENTIFIED BY '${TEST_DB_PASSWORD}';
 ALTER USER '${TEST_DB_USER}'@'localhost' IDENTIFIED BY '${TEST_DB_PASSWORD}';
 GRANT ALL PRIVILEGES ON \`${TEST_DB_NAME}\`.* TO '${TEST_DB_USER}'@'localhost';
+-- stancl tenancy: tests create/drop per-tenant databases (tenant{uuid}); same as TeamTenantResolverTest
+GRANT CREATE, DROP ON *.* TO '${TEST_DB_USER}'@'localhost';
 FLUSH PRIVILEGES;
 SQL
 chmod 0644 "$INIT_SQL"

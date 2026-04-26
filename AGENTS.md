@@ -10,15 +10,28 @@ MaphaPay is a modern digital payment and core banking back-office, built on the 
 
 ## Quick Start
 
+Filament runs on **Laravel**, not on the Vite port alone. Set `APP_URL` to match how you serve PHP (default below uses `http://127.0.0.1:8000`). For local DB credentials and the disposable MySQL test user, see **`CLAUDE.md`** (Local Money-Movement Test Harness) and `./scripts/bootstrap-local-test-db.sh` / `./scripts/reset-local-mysql-test-access.sh`.
+
 ```bash
 # Setup
 cp .env.example .env
+# Edit .env: APP_ENV=local, APP_DEBUG=true, APP_URL=http://127.0.0.1:8000, and DB_* for your MySQL
 composer install
-npm install && npm run dev
+npm install
 
-# Database setup (using local disposable instance if 3306 is taken)
+# Database (after DB_* is valid)
 php artisan migrate:fresh --seed
+
+# Run Laravel + Vite together (recommended)
+npm run dev:full
+# Or two terminals: `php artisan serve --host=127.0.0.1 --port=8000` and `npm run dev`
+
+# First-time admin user (pick one)
+php artisan make:filament-user
+# php artisan user:create --admin   # see CLAUDE.md
 ```
+
+**Admin panel**: open **`http://127.0.0.1:8000/admin`** (same host/port as `APP_URL`). `http://localhost:5173/` is only the Vite dev server for assets.
 
 ## Architecture & Tech Stack
 

@@ -11,6 +11,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:full": "concurrently -k -n laravel,vite -c blue,green \"php artisan serve --host=127.0.0.1 --port=8000\" \"vite\"",
     "build": "vite build"
   },
   "dependencies": {
@@ -21,6 +22,7 @@
     "chart.js": "^4.5.1"
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "@tailwindcss/forms": "^0.5.11",
     "@tailwindcss/typography": "^0.5.19",
     "autoprefixer": "^10.4.27",

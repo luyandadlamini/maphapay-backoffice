@@ -23,4 +23,15 @@ set +a
 
 php artisan migrate --env=testing --force
 
+# Tenant-folder migrations are not picked up by `migrate`; Filament and tests use the default
+# connection when tenancy is uninitialized, so ensure Phase 12 minor card schema exists.
+php artisan migrate --env=testing --force --path=database/migrations/tenant/2026_04_24_002653_create_minor_card_limits_table.php
+php artisan migrate --env=testing --force --path=database/migrations/tenant/2026_04_24_002653_create_minor_card_requests_table.php
+php artisan migrate --env=testing --force --path=database/migrations/tenant/2026_04_24_002653_add_minor_account_uuid_to_cards_table.php
+
+php artisan migrate --env=testing --force --path=database/migrations/tenant/2026_04_23_110000_create_minor_account_lifecycle_transitions_table.php
+php artisan migrate --env=testing --force --path=database/migrations/tenant/2026_04_23_110100_create_minor_account_lifecycle_exceptions_table.php
+php artisan migrate --env=testing --force --path=database/migrations/tenant/2026_04_23_110110_create_minor_account_lifecycle_exception_acknowledgments_table.php
+php artisan migrate --env=testing --force --path=database/migrations/tenant/2026_04_23_110120_add_minor_transition_columns_to_accounts_table.php
+
 echo "Test database ready on ${DB_HOST}:${DB_PORT}/${DB_DATABASE}"

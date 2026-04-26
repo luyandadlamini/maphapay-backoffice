@@ -64,6 +64,10 @@ return [
     | Zelta (mobile wallet):
     |   ADMIN_MODULES=System,Mobile,Relayer,TrustCert,Banking,AI Agents,Commerce,Mobile Payments,Privacy,Fraud Detection
     |
+    | Resources using RespectsModuleVisibility must list their navigation group here exactly
+    | (e.g. Transactions, Youth & family accounts, Legacy & experimental). Omitting a group
+    | hides those items when ADMIN_MODULES is set.
+    |
     | FinAegis (full platform): leave empty or don't set — shows everything.
     |
     */

@@ -25,6 +25,10 @@ return [
     | The default currency for user accounts and display. SZL (Swazi Lilangeni)
     | is used for the local market with symbol E.
     |
+    | `currency_symbol` is prepended to Filament/admin stats that format minor
+    | units (cents). Set BANKING_CURRENCY_SYMBOL=$ for USD, R for ZAR, etc.
+    | There is no separate Filament "theme" setting — use these env keys.
+    |
     */
 
     'default_currency' => env('BANKING_DEFAULT_CURRENCY', 'SZL'),

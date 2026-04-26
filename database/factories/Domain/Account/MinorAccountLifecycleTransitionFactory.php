@@ -23,11 +23,11 @@ class MinorAccountLifecycleTransitionFactory extends Factory
                 MinorAccountLifecycleTransition::TYPE_ADULT_TRANSITION_CUTOFF,
                 MinorAccountLifecycleTransition::TYPE_GUARDIAN_CONTINUITY,
             ]),
-            'state'              => MinorAccountLifecycleTransition::STATE_PENDING,
-            'effective_at'       => now(),
-            'executed_at'        => null,
-            'blocked_reason_code'=> null,
-            'metadata'           => null,
+            'state'               => MinorAccountLifecycleTransition::STATE_PENDING,
+            'effective_at'        => now(),
+            'executed_at'         => null,
+            'blocked_reason_code' => null,
+            'metadata'            => null,
         ];
     }
 }

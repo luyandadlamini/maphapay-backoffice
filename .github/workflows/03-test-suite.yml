@@ -309,6 +309,9 @@ jobs:
           # Third batch: Other feature tests
           ./bin/pest-batch tests/Feature/Cache tests/Feature/Exchange tests/Feature/Basket || exit 1
 
+          # Fourth batch: Console + Filament + Backoffice (CI MySQL root can CREATE DATABASE for stancl tenant tests)
+          ./bin/pest-batch tests/Feature/Console tests/Feature/Filament tests/Feature/Backoffice || exit 1
+
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
