@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class MinorMerchantBonusTransaction extends Model
 {
     use UsesTenantConnection;
+
     protected $table = 'minor_merchant_bonus_transactions';
 
     protected $keyType = 'string';
@@ -33,11 +34,11 @@ class MinorMerchantBonusTransaction extends Model
 
     protected $casts = [
         'bonus_points_awarded' => 'integer',
-        'multiplier_applied'  => 'decimal:2',
-        'amount_szl'          => 'decimal:2',
-        'metadata'            => 'array',
-        'created_at'         => 'datetime',
-        'updated_at'         => 'datetime',
+        'multiplier_applied'   => 'decimal:2',
+        'amount_szl'           => 'decimal:2',
+        'metadata'             => 'array',
+        'created_at'           => 'datetime',
+        'updated_at'           => 'datetime',
     ];
 
     public function merchantPartner(): BelongsTo

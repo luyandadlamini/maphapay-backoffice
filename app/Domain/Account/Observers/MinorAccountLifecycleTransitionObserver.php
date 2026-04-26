@@ -6,6 +6,7 @@ namespace App\Domain\Account\Observers;
 
 use App\Domain\Account\Models\MinorAccountLifecycleException;
 use App\Domain\Account\Models\MinorAccountLifecycleTransition;
+use RuntimeException;
 
 class MinorAccountLifecycleTransitionObserver
 {
@@ -16,7 +17,7 @@ class MinorAccountLifecycleTransitionObserver
             ->exists();
 
         if ($hasReferencingExceptions) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Cannot delete a lifecycle transition that has referencing exceptions. ' .
                 'Resolve or acknowledge all exceptions before deleting the transition.'
             );

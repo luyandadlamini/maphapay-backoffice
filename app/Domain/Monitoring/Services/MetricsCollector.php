@@ -90,9 +90,9 @@ class MetricsCollector
     public function getMinorLifecycleCounterSnapshot(): array
     {
         return [
-            'transitions_scheduled_total' => (int) Cache::get('metrics:minor_lifecycle:transitions_scheduled_total', 0),
-            'transitions_blocked_total' => (int) Cache::get('metrics:minor_lifecycle:transitions_blocked_total', 0),
-            'lifecycle_exceptions_open_total' => (int) Cache::get('metrics:minor_lifecycle:lifecycle_exceptions_open_total', 0),
+            'transitions_scheduled_total'             => (int) Cache::get('metrics:minor_lifecycle:transitions_scheduled_total', 0),
+            'transitions_blocked_total'               => (int) Cache::get('metrics:minor_lifecycle:transitions_blocked_total', 0),
+            'lifecycle_exceptions_open_total'         => (int) Cache::get('metrics:minor_lifecycle:lifecycle_exceptions_open_total', 0),
             'lifecycle_exceptions_sla_breached_total' => (int) Cache::get('metrics:minor_lifecycle:lifecycle_exceptions_sla_breached_total', 0),
         ];
     }

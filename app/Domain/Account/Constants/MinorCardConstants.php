@@ -38,13 +38,13 @@ final class MinorCardConstants
 
     public const VALID_TRANSITIONS = [
         self::STATUS_PENDING_APPROVAL => [self::STATUS_APPROVED, self::STATUS_DENIED, self::STATUS_CANCELLED],
-        self::STATUS_APPROVED => [self::STATUS_CARD_CREATED, self::STATUS_CANCELLED],
-        self::STATUS_DENIED => [self::STATUS_PENDING_APPROVAL],
-        self::STATUS_CANCELLED => [],
-        self::STATUS_CARD_CREATED => [self::STATUS_ACTIVE],
-        self::STATUS_EXPIRED => [],
-        self::STATUS_ACTIVE => [self::STATUS_FROZEN, self::STATUS_REVOKED],
-        self::STATUS_FROZEN => [self::STATUS_ACTIVE, self::STATUS_REVOKED],
-        self::STATUS_REVOKED => [],
+        self::STATUS_APPROVED         => [self::STATUS_CARD_CREATED, self::STATUS_CANCELLED],
+        self::STATUS_DENIED           => [self::STATUS_PENDING_APPROVAL],
+        self::STATUS_CANCELLED        => [],
+        self::STATUS_CARD_CREATED     => [self::STATUS_ACTIVE],
+        self::STATUS_EXPIRED          => [],
+        self::STATUS_ACTIVE           => [self::STATUS_FROZEN, self::STATUS_REVOKED],
+        self::STATUS_FROZEN           => [self::STATUS_ACTIVE, self::STATUS_REVOKED],
+        self::STATUS_REVOKED          => [],
     ];
 }

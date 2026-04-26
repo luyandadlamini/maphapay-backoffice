@@ -31,7 +31,8 @@ class SmsPricingService
         $perPartUsd = $rateEur * $eurUsdRate * $marginMultiplier;
         $totalUsd = $perPartUsd * $parts;
 
-        $atomicUsdc = (string) max(1000, (int) ceil($totalUsd * 1_000_000));
+        $totalUsdStr = number_format($totalUsd, 8, '.', '');
+        $atomicUsdc = (string) max(1000, (int) bcmul($totalUsdStr, '1000000', 0));
 
         return [
             'amount_usdc'  => $atomicUsdc,

@@ -15,10 +15,10 @@ class MinorPointsProjector extends Projector
     {
         MinorPointsLedger::create([
             'minor_account_uuid' => $event->minorAccountUuid,
-            'points' => $event->points,
-            'source' => $event->source,
-            'description' => $event->description,
-            'reference_id' => $event->referenceId,
+            'points'             => $event->points,
+            'source'             => $event->source,
+            'description'        => $event->description,
+            'reference_id'       => $event->referenceId,
         ]);
     }
 
@@ -26,10 +26,10 @@ class MinorPointsProjector extends Projector
     {
         MinorPointsLedger::create([
             'minor_account_uuid' => $event->minorAccountUuid,
-            'points' => -$event->points,
-            'source' => $event->source,
-            'description' => $event->description,
-            'reference_id' => $event->referenceId,
+            'points'             => -$event->points,
+            'source'             => $event->source,
+            'description'        => $event->description,
+            'reference_id'       => $event->referenceId,
         ]);
     }
 }

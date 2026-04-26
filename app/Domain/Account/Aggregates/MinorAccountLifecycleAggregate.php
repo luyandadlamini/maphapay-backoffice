@@ -8,8 +8,8 @@ use App\Domain\Account\Events\MinorAccountAdultTransitionCompleted;
 use App\Domain\Account\Events\MinorAccountAdultTransitionFrozen;
 use App\Domain\Account\Events\MinorAccountGuardianContinuityBroken;
 use App\Domain\Account\Events\MinorAccountGuardianContinuityRestored;
-use App\Domain\Account\Events\MinorAccountTierAdvanced;
 use App\Domain\Account\Events\MinorAccountTierAdvanceBlocked;
+use App\Domain\Account\Events\MinorAccountTierAdvanced;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\MinorAccountLifecycleTransition;
 use Spatie\EventSourcing\AggregateRoots\AggregateRoot;
@@ -32,6 +32,7 @@ class MinorAccountLifecycleAggregate extends AggregateRoot
     {
         $instance = static::retrieve($uuid);
         $instance->hydrateFromAccount($uuid);
+
         return $instance;
     }
 
@@ -63,7 +64,7 @@ class MinorAccountLifecycleAggregate extends AggregateRoot
                 toTier: $targetTier,
                 metadata: [
                     'target_permission_level' => $targetPermissionLevel,
-                    'effective_at' => $effectiveAt,
+                    'effective_at'            => $effectiveAt,
                 ],
             )
         );
@@ -205,11 +206,11 @@ class MinorAccountLifecycleAggregate extends AggregateRoot
         Account::query()
             ->where('uuid', $this->accountUuid)
             ->update([
-                'tier' => $this->tier,
-                'permission_level' => $this->permissionLevel,
-                'minor_transition_state' => $this->minorTransitionState,
+                'tier'                          => $this->tier,
+                'permission_level'              => $this->permissionLevel,
+                'minor_transition_state'        => $this->minorTransitionState,
                 'minor_transition_effective_at' => $this->minorTransitionEffectiveAt,
-                'frozen' => $this->frozen,
+                'frozen'                        => $this->frozen,
             ]);
     }
 }

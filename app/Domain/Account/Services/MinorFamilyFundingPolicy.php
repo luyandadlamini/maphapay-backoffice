@@ -49,9 +49,9 @@ class MinorFamilyFundingPolicy
         }
 
         return match ($amountMode) {
-            MinorFamilyFundingLink::AMOUNT_MODE_FIXED => $this->validateFixedLink($fixedAmount),
+            MinorFamilyFundingLink::AMOUNT_MODE_FIXED  => $this->validateFixedLink($fixedAmount),
             MinorFamilyFundingLink::AMOUNT_MODE_CAPPED => $this->validateCappedLink($targetAmount),
-            default => $this->deny('Unsupported funding link amount mode.'),
+            default                                    => $this->deny('Unsupported funding link amount mode.'),
         };
     }
 

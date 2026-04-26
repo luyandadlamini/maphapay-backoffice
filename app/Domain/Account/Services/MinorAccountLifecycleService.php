@@ -69,8 +69,8 @@ class MinorAccountLifecycleService
                 transitionType: MinorAccountLifecycleTransition::TYPE_TIER_ADVANCE,
                 effectiveAt: now()->startOfDay(),
                 metadata: [
-                    'source' => $source,
-                    'target_tier' => $tierEvaluation['target_tier'],
+                    'source'                  => $source,
+                    'target_tier'             => $tierEvaluation['target_tier'],
                     'target_permission_level' => $tierEvaluation['target_permission_level'],
                 ],
             );
@@ -87,7 +87,7 @@ class MinorAccountLifecycleService
                 transitionType: MinorAccountLifecycleTransition::TYPE_GUARDIAN_CONTINUITY,
                 effectiveAt: now()->startOfDay(),
                 metadata: [
-                    'source' => $source,
+                    'source'                => $source,
                     'active_guardian_count' => $guardianContinuity['active_guardian_count'],
                 ],
             );
@@ -117,9 +117,9 @@ class MinorAccountLifecycleService
         }
 
         return [
-            'scheduled' => $scheduled,
-            'completed' => $completed,
-            'blocked' => $blocked,
+            'scheduled'         => $scheduled,
+            'completed'         => $completed,
+            'blocked'           => $blocked,
             'exceptions_opened' => $exceptionsOpened,
         ];
         }); // end DB::transaction
@@ -150,8 +150,8 @@ class MinorAccountLifecycleService
             ->map(fn (MinorAccountLifecycleTransition $transition): array => [
                 'transition_uuid' => $transition->id,
                 'transition_type' => $transition->transition_type,
-                'effective_at' => $transition->effective_at?->toIso8601String(),
-                'metadata' => $transition->metadata,
+                'effective_at'    => $transition->effective_at?->toIso8601String(),
+                'metadata'        => $transition->metadata,
             ])
             ->values()
             ->all();
@@ -160,26 +160,26 @@ class MinorAccountLifecycleService
             ->where('status', MinorAccountLifecycleException::STATUS_OPEN)
             ->map(fn (MinorAccountLifecycleException $exception): array => [
                 'exception_uuid' => $exception->id,
-                'reason_code' => $exception->reason_code,
-                'status' => $exception->status,
-                'sla_due_at' => $exception->sla_due_at?->toIso8601String(),
-                'source' => $exception->source,
+                'reason_code'    => $exception->reason_code,
+                'status'         => $exception->status,
+                'sla_due_at'     => $exception->sla_due_at?->toIso8601String(),
+                'source'         => $exception->source,
             ])
             ->values()
             ->all();
 
         return [
-            'minor_account_uuid' => $minorAccount->uuid,
-            'tier' => $minorAccount->tier,
-            'permission_level' => $minorAccount->permission_level,
-            'frozen' => (bool) $minorAccount->frozen,
-            'transition_state' => $minorAccount->minor_transition_state,
+            'minor_account_uuid'      => $minorAccount->uuid,
+            'tier'                    => $minorAccount->tier,
+            'permission_level'        => $minorAccount->permission_level,
+            'frozen'                  => (bool) $minorAccount->frozen,
+            'transition_state'        => $minorAccount->minor_transition_state,
             'transition_effective_at' => $minorAccount->minor_transition_effective_at?->toIso8601String(),
-            'age' => $ageContext['age'],
-            'date_of_birth' => $ageContext['date_of_birth']?->toDateString(),
-            'pending_milestones' => $pendingMilestones,
-            'blockers' => $blockers,
-            'next_actions' => $this->nextActions($adultTransition, $guardianContinuity, $blockers),
+            'age'                     => $ageContext['age'],
+            'date_of_birth'           => $ageContext['date_of_birth']?->toDateString(),
+            'pending_milestones'      => $pendingMilestones,
+            'blockers'                => $blockers,
+            'next_actions'            => $this->nextActions($adultTransition, $guardianContinuity, $blockers),
         ];
     }
 
@@ -193,17 +193,17 @@ class MinorAccountLifecycleService
 
             $ack = MinorAccountLifecycleExceptionAcknowledgment::query()->create([
                 'minor_account_lifecycle_exception_id' => $locked->id,
-                'acknowledged_by_user_uuid' => $actor->uuid,
-                'note' => $note,
+                'acknowledged_by_user_uuid'            => $actor->uuid,
+                'note'                                 => $note,
             ]);
 
             /** @var array<string, mixed> $metadata */
             $metadata = is_array($locked->metadata) ? $locked->metadata : [];
             $metadata['manual_review'] = [
                 'acknowledged_by_user_uuid' => $actor->uuid,
-                'acknowledged_at' => now()->toIso8601String(),
-                'note' => $note,
-                'latest_acknowledgment_id' => $ack->id,
+                'acknowledged_at'           => now()->toIso8601String(),
+                'note'                      => $note,
+                'latest_acknowledgment_id'  => $ack->id,
             ];
 
             $locked->forceFill(['metadata' => $metadata])->save();
@@ -226,16 +226,16 @@ class MinorAccountLifecycleService
             /** @var array<string, mixed> $metadata */
             $metadata = is_array($locked->metadata) ? $locked->metadata : [];
             $metadata['resolution'] = [
-                'source' => $source,
+                'source'                => $source,
                 'resolved_by_user_uuid' => $actor->uuid,
-                'resolved_at' => now()->toIso8601String(),
-                'note' => $note,
+                'resolved_at'           => now()->toIso8601String(),
+                'note'                  => $note,
             ];
 
             $locked->forceFill([
-                'status' => MinorAccountLifecycleException::STATUS_RESOLVED,
-                'source' => $source,
-                'metadata' => $metadata,
+                'status'      => MinorAccountLifecycleException::STATUS_RESOLVED,
+                'source'      => $source,
+                'metadata'    => $metadata,
                 'resolved_at' => now(),
             ])->save();
 
@@ -279,8 +279,8 @@ class MinorAccountLifecycleService
             MinorAccountLifecycleTransition::TYPE_TIER_ADVANCE => $this->executeTierAdvance($minorAccount, $transition, $source),
             MinorAccountLifecycleTransition::TYPE_ADULT_TRANSITION_REVIEW,
             MinorAccountLifecycleTransition::TYPE_ADULT_TRANSITION_CUTOFF => $this->executeAdultTransition($minorAccount, $transition, $source),
-            MinorAccountLifecycleTransition::TYPE_GUARDIAN_CONTINUITY => $this->executeGuardianContinuity($minorAccount, $transition, $source),
-            default => ['completed' => 0, 'blocked' => 0, 'exceptions_opened' => 0],
+            MinorAccountLifecycleTransition::TYPE_GUARDIAN_CONTINUITY     => $this->executeGuardianContinuity($minorAccount, $transition, $source),
+            default                                                       => ['completed' => 0, 'blocked' => 0, 'exceptions_opened' => 0],
         };
     }
 
@@ -297,9 +297,9 @@ class MinorAccountLifecycleService
             $aggregate->persist();
 
             $transition->forceFill([
-                'state' => MinorAccountLifecycleTransition::STATE_BLOCKED,
+                'state'               => MinorAccountLifecycleTransition::STATE_BLOCKED,
                 'blocked_reason_code' => $evaluation['reason_code'],
-                'executed_at' => now(),
+                'executed_at'         => now(),
             ])->save();
 
             $this->recordLifecycleException(
@@ -327,8 +327,8 @@ class MinorAccountLifecycleService
         $aggregate->persist();
 
         $transition->forceFill([
-            'state' => MinorAccountLifecycleTransition::STATE_COMPLETED,
-            'executed_at' => now(),
+            'state'               => MinorAccountLifecycleTransition::STATE_COMPLETED,
+            'executed_at'         => now(),
             'blocked_reason_code' => null,
         ])->save();
 
@@ -344,8 +344,8 @@ class MinorAccountLifecycleService
             MinorNotificationService::TYPE_LIFECYCLE_TIER_ADVANCED,
             [
                 'transition_id' => $transition->id,
-                'from_tier' => $fromTier,
-                'to_tier' => $evaluation['target_tier'],
+                'from_tier'     => $fromTier,
+                'to_tier'       => $evaluation['target_tier'],
             ],
             targetType: MinorAccountLifecycleTransition::class,
             targetId: $transition->id,
@@ -372,9 +372,9 @@ class MinorAccountLifecycleService
             $aggregate->persist();
 
             $transition->forceFill([
-                'state' => MinorAccountLifecycleTransition::STATE_BLOCKED,
+                'state'               => MinorAccountLifecycleTransition::STATE_BLOCKED,
                 'blocked_reason_code' => $adultTransition['reason_code'],
-                'executed_at' => now(),
+                'executed_at'         => now(),
             ])->save();
 
             $this->recordLifecycleException(
@@ -390,7 +390,7 @@ class MinorAccountLifecycleService
                 MinorNotificationService::TYPE_LIFECYCLE_ADULT_TRANSITION_FROZEN,
                 [
                     'transition_id' => $transition->id,
-                    'reason_code' => $adultTransition['reason_code'],
+                    'reason_code'   => $adultTransition['reason_code'],
                 ],
                 targetType: MinorAccountLifecycleTransition::class,
                 targetId: $transition->id,
@@ -410,8 +410,8 @@ class MinorAccountLifecycleService
         $aggregate->persist();
 
         $transition->forceFill([
-            'state' => MinorAccountLifecycleTransition::STATE_COMPLETED,
-            'executed_at' => now(),
+            'state'               => MinorAccountLifecycleTransition::STATE_COMPLETED,
+            'executed_at'         => now(),
             'blocked_reason_code' => null,
         ])->save();
 
@@ -451,9 +451,9 @@ class MinorAccountLifecycleService
             $aggregate->persist();
 
             $transition->forceFill([
-                'state' => MinorAccountLifecycleTransition::STATE_BLOCKED,
+                'state'               => MinorAccountLifecycleTransition::STATE_BLOCKED,
                 'blocked_reason_code' => $guardianContinuity['reason_code'],
-                'executed_at' => now(),
+                'executed_at'         => now(),
             ])->save();
 
             $this->recordLifecycleException(
@@ -469,7 +469,7 @@ class MinorAccountLifecycleService
                 MinorNotificationService::TYPE_LIFECYCLE_GUARDIAN_CONTINUITY_BROKEN,
                 [
                     'transition_id' => $transition->id,
-                    'reason_code' => $guardianContinuity['reason_code'],
+                    'reason_code'   => $guardianContinuity['reason_code'],
                 ],
                 targetType: MinorAccountLifecycleTransition::class,
                 targetId: $transition->id,
@@ -487,8 +487,8 @@ class MinorAccountLifecycleService
         $aggregate->persist();
 
         $transition->forceFill([
-            'state' => MinorAccountLifecycleTransition::STATE_COMPLETED,
-            'executed_at' => now(),
+            'state'               => MinorAccountLifecycleTransition::STATE_COMPLETED,
+            'executed_at'         => now(),
             'blocked_reason_code' => null,
         ])->save();
 
@@ -522,7 +522,7 @@ class MinorAccountLifecycleService
                 effectiveAt: $effectiveAt,
                 metadata: [
                     'milestone' => 't_minus_' . $daysBefore,
-                    'source' => $source,
+                    'source'    => $source,
                 ],
             );
             $scheduled += $transition->wasRecentlyCreated ? 1 : 0;
@@ -535,7 +535,7 @@ class MinorAccountLifecycleService
             effectiveAt: $turning18->copy()->startOfDay(),
             metadata: [
                 'milestone' => 't0',
-                'source' => $source,
+                'source'    => $source,
             ],
         );
         $scheduled += $cutoffTransition->wasRecentlyCreated ? 1 : 0;
@@ -552,13 +552,13 @@ class MinorAccountLifecycleService
         $transition = MinorAccountLifecycleTransition::query()->firstOrCreate(
             [
                 'minor_account_uuid' => $minorAccount->uuid,
-                'transition_type' => $transitionType,
-                'effective_at' => $effectiveAt,
+                'transition_type'    => $transitionType,
+                'effective_at'       => $effectiveAt,
             ],
             [
                 'tenant_id' => $tenantId,
-                'state' => MinorAccountLifecycleTransition::STATE_PENDING,
-                'metadata' => $metadata,
+                'state'     => MinorAccountLifecycleTransition::STATE_PENDING,
+                'metadata'  => $metadata,
             ],
         );
 
@@ -595,18 +595,18 @@ class MinorAccountLifecycleService
         $occurrenceCount = $isNew ? 1 : $exception->occurrence_count + 1;
 
         $exception->forceFill([
-            'tenant_id' => $this->resolveTenantId($minorAccount),
+            'tenant_id'          => $this->resolveTenantId($minorAccount),
             'minor_account_uuid' => $minorAccount->uuid,
-            'transition_id' => $transition->id,
-            'reason_code' => $reasonCode,
-            'status' => MinorAccountLifecycleException::STATUS_OPEN,
-            'source' => $source,
-            'occurrence_count' => $occurrenceCount,
-            'metadata' => $metadata,
-            'first_seen_at' => $firstSeenAt,
-            'last_seen_at' => now(),
-            'sla_due_at' => $exception->sla_due_at ?? now()->addHours(24),
-            'resolved_at' => null,
+            'transition_id'      => $transition->id,
+            'reason_code'        => $reasonCode,
+            'status'             => MinorAccountLifecycleException::STATUS_OPEN,
+            'source'             => $source,
+            'occurrence_count'   => $occurrenceCount,
+            'metadata'           => $metadata,
+            'first_seen_at'      => $firstSeenAt,
+            'last_seen_at'       => now(),
+            'sla_due_at'         => $exception->sla_due_at ?? now()->addHours(24),
+            'resolved_at'        => null,
         ])->save();
 
         if ($isNew) {
@@ -635,14 +635,14 @@ class MinorAccountLifecycleService
             /** @var array<string, mixed> $existingMetadata */
             $existingMetadata = is_array($exception->metadata) ? $exception->metadata : [];
             $existingMetadata['resolution'] = array_merge([
-                'source' => $source,
+                'source'      => $source,
                 'resolved_at' => now()->toIso8601String(),
             ], $metadata);
 
             $exception->forceFill([
-                'status' => MinorAccountLifecycleException::STATUS_RESOLVED,
-                'source' => $source,
-                'metadata' => $existingMetadata,
+                'status'      => MinorAccountLifecycleException::STATUS_RESOLVED,
+                'source'      => $source,
+                'metadata'    => $existingMetadata,
                 'resolved_at' => now(),
             ])->save();
 

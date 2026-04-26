@@ -42,8 +42,8 @@ class HealthChecker
         if (Schema::hasTable('minor_account_lifecycle_exceptions')) {
             $collector = $this->metricsCollector ?? app(MetricsCollector::class);
             $checks['minor_account_lifecycle'] = [
-                'healthy' => true,
-                'message' => 'Minor account lifecycle cache counters (since process start / last cache flush).',
+                'healthy'  => true,
+                'message'  => 'Minor account lifecycle cache counters (since process start / last cache flush).',
                 'counters' => $collector->getMinorLifecycleCounterSnapshot(),
             ];
         }

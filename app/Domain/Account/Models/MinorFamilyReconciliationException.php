@@ -13,7 +13,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MinorFamilyReconciliationException extends Model
 {
-    use HasUuids, UsesTenantConnection;
+    use HasUuids;
+    use UsesTenantConnection;
 
     public const STATUS_OPEN = 'open';
 
@@ -42,12 +43,12 @@ class MinorFamilyReconciliationException extends Model
     {
         return [
             'occurrence_count' => 'integer',
-            'metadata' => 'array',
-            'first_seen_at' => 'datetime',
-            'last_seen_at' => 'datetime',
-            'sla_due_at' => 'datetime',
+            'metadata'         => 'array',
+            'first_seen_at'    => 'datetime',
+            'last_seen_at'     => 'datetime',
+            'sla_due_at'       => 'datetime',
             'sla_escalated_at' => 'datetime',
-            'resolved_at' => 'datetime',
+            'resolved_at'      => 'datetime',
         ];
     }
 

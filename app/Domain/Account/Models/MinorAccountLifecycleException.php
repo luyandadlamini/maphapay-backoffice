@@ -32,6 +32,7 @@ class MinorAccountLifecycleException extends Model
     use UsesTenantConnection;
 
     public const STATUS_OPEN = 'open';
+
     public const STATUS_RESOLVED = 'resolved';
 
     protected $table = 'minor_account_lifecycle_exceptions';
@@ -45,12 +46,12 @@ class MinorAccountLifecycleException extends Model
     {
         return [
             'occurrence_count' => 'integer',
-            'metadata' => 'array',
-            'first_seen_at' => 'datetime',
-            'last_seen_at' => 'datetime',
-            'sla_due_at' => 'datetime',
+            'metadata'         => 'array',
+            'first_seen_at'    => 'datetime',
+            'last_seen_at'     => 'datetime',
+            'sla_due_at'       => 'datetime',
             'sla_escalated_at' => 'datetime',
-            'resolved_at' => 'datetime',
+            'resolved_at'      => 'datetime',
         ];
     }
 

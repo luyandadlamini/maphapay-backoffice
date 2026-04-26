@@ -56,7 +56,7 @@ class MinorFamilyFundingAttempt extends Model
     protected function casts(): array
     {
         return [
-            'amount' => 'decimal:2',
+            'amount'             => 'decimal:2',
             'wallet_credited_at' => 'datetime',
         ];
     }

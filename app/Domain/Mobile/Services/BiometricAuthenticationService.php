@@ -613,8 +613,8 @@ class BiometricAuthenticationService
         foreach ($emulatorIndicators as $indicator) {
             if (str_contains($combined, $indicator)) {
                 Log::info('Emulator detected via indicator', [
-                    'indicator'  => $indicator,
-                    'user_agent' => $userAgent,
+                    'indicator'    => $indicator,
+                    'user_agent'   => $userAgent,
                     'device_model' => $deviceModel,
                 ]);
 

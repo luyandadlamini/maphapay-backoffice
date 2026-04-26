@@ -37,6 +37,8 @@ class MinorFamilyFundingLink extends Model
     use HasUuids;
     use UsesTenantConnection;
 
+    public ?string $plaintext_token = null;
+
     public const STATUS_DRAFT = 'draft';
 
     public const STATUS_ACTIVE = 'active';
@@ -65,12 +67,12 @@ class MinorFamilyFundingLink extends Model
     protected function casts(): array
     {
         return [
-            'fixed_amount' => 'decimal:2',
-            'target_amount' => 'decimal:2',
+            'fixed_amount'     => 'decimal:2',
+            'target_amount'    => 'decimal:2',
             'collected_amount' => 'decimal:2',
             'provider_options' => 'array',
-            'expires_at' => 'datetime',
-            'last_funded_at' => 'datetime',
+            'expires_at'       => 'datetime',
+            'last_funded_at'   => 'datetime',
         ];
     }
 

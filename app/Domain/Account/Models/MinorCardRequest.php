@@ -9,6 +9,7 @@ use App\Domain\Shared\Traits\UsesTenantConnection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use InvalidArgumentException;
 
 class MinorCardRequest extends Model
 {
@@ -33,11 +34,11 @@ class MinorCardRequest extends Model
     ];
 
     protected $casts = [
-        'requested_daily_limit' => 'decimal:2',
+        'requested_daily_limit'   => 'decimal:2',
         'requested_monthly_limit' => 'decimal:2',
-        'requested_single_limit' => 'decimal:2',
-        'approved_at' => 'datetime',
-        'expires_at' => 'datetime',
+        'requested_single_limit'  => 'decimal:2',
+        'approved_at'             => 'datetime',
+        'expires_at'              => 'datetime',
     ];
 
     /** @return BelongsTo<Account, self> */
@@ -67,7 +68,7 @@ class MinorCardRequest extends Model
         $currentStatus = $this->status;
 
         if (! $this->canTransitionTo($newStatus)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "Invalid state transition from [{$currentStatus}] to [{$newStatus}]. Valid transitions: "
                 . implode(', ', MinorCardConstants::VALID_TRANSITIONS[$currentStatus] ?? [])
             );

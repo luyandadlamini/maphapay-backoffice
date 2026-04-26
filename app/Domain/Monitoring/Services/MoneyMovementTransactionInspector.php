@@ -7,17 +7,17 @@ namespace App\Domain\Monitoring\Services;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\MinorAccountLifecycleException;
 use App\Domain\Account\Models\MinorAccountLifecycleTransition;
-use App\Domain\Account\Models\TransactionProjection;
 use App\Domain\Account\Models\MinorFamilyFundingAttempt;
 use App\Domain\Account\Models\MinorFamilyFundingLink;
 use App\Domain\Account\Models\MinorFamilyReconciliationException;
 use App\Domain\Account\Models\MinorFamilySupportTransfer;
+use App\Domain\Account\Models\TransactionProjection;
 use App\Domain\Asset\Models\AssetTransfer;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\Ledger\Models\LedgerEntry;
 use App\Domain\Ledger\Models\LedgerPosting;
-use App\Models\MtnMomoTransaction;
 use App\Models\MoneyRequest;
+use App\Models\MtnMomoTransaction;
 use App\Support\Reconciliation\ReconciliationReportDataLoader;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
@@ -266,9 +266,9 @@ class MoneyMovementTransactionInspector
                 'trx'               => $moneyRequest->trx,
                 'note'              => $moneyRequest->note,
             ] : null,
-            'telemetry' => app(MaphaPayMoneyMovementTelemetry::class)->metricSnapshot(),
-            'timeline'  => $timeline,
-            'warnings'  => $warnings,
+            'telemetry'               => app(MaphaPayMoneyMovementTelemetry::class)->metricSnapshot(),
+            'timeline'                => $timeline,
+            'warnings'                => $warnings,
             'minor_account_lifecycle' => $this->resolveMinorAccountLifecycleLinkage($ledgerPosting, $projections),
         ];
     }
@@ -329,15 +329,15 @@ class MoneyMovementTransactionInspector
                 ->count();
 
             $rows[] = [
-                'minor_account_uuid' => $minorUuid,
-                'open_exceptions_count' => $openExceptions->count(),
+                'minor_account_uuid'        => $minorUuid,
+                'open_exceptions_count'     => $openExceptions->count(),
                 'pending_transitions_count' => $pendingTransitions,
-                'open_reason_codes' => $openExceptions->pluck('reason_code')->unique()->values()->all(),
+                'open_reason_codes'         => $openExceptions->pluck('reason_code')->unique()->values()->all(),
             ];
         }
 
         return [
-            'minor_accounts' => $rows,
+            'minor_accounts'     => $rows,
             'lifecycle_counters' => app(MetricsCollector::class)->getMinorLifecycleCounterSnapshot(),
         ];
     }
@@ -588,64 +588,64 @@ class MoneyMovementTransactionInspector
                 $metadata = is_array($exception->metadata) ? $exception->metadata : [];
 
                 return [
-                    'id' => $exception->id,
-                    'mtn_momo_transaction_id' => $exception->mtn_momo_transaction_id,
-                    'reason_code' => $exception->reason_code,
-                    'status' => $exception->status,
-                    'source' => $exception->source,
-                    'occurrence_count' => $exception->occurrence_count,
-                    'reconciliation_source' => $metadata['reconciliation_source'] ?? null,
-                    'reconciliation_outcome' => $metadata['reconciliation_outcome'] ?? null,
+                    'id'                         => $exception->id,
+                    'mtn_momo_transaction_id'    => $exception->mtn_momo_transaction_id,
+                    'reason_code'                => $exception->reason_code,
+                    'status'                     => $exception->status,
+                    'source'                     => $exception->source,
+                    'occurrence_count'           => $exception->occurrence_count,
+                    'reconciliation_source'      => $metadata['reconciliation_source'] ?? null,
+                    'reconciliation_outcome'     => $metadata['reconciliation_outcome'] ?? null,
                     'reconciliation_reason_code' => $metadata['reconciliation_reason_code'] ?? null,
-                    'context_type' => $metadata['context_type'] ?? null,
-                    'context_uuid' => $metadata['context_uuid'] ?? null,
-                    'mtn_reference_id' => $metadata['mtn_reference_id'] ?? null,
-                    'resolution_path' => $metadata['resolution_path'] ?? null,
-                    'last_seen_at' => $exception->last_seen_at->toIso8601String(),
-                    'first_seen_at' => $exception->first_seen_at->toIso8601String(),
+                    'context_type'               => $metadata['context_type'] ?? null,
+                    'context_uuid'               => $metadata['context_uuid'] ?? null,
+                    'mtn_reference_id'           => $metadata['mtn_reference_id'] ?? null,
+                    'resolution_path'            => $metadata['resolution_path'] ?? null,
+                    'last_seen_at'               => $exception->last_seen_at->toIso8601String(),
+                    'first_seen_at'              => $exception->first_seen_at->toIso8601String(),
                 ];
             })
             ->values()
             ->all();
 
         return [
-            'context_type' => $contextType,
-            'context_uuid' => $contextUuid,
-            'provider_reference_id' => $providerTransaction->mtn_reference_id,
-            'mtn_momo_transaction_id' => $providerTransaction->id,
+            'context_type'              => $contextType,
+            'context_uuid'              => $contextUuid,
+            'provider_reference_id'     => $providerTransaction->mtn_reference_id,
+            'mtn_momo_transaction_id'   => $providerTransaction->id,
             'reconciliation_exceptions' => $reconciliationExceptions,
-            'funding_link' => $fundingLink !== null ? [
-                'id' => $fundingLink->id,
-                'status' => $fundingLink->status,
+            'funding_link'              => $fundingLink !== null ? [
+                'id'                 => $fundingLink->id,
+                'status'             => $fundingLink->status,
                 'minor_account_uuid' => $fundingLink->minor_account_uuid,
-                'amount_mode' => $fundingLink->amount_mode,
-                'target_amount' => $fundingLink->target_amount,
-                'collected_amount' => $fundingLink->collected_amount,
-                'asset_code' => $fundingLink->asset_code,
+                'amount_mode'        => $fundingLink->amount_mode,
+                'target_amount'      => $fundingLink->target_amount,
+                'collected_amount'   => $fundingLink->collected_amount,
+                'asset_code'         => $fundingLink->asset_code,
             ] : null,
             'funding_attempt' => $attempt !== null ? [
-                'id' => $attempt->id,
-                'status' => $attempt->status,
-                'minor_account_uuid' => $attempt->minor_account_uuid,
-                'funding_link_uuid' => $attempt->funding_link_uuid,
-                'provider_name' => $attempt->provider_name,
+                'id'                    => $attempt->id,
+                'status'                => $attempt->status,
+                'minor_account_uuid'    => $attempt->minor_account_uuid,
+                'funding_link_uuid'     => $attempt->funding_link_uuid,
+                'provider_name'         => $attempt->provider_name,
                 'provider_reference_id' => $attempt->provider_reference_id,
-                'amount' => $attempt->amount,
-                'asset_code' => $attempt->asset_code,
-                'wallet_credited_at' => $attempt->wallet_credited_at?->toIso8601String(),
-                'failed_reason' => $attempt->failed_reason,
+                'amount'                => $attempt->amount,
+                'asset_code'            => $attempt->asset_code,
+                'wallet_credited_at'    => $attempt->wallet_credited_at?->toIso8601String(),
+                'failed_reason'         => $attempt->failed_reason,
             ] : null,
             'support_transfer' => $transfer !== null ? [
-                'id' => $transfer->id,
-                'status' => $transfer->status,
-                'minor_account_uuid' => $transfer->minor_account_uuid,
-                'source_account_uuid' => $transfer->source_account_uuid,
-                'provider_name' => $transfer->provider_name,
+                'id'                    => $transfer->id,
+                'status'                => $transfer->status,
+                'minor_account_uuid'    => $transfer->minor_account_uuid,
+                'source_account_uuid'   => $transfer->source_account_uuid,
+                'provider_name'         => $transfer->provider_name,
                 'provider_reference_id' => $transfer->provider_reference_id,
-                'amount' => $transfer->amount,
-                'asset_code' => $transfer->asset_code,
-                'wallet_refunded_at' => $transfer->wallet_refunded_at?->toIso8601String(),
-                'failed_reason' => $transfer->failed_reason,
+                'amount'                => $transfer->amount,
+                'asset_code'            => $transfer->asset_code,
+                'wallet_refunded_at'    => $transfer->wallet_refunded_at?->toIso8601String(),
+                'failed_reason'         => $transfer->failed_reason,
             ] : null,
         ];
     }

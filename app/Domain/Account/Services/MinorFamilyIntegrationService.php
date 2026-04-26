@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\Account\Services;
 
+use App\Domain\Account\Events\MinorFamilyFundingAttemptInitiated;
 use App\Domain\Account\Events\MinorFamilyFundingLinkCreated;
 use App\Domain\Account\Events\MinorFamilyFundingLinkExpired;
-use App\Domain\Account\Events\MinorFamilyFundingAttemptInitiated;
 use App\Domain\Account\Events\MinorFamilySupportTransferInitiated;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
@@ -82,17 +82,17 @@ class MinorFamilyIntegrationService
         }
 
         $payloadHash = $this->hashPayload([
-            'minor_account_uuid' => $minorAccount->uuid,
+            'minor_account_uuid'      => $minorAccount->uuid,
             'created_by_account_uuid' => $requestedAccountUuid,
-            'title' => $this->stringValue($attributes, 'title'),
-            'note' => $this->nullableStringValue($attributes, 'note'),
-            'amount_mode' => $amountMode,
-            'fixed_amount' => $fixedAmount,
-            'target_amount' => $targetAmount,
-            'asset_code' => $this->normaliseAssetCode($attributes['asset_code'] ?? 'SZL'),
-            'provider_options' => $providerOptions,
-            'expires_at' => $expiresAt?->toIso8601String(),
-            'tenant_id' => $this->resolveTenantId($attributes, $actor, $minorAccount),
+            'title'                   => $this->stringValue($attributes, 'title'),
+            'note'                    => $this->nullableStringValue($attributes, 'note'),
+            'amount_mode'             => $amountMode,
+            'fixed_amount'            => $fixedAmount,
+            'target_amount'           => $targetAmount,
+            'asset_code'              => $this->normaliseAssetCode($attributes['asset_code'] ?? 'SZL'),
+            'provider_options'        => $providerOptions,
+            'expires_at'              => $expiresAt?->toIso8601String(),
+            'tenant_id'               => $this->resolveTenantId($attributes, $actor, $minorAccount),
         ]);
 
         try {
@@ -172,6 +172,8 @@ class MinorFamilyIntegrationService
         ?array $providerOptions,
         ?\Carbon\CarbonInterface $expiresAt,
     ): MinorFamilyFundingLink {
+        $plaintextToken = $this->nullableStringValue($attributes, 'token') ?? \Illuminate\Support\Str::random(64);
+
         /** @var MinorFamilyFundingLink $link */
         $link = DB::transaction(function () use (
             $attributes,
@@ -183,23 +185,24 @@ class MinorFamilyIntegrationService
             $targetAmount,
             $providerOptions,
             $expiresAt,
+            $plaintextToken,
         ): MinorFamilyFundingLink {
             $link = MinorFamilyFundingLink::query()->create([
-                'tenant_id' => $this->resolveTenantId($attributes, $actor, $minorAccount),
-                'minor_account_uuid' => $minorAccount->uuid,
-                'created_by_user_uuid' => $actor->uuid,
+                'tenant_id'               => $this->resolveTenantId($attributes, $actor, $minorAccount),
+                'minor_account_uuid'      => $minorAccount->uuid,
+                'created_by_user_uuid'    => $actor->uuid,
                 'created_by_account_uuid' => $actingAccount->uuid,
-                'title' => $this->stringValue($attributes, 'title'),
-                'note' => $this->nullableStringValue($attributes, 'note'),
-                'token' => $this->nullableStringValue($attributes, 'token') ?? (string) \Illuminate\Support\Str::uuid(),
-                'status' => MinorFamilyFundingLink::STATUS_ACTIVE,
-                'amount_mode' => $amountMode,
-                'fixed_amount' => $amountMode === MinorFamilyFundingLink::AMOUNT_MODE_FIXED ? $this->normaliseAmount($fixedAmount) : null,
-                'target_amount' => $amountMode === MinorFamilyFundingLink::AMOUNT_MODE_CAPPED ? $this->normaliseAmount($targetAmount) : null,
-                'collected_amount' => '0.00',
-                'asset_code' => $this->normaliseAssetCode($attributes['asset_code'] ?? 'SZL'),
-                'provider_options' => $providerOptions,
-                'expires_at' => $expiresAt,
+                'title'                   => $this->stringValue($attributes, 'title'),
+                'note'                    => $this->nullableStringValue($attributes, 'note'),
+                'token'                   => hash('sha256', $plaintextToken),
+                'status'                  => MinorFamilyFundingLink::STATUS_ACTIVE,
+                'amount_mode'             => $amountMode,
+                'fixed_amount'            => $amountMode === MinorFamilyFundingLink::AMOUNT_MODE_FIXED ? $this->normaliseAmount($fixedAmount) : null,
+                'target_amount'           => $amountMode === MinorFamilyFundingLink::AMOUNT_MODE_CAPPED ? $this->normaliseAmount($targetAmount) : null,
+                'collected_amount'        => '0.00',
+                'asset_code'              => $this->normaliseAssetCode($attributes['asset_code'] ?? 'SZL'),
+                'provider_options'        => $providerOptions,
+                'expires_at'              => $expiresAt,
             ]);
 
             $this->notifications->notify(
@@ -207,10 +210,10 @@ class MinorFamilyIntegrationService
                 type: MinorNotificationService::TYPE_FAMILY_FUNDING_LINK_CREATED,
                 data: [
                     'funding_link_uuid' => $link->id,
-                    'title' => $link->title,
-                    'amount_mode' => $link->amount_mode,
-                    'asset_code' => $link->asset_code,
-                    'status' => $link->status,
+                    'title'             => $link->title,
+                    'amount_mode'       => $link->amount_mode,
+                    'asset_code'        => $link->asset_code,
+                    'status'            => $link->status,
                 ],
                 actorUserUuid: $actor->uuid,
                 targetType: 'minor_family_funding_link',
@@ -225,6 +228,8 @@ class MinorFamilyIntegrationService
 
             return $link;
         });
+
+        $link->plaintext_token = $plaintextToken;
 
         return $link;
     }
@@ -248,7 +253,7 @@ class MinorFamilyIntegrationService
 
         DB::transaction(function () use ($fundingLink, $minorAccount, $actor): void {
             $fundingLink->forceFill([
-                'status' => MinorFamilyFundingLink::STATUS_EXPIRED,
+                'status'     => MinorFamilyFundingLink::STATUS_EXPIRED,
                 'expires_at' => now(),
             ])->save();
 
@@ -257,7 +262,7 @@ class MinorFamilyIntegrationService
                 type: MinorNotificationService::TYPE_FAMILY_FUNDING_LINK_EXPIRED,
                 data: [
                     'funding_link_uuid' => $fundingLink->id,
-                    'status' => $fundingLink->status,
+                    'status'            => $fundingLink->status,
                 ],
                 actorUserUuid: $actor->uuid,
                 targetType: 'minor_family_funding_link',
@@ -288,15 +293,15 @@ class MinorFamilyIntegrationService
         $amount = $this->normaliseAmount($attributes['amount'] ?? null);
         $assetCode = $this->normaliseAssetCode($attributes['asset_code'] ?? null);
         $payloadHash = $this->hashPayload([
-            'minor_account_uuid' => $minorAccount->uuid,
+            'minor_account_uuid'  => $minorAccount->uuid,
             'source_account_uuid' => $requestedSourceAccountUuid,
-            'provider' => $provider,
-            'recipient_name' => $this->stringValue($attributes, 'recipient_name'),
-            'recipient_msisdn' => $this->normaliseMsisdn($this->stringValue($attributes, 'recipient_msisdn')),
-            'amount' => $amount,
-            'asset_code' => $assetCode,
-            'note' => $this->nullableStringValue($attributes, 'note'),
-            'tenant_id' => $this->resolveTenantId($attributes, $actor, $minorAccount),
+            'provider'            => $provider,
+            'recipient_name'      => $this->stringValue($attributes, 'recipient_name'),
+            'recipient_msisdn'    => $this->normaliseMsisdn($this->stringValue($attributes, 'recipient_msisdn')),
+            'amount'              => $amount,
+            'asset_code'          => $assetCode,
+            'note'                => $this->nullableStringValue($attributes, 'note'),
+            'tenant_id'           => $this->resolveTenantId($attributes, $actor, $minorAccount),
         ]);
 
         try {
@@ -395,30 +400,30 @@ class MinorFamilyIntegrationService
             $idempotencyKey,
         ): array {
             $transfer = MinorFamilySupportTransfer::query()->create([
-                'tenant_id' => $tenantId,
-                'minor_account_uuid' => $minorAccount->uuid,
-                'actor_user_uuid' => $actor->uuid,
+                'tenant_id'           => $tenantId,
+                'minor_account_uuid'  => $minorAccount->uuid,
+                'actor_user_uuid'     => $actor->uuid,
                 'source_account_uuid' => $sourceAccount->uuid,
-                'status' => MinorFamilySupportTransfer::STATUS_PENDING_PROVIDER,
-                'provider_name' => $provider,
-                'recipient_name' => $this->stringValue($attributes, 'recipient_name'),
-                'recipient_msisdn' => $this->stringValue($attributes, 'recipient_msisdn'),
-                'amount' => $amount,
-                'asset_code' => $assetCode,
-                'note' => $this->nullableStringValue($attributes, 'note'),
-                'idempotency_key' => $idempotencyKey,
+                'status'              => MinorFamilySupportTransfer::STATUS_PENDING_PROVIDER,
+                'provider_name'       => $provider,
+                'recipient_name'      => $this->stringValue($attributes, 'recipient_name'),
+                'recipient_msisdn'    => $this->stringValue($attributes, 'recipient_msisdn'),
+                'amount'              => $amount,
+                'asset_code'          => $assetCode,
+                'note'                => $this->nullableStringValue($attributes, 'note'),
+                'idempotency_key'     => $idempotencyKey,
             ]);
 
             $providerTransaction = MtnMomoTransaction::query()->create([
-                'id' => (string) $transfer->id,
-                'user_id' => $actor->id,
+                'id'              => (string) $transfer->id,
+                'user_id'         => $actor->id,
                 'idempotency_key' => $idempotencyKey,
-                'type' => MtnMomoTransaction::TYPE_DISBURSEMENT,
-                'amount' => $amount,
-                'currency' => $assetCode,
-                'status' => MtnMomoTransaction::STATUS_PENDING,
-                'party_msisdn' => $this->stringValue($attributes, 'recipient_msisdn'),
-                'note' => $this->nullableStringValue($attributes, 'note'),
+                'type'            => MtnMomoTransaction::TYPE_DISBURSEMENT,
+                'amount'          => $amount,
+                'currency'        => $assetCode,
+                'status'          => MtnMomoTransaction::STATUS_PENDING,
+                'party_msisdn'    => $this->stringValue($attributes, 'recipient_msisdn'),
+                'note'            => $this->nullableStringValue($attributes, 'note'),
             ]);
 
             $providerTransaction->forceFill([
@@ -431,21 +436,21 @@ class MinorFamilyIntegrationService
             ])->save();
 
             return [
-                'transfer' => $transfer,
+                'transfer'            => $transfer,
                 'providerTransaction' => $providerTransaction,
             ];
         });
 
         try {
             $providerResponse = $this->fundingAdapter->initiateOutboundDisbursement([
-                'idempotency_key' => $idempotencyKey,
+                'idempotency_key'     => $idempotencyKey,
                 'source_account_uuid' => $sourceAccount->uuid,
-                'minor_account_uuid' => $minorAccount->uuid,
-                'recipient_name' => $transfer->recipient_name,
-                'recipient_msisdn' => $transfer->recipient_msisdn,
-                'amount' => $amount,
-                'asset_code' => $assetCode,
-                'note' => $transfer->note,
+                'minor_account_uuid'  => $minorAccount->uuid,
+                'recipient_name'      => $transfer->recipient_name,
+                'recipient_msisdn'    => $transfer->recipient_msisdn,
+                'amount'              => $amount,
+                'asset_code'          => $assetCode,
+                'note'                => $transfer->note,
             ]);
         } catch (Throwable $exception) {
             $this->markSupportTransferProviderInitiationFailed($transfer->id, $providerTransaction->id);
@@ -468,7 +473,7 @@ class MinorFamilyIntegrationService
         ): void {
             $providerTransaction->forceFill([
                 'mtn_reference_id' => $providerReferenceId,
-                'status' => $this->normaliseProviderStatus($providerResponse['provider_status'] ?? null),
+                'status'           => $this->normaliseProviderStatus($providerResponse['provider_status'] ?? null),
             ])->save();
 
             $transfer->forceFill([
@@ -480,11 +485,11 @@ class MinorFamilyIntegrationService
                 type: MinorNotificationService::TYPE_FAMILY_SUPPORT_TRANSFER_INITIATED,
                 data: [
                     'family_support_transfer_uuid' => $transfer->id,
-                    'provider_name' => $provider,
-                    'provider_reference_id' => $providerReferenceId,
-                    'amount' => $amount,
-                    'asset_code' => $assetCode,
-                    'mtn_momo_transaction_id' => $providerTransaction->id,
+                    'provider_name'                => $provider,
+                    'provider_reference_id'        => $providerReferenceId,
+                    'amount'                       => $amount,
+                    'asset_code'                   => $assetCode,
+                    'mtn_momo_transaction_id'      => $providerTransaction->id,
                 ],
                 actorUserUuid: $actor->uuid,
                 targetType: 'minor_family_support_transfer',
@@ -572,28 +577,28 @@ class MinorFamilyIntegrationService
                     $owner,
                 ): array {
                     $attempt = MinorFamilyFundingAttempt::query()->create([
-                        'tenant_id' => $link->tenant_id,
-                        'funding_link_uuid' => $link->id,
+                        'tenant_id'          => $link->tenant_id,
+                        'funding_link_uuid'  => $link->id,
                         'minor_account_uuid' => $link->minor_account_uuid,
-                        'status' => MinorFamilyFundingAttempt::STATUS_PENDING_PROVIDER,
-                        'sponsor_name' => $this->stringValue($attributes, 'sponsor_name'),
-                        'sponsor_msisdn' => $this->stringValue($attributes, 'sponsor_msisdn'),
-                        'amount' => $amount,
-                        'asset_code' => $assetCode,
-                        'provider_name' => $provider,
-                        'dedupe_hash' => $dedupeHash,
+                        'status'             => MinorFamilyFundingAttempt::STATUS_PENDING_PROVIDER,
+                        'sponsor_name'       => $this->stringValue($attributes, 'sponsor_name'),
+                        'sponsor_msisdn'     => $this->stringValue($attributes, 'sponsor_msisdn'),
+                        'amount'             => $amount,
+                        'asset_code'         => $assetCode,
+                        'provider_name'      => $provider,
+                        'dedupe_hash'        => $dedupeHash,
                     ]);
 
                     $providerTransaction = MtnMomoTransaction::query()->create([
-                        'id' => (string) $attempt->id,
-                        'user_id' => $owner->id,
+                        'id'              => (string) $attempt->id,
+                        'user_id'         => $owner->id,
                         'idempotency_key' => $dedupeHash,
-                        'type' => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
-                        'amount' => $amount,
-                        'currency' => $assetCode,
-                        'status' => MtnMomoTransaction::STATUS_PENDING,
-                        'party_msisdn' => $attempt->sponsor_msisdn,
-                        'note' => $link->note,
+                        'type'            => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
+                        'amount'          => $amount,
+                        'currency'        => $assetCode,
+                        'status'          => MtnMomoTransaction::STATUS_PENDING,
+                        'party_msisdn'    => $attempt->sponsor_msisdn,
+                        'note'            => $link->note,
                     ]);
 
                     $providerTransaction->forceFill([
@@ -606,20 +611,20 @@ class MinorFamilyIntegrationService
                     ])->save();
 
                     return [
-                        'attempt' => $attempt,
+                        'attempt'             => $attempt,
                         'providerTransaction' => $providerTransaction,
                     ];
                 });
 
                 try {
                     $providerResponse = $this->fundingAdapter->initiateInboundCollection([
-                    'idempotency_key' => $dedupeHash,
-                    'funding_link_uuid' => $link->id,
+                    'idempotency_key'    => $dedupeHash,
+                    'funding_link_uuid'  => $link->id,
                     'minor_account_uuid' => $link->minor_account_uuid,
-                    'payer_msisdn' => $attempt->sponsor_msisdn,
-                    'amount' => $amount,
-                    'asset_code' => $assetCode,
-                    'note' => $link->note,
+                    'payer_msisdn'       => $attempt->sponsor_msisdn,
+                    'amount'             => $amount,
+                    'asset_code'         => $assetCode,
+                    'note'               => $link->note,
                     ]);
                 } catch (Throwable $exception) {
                     $this->markFundingAttemptProviderInitiationFailed($attempt->id, $providerTransaction->id);
@@ -640,7 +645,7 @@ class MinorFamilyIntegrationService
                 ): void {
                     $providerTransaction->forceFill([
                         'mtn_reference_id' => $providerReferenceId,
-                        'status' => $this->normaliseProviderStatus($providerResponse['provider_status'] ?? null),
+                        'status'           => $this->normaliseProviderStatus($providerResponse['provider_status'] ?? null),
                     ])->save();
 
                     $attempt->forceFill([
@@ -651,12 +656,12 @@ class MinorFamilyIntegrationService
                         minorAccountUuid: $link->minor_account_uuid,
                         type: MinorNotificationService::TYPE_FAMILY_FUNDING_ATTEMPT_INITIATED,
                         data: [
-                            'funding_attempt_uuid' => $attempt->id,
-                            'funding_link_uuid' => $link->id,
-                            'provider_name' => $provider,
-                            'provider_reference_id' => $providerReferenceId,
-                            'amount' => $amount,
-                            'asset_code' => $assetCode,
+                            'funding_attempt_uuid'    => $attempt->id,
+                            'funding_link_uuid'       => $link->id,
+                            'provider_name'           => $provider,
+                            'provider_reference_id'   => $providerReferenceId,
+                            'amount'                  => $amount,
+                            'asset_code'              => $assetCode,
                             'mtn_momo_transaction_id' => $providerTransaction->id,
                         ],
                         actorUserUuid: $link->created_by_user_uuid,
@@ -937,14 +942,14 @@ class MinorFamilyIntegrationService
             MinorFamilySupportTransfer::query()
                 ->whereKey($transferId)
                 ->update([
-                    'status' => MinorFamilySupportTransfer::STATUS_FAILED_UNRECONCILED,
+                    'status'        => MinorFamilySupportTransfer::STATUS_FAILED_UNRECONCILED,
                     'failed_reason' => 'provider_initiation_failed',
                 ]);
 
             MtnMomoTransaction::query()
                 ->whereKey($providerTransactionId)
                 ->update([
-                    'status' => MtnMomoTransaction::STATUS_FAILED,
+                    'status'          => MtnMomoTransaction::STATUS_FAILED,
                     'last_mtn_status' => 'PROVIDER_INITIATION_FAILED',
                 ]);
         });
@@ -956,14 +961,14 @@ class MinorFamilyIntegrationService
             MinorFamilyFundingAttempt::query()
                 ->whereKey($attemptId)
                 ->update([
-                    'status' => MinorFamilyFundingAttempt::STATUS_FAILED,
+                    'status'        => MinorFamilyFundingAttempt::STATUS_FAILED,
                     'failed_reason' => 'provider_initiation_failed',
                 ]);
 
             MtnMomoTransaction::query()
                 ->whereKey($providerTransactionId)
                 ->update([
-                    'status' => MtnMomoTransaction::STATUS_FAILED,
+                    'status'          => MtnMomoTransaction::STATUS_FAILED,
                     'last_mtn_status' => 'PROVIDER_INITIATION_FAILED',
                 ]);
         });

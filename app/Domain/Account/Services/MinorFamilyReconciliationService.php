@@ -36,8 +36,7 @@ class MinorFamilyReconciliationService
     public function reconcile(
         MtnMomoTransaction $transaction,
         string $source = 'unknown',
-    ): MinorFamilyReconciliationOutcome
-    {
+    ): MinorFamilyReconciliationOutcome {
         $fundingAttempt = $this->resolveFundingAttempt($transaction, $source);
         if ($fundingAttempt !== null) {
             return $this->reconcileFundingAttempt($fundingAttempt, $transaction, $source);
@@ -57,10 +56,10 @@ class MinorFamilyReconciliationService
                 source: $source,
                 reasonCode: 'unresolved_outcome',
                 metadata: [
-                    'context_type' => (string) ($transaction->getAttribute('context_type') ?? ''),
-                    'context_uuid' => (string) ($transaction->getAttribute('context_uuid') ?? ''),
+                    'context_type'       => (string) ($transaction->getAttribute('context_type') ?? ''),
+                    'context_uuid'       => (string) ($transaction->getAttribute('context_uuid') ?? ''),
                     'transaction_status' => $transaction->status,
-                    'resolution_path' => 'funding_or_support_context_unresolved',
+                    'resolution_path'    => 'funding_or_support_context_unresolved',
                 ],
             ),
         );
@@ -72,8 +71,7 @@ class MinorFamilyReconciliationService
         MinorFamilyFundingAttempt $attempt,
         MtnMomoTransaction $transaction,
         string $source,
-    ): MinorFamilyReconciliationOutcome
-    {
+    ): MinorFamilyReconciliationOutcome {
         DB::transaction(function () use ($attempt, $transaction): void {
             /** @var MinorFamilyFundingAttempt|null $lockedAttempt */
             $lockedAttempt = MinorFamilyFundingAttempt::query()
@@ -99,7 +97,7 @@ class MinorFamilyReconciliationService
             if ($lockedTransaction->status === MtnMomoTransaction::STATUS_FAILED) {
                 if ($lockedAttempt->status !== MinorFamilyFundingAttempt::STATUS_FAILED) {
                     $lockedAttempt->forceFill([
-                        'status' => MinorFamilyFundingAttempt::STATUS_FAILED,
+                        'status'        => MinorFamilyFundingAttempt::STATUS_FAILED,
                         'failed_reason' => $lockedAttempt->failed_reason ?? 'provider_failed',
                     ])->save();
 
@@ -107,11 +105,11 @@ class MinorFamilyReconciliationService
                         minorAccountUuid: $lockedAttempt->minor_account_uuid,
                         type: MinorNotificationService::TYPE_FAMILY_FUNDING_ATTEMPT_FAILED,
                         data: [
-                            'funding_attempt_uuid' => $lockedAttempt->id,
-                            'funding_link_uuid' => $lockedAttempt->funding_link_uuid,
-                            'provider_reference_id' => $lockedAttempt->provider_reference_id,
+                            'funding_attempt_uuid'    => $lockedAttempt->id,
+                            'funding_link_uuid'       => $lockedAttempt->funding_link_uuid,
+                            'provider_reference_id'   => $lockedAttempt->provider_reference_id,
                             'mtn_momo_transaction_id' => $lockedTransaction->id,
-                            'failed_reason' => $lockedAttempt->failed_reason,
+                            'failed_reason'           => $lockedAttempt->failed_reason,
                         ],
                         actorUserUuid: $this->resolveActorUserUuidForAttempt($lockedAttempt),
                         targetType: 'minor_family_funding_attempt',
@@ -144,7 +142,7 @@ class MinorFamilyReconciliationService
                 transaction: $transaction,
                 source: $source,
                 metadata: [
-                    'resolution_path' => 'funding_attempt_terminal_state',
+                    'resolution_path'    => 'funding_attempt_terminal_state',
                     'funding_attempt_id' => $freshAttempt->id,
                 ],
             );
@@ -192,15 +190,15 @@ class MinorFamilyReconciliationService
                 );
             } catch (Throwable $exception) {
                 $attempt->forceFill([
-                    'status' => MinorFamilyFundingAttempt::STATUS_SUCCESSFUL_UNCREDITED,
+                    'status'        => MinorFamilyFundingAttempt::STATUS_SUCCESSFUL_UNCREDITED,
                     'failed_reason' => 'wallet_credit_failed',
                 ])->save();
 
                 Log::warning('MinorFamilyReconciliationService: funding attempt wallet credit failed', [
-                    'funding_attempt_id' => $attempt->id,
+                    'funding_attempt_id'      => $attempt->id,
                     'mtn_momo_transaction_id' => $transaction->id,
-                    'provider_reference_id' => $attempt->provider_reference_id,
-                    'error' => $exception->getMessage(),
+                    'provider_reference_id'   => $attempt->provider_reference_id,
+                    'error'                   => $exception->getMessage(),
                 ]);
 
                 return;
@@ -227,14 +225,14 @@ class MinorFamilyReconciliationService
                     ->__toString();
                 $link->forceFill([
                     'collected_amount' => $updatedCollectedAmount,
-                    'last_funded_at' => now(),
+                    'last_funded_at'   => now(),
                 ])->save();
             }
         }
 
         if ($attempt->status !== MinorFamilyFundingAttempt::STATUS_CREDITED) {
             $attempt->forceFill([
-                'status' => MinorFamilyFundingAttempt::STATUS_CREDITED,
+                'status'        => MinorFamilyFundingAttempt::STATUS_CREDITED,
                 'failed_reason' => null,
             ])->save();
 
@@ -244,9 +242,9 @@ class MinorFamilyReconciliationService
                 minorAccountUuid: $attempt->minor_account_uuid,
                 type: MinorNotificationService::TYPE_FAMILY_FUNDING_ATTEMPT_SUCCEEDED,
                 data: [
-                    'funding_attempt_uuid' => $attempt->id,
-                    'funding_link_uuid' => $attempt->funding_link_uuid,
-                    'provider_reference_id' => $attempt->provider_reference_id,
+                    'funding_attempt_uuid'    => $attempt->id,
+                    'funding_link_uuid'       => $attempt->funding_link_uuid,
+                    'provider_reference_id'   => $attempt->provider_reference_id,
                     'mtn_momo_transaction_id' => $transaction->id,
                 ],
                 actorUserUuid: $actorUserUuid,
@@ -258,11 +256,11 @@ class MinorFamilyReconciliationService
                 minorAccountUuid: $attempt->minor_account_uuid,
                 type: MinorNotificationService::TYPE_FAMILY_FUNDING_CREDITED,
                 data: [
-                    'funding_attempt_uuid' => $attempt->id,
-                    'funding_link_uuid' => $attempt->funding_link_uuid,
-                    'amount' => $attempt->amount,
-                    'asset_code' => $attempt->asset_code,
-                    'provider_reference_id' => $attempt->provider_reference_id,
+                    'funding_attempt_uuid'    => $attempt->id,
+                    'funding_link_uuid'       => $attempt->funding_link_uuid,
+                    'amount'                  => $attempt->amount,
+                    'asset_code'              => $attempt->asset_code,
+                    'provider_reference_id'   => $attempt->provider_reference_id,
                     'mtn_momo_transaction_id' => $transaction->id,
                 ],
                 actorUserUuid: $actorUserUuid,
@@ -311,7 +309,7 @@ class MinorFamilyReconciliationService
             if ($lockedTransaction->status === MtnMomoTransaction::STATUS_SUCCESSFUL) {
                 if ($lockedTransfer->status !== MinorFamilySupportTransfer::STATUS_SUCCESSFUL) {
                     $lockedTransfer->forceFill([
-                        'status' => MinorFamilySupportTransfer::STATUS_SUCCESSFUL,
+                        'status'        => MinorFamilySupportTransfer::STATUS_SUCCESSFUL,
                         'failed_reason' => null,
                     ])->save();
 
@@ -320,8 +318,8 @@ class MinorFamilyReconciliationService
                         type: MinorNotificationService::TYPE_FAMILY_SUPPORT_TRANSFER_SUCCEEDED,
                         data: [
                             'family_support_transfer_uuid' => $lockedTransfer->id,
-                            'provider_reference_id' => $lockedTransfer->provider_reference_id,
-                            'mtn_momo_transaction_id' => $lockedTransaction->id,
+                            'provider_reference_id'        => $lockedTransfer->provider_reference_id,
+                            'mtn_momo_transaction_id'      => $lockedTransaction->id,
                         ],
                         actorUserUuid: $lockedTransfer->actor_user_uuid,
                         targetType: 'minor_family_support_transfer',
@@ -373,10 +371,10 @@ class MinorFamilyReconciliationService
                         $failedReason = 'wallet_refund_failed';
 
                         Log::warning('MinorFamilyReconciliationService: support transfer wallet refund failed', [
-                            'support_transfer_id' => $lockedTransfer->id,
+                            'support_transfer_id'     => $lockedTransfer->id,
                             'mtn_momo_transaction_id' => $lockedTransaction->id,
-                            'provider_reference_id' => $lockedTransfer->provider_reference_id,
-                            'error' => $exception->getMessage(),
+                            'provider_reference_id'   => $lockedTransfer->provider_reference_id,
+                            'error'                   => $exception->getMessage(),
                         ]);
                     }
                 }
@@ -392,7 +390,7 @@ class MinorFamilyReconciliationService
 
             if ($shouldPersistFailureState) {
                 $lockedTransfer->forceFill([
-                    'status' => $nextStatus,
+                    'status'        => $nextStatus,
                     'failed_reason' => $failedReason,
                 ])->save();
 
@@ -401,9 +399,9 @@ class MinorFamilyReconciliationService
                     type: MinorNotificationService::TYPE_FAMILY_SUPPORT_TRANSFER_FAILED,
                     data: [
                         'family_support_transfer_uuid' => $lockedTransfer->id,
-                        'provider_reference_id' => $lockedTransfer->provider_reference_id,
-                        'mtn_momo_transaction_id' => $lockedTransaction->id,
-                            'failed_reason' => $failedReason,
+                        'provider_reference_id'        => $lockedTransfer->provider_reference_id,
+                        'mtn_momo_transaction_id'      => $lockedTransaction->id,
+                            'failed_reason'            => $failedReason,
                     ],
                     actorUserUuid: $lockedTransfer->actor_user_uuid,
                     targetType: 'minor_family_support_transfer',
@@ -427,11 +425,11 @@ class MinorFamilyReconciliationService
                     type: MinorNotificationService::TYPE_FAMILY_SUPPORT_TRANSFER_REFUNDED,
                     data: [
                         'family_support_transfer_uuid' => $lockedTransfer->id,
-                        'refunded_to_account_uuid' => $lockedTransfer->source_account_uuid,
-                        'amount' => $lockedTransfer->amount,
-                        'asset_code' => $lockedTransfer->asset_code,
-                        'provider_reference_id' => $lockedTransfer->provider_reference_id,
-                        'mtn_momo_transaction_id' => $lockedTransaction->id,
+                        'refunded_to_account_uuid'     => $lockedTransfer->source_account_uuid,
+                        'amount'                       => $lockedTransfer->amount,
+                        'asset_code'                   => $lockedTransfer->asset_code,
+                        'provider_reference_id'        => $lockedTransfer->provider_reference_id,
+                        'mtn_momo_transaction_id'      => $lockedTransaction->id,
                     ],
                     actorUserUuid: $lockedTransfer->actor_user_uuid,
                     targetType: 'minor_family_support_transfer',
@@ -464,7 +462,7 @@ class MinorFamilyReconciliationService
                 transaction: $transaction,
                 source: $source,
                 metadata: [
-                    'resolution_path' => 'support_transfer_terminal_state',
+                    'resolution_path'     => 'support_transfer_terminal_state',
                     'support_transfer_id' => $freshTransfer->id,
                 ],
             );
@@ -499,9 +497,9 @@ class MinorFamilyReconciliationService
             if ($resolved !== null) {
                 if (! $this->hasTenantContext($resolved->tenant_id)) {
                     Log::warning('MinorFamilyReconciliationService: missing tenant context for phase9 funding attempt', [
-                        'funding_attempt_id' => $resolved->id,
+                        'funding_attempt_id'      => $resolved->id,
                         'mtn_momo_transaction_id' => $transaction->id,
-                        'context_uuid' => $contextUuid,
+                        'context_uuid'            => $contextUuid,
                     ]);
 
                     $this->recordMissingTenantContextException(
@@ -533,9 +531,9 @@ class MinorFamilyReconciliationService
 
         if ($resolvedByLink !== null && ! $this->hasTenantContext($resolvedByLink->tenant_id)) {
             Log::warning('MinorFamilyReconciliationService: missing tenant context for phase9 funding attempt', [
-                'funding_attempt_id' => $resolvedByLink->id,
+                'funding_attempt_id'      => $resolvedByLink->id,
                 'mtn_momo_transaction_id' => $transaction->id,
-                'context_uuid' => $contextUuid,
+                'context_uuid'            => $contextUuid,
             ]);
 
             $this->recordMissingTenantContextException(
@@ -568,9 +566,9 @@ class MinorFamilyReconciliationService
             if ($resolved !== null) {
                 if (! $this->hasTenantContext($resolved->tenant_id)) {
                     Log::warning('MinorFamilyReconciliationService: missing tenant context for phase9 support transfer', [
-                        'support_transfer_id' => $resolved->id,
+                        'support_transfer_id'     => $resolved->id,
                         'mtn_momo_transaction_id' => $transaction->id,
-                        'context_uuid' => $contextUuid,
+                        'context_uuid'            => $contextUuid,
                     ]);
 
                     $this->recordMissingTenantContextException(
@@ -602,9 +600,9 @@ class MinorFamilyReconciliationService
 
         if ($resolvedByLink !== null && ! $this->hasTenantContext($resolvedByLink->tenant_id)) {
             Log::warning('MinorFamilyReconciliationService: missing tenant context for phase9 support transfer', [
-                'support_transfer_id' => $resolvedByLink->id,
+                'support_transfer_id'     => $resolvedByLink->id,
                 'mtn_momo_transaction_id' => $transaction->id,
-                'context_uuid' => $contextUuid,
+                'context_uuid'            => $contextUuid,
             ]);
 
             $this->recordMissingTenantContextException(
@@ -646,12 +644,12 @@ class MinorFamilyReconciliationService
                 source: $source,
                 reasonCode: 'missing_tenant_context',
                 metadata: [
-                    'context_type' => $contextType,
-                    'context_uuid' => $contextUuid,
-                    $relatedIdKey => $relatedId,
-                    'tenant_id' => $tenantId,
+                    'context_type'       => $contextType,
+                    'context_uuid'       => $contextUuid,
+                    $relatedIdKey        => $relatedId,
+                    'tenant_id'          => $tenantId,
                     'transaction_status' => $transaction->status,
-                    'resolution_path' => 'context_resolved_tenant_missing',
+                    'resolution_path'    => 'context_resolved_tenant_missing',
                 ],
             ),
         );
@@ -668,11 +666,11 @@ class MinorFamilyReconciliationService
         array $metadata,
     ): array {
         return array_merge([
-            'reconciliation_source' => $source,
-            'reconciliation_outcome' => MinorFamilyReconciliationOutcome::UNRESOLVED->value,
+            'reconciliation_source'      => $source,
+            'reconciliation_outcome'     => MinorFamilyReconciliationOutcome::UNRESOLVED->value,
             'reconciliation_reason_code' => $reasonCode,
-            'mtn_reference_id' => $transaction->mtn_reference_id,
-            'mtn_momo_transaction_id' => $transaction->id,
+            'mtn_reference_id'           => $transaction->mtn_reference_id,
+            'mtn_momo_transaction_id'    => $transaction->id,
         ], $metadata);
     }
 

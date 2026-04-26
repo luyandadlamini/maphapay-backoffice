@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Account\Services;
 
-use App\Domain\Mobile\Services\BiometricAuthenticationService;
 use App\Domain\Mobile\Models\MobileDevice;
+use App\Domain\Mobile\Services\BiometricAuthenticationService;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
@@ -13,7 +13,8 @@ class ScaVerificationService
 {
     public function __construct(
         private readonly BiometricAuthenticationService $biometricService
-    ) {}
+    ) {
+    }
 
     public function verifyOtp(string $userUuid, string $otpCode): bool
     {
@@ -48,7 +49,7 @@ class ScaVerificationService
 
         Log::info('SCA verification: OTP result', [
             'user_uuid' => $userUuid,
-            'valid' => $result,
+            'valid'     => $result,
         ]);
 
         return $result;
@@ -113,7 +114,7 @@ class ScaVerificationService
             Log::info('SCA verification: biometric result', [
                 'user_uuid' => $userUuid,
                 'device_id' => $deviceId,
-                'valid' => $result,
+                'valid'     => $result,
             ]);
 
             return $result;

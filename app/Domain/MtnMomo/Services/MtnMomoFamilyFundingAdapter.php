@@ -40,15 +40,15 @@ class MtnMomoFamilyFundingAdapter
         );
 
         return [
-            'provider_name' => 'mtn_momo',
+            'provider_name'         => 'mtn_momo',
             'provider_reference_id' => $referenceId,
-            'provider_status' => MtnMomoTransaction::STATUS_PENDING,
-            'transaction_type' => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
-            'party_msisdn' => $payerMsisdn,
-            'amount' => $amount,
-            'asset_code' => $assetCode,
-            'note' => $payeeNote,
-            'idempotency_key' => $idempotencyKey,
+            'provider_status'       => MtnMomoTransaction::STATUS_PENDING,
+            'transaction_type'      => MtnMomoTransaction::TYPE_REQUEST_TO_PAY,
+            'party_msisdn'          => $payerMsisdn,
+            'amount'                => $amount,
+            'asset_code'            => $assetCode,
+            'note'                  => $payeeNote,
+            'idempotency_key'       => $idempotencyKey,
         ];
     }
 
@@ -78,15 +78,15 @@ class MtnMomoFamilyFundingAdapter
         );
 
         return [
-            'provider_name' => 'mtn_momo',
+            'provider_name'         => 'mtn_momo',
             'provider_reference_id' => $referenceId,
-            'provider_status' => MtnMomoTransaction::STATUS_PENDING,
-            'transaction_type' => MtnMomoTransaction::TYPE_DISBURSEMENT,
-            'party_msisdn' => $payeeMsisdn,
-            'amount' => $amount,
-            'asset_code' => $assetCode,
-            'note' => (string) ($payload['note'] ?? ''),
-            'idempotency_key' => $idempotencyKey,
+            'provider_status'       => MtnMomoTransaction::STATUS_PENDING,
+            'transaction_type'      => MtnMomoTransaction::TYPE_DISBURSEMENT,
+            'party_msisdn'          => $payeeMsisdn,
+            'amount'                => $amount,
+            'asset_code'            => $assetCode,
+            'note'                  => (string) ($payload['note'] ?? ''),
+            'idempotency_key'       => $idempotencyKey,
         ];
     }
 
