@@ -149,13 +149,27 @@ class MobileAuthController extends Controller
             $tokenPair = $this->createTokenPair($user, $validated['device_name'] ?? 'mobile');
             $this->enforceSessionLimits($user, $tokenPair['newly_created_token_ids']);
 
+            try {
+                $accounts        = $this->transformAccountMemberships($user);
+                $activeAccountId = $this->resolveActiveAccountId($user);
+            } catch (\Throwable $e) {
+                Log::error('MobileAuthController: login response build failed', [
+                    'user_id'   => $user->id,
+                    'exception' => $e->getMessage(),
+                    'file'      => $e->getFile(),
+                    'line'      => $e->getLine(),
+                    'trace'     => $e->getTraceAsString(),
+                ]);
+                throw $e;
+            }
+
             return response()->json([
                 'success' => true,
                 'remark'  => 'login_success',
                 'data'    => [
                     'user'               => $this->transformUser($user),
-                    'accounts'           => $this->transformAccountMemberships($user),
-                    'active_account_id'  => $this->resolveActiveAccountId($user),
+                    'accounts'           => $accounts,
+                    'active_account_id'  => $activeAccountId,
                     'access_token'       => $tokenPair['access_token'],
                     'refresh_token'      => $tokenPair['refresh_token'],
                     'token_type'         => 'Bearer',
@@ -329,12 +343,26 @@ class MobileAuthController extends Controller
             'transaction_pin_enabled'  => $user->transaction_pin_enabled,
         ]);
 
+        try {
+            $accounts        = $this->transformAccountMemberships($user);
+            $activeAccountId = $this->resolveActiveAccountId($user);
+        } catch (\Throwable $e) {
+            Log::error('MobileAuthController: verifyOtp response build failed', [
+                'user_id'   => $user->id,
+                'exception' => $e->getMessage(),
+                'file'      => $e->getFile(),
+                'line'      => $e->getLine(),
+                'trace'     => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
+
         return response()->json([
             'success' => true,
             'data'    => [
                 'user'              => $this->transformUser($user),
-                'accounts'          => $this->transformAccountMemberships($user),
-                'active_account_id' => $this->resolveActiveAccountId($user),
+                'accounts'          => $accounts,
+                'active_account_id' => $activeAccountId,
                 'access_token'      => $tokenPair['access_token'],
                 'refresh_token'     => $tokenPair['refresh_token'],
                 'token_type'        => 'Bearer',
