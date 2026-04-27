@@ -107,12 +107,23 @@ class AccountPayloadTransformer
             ->filter(fn (mixed $uuid): bool => is_string($uuid) && $uuid !== '')
             ->all();
 
-        $childAccounts = Account::query()
-            ->where('user_uuid', $user->uuid)
-            ->where('type', 'minor')
-            ->whereNotIn('uuid', $existingAccountUuids)
-            ->orderBy('id')
-            ->get();
+        try {
+            $childAccounts = Account::query()
+                ->where('user_uuid', $user->uuid)
+                ->where('type', 'minor')
+                ->whereNotIn('uuid', $existingAccountUuids)
+                ->orderBy('id')
+                ->get();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // The accounts table is missing columns (tenant schema behind migrations).
+            // Log a warning and return what we have so login is not blocked.
+            \Illuminate\Support\Facades\Log::warning('AccountPayloadTransformer: accounts schema behind migrations, skipping minor child lookup', [
+                'user_uuid' => $user->uuid,
+                'error'     => $e->getMessage(),
+            ]);
+
+            return array_values($payloads);
+        }
 
         foreach ($childAccounts as $account) {
             $guardianMembership = AccountMembership::query()
