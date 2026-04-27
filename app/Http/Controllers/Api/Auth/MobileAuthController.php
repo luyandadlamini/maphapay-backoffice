@@ -146,19 +146,24 @@ class MobileAuthController extends Controller
                 $user->update(['mobile_verified_at' => now()]);
             }
 
-            $tokenPair = $this->createTokenPair($user, $validated['device_name'] ?? 'mobile');
-            $this->enforceSessionLimits($user, $tokenPair['newly_created_token_ids']);
-
             try {
+                $tokenPair = $this->createTokenPair($user, $validated['device_name'] ?? 'mobile');
+                Log::info('MobileAuthController: token pair created', ['user_id' => $user->id]);
+
+                $this->enforceSessionLimits($user, $tokenPair['newly_created_token_ids']);
+                Log::info('MobileAuthController: session limits enforced', ['user_id' => $user->id]);
+
                 $accounts        = $this->transformAccountMemberships($user);
+                Log::info('MobileAuthController: accounts transformed', ['user_id' => $user->id, 'count' => count($accounts)]);
+
                 $activeAccountId = $this->resolveActiveAccountId($user);
+                Log::info('MobileAuthController: active account resolved', ['user_id' => $user->id, 'active' => $activeAccountId]);
             } catch (\Throwable $e) {
-                Log::error('MobileAuthController: login response build failed', [
+                Log::error('MobileAuthController: login failed after PIN check', [
                     'user_id'   => $user->id,
-                    'exception' => $e->getMessage(),
-                    'file'      => $e->getFile(),
-                    'line'      => $e->getLine(),
-                    'trace'     => $e->getTraceAsString(),
+                    'exception' => get_class($e) . ': ' . $e->getMessage(),
+                    'file'      => $e->getFile() . ':' . $e->getLine(),
+                    'trace'     => collect(explode("\n", $e->getTraceAsString()))->take(10)->implode("\n"),
                 ]);
                 throw $e;
             }
