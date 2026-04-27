@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Domain\Shared\Traits;
 
 use Illuminate\Support\Facades\Config;
-use Throwable;
 
 /**
  * Trait for models that should use the tenant database connection.
@@ -56,30 +55,23 @@ trait UsesTenantConnection
     /**
      * Determine if the model should use the default connection instead of tenant.
      *
-     * This returns true when APP_ENV is 'testing'. In testing environments,
-     * using a separate 'tenant' connection causes issues:
+     * Returns true only in the testing environment where each connection may
+     * be an isolated in-memory SQLite database. In all other environments the
+     * model always uses the named 'tenant' connection so that:
      *
-     * - SQLite in-memory: Each connection has isolated database
-     * - MySQL: Separate connections can cause lock wait timeouts with transactions
+     * - Without a tenant context (login, registration, admin panel) the
+     *   'tenant' connection config points to DB_DATABASE — the single app
+     *   database — and queries succeed.
+     * - With a tenant context stancl/tenancy overrides the 'tenant' connection
+     *   to the per-tenant database as normal.
      *
-     * In production, stancl/tenancy properly configures the tenant connection
-     * to point to tenant-specific databases.
+     * The previous fallback to null/default when tenancy was not initialized
+     * caused 500 errors on public routes (login, verifyOtp, completeProfile)
+     * because the default connection (DB_CONNECTION env) may differ from the
+     * named 'tenant' connection and may not have the accounts table.
      */
     protected function shouldUseDefaultConnection(): bool
     {
-        // In testing environment, always use the default connection
-        // to avoid isolation issues with separate database connections
-        if (Config::get('app.env') === 'testing') {
-            return true;
-        }
-
-        // When no tenant is initialized (e.g. admin panel landlord context),
-        // fall back to the default connection to avoid querying an
-        // unconfigured tenant connection.
-        try {
-            return ! tenancy()->initialized;
-        } catch (Throwable) {
-            return true;
-        }
+        return Config::get('app.env') === 'testing';
     }
 }
