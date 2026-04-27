@@ -15,6 +15,12 @@ use Tests\TestCase;
 
 class AppAttestServiceTest extends TestCase
 {
+    /** Uncompressed P-256 test point (130 hex chars: 04 + X + Y) for metadata shape checks */
+    public static function fakeP256PublicHex(): string
+    {
+        return '04' . str_repeat('ab', 64);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,8 +43,13 @@ class AppAttestServiceTest extends TestCase
                 return AppAttestVerificationResult::success();
             }
 
-            public function verifyAssertion(string $assertion, string $challenge, string $keyId, string $publicKey): AppAttestVerificationResult
-            {
+            public function verifyAssertion(
+                string $assertion,
+                string $challenge,
+                string $keyId,
+                string $credentialPublicKeyHex,
+                ?int $lastAcceptedSignCount = null,
+            ): AppAttestVerificationResult {
                 return AppAttestVerificationResult::success();
             }
         });
@@ -80,8 +91,13 @@ class AppAttestServiceTest extends TestCase
                 return AppAttestVerificationResult::success();
             }
 
-            public function verifyAssertion(string $assertion, string $challenge, string $keyId, string $publicKey): AppAttestVerificationResult
-            {
+            public function verifyAssertion(
+                string $assertion,
+                string $challenge,
+                string $keyId,
+                string $credentialPublicKeyHex,
+                ?int $lastAcceptedSignCount = null,
+            ): AppAttestVerificationResult {
                 return AppAttestVerificationResult::success();
             }
         });
@@ -112,14 +128,22 @@ class AppAttestServiceTest extends TestCase
             public function verifyAttestation(string $attestationObject, string $challenge, string $keyId): AppAttestVerificationResult
             {
                 return AppAttestVerificationResult::success([
-                    'public_key' => 'service-test-public-key',
+                    'credential_public_key_hex' => AppAttestServiceTest::fakeP256PublicHex(),
+                    'public_key'                => AppAttestServiceTest::fakeP256PublicHex(),
+                    'attestation_sign_count'    => 0,
                 ]);
             }
 
-            public function verifyAssertion(string $assertion, string $challenge, string $keyId, string $publicKey): AppAttestVerificationResult
-            {
+            public function verifyAssertion(
+                string $assertion,
+                string $challenge,
+                string $keyId,
+                string $credentialPublicKeyHex,
+                ?int $lastAcceptedSignCount = null,
+            ): AppAttestVerificationResult {
                 return AppAttestVerificationResult::success([
-                    'public_key' => $publicKey,
+                    'public_key' => $credentialPublicKeyHex,
+                    'sign_count' => 1,
                 ], 'assertion_verified');
             }
         });
@@ -145,7 +169,8 @@ class AppAttestServiceTest extends TestCase
 
         $this->assertTrue($result->verified);
         $this->assertSame('assertion_verified', $result->reason);
-        $this->assertSame('service-test-public-key', $result->metadata['public_key']);
+        $this->assertSame(self::fakeP256PublicHex(), $result->metadata['public_key']);
+        $this->assertSame(1, $result->metadata['sign_count']);
 
         $this->assertNotNull($device->appAttestKeys()
             ->where('key_id', 'ios-key-service-verify')

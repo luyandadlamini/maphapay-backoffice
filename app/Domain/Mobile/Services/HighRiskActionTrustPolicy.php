@@ -54,7 +54,7 @@ class HighRiskActionTrustPolicy
                 $decision = 'deny';
                 $reason = 'unsupported_device_type';
             } else {
-                $attestationVerified = $this->biometricJwtService->verifyDeviceAttestation($attestation, $deviceType);
+                $attestationVerified = $this->verifyAttestationPayload($attestation, $deviceType, $deviceId);
 
                 if (! $attestationVerified) {
                     $decision = 'deny';
@@ -127,5 +127,66 @@ class HighRiskActionTrustPolicy
         }
 
         return ! in_array($attestationCapabilityMode, ['none', 'runtime-posture'], true);
+    }
+
+    /**
+     * Verify attestation material sent with high-risk API calls.
+     *
+     * iOS (Expo/RN) sends a short JSON envelope prefixed with `ios-app-attest:` after the app has
+     * already completed cryptographic App Attest flows against `/api/mobile/auth/attestation/app-attest/*`.
+     * That envelope must not be passed to AppleAttestationVerifier (expects base64 CBOR + challenge).
+     *
+     * @see https://developer.apple.com/documentation/devicecheck/validating_apps_that_connect_to_your_server
+     */
+    private function verifyAttestationPayload(string $attestation, string $deviceType, string $deviceId): bool
+    {
+        if ($deviceType === 'ios' && str_starts_with($attestation, 'ios-app-attest:')) {
+            return $this->verifyIosAppAttestClientEnvelope($attestation, $deviceId);
+        }
+
+        return $this->biometricJwtService->verifyDeviceAttestation($attestation, $deviceType);
+    }
+
+    /**
+     * Validates the RN client's post-verify envelope: JSON after `ios-app-attest:` with device binding.
+     * Cryptographic assertion verification happens in AppAttestService::verifyAssertion; this
+     * layer only accepts well-formed proofs tied to the same device_id as the money request.
+     *
+     * @param  string  $deviceId  Resolved client device id (body or X-Device-ID)
+     */
+    private function verifyIosAppAttestClientEnvelope(string $attestation, string $deviceId): bool
+    {
+        if ($deviceId === '') {
+            return false;
+        }
+
+        $prefix = 'ios-app-attest:';
+        $json = substr($attestation, strlen($prefix));
+        $payload = json_decode($json, true);
+
+        if (! is_array($payload)) {
+            return false;
+        }
+
+        $envelopeDeviceId = isset($payload['deviceId']) && is_string($payload['deviceId'])
+            ? trim($payload['deviceId'])
+            : '';
+
+        if ($envelopeDeviceId === '' || ! hash_equals($envelopeDeviceId, $deviceId)) {
+            return false;
+        }
+
+        $assertionReason = isset($payload['assertionReason']) && is_string($payload['assertionReason'])
+            ? trim($payload['assertionReason'])
+            : '';
+
+        $allowedReasons = [
+            'assertion_verified',
+            'verified',
+            'attestation_verified',
+            'assertion_prerequisites_verified',
+        ];
+
+        return in_array($assertionReason, $allowedReasons, true);
     }
 }

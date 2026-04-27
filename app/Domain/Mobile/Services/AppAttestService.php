@@ -153,21 +153,48 @@ class AppAttestService
             return AppAttestVerificationResult::failure($e->getMessage());
         }
 
-        $publicKey = $key->metadata['public_key'] ?? null;
-        if (! is_string($publicKey) || $publicKey === '') {
+        $publicKeyHex = $key->metadata['credential_public_key_hex']
+            ?? $key->metadata['public_key']
+            ?? null;
+
+        if (! is_string($publicKeyHex) || strlen($publicKeyHex) < 130) {
             return AppAttestVerificationResult::failure('app_attest_public_key_missing');
         }
 
-        $verification = $this->verifier->verifyAssertion($assertion, $challenge, $keyId, $publicKey);
+        $lastAcceptedSignCount = null;
+
+        if (isset($key->metadata['last_sign_count']) && is_numeric($key->metadata['last_sign_count'])) {
+            $lastAcceptedSignCount = (int) $key->metadata['last_sign_count'];
+        } elseif (isset($key->metadata['attestation_sign_count']) && is_numeric($key->metadata['attestation_sign_count'])) {
+            $lastAcceptedSignCount = (int) $key->metadata['attestation_sign_count'];
+        }
+
+        $verification = $this->verifier->verifyAssertion(
+            $assertion,
+            $challenge,
+            $keyId,
+            $publicKeyHex,
+            $lastAcceptedSignCount,
+        );
 
         if (! $verification->verified) {
             return $verification;
         }
 
-        DB::transaction(function () use ($key, $challengeRecord, $verification): void {
+        $newSignCount = isset($verification->metadata['sign_count']) && is_numeric($verification->metadata['sign_count'])
+            ? (int) $verification->metadata['sign_count']
+            : null;
+
+        DB::transaction(function () use ($key, $challengeRecord, $verification, $newSignCount): void {
+            $merged = array_merge($key->metadata ?? [], $verification->metadata);
+
+            if ($newSignCount !== null) {
+                $merged['last_sign_count'] = $newSignCount;
+            }
+
             $key->forceFill([
                 'last_assertion_at' => now(),
-                'metadata'          => array_merge($key->metadata ?? [], $verification->metadata),
+                'metadata'          => $merged,
             ])->save();
 
             $challengeRecord->forceFill([

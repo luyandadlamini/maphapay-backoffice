@@ -113,8 +113,13 @@ class MobileAppAttestControllerTest extends TestCase
                 ]);
             }
 
-            public function verifyAssertion(string $assertion, string $challenge, string $keyId, string $publicKey): AppAttestVerificationResult
-            {
+            public function verifyAssertion(
+                string $assertion,
+                string $challenge,
+                string $keyId,
+                string $credentialPublicKeyHex,
+                ?int $lastAcceptedSignCount = null,
+            ): AppAttestVerificationResult {
                 return AppAttestVerificationResult::failure('not_implemented_for_test');
             }
         });
@@ -172,8 +177,13 @@ class MobileAppAttestControllerTest extends TestCase
                 return AppAttestVerificationResult::success();
             }
 
-            public function verifyAssertion(string $assertion, string $challenge, string $keyId, string $publicKey): AppAttestVerificationResult
-            {
+            public function verifyAssertion(
+                string $assertion,
+                string $challenge,
+                string $keyId,
+                string $credentialPublicKeyHex,
+                ?int $lastAcceptedSignCount = null,
+            ): AppAttestVerificationResult {
                 return AppAttestVerificationResult::failure('not_implemented_for_test');
             }
         });
@@ -216,15 +226,23 @@ class MobileAppAttestControllerTest extends TestCase
             public function verifyAttestation(string $attestationObject, string $challenge, string $keyId): AppAttestVerificationResult
             {
                 return AppAttestVerificationResult::success([
-                    'public_key' => 'test-public-key',
+                    'credential_public_key_hex' => '04' . str_repeat('cd', 64),
+                    'public_key'                => '04' . str_repeat('cd', 64),
+                    'attestation_sign_count'    => 0,
                 ]);
             }
 
-            public function verifyAssertion(string $assertion, string $challenge, string $keyId, string $publicKey): AppAttestVerificationResult
-            {
+            public function verifyAssertion(
+                string $assertion,
+                string $challenge,
+                string $keyId,
+                string $credentialPublicKeyHex,
+                ?int $lastAcceptedSignCount = null,
+            ): AppAttestVerificationResult {
                 return AppAttestVerificationResult::success([
                     'verified_via' => 'feature-test-double',
-                    'public_key'   => $publicKey,
+                    'public_key'   => $credentialPublicKeyHex,
+                    'sign_count'   => 1,
                 ], 'assertion_verified');
             }
         });
