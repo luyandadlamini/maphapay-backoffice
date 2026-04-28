@@ -82,6 +82,18 @@ class MobileController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
+
+        Log::info('mobile.devices.register.start', [
+            'user_id'            => $user->id,
+            'device_id_present'  => $request->device_id !== '',
+            'platform'           => $request->platform,
+            'app_version'        => $request->app_version,
+            'push_token_present' => $request->push_token !== null && $request->push_token !== '',
+            'device_name_present'=> $request->device_name !== null && $request->device_name !== '',
+            'device_model'       => $request->device_model,
+            'os_version'         => $request->os_version,
+        ]);
+
         $device = $this->deviceService->registerDevice(
             $user,
             $request->device_id,
@@ -92,6 +104,15 @@ class MobileController extends Controller
             $request->device_model,
             $request->os_version
         );
+
+        Log::info('mobile.devices.register.succeeded', [
+            'user_id'           => $user->id,
+            'mobile_device_id'  => $device->id,
+            'device_id_present' => $device->device_id !== '',
+            'platform'          => $device->platform,
+            'app_version'       => $device->app_version,
+            'has_push_token'    => $device->push_token !== null,
+        ]);
 
         return response()->json([
             'data'    => $this->formatDeviceResponse($device),
