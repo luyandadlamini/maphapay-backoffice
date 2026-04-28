@@ -254,7 +254,7 @@ describe('HighRiskActionTrustPolicy', function (): void {
             ]);
     });
 
-    it('allows provider-error fallback for enrolled ios device when attestation is enforced', function (): void {
+    it('preserves classified mobile attestation failure reason when enforcement denies an empty proof', function (): void {
         Config::set('mobile.attestation.enabled', true);
 
         /** @var BiometricJWTServiceInterface&Mockery\MockInterface $biometricJwtService */
@@ -262,16 +262,41 @@ describe('HighRiskActionTrustPolicy', function (): void {
         $policy = new HighRiskActionTrustPolicy($biometricJwtService);
 
         $user = new User();
-        $user->id = 1007;
+        $user->id = 1008;
+
+        $request = Request::create('/api/send-money/store', 'POST', [
+            'device_type'                      => 'ios',
+            'device_id'                        => 'ios-device-registration-failed',
+            'attestation_status'               => 'error',
+            'attestation_capability_mode'      => 'none',
+            'attestation_capability_reason'    => 'device_registration_failed',
+            'attestation_capability_available' => false,
+        ]);
+
+        $result = $policy->evaluate($user, $request, 'send_money');
+
+        expect($result['decision'])->toBe('deny')
+            ->and($result['reason'])->toBe('attestation_device_registration_failed');
+    });
+
+    it('denies provider-error for enrolled ios device when attestation is enforced', function (): void {
+        Config::set('mobile.attestation.enabled', true);
+
+        /** @var BiometricJWTServiceInterface&Mockery\MockInterface $biometricJwtService */
+        $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
+        $policy = new HighRiskActionTrustPolicy($biometricJwtService);
+
+        $user = new User();
+        $user->id = 100700 + random_int(1, 99999);
         DB::table('users')->insert([
             'id'       => $user->id,
             'uuid'     => (string) Str::uuid(),
             'name'     => 'Trust Policy Fallback User',
-            'email'    => 'trust-fallback-1007@example.test',
+            'email'    => 'trust-fallback-' . $user->id . '@example.test',
             'password' => Hash::make('secret-1007'),
         ]);
 
-        $deviceId = 'ios-provider-error-fallback-device';
+        $deviceId = 'ios-provider-error-fallback-device-' . $user->id;
         DB::table('mobile_devices')->insert([
             'id'                 => (string) Str::uuid(),
             'user_id'            => $user->id,
@@ -297,8 +322,8 @@ describe('HighRiskActionTrustPolicy', function (): void {
 
         $result = $policy->evaluate($user, $request, 'commerce.payment.process');
 
-        expect($result['decision'])->toBe('allow')
-            ->and($result['reason'])->toBe('attestation_provider_error_fallback');
+        expect($result['decision'])->toBe('deny')
+            ->and($result['reason'])->toBe('attestation_provider_error');
     });
 
     it('accepts ios-app-attest JSON envelope when enforcement is enabled and device_id matches', function (): void {
@@ -337,6 +362,23 @@ describe('HighRiskActionTrustPolicy', function (): void {
         expect($result['decision'])->toBe('allow')
             ->and($result['reason'])->toBe('attestation_verified')
             ->and($result['attestation_verified'])->toBeTrue();
+
+        $persisted = DB::table('mobile_attestation_records')->where('id', $result['record_id'])->first();
+        expect($persisted)->not->toBeNull();
+        assert($persisted !== null);
+
+        $metadata = json_decode((string) $persisted->metadata, true, 512, JSON_THROW_ON_ERROR);
+
+        expect($metadata)
+            ->toMatchArray([
+                'attestation_present' => true,
+                'app_attest' => [
+                    'prefix'               => 'ios-app-attest',
+                    'key_id_present'       => true,
+                    'assertion_reason'     => 'assertion_verified',
+                    'challenge_id_present' => true,
+                ],
+            ]);
     });
 
     it('accepts ios-app-attest envelope when assertionReason casing differs', function (): void {
@@ -398,5 +440,74 @@ describe('HighRiskActionTrustPolicy', function (): void {
         expect($result['decision'])->toBe('deny')
             ->and($result['reason'])->toBe('attestation_failed')
             ->and($result['attestation_verified'])->toBeFalse();
+    });
+
+    it('denies malformed ios-app-attest envelope when enforcement is enabled', function (): void {
+        Config::set('mobile.attestation.enabled', true);
+
+        /** @var BiometricJWTServiceInterface&Mockery\MockInterface $biometricJwtService */
+        $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
+        $biometricJwtService->shouldNotReceive('verifyDeviceAttestation');
+
+        $policy = new HighRiskActionTrustPolicy($biometricJwtService);
+
+        $user = new User();
+        $user->id = 2004;
+
+        $request = Request::create('/api/send-money/store', 'POST', [
+            'device_type' => 'ios',
+            'device_id'   => 'device-a',
+            'attestation' => 'ios-app-attest:not-json',
+        ]);
+
+        $result = $policy->evaluate($user, $request, 'send_money');
+
+        expect($result['decision'])->toBe('deny')
+            ->and($result['reason'])->toBe('attestation_failed');
+
+        $persisted = DB::table('mobile_attestation_records')->where('id', $result['record_id'])->first();
+        expect($persisted)->not->toBeNull();
+        assert($persisted !== null);
+
+        $metadata = json_decode((string) $persisted->metadata, true, 512, JSON_THROW_ON_ERROR);
+
+        expect($metadata)
+            ->toMatchArray([
+                'app_attest' => [
+                    'prefix'      => 'ios-app-attest',
+                    'parse_error' => 'invalid_json',
+                ],
+            ]);
+    });
+
+    it('denies ios-app-attest envelope with unverified assertion reason', function (): void {
+        Config::set('mobile.attestation.enabled', true);
+
+        /** @var BiometricJWTServiceInterface&Mockery\MockInterface $biometricJwtService */
+        $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
+        $biometricJwtService->shouldNotReceive('verifyDeviceAttestation');
+
+        $policy = new HighRiskActionTrustPolicy($biometricJwtService);
+
+        $user = new User();
+        $user->id = 2005;
+
+        $deviceId = 'ios-test-device-unverified';
+        $envelope = 'ios-app-attest:' . json_encode([
+            'deviceId'        => $deviceId,
+            'keyId'           => 'key-1',
+            'assertionReason' => 'assertion_signature_mismatch',
+        ], JSON_THROW_ON_ERROR);
+
+        $request = Request::create('/api/send-money/store', 'POST', [
+            'device_type' => 'ios',
+            'device_id'   => $deviceId,
+            'attestation' => $envelope,
+        ]);
+
+        $result = $policy->evaluate($user, $request, 'send_money');
+
+        expect($result['decision'])->toBe('deny')
+            ->and($result['reason'])->toBe('attestation_failed');
     });
 });

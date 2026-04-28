@@ -9,6 +9,7 @@ use App\Domain\Mobile\Models\MobileAttestationRecord;
 use App\Domain\Mobile\Models\MobileDevice;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class HighRiskActionTrustPolicy
 {
@@ -39,6 +40,7 @@ class HighRiskActionTrustPolicy
 
         $mobileDevice = $this->resolveMobileDevice($user, $deviceId);
         $deviceTrusted = $mobileDevice?->is_trusted === true;
+        $attestationPayloadMetadata = $this->safeAttestationPayloadMetadata($attestation, $deviceType);
 
         $decision = 'allow';
         $reason = 'attestation_disabled';
@@ -46,19 +48,13 @@ class HighRiskActionTrustPolicy
 
         if ($attestationEnabled) {
             if ($attestation === '') {
-                $isProviderError = $attestationStatus === 'error' && $attestationCapabilityReason === 'provider_error';
+                $collectionFailureReason = $this->attestationCollectionFailureReason(
+                    $attestationStatus,
+                    $attestationCapabilityReason,
+                );
 
-                if ($isProviderError && $deviceType === 'ios' && $mobileDevice !== null) {
-                    // Temporary safety valve: allow enrolled iOS devices to continue when App Attest
-                    // provider collection fails on-device. We keep an explicit audit reason.
-                    $decision = 'allow';
-                    $reason = 'attestation_provider_error_fallback';
-                } else {
-                    $decision = 'deny';
-                    $reason = $isProviderError
-                        ? 'attestation_provider_error'
-                        : 'attestation_required';
-                }
+                $decision = 'deny';
+                $reason = $collectionFailureReason ?? 'attestation_required';
             } elseif (! in_array($deviceType, ['ios', 'android'], true)) {
                 $decision = 'deny';
                 $reason = 'unsupported_device_type';
@@ -106,7 +102,30 @@ class HighRiskActionTrustPolicy
                     'mode'      => $attestationCapabilityMode !== '' ? $attestationCapabilityMode : null,
                     'reason'    => $attestationCapabilityReason !== '' ? $attestationCapabilityReason : null,
                 ],
+                'device_lookup' => [
+                    'found'   => $mobileDevice !== null,
+                    'trusted' => $deviceTrusted,
+                ],
+                'app_attest' => $attestationPayloadMetadata,
             ],
+        ]);
+
+        Log::info('mobile.high_risk_trust_policy.evaluated', [
+            'user_id'                       => $user->id,
+            'action'                        => $action,
+            'decision'                      => $decision,
+            'reason'                        => $reason,
+            'record_id'                     => (string) $record->id,
+            'device_type'                   => $deviceType !== '' ? $deviceType : null,
+            'device_id_present'             => $deviceId !== '',
+            'mobile_device_found'           => $mobileDevice !== null,
+            'attestation_enabled'           => $attestationEnabled,
+            'attestation_present'           => $attestation !== '',
+            'attestation_verified'          => $attestationVerified,
+            'attestation_status'            => $attestationStatus !== '' ? $attestationStatus : null,
+            'attestation_capability_mode'   => $attestationCapabilityMode !== '' ? $attestationCapabilityMode : null,
+            'attestation_capability_reason' => $attestationCapabilityReason !== '' ? $attestationCapabilityReason : null,
+            'app_attest'                    => $attestationPayloadMetadata,
         ]);
 
         return [
@@ -136,6 +155,27 @@ class HighRiskActionTrustPolicy
         }
 
         return ! in_array($attestationCapabilityMode, ['none', 'runtime-posture'], true);
+    }
+
+    private function attestationCollectionFailureReason(string $attestationStatus, string $capabilityReason): ?string
+    {
+        if ($attestationStatus !== 'error' || $capabilityReason === '') {
+            return null;
+        }
+
+        return match ($capabilityReason) {
+            'provider_error' => 'attestation_provider_error',
+            'device_registration_failed',
+            'challenge_failed',
+            'key_generation_failed',
+            'enrollment_failed',
+            'assertion_generation_failed',
+            'assertion_verify_http_failed',
+            'envelope_failed',
+            'native_module_missing',
+            'native_module_unavailable' => 'attestation_' . $capabilityReason,
+            default => 'attestation_provider_error',
+        };
     }
 
     /**
@@ -197,5 +237,45 @@ class HighRiskActionTrustPolicy
         ];
 
         return in_array($assertionReason, $allowedReasons, true);
+    }
+
+    /**
+     * @return array<string, bool|string|null>|null
+     */
+    private function safeAttestationPayloadMetadata(string $attestation, string $deviceType): ?array
+    {
+        if ($attestation === '') {
+            return null;
+        }
+
+        if ($deviceType !== 'ios' || ! str_starts_with($attestation, 'ios-app-attest:')) {
+            return [
+                'prefix' => str_contains($attestation, ':')
+                    ? substr($attestation, 0, (int) strpos($attestation, ':'))
+                    : 'unprefixed',
+            ];
+        }
+
+        $payload = json_decode(substr($attestation, strlen('ios-app-attest:')), true);
+
+        if (! is_array($payload)) {
+            return [
+                'prefix'      => 'ios-app-attest',
+                'parse_error' => 'invalid_json',
+            ];
+        }
+
+        $metadata = isset($payload['metadata']) && is_array($payload['metadata'])
+            ? $payload['metadata']
+            : [];
+
+        return [
+            'prefix'               => 'ios-app-attest',
+            'key_id_present'       => isset($payload['keyId']) && is_string($payload['keyId']) && trim($payload['keyId']) !== '',
+            'assertion_reason'     => isset($payload['assertionReason']) && is_string($payload['assertionReason'])
+                ? strtolower(trim($payload['assertionReason']))
+                : null,
+            'challenge_id_present' => isset($metadata['challenge_id']) && is_string($metadata['challenge_id']) && trim($metadata['challenge_id']) !== '',
+        ];
     }
 }

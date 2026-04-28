@@ -26,6 +26,7 @@ use App\Http\Requests\Mobile\VerifyBiometricRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use OpenApi\Attributes as OA;
 use RuntimeException;
 
@@ -511,6 +512,13 @@ class MobileController extends Controller
         $device = $this->deviceService->findByDeviceId($validated['device_id']);
 
         if (! $device || $device->user_id !== $user->id) {
+            Log::warning('mobile.app_attest.challenge.device_not_found', [
+                'user_id'           => $user->id,
+                'device_id_present' => $validated['device_id'] !== '',
+                'purpose'           => $validated['purpose'],
+                'key_id_present'    => isset($validated['key_id']) && (string) $validated['key_id'] !== '',
+            ]);
+
             return response()->json([
                 'error' => [
                     'code'    => 'DEVICE_NOT_FOUND',
@@ -520,6 +528,13 @@ class MobileController extends Controller
         }
 
         if ($device->platform !== 'ios') {
+            Log::warning('mobile.app_attest.challenge.unsupported_device', [
+                'user_id'          => $user->id,
+                'mobile_device_id' => $device->id,
+                'platform'         => $device->platform,
+                'purpose'          => $validated['purpose'],
+            ]);
+
             return response()->json([
                 'error' => [
                     'code'    => 'APP_ATTEST_UNSUPPORTED_DEVICE',
@@ -533,6 +548,14 @@ class MobileController extends Controller
             $validated['purpose'],
             $validated['key_id'] ?? null,
         );
+
+        Log::info('mobile.app_attest.challenge.issued', [
+            'user_id'          => $user->id,
+            'mobile_device_id' => $device->id,
+            'purpose'          => $issued->purpose,
+            'key_id_present'   => isset($validated['key_id']) && (string) $validated['key_id'] !== '',
+            'rollout_enabled'  => (bool) config('mobile.attestation.enabled', false),
+        ]);
 
         return response()->json([
             'data' => [
@@ -561,6 +584,13 @@ class MobileController extends Controller
         $device = $this->deviceService->findByDeviceId($validated['device_id']);
 
         if (! $device || $device->user_id !== $user->id) {
+            Log::warning('mobile.app_attest.enroll.device_not_found', [
+                'user_id'              => $user->id,
+                'device_id_present'    => $validated['device_id'] !== '',
+                'challenge_id_present' => $validated['challenge_id'] !== '',
+                'key_id_present'       => $validated['key_id'] !== '',
+            ]);
+
             return response()->json([
                 'error' => [
                     'code'    => 'DEVICE_NOT_FOUND',
@@ -570,6 +600,13 @@ class MobileController extends Controller
         }
 
         if ($device->platform !== 'ios') {
+            Log::warning('mobile.app_attest.enroll.unsupported_device', [
+                'user_id'          => $user->id,
+                'mobile_device_id' => $device->id,
+                'platform'         => $device->platform,
+                'key_id_present'   => $validated['key_id'] !== '',
+            ]);
+
             return response()->json([
                 'error' => [
                     'code'    => 'APP_ATTEST_UNSUPPORTED_DEVICE',
@@ -587,6 +624,15 @@ class MobileController extends Controller
                 $validated['attestation_object'],
             );
         } catch (AppAttestException $e) {
+            Log::warning('mobile.app_attest.enroll.failed', [
+                'user_id'              => $user->id,
+                'mobile_device_id'     => $device->id,
+                'challenge_id_present' => $validated['challenge_id'] !== '',
+                'key_id_present'       => $validated['key_id'] !== '',
+                'reason'               => $e->getMessage(),
+                'code'                 => $e->errorCode,
+            ]);
+
             return response()->json([
                 'error' => [
                     'code'    => $e->errorCode,
@@ -594,6 +640,14 @@ class MobileController extends Controller
                 ],
             ], 422);
         }
+
+        Log::info('mobile.app_attest.enroll.succeeded', [
+            'user_id'          => $user->id,
+            'mobile_device_id' => $device->id,
+            'key_id_present'   => $key->key_id !== '',
+            'status'           => $key->status,
+            'rollout_enabled'  => (bool) config('mobile.attestation.enabled', false),
+        ]);
 
         return response()->json([
             'data' => [
@@ -621,6 +675,13 @@ class MobileController extends Controller
         $device = $this->deviceService->findByDeviceId($validated['device_id']);
 
         if (! $device || $device->user_id !== $user->id) {
+            Log::warning('mobile.app_attest.verify.device_not_found', [
+                'user_id'              => $user->id,
+                'device_id_present'    => $validated['device_id'] !== '',
+                'challenge_id_present' => $validated['challenge_id'] !== '',
+                'key_id_present'       => $validated['key_id'] !== '',
+            ]);
+
             return response()->json([
                 'error' => [
                     'code'    => 'DEVICE_NOT_FOUND',
@@ -630,6 +691,13 @@ class MobileController extends Controller
         }
 
         if ($device->platform !== 'ios') {
+            Log::warning('mobile.app_attest.verify.unsupported_device', [
+                'user_id'          => $user->id,
+                'mobile_device_id' => $device->id,
+                'platform'         => $device->platform,
+                'key_id_present'   => $validated['key_id'] !== '',
+            ]);
+
             return response()->json([
                 'error' => [
                     'code'    => 'APP_ATTEST_UNSUPPORTED_DEVICE',
@@ -647,6 +715,15 @@ class MobileController extends Controller
         );
 
         if (! $result->verified) {
+            Log::warning('mobile.app_attest.verify.failed', [
+                'user_id'              => $user->id,
+                'mobile_device_id'     => $device->id,
+                'challenge_id_present' => $validated['challenge_id'] !== '',
+                'key_id_present'       => $validated['key_id'] !== '',
+                'reason'               => $result->reason,
+                'sign_count'           => $result->metadata['sign_count'] ?? null,
+            ]);
+
             return response()->json([
                 'error' => [
                     'code'    => 'APP_ATTEST_ASSERTION_FAILED',
@@ -654,6 +731,16 @@ class MobileController extends Controller
                 ],
             ], 422);
         }
+
+        Log::info('mobile.app_attest.verify.succeeded', [
+            'user_id'              => $user->id,
+            'mobile_device_id'     => $device->id,
+            'challenge_id_present' => $validated['challenge_id'] !== '',
+            'key_id_present'       => $validated['key_id'] !== '',
+            'reason'               => $result->reason,
+            'sign_count'           => $result->metadata['sign_count'] ?? null,
+            'rollout_enabled'      => (bool) config('mobile.attestation.enabled', false),
+        ]);
 
         return response()->json([
             'data' => [
