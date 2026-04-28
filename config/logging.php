@@ -97,6 +97,16 @@ return [
         ],
 
         'stderr' => [
+            'driver'               => 'stack',
+            'channels'             => array_values(array_filter(array_map(
+                static fn (string $channel): string => trim($channel),
+                explode(',', env('LOG_STDERR_STACK', 'stderr_stream,daily'))
+            ))),
+            'ignore_exceptions'    => false,
+            'replace_placeholders' => true,
+        ],
+
+        'stderr_stream' => [
             'driver'    => 'monolog',
             'level'     => env('LOG_LEVEL', 'debug'),
             'handler'   => StreamHandler::class,
