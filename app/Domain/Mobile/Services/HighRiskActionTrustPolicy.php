@@ -46,10 +46,19 @@ class HighRiskActionTrustPolicy
 
         if ($attestationEnabled) {
             if ($attestation === '') {
-                $decision = 'deny';
-                $reason = $attestationStatus === 'error' && $attestationCapabilityReason === 'provider_error'
-                    ? 'attestation_provider_error'
-                    : 'attestation_required';
+                $isProviderError = $attestationStatus === 'error' && $attestationCapabilityReason === 'provider_error';
+
+                if ($isProviderError && $deviceType === 'ios' && $mobileDevice !== null) {
+                    // Temporary safety valve: allow enrolled iOS devices to continue when App Attest
+                    // provider collection fails on-device. We keep an explicit audit reason.
+                    $decision = 'allow';
+                    $reason = 'attestation_provider_error_fallback';
+                } else {
+                    $decision = 'deny';
+                    $reason = $isProviderError
+                        ? 'attestation_provider_error'
+                        : 'attestation_required';
+                }
             } elseif (! in_array($deviceType, ['ios', 'android'], true)) {
                 $decision = 'deny';
                 $reason = 'unsupported_device_type';

@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\UnitTestCase;
 
 uses(UnitTestCase::class);
@@ -250,6 +252,53 @@ describe('HighRiskActionTrustPolicy', function (): void {
                     'reason'    => 'provider_error',
                 ],
             ]);
+    });
+
+    it('allows provider-error fallback for enrolled ios device when attestation is enforced', function (): void {
+        Config::set('mobile.attestation.enabled', true);
+
+        /** @var BiometricJWTServiceInterface&Mockery\MockInterface $biometricJwtService */
+        $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
+        $policy = new HighRiskActionTrustPolicy($biometricJwtService);
+
+        $user = new User();
+        $user->id = 1007;
+        DB::table('users')->insert([
+            'id'       => $user->id,
+            'uuid'     => (string) Str::uuid(),
+            'name'     => 'Trust Policy Fallback User',
+            'email'    => 'trust-fallback-1007@example.test',
+            'password' => Hash::make('secret-1007'),
+        ]);
+
+        $deviceId = 'ios-provider-error-fallback-device';
+        DB::table('mobile_devices')->insert([
+            'id'                 => (string) Str::uuid(),
+            'user_id'            => $user->id,
+            'device_id'          => $deviceId,
+            'platform'           => 'ios',
+            'app_version'        => '1.0.0',
+            'biometric_enabled'  => false,
+            'is_trusted'         => false,
+            'is_blocked'         => false,
+            'created_at'         => now(),
+            'updated_at'         => now(),
+        ]);
+
+        $request = Request::create('/api/v1/commerce/payments', 'POST', [
+            'payment_link_token'               => 'good-token',
+            'device_type'                      => 'ios',
+            'device_id'                        => $deviceId,
+            'attestation_status'               => 'error',
+            'attestation_capability_mode'      => 'none',
+            'attestation_capability_reason'    => 'provider_error',
+            'attestation_capability_available' => false,
+        ]);
+
+        $result = $policy->evaluate($user, $request, 'commerce.payment.process');
+
+        expect($result['decision'])->toBe('allow')
+            ->and($result['reason'])->toBe('attestation_provider_error_fallback');
     });
 
     it('accepts ios-app-attest JSON envelope when enforcement is enabled and device_id matches', function (): void {
