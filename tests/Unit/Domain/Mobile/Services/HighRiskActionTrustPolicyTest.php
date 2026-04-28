@@ -290,6 +290,36 @@ describe('HighRiskActionTrustPolicy', function (): void {
             ->and($result['attestation_verified'])->toBeTrue();
     });
 
+    it('accepts ios-app-attest envelope when assertionReason casing differs', function (): void {
+        Config::set('mobile.attestation.enabled', true);
+
+        /** @var BiometricJWTServiceInterface&Mockery\MockInterface $biometricJwtService */
+        $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
+        $biometricJwtService->shouldNotReceive('verifyDeviceAttestation');
+
+        $policy = new HighRiskActionTrustPolicy($biometricJwtService);
+
+        $user = new User();
+        $user->id = 2003;
+
+        $deviceId = 'ios-test-device-uuid-2';
+        $envelope = 'ios-app-attest:' . json_encode([
+            'deviceId'        => $deviceId,
+            'assertionReason' => 'Assertion_Verified',
+        ], JSON_THROW_ON_ERROR);
+
+        $request = Request::create('/api/send-money/store', 'POST', [
+            'device_type' => 'ios',
+            'device_id'   => $deviceId,
+            'attestation' => $envelope,
+        ]);
+
+        $result = $policy->evaluate($user, $request, 'send_money');
+
+        expect($result['decision'])->toBe('allow')
+            ->and($result['reason'])->toBe('attestation_verified');
+    });
+
     it('denies ios-app-attest envelope when device_id does not match request', function (): void {
         Config::set('mobile.attestation.enabled', true);
 

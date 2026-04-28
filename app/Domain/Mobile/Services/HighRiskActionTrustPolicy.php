@@ -177,7 +177,7 @@ class HighRiskActionTrustPolicy
         }
 
         $assertionReason = isset($payload['assertionReason']) && is_string($payload['assertionReason'])
-            ? trim($payload['assertionReason'])
+            ? strtolower(trim($payload['assertionReason']))
             : '';
 
         $allowedReasons = [

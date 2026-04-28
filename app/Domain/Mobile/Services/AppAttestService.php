@@ -161,12 +161,13 @@ class AppAttestService
             return AppAttestVerificationResult::failure('app_attest_public_key_missing');
         }
 
+        // Replay protection: only compare against counters from prior *assertions*.
+        // Do not seed the floor from attestation_sign_count — it often matches the first
+        // assertion counter (e.g. 0), which incorrectly triggers assertion_sign_count_stale.
         $lastAcceptedSignCount = null;
 
         if (isset($key->metadata['last_sign_count']) && is_numeric($key->metadata['last_sign_count'])) {
             $lastAcceptedSignCount = (int) $key->metadata['last_sign_count'];
-        } elseif (isset($key->metadata['attestation_sign_count']) && is_numeric($key->metadata['attestation_sign_count'])) {
-            $lastAcceptedSignCount = (int) $key->metadata['attestation_sign_count'];
         }
 
         $verification = $this->verifier->verifyAssertion(

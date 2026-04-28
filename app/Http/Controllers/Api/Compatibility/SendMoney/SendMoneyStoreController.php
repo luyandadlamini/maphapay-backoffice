@@ -214,26 +214,30 @@ class SendMoneyStoreController extends Controller
                 $trust = $this->trustPolicy->evaluate($authUser, $request, 'send_money');
 
                 if (($trust['decision'] ?? 'allow') === 'deny') {
+                    $trustReason = (string) ($trust['reason'] ?? 'policy');
+
                     return response()->json([
                         'success' => false,
                         'error'   => [
                             'code'            => 'TRUST_POLICY_DENY',
-                            'message'         => 'Request denied by mobile trust policy.',
+                            'message'         => 'Request denied by mobile trust policy (' . $trustReason . ').',
                             'trust_decision'  => $trust['decision'] ?? 'deny',
-                            'trust_reason'    => $trust['reason'] ?? 'policy',
+                            'trust_reason'    => $trustReason,
                             'trust_record_id' => $trust['record_id'] ?? null,
                         ],
                     ], 403);
                 }
 
                 if (in_array(($trust['decision'] ?? ''), ['step_up', 'degrade'], true)) {
+                    $trustReason = (string) ($trust['reason'] ?? 'policy');
+
                     return response()->json([
                         'success' => false,
                         'error'   => [
                             'code'            => 'TRUST_POLICY_STEP_UP',
-                            'message'         => 'Additional verification is required by mobile trust policy.',
+                            'message'         => 'Additional verification is required by mobile trust policy (' . $trustReason . ').',
                             'trust_decision'  => $trust['decision'],
-                            'trust_reason'    => $trust['reason'] ?? 'policy',
+                            'trust_reason'    => $trustReason,
                             'trust_record_id' => $trust['record_id'] ?? null,
                         ],
                     ], 428);
@@ -341,26 +345,30 @@ class SendMoneyStoreController extends Controller
         $trust ??= $this->trustPolicy->evaluate($authUser, $request, 'send_money');
 
         if (($trust['decision'] ?? 'allow') === 'deny') {
+            $trustReason = (string) ($trust['reason'] ?? 'policy');
+
             return response()->json([
                 'success' => false,
                 'error'   => [
                     'code'            => 'TRUST_POLICY_DENY',
-                    'message'         => 'Request denied by mobile trust policy.',
+                    'message'         => 'Request denied by mobile trust policy (' . $trustReason . ').',
                     'trust_decision'  => $trust['decision'] ?? 'deny',
-                    'trust_reason'    => $trust['reason'] ?? 'policy',
+                    'trust_reason'    => $trustReason,
                     'trust_record_id' => $trust['record_id'] ?? null,
                 ],
             ], 403);
         }
 
         if (in_array(($trust['decision'] ?? ''), ['step_up', 'degrade'], true)) {
+            $trustReason = (string) ($trust['reason'] ?? 'policy');
+
             return response()->json([
                 'success' => false,
                 'error'   => [
                     'code'            => 'TRUST_POLICY_STEP_UP',
-                    'message'         => 'Additional verification is required by mobile trust policy.',
+                    'message'         => 'Additional verification is required by mobile trust policy (' . $trustReason . ').',
                     'trust_decision'  => $trust['decision'],
-                    'trust_reason'    => $trust['reason'] ?? 'policy',
+                    'trust_reason'    => $trustReason,
                     'trust_record_id' => $trust['record_id'] ?? null,
                 ],
             ], 428);
