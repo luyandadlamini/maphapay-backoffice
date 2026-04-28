@@ -8,6 +8,7 @@ use App\Domain\Mobile\Models\BiometricChallenge;
 use App\Domain\Mobile\Models\MobileDevice;
 use App\Domain\Mobile\Models\MobilePushNotification;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class MobileControllerTest extends TestCase
@@ -228,6 +229,46 @@ class MobileControllerTest extends TestCase
             'id'         => $device->id,
             'push_token' => 'new-fcm-token',
         ]);
+    }
+
+    public function test_can_record_mobile_attestation_telemetry(): void
+    {
+        Log::spy();
+
+        MobileDevice::create([
+            'user_id'     => $this->user->id,
+            'device_id'   => 'ios-device-telemetry',
+            'platform'    => 'ios',
+            'app_version' => '1.0.0',
+        ]);
+
+        $response = $this->withToken($this->token)->postJson('/api/mobile/telemetry/attestation', [
+            'event'       => 'app_attest_high_risk_blocked',
+            'occurred_at' => '2026-04-28T21:00:00Z',
+            'context'     => [
+                'action' => 'send-money',
+                'deviceId' => 'ios-device-telemetry',
+                'failureReason' => 'challenge_failed',
+                'failureStage' => '/api/mobile/auth/attestation/app-attest/challenge',
+                'attestation' => 'ios-app-attest:secret',
+            ],
+        ]);
+
+        $response->assertStatus(202)
+            ->assertJsonPath('data.recorded', true);
+
+        Log::shouldHaveReceived('info')->once()->withArgs(function (string $message, array $context): bool {
+            $this->assertSame('mobile.attestation.telemetry', $message);
+            $this->assertSame($this->user->id, $context['user_id']);
+            $this->assertSame('app_attest_high_risk_blocked', $context['event']);
+            $this->assertTrue($context['device_id_present']);
+            $this->assertTrue($context['mobile_device_found']);
+            $this->assertSame('send-money', $context['telemetry']['action']);
+            $this->assertSame('challenge_failed', $context['telemetry']['failureReason']);
+            $this->assertArrayNotHasKey('attestation', $context['telemetry']);
+
+            return true;
+        });
     }
 
     public function test_can_enable_biometric_authentication(): void

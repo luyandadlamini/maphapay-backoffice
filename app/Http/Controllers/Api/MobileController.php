@@ -754,6 +754,38 @@ class MobileController extends Controller
         ]);
     }
 
+    public function recordAttestationTelemetry(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'event'       => ['required', 'string', 'max:100'],
+            'occurred_at' => ['nullable', 'date'],
+            'context'     => ['nullable', 'array'],
+        ]);
+
+        /** @var User $user */
+        $user = $request->user();
+        /** @var array<string, mixed> $context */
+        $context = is_array($validated['context'] ?? null) ? $validated['context'] : [];
+        $deviceId = $this->resolveTelemetryDeviceId($request, $context);
+        $device = $deviceId !== null ? $this->deviceService->findByDeviceId($deviceId) : null;
+
+        Log::info('mobile.attestation.telemetry', [
+            'user_id'             => $user->id,
+            'event'               => $validated['event'],
+            'occurred_at'         => $validated['occurred_at'] ?? null,
+            'device_id_present'   => $deviceId !== null,
+            'mobile_device_id'    => $device?->id,
+            'mobile_device_found' => $device !== null && $device->user_id === $user->id,
+            'telemetry'           => $this->sanitizeTelemetryContext($context),
+        ]);
+
+        return response()->json([
+            'data' => [
+                'recorded' => true,
+            ],
+        ], 202);
+    }
+
     /**
      * Get notification history.
      */
@@ -1447,6 +1479,87 @@ class MobileController extends Controller
         }
 
         return $user;
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    private function resolveTelemetryDeviceId(Request $request, array $context): ?string
+    {
+        $candidate = $context['deviceId'] ?? $context['device_id'] ?? $request->header('X-Device-ID');
+
+        if (! is_string($candidate)) {
+            return null;
+        }
+
+        $trimmed = trim($candidate);
+
+        return $trimmed !== '' ? $trimmed : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     * @return array<string, string|int|float|bool|null|array<int, string|int|float|bool|null>>
+     */
+    private function sanitizeTelemetryContext(array $context): array
+    {
+        $sanitized = [];
+
+        foreach ($context as $key => $value) {
+            if (! is_string($key)) {
+                continue;
+            }
+
+            $lowerKey = strtolower($key);
+
+            if (
+                str_contains($lowerKey, 'attestation') ||
+                str_contains($lowerKey, 'assertion') ||
+                str_contains($lowerKey, 'challenge') ||
+                str_contains($lowerKey, 'token') ||
+                str_contains($lowerKey, 'authorization')
+            ) {
+                continue;
+            }
+
+            $sanitized[$key] = $this->sanitizeTelemetryValue($value);
+        }
+
+        return $sanitized;
+    }
+
+    /**
+     * @return string|int|float|bool|null|array<int, string|int|float|bool|null>
+     */
+    private function sanitizeTelemetryValue(mixed $value): string|int|float|bool|null|array
+    {
+        if ($value === null || is_bool($value) || is_int($value) || is_float($value)) {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            return mb_substr($value, 0, 160);
+        }
+
+        if (is_array($value)) {
+            $sanitized = [];
+
+            foreach ($value as $item) {
+                if (
+                    $item === null ||
+                    is_bool($item) ||
+                    is_int($item) ||
+                    is_float($item) ||
+                    is_string($item)
+                ) {
+                    $sanitized[] = is_string($item) ? mb_substr($item, 0, 160) : $item;
+                }
+            }
+
+            return array_slice($sanitized, 0, 20);
+        }
+
+        return is_object($value) ? class_basename($value) : null;
     }
 
     /**

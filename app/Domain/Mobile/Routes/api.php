@@ -65,6 +65,10 @@ Route::prefix('mobile')->name('api.mobile.')->group(function () {
             Route::post('/verify', [MobileController::class, 'verifyAppAttestAssertion'])->name('verify');
         });
 
+        Route::prefix('telemetry')->name('telemetry.')->group(function () {
+            Route::post('/attestation', [MobileController::class, 'recordAttestationTelemetry'])->name('attestation');
+        });
+
         // Token refresh
         Route::post('/auth/refresh', [MobileController::class, 'refreshToken'])->name('auth.refresh');
 
