@@ -137,9 +137,11 @@ return [
 
         // Apple App Attest settings
         'apple' => [
-            'team_id'               => env('APPLE_TEAM_ID'),
-            'bundle_id'             => env('APPLE_BUNDLE_ID'),
-            'environment'           => env('APPLE_ATTESTATION_ENV', 'production'),
+            // Laravel Cloud env vars are currently namespaced as MOBILE_ATTESTATION_APPLE_*.
+            // Keep legacy APPLE_* keys for local/dev and fall back to Cloud keys in production.
+            'team_id'               => env('APPLE_TEAM_ID', env('MOBILE_ATTESTATION_APPLE_TEAM_ID')),
+            'bundle_id'             => env('APPLE_BUNDLE_ID', env('MOBILE_ATTESTATION_APPLE_BUNDLE_ID')),
+            'environment'           => env('APPLE_ATTESTATION_ENV', env('MOBILE_ATTESTATION_APPLE_ENVIRONMENT', 'production')),
             'challenge_ttl_seconds' => (int) env('APPLE_APP_ATTEST_CHALLENGE_TTL', 300),
         ],
 
