@@ -42,3 +42,8 @@ test_results.txt
 database/schema/*.bak
 .DS_Store
 .worktrees/
+
+# Local dependency graph (graph:build)
+/domain-graph.sqlite
+/domain-graph.sqlite-shm
+/domain-graph.sqlite-wal
