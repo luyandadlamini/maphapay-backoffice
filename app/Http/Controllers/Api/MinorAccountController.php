@@ -31,14 +31,46 @@ class MinorAccountController extends Controller
 
     /**
      * Create a minor account for a child (6-17 years old).
+     *
+     * Accepts either:
+     *   - `name` + `date_of_birth` (native mobile app format)
+     *   - `display_name` + `age` + optional `spending_limit` (React Native app format)
      */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name'          => ['required', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
-            'date_of_birth' => ['required', 'date_format:Y-m-d', 'before:today'],
-            'photo_id_path' => ['nullable', 'string', 'max:255'],
+            'name'           => ['nullable', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
+            'display_name'   => ['nullable', 'string', 'max:255', new NoControlCharacters(), new NoSqlInjection()],
+            'date_of_birth'  => ['nullable', 'date_format:Y-m-d', 'before:today'],
+            'age'            => ['nullable', 'integer', 'min:6', 'max:17'],
+            'photo_id_path'  => ['nullable', 'string', 'max:255'],
+            'spending_limit' => ['nullable', 'numeric', 'min:0'],
         ]);
+
+        // Resolve name from either `name` or `display_name`
+        $childName = $validated['name'] ?? $validated['display_name'] ?? null;
+        if ($childName === null || trim($childName) === '') {
+            return response()->json([
+                'success' => false,
+                'errors'  => [
+                    'name' => ['The name field is required.'],
+                ],
+            ], 422);
+        }
+
+        // Resolve date_of_birth from either direct input or calculated from age
+        if (! empty($validated['date_of_birth'])) {
+            $dateOfBirth = Carbon::parse((string) $validated['date_of_birth'])->startOfDay();
+        } elseif (isset($validated['age'])) {
+            $dateOfBirth = now()->subYears((int) $validated['age'])->startOfDay();
+        } else {
+            return response()->json([
+                'success' => false,
+                'errors'  => [
+                    'date_of_birth' => ['Either date_of_birth or age is required.'],
+                ],
+            ], 422);
+        }
 
         /** @var User $user */
         $user = $request->user();
@@ -62,7 +94,6 @@ class MinorAccountController extends Controller
         $tenantId = (string) $parentMembership->tenant_id;
 
         // Calculate age and validate (6-17 years old)
-        $dateOfBirth = Carbon::parse((string) $validated['date_of_birth'])->startOfDay();
         $age = (int) floor($dateOfBirth->diffInYears(now(), true));
 
         $ageMin = config('minor_family.age_min', 6);
@@ -84,7 +115,7 @@ class MinorAccountController extends Controller
         $permissionLevel = $this->getPermissionLevel($age);
 
         try {
-            $sanitizedName = strip_tags($validated['name']);
+            $sanitizedName = strip_tags($childName);
             $sanitizedName = htmlspecialchars($sanitizedName, ENT_QUOTES, 'UTF-8');
             $sanitizedName = (string) preg_replace('/javascript:/i', '', $sanitizedName);
             $sanitizedName = (string) preg_replace('/data:/i', '', $sanitizedName);

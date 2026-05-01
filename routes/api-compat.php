@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\CompanyDocumentController;
+use App\Http\Controllers\Api\MinorAccountController;
 use App\Http\Controllers\Api\Compatibility\Budget\BudgetCategoriesController;
 use App\Http\Controllers\Api\Compatibility\Budget\BudgetCategoriesDeleteController;
 use App\Http\Controllers\Api\Compatibility\Budget\BudgetCategoriesStoreController;
@@ -409,6 +410,26 @@ Route::prefix('accounts/company')->middleware('auth:sanctum')->group(function ()
 
     Route::get('/documents/{documentId}', [CompanyDocumentController::class, 'download'])
         ->name('maphapay.compat.company.documents.download');
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Merchant account creation (mobile KYM flow)
+// POST   accounts/merchant         → create merchant account
+// ─────────────────────────────────────────────────────────────────────────────
+Route::prefix('accounts/merchant')->middleware('auth:sanctum')->group(function (): void {
+    Route::post('/', [AccountController::class, 'createMerchant'])
+        ->middleware(['kyc_approved', 'throttle:maphapay-merchant-create'])
+        ->name('maphapay.compat.merchant.create');
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Minor (child) account creation
+// POST   accounts/minor            → create minor account for a child
+// ─────────────────────────────────────────────────────────────────────────────
+Route::prefix('accounts/minor')->middleware('auth:sanctum')->group(function (): void {
+    Route::post('/', [MinorAccountController::class, 'store'])
+        ->middleware('throttle:maphapay-minor-create')
+        ->name('maphapay.compat.minor.create');
 });
 
 // Catch-all: log any compat-prefix requests that don't match a defined route.
