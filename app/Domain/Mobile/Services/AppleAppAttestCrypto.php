@@ -90,23 +90,45 @@ final class AppleAppAttestCrypto
         $raw = base64_decode($attestationObjectBase64, true);
 
         if ($raw === false || $raw === '') {
+            Log::warning('App Attest: base64 decode failed or empty', [
+                'input_length' => strlen($attestationObjectBase64),
+                'decode_result' => $raw === false ? 'false' : 'empty',
+            ]);
+
             return null;
         }
 
         try {
             $map = $this->decodeCborMap($raw);
-        } catch (InvalidArgumentException) {
+        } catch (InvalidArgumentException $e) {
+            Log::warning('App Attest: top-level CBOR decode failed', [
+                'error' => $e->getMessage(),
+                'raw_length' => strlen($raw),
+                'raw_first_bytes_hex' => bin2hex(substr($raw, 0, 16)),
+            ]);
+
             return null;
         }
 
         $authData = $map['authData'] ?? null;
 
         if (! is_string($authData) || strlen($authData) < 37) {
+            Log::warning('App Attest: authData missing or too short', [
+                'has_authData' => array_key_exists('authData', $map),
+                'authData_type' => gettype($authData),
+                'authData_length' => is_string($authData) ? strlen($authData) : null,
+                'map_keys' => array_keys($map),
+            ]);
+
             return null;
         }
 
-        if (substr($authData, 0, 32) !== $expectedRpIdHashBinary) {
-            Log::warning('App Attest: authData rpIdHash mismatch during credential extraction');
+        $actualRpIdHash = substr($authData, 0, 32);
+        if ($actualRpIdHash !== $expectedRpIdHashBinary) {
+            Log::warning('App Attest: authData rpIdHash mismatch during credential extraction', [
+                'expected_rpIdHash_hex' => bin2hex($expectedRpIdHashBinary),
+                'actual_rpIdHash_hex' => bin2hex($actualRpIdHash),
+            ]);
 
             return null;
         }
@@ -114,7 +136,10 @@ final class AppleAppAttestCrypto
         $flags = ord($authData[32]);
 
         if (($flags & 0x40) === 0) {
-            Log::warning('App Attest: attestation authData missing AT flag');
+            Log::warning('App Attest: attestation authData missing AT flag', [
+                'flags_hex' => dechex($flags),
+                'flags_int' => $flags,
+            ]);
 
             return null;
         }
@@ -122,6 +147,11 @@ final class AppleAppAttestCrypto
         $offset = 37;
 
         if (strlen($authData) < $offset + 16 + 2) {
+            Log::warning('App Attest: authData too short for aaguid + credIdLen', [
+                'authData_length' => strlen($authData),
+                'minimum_required' => $offset + 16 + 2,
+            ]);
+
             return null;
         }
 
@@ -130,6 +160,12 @@ final class AppleAppAttestCrypto
         $offset += 2;
 
         if ($credIdLen < 0 || strlen($authData) < $offset + $credIdLen) {
+            Log::warning('App Attest: authData too short for credential ID', [
+                'credIdLen' => $credIdLen,
+                'authData_length' => strlen($authData),
+                'offset_after_credIdLen' => $offset,
+            ]);
+
             return null;
         }
 
@@ -137,16 +173,41 @@ final class AppleAppAttestCrypto
         $coseBytes = substr($authData, $offset);
 
         if ($coseBytes === '' || $coseBytes === false) {
+            Log::warning('App Attest: no COSE key bytes after credential ID', [
+                'offset' => $offset,
+                'credIdLen' => $credIdLen,
+            ]);
+
             return null;
         }
 
         try {
             $cose = $this->decodeCborMap($coseBytes);
-        } catch (InvalidArgumentException) {
+        } catch (InvalidArgumentException $e) {
+            Log::warning('App Attest: COSE key CBOR decode failed', [
+                'error' => $e->getMessage(),
+                'coseBytes_length' => strlen($coseBytes),
+                'coseBytes_first_bytes_hex' => bin2hex(substr($coseBytes, 0, 16)),
+            ]);
+
             return null;
         }
 
-        return $this->coseEc2P256ToUncompressedHex($cose);
+        $publicKeyHex = $this->coseEc2P256ToUncompressedHex($cose);
+
+        if ($publicKeyHex === null) {
+            Log::warning('App Attest: COSE key format mismatch', [
+                'cose_kty' => $cose[self::COSE_KEY_KTY] ?? null,
+                'cose_crv' => $cose[self::COSE_EC2_CRV] ?? null,
+                'cose_has_x' => isset($cose[self::COSE_EC2_X]),
+                'cose_has_y' => isset($cose[self::COSE_EC2_Y]),
+                'cose_x_length' => isset($cose[self::COSE_EC2_X]) && is_string($cose[self::COSE_EC2_X]) ? strlen($cose[self::COSE_EC2_X]) : null,
+                'cose_y_length' => isset($cose[self::COSE_EC2_Y]) && is_string($cose[self::COSE_EC2_Y]) ? strlen($cose[self::COSE_EC2_Y]) : null,
+                'cose_keys' => array_keys($cose),
+            ]);
+        }
+
+        return $publicKeyHex;
     }
 
     /**
