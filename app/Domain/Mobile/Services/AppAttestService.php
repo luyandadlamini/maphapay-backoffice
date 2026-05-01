@@ -48,6 +48,12 @@ class AppAttestService
         string $keyId,
         string $attestationObject,
     ): MobileAppAttestKey {
+        Log::info('App Attest: enrollKey started', [
+            'mobile_device_id' => $device->id,
+            'user_id'          => $device->user_id,
+            'key_id'           => $keyId,
+        ]);
+
         $challengeRecord = $this->resolveChallenge(
             $device,
             $challengeId,
@@ -59,6 +65,9 @@ class AppAttestService
         $verification = $this->verifier->verifyAttestation($attestationObject, $challenge, $keyId);
 
         if (! $verification->verified) {
+            Log::warning('App Attest: enrollment attestation verification failed', [
+                'reason' => $verification->reason,
+            ]);
             throw AppAttestException::enrollmentFailed($verification->reason);
         }
 
@@ -75,6 +84,14 @@ class AppAttestService
                     'metadata'    => $verification->metadata,
                 ],
             );
+
+            Log::info('App Attest: key enrolled', [
+                'key_db_id'        => $key->id,
+                'mobile_device_id' => $device->id,
+                'user_id'          => $device->user_id,
+                'key_id'           => $keyId,
+                'status'           => $key->status,
+            ]);
 
             $challengeRecord->update([
                 'mobile_app_attest_key_id' => $key->id,
@@ -130,6 +147,12 @@ class AppAttestService
         string $keyId,
         string $assertion,
     ): AppAttestVerificationResult {
+        Log::info('App Attest: verifyAssertion started', [
+            'mobile_device_id' => $device->id,
+            'user_id'          => $device->user_id,
+            'key_id'           => $keyId,
+        ]);
+
         $key = MobileAppAttestKey::query()
             ->where('mobile_device_id', $device->id)
             ->where('user_id', $device->user_id)
@@ -138,8 +161,28 @@ class AppAttestService
             ->first();
 
         if (! $key) {
+            // Debug: check if key exists with different criteria
+            $anyKey = MobileAppAttestKey::query()
+                ->where('key_id', $keyId)
+                ->first();
+
+            Log::warning('App Attest: key not found for assertion', [
+                'mobile_device_id'    => $device->id,
+                'user_id'             => $device->user_id,
+                'key_id'              => $keyId,
+                'key_exists_anywhere' => $anyKey !== null,
+                'key_device_match'    => $anyKey ? $anyKey->mobile_device_id === $device->id : null,
+                'key_user_match'      => $anyKey ? $anyKey->user_id === $device->user_id : null,
+                'key_status'          => $anyKey ? $anyKey->status : null,
+            ]);
+
             return AppAttestVerificationResult::failure('app_attest_key_not_found');
         }
+
+        Log::info('App Attest: key found for assertion', [
+            'key_db_id'  => $key->id,
+            'key_status' => $key->status,
+        ]);
 
         try {
             $challengeRecord = $this->resolveChallenge(
