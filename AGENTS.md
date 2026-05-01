@@ -8,6 +8,35 @@ MaphaPay is a modern digital payment and core banking back-office, built on the 
 
 **Companion Mobile Repo**: `/Users/Lihle/Development/Coding/maphapayrn`
 
+## Laravel Cloud CLI
+
+The Laravel Cloud CLI is available in this repo at `vendor/laravel/cloud-cli/builds/cloud`.
+Auth is stored in `~/.config/cloud/config.json`.
+
+**Always add `-n` to every command** to prevent interactive prompts from hanging.
+**Read ops:** add `--json`
+**Write ops:** add `--json --force`
+
+Common commands:
+```bash
+# List apps
+php vendor/laravel/cloud-cli/builds/cloud application:list --json -n
+
+# Get environment details (includes env vars)
+php vendor/laravel/cloud-cli/builds/cloud environment:get {env-id} --json -n
+
+# Update build command
+php vendor/laravel/cloud-cli/builds/cloud environment:update {env-id} --build-command="..." --json -n --force
+
+# Deploy
+php vendor/laravel/cloud-cli/builds/cloud deploy {app-name} {env-name} -n
+
+# Monitor deploy
+php vendor/laravel/cloud-cli/builds/cloud deploy:monitor -n
+```
+
+Docs: https://cloud.laravel.com/docs/llms.txt
+
 ## Quick Start
 
 Filament runs on **Laravel**, not on the Vite port alone. Set `APP_URL` to match how you serve PHP (default below uses `http://127.0.0.1:8000`). For local DB credentials and the disposable MySQL test user, see **`CLAUDE.md`** (Local Money-Movement Test Harness) and `./scripts/bootstrap-local-test-db.sh` / `./scripts/reset-local-mysql-test-access.sh`.

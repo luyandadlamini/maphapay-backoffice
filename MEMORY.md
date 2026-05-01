@@ -47,6 +47,35 @@ Purpose: quick working context for future sessions without re-scanning the whole
 - Banking/Web3/Profile dropdowns + logout depend on Alpine.
 - Alpine is now bundled via Vite (`resources/js/app.js`) and no longer loaded from CDN in `layouts/app.blade.php`.
 
+## Laravel Cloud CLI
+
+The Laravel Cloud CLI is available in this repo at `vendor/laravel/cloud-cli/builds/cloud`.
+Auth is stored in `~/.config/cloud/config.json`.
+
+**Always add `-n` to every command** to prevent interactive prompts from hanging.
+**Read ops:** add `--json`
+**Write ops:** add `--json --force`
+
+Common commands:
+```bash
+# List apps
+php vendor/laravel/cloud-cli/builds/cloud application:list --json -n
+
+# Get environment details (includes env vars)
+php vendor/laravel/cloud-cli/builds/cloud environment:get {env-id} --json -n
+
+# Update build command
+php vendor/laravel/cloud-cli/builds/cloud environment:update {env-id} --build-command="..." --json -n --force
+
+# Deploy
+php vendor/laravel/cloud-cli/builds/cloud deploy {app-name} {env-name} -n
+
+# Monitor deploy
+php vendor/laravel/cloud-cli/builds/cloud deploy:monitor -n
+```
+
+Docs: https://cloud.laravel.com/docs/llms.txt
+
 ## Cloud Command Constraints
 
 - Prefer single-line commands (interactive prompts are unreliable in cloud command runners).
