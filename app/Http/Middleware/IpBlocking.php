@@ -192,10 +192,19 @@ class IpBlocking
         if (in_array($response->getStatusCode(), [401, 403, 422])) {
             // Check if it's an auth-related endpoint
             $request = request();
+            $path = $request->path();
+
+            // App Attest endpoints are NOT traditional auth endpoints.
+            // They can legitimately fail during device setup and should
+            // not trigger IP blocking.
+            if (str_contains($path, 'attestation') || str_contains($path, 'app-attest')) {
+                return false;
+            }
+
             $authEndpoints = ['login', 'auth', 'password', 'register'];
 
             foreach ($authEndpoints as $endpoint) {
-                if (str_contains($request->path(), $endpoint)) {
+                if (str_contains($path, $endpoint)) {
                     return true;
                 }
             }
