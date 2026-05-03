@@ -12,6 +12,7 @@ use App\Domain\Mobile\Models\MobileAppAttestChallenge;
 use App\Domain\Mobile\Models\MobileAppAttestKey;
 use App\Domain\Mobile\Models\MobileDevice;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AppAttestService
 {
