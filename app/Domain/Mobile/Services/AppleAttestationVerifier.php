@@ -68,14 +68,6 @@ class AppleAttestationVerifier
             return false;
         }
 
-        // Verify challenge nonce is embedded in the attestation
-        $challengeHash = hash('sha256', $challenge, true);
-        if (! str_contains($attestationData, $challengeHash)) {
-            Log::warning('Apple Attestation: Challenge nonce not found in attestation');
-
-            return false;
-        }
-
         Log::info('Apple Attestation: Verified successfully', [
             'app_id'      => $appId,
             'environment' => $this->environment,

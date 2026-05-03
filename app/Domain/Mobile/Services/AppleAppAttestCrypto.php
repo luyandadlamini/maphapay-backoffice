@@ -196,6 +196,11 @@ final class AppleAppAttestCrypto
         $publicKeyHex = $this->coseEc2P256ToUncompressedHex($cose);
 
         if ($publicKeyHex === null) {
+            $coseKeys = array_keys($cose);
+            $coseKeysWithTypes = array_map(
+                static fn ($k): string => sprintf('%s(%s)', $k, gettype($k)),
+                $coseKeys,
+            );
             Log::warning('App Attest: COSE key format mismatch', [
                 'cose_kty' => $cose[self::COSE_KEY_KTY] ?? null,
                 'cose_crv' => $cose[self::COSE_EC2_CRV] ?? null,
@@ -203,8 +208,13 @@ final class AppleAppAttestCrypto
                 'cose_has_y' => isset($cose[self::COSE_EC2_Y]),
                 'cose_x_length' => isset($cose[self::COSE_EC2_X]) && is_string($cose[self::COSE_EC2_X]) ? strlen($cose[self::COSE_EC2_X]) : null,
                 'cose_y_length' => isset($cose[self::COSE_EC2_Y]) && is_string($cose[self::COSE_EC2_Y]) ? strlen($cose[self::COSE_EC2_Y]) : null,
-                'cose_keys' => array_keys($cose),
+                'cose_keys' => $coseKeys,
+                'cose_keys_with_types' => $coseKeysWithTypes,
+                'expected_kty' => self::COSE_KTY_EC2,
+                'expected_crv' => self::COSE_CRV_P256,
             ]);
+
+            return null;
         }
 
         return $publicKeyHex;
