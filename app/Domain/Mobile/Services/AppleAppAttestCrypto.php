@@ -282,7 +282,11 @@ final class AppleAppAttestCrypto
 
         $clientDataHash = hash('sha256', $challengePlain, true);
         $messageDigest = hash('sha256', $authenticatorData . $clientDataHash, true);
-        $messageDigestHex = bin2hex($messageDigest);
+        // Apple App Attest appears to double-hash before signing:
+        // the assertion signature validates against SHA256(messageDigest),
+        // not against messageDigest directly.
+        $doubleHash = hash('sha256', $messageDigest, true);
+        $doubleHashHex = bin2hex($doubleHash);
 
         // Apple App Attest returns ASN.1 DER-encoded ECDSA signatures.
         // Convert to raw 64-byte R||S format for elliptic-php.
@@ -311,7 +315,8 @@ final class AppleAppAttestCrypto
         Log::info('App Attest: assertion verify details', [
             'auth_data_length' => strlen($authenticatorData),
             'client_data_hash_length' => strlen($clientDataHash),
-            'message_digest_hex' => $messageDigestHex,
+            'message_digest_hex' => bin2hex($messageDigest),
+            'double_hash_hex' => $doubleHashHex,
             'signature_original_length' => $originalSigLen,
             'signature_converted_length' => strlen($signature),
             'r_hex' => $rHex,
@@ -324,7 +329,7 @@ final class AppleAppAttestCrypto
         try {
             $ec = new EC('p256');
             $key = $ec->keyFromPublic($pkHex, 'hex');
-            $ok = $ec->verify($messageDigestHex, new Signature([
+            $ok = $ec->verify($doubleHashHex, new Signature([
                 'r' => $rHex,
                 's' => $sHex,
             ]), $key, 'hex');
@@ -334,7 +339,7 @@ final class AppleAppAttestCrypto
 
         // Fallback: try OpenSSL if elliptic-php fails (or if PHP ext is available)
         if (! $ok && function_exists('openssl_verify')) {
-            $opensslOk = $this->verifyWithOpenssl($messageDigest, $signature, $pkHex);
+            $opensslOk = $this->verifyWithOpenssl($doubleHash, $signature, $pkHex);
             if ($opensslOk === true) {
                 Log::info('App Attest: OpenSSL verified where elliptic-php failed');
                 $ok = true;
@@ -345,7 +350,8 @@ final class AppleAppAttestCrypto
 
         if (! $ok) {
             Log::warning('App Attest: assertion signature invalid', [
-                'message_digest_hex' => $messageDigestHex,
+                'message_digest_hex' => bin2hex($messageDigest),
+                'double_hash_hex' => $doubleHashHex,
                 'r_hex' => $rHex,
                 's_hex' => $sHex,
                 'pk_hex_prefix' => substr($pkHex, 0, 16),
