@@ -283,8 +283,14 @@ final class AppleAppAttestCrypto
         $clientDataHash = hash('sha256', $challengePlain, true);
         $messageDigestHex = bin2hex(hash('sha256', $authenticatorData . $clientDataHash, true));
 
+        // Apple App Attest returns ASN.1 DER-encoded ECDSA signatures.
+        // Convert to raw 64-byte R||S format for elliptic-php.
         if (strlen($signature) !== 64) {
-            return ['verified' => false, 'reason' => 'assertion_signature_length_invalid'];
+            $converted = $this->convertDerEcdsaSignatureToRaw($signature);
+            if ($converted === null) {
+                return ['verified' => false, 'reason' => 'assertion_signature_length_invalid'];
+            }
+            $signature = $converted;
         }
 
         $rHex = bin2hex(substr($signature, 0, 32));
@@ -343,5 +349,69 @@ final class AppleAppAttestCrypto
         }
 
         return '04' . bin2hex($x) . bin2hex($y);
+    }
+
+    /**
+     * Convert ASN.1 DER-encoded ECDSA signature to raw 64-byte R||S.
+     *
+     * @see https://developer.apple.com/documentation/devicecheck/validating_apps_that_connect_to_your_server
+     */
+    private function convertDerEcdsaSignatureToRaw(string $der): ?string
+    {
+        if (strlen($der) < 8 || ord($der[0]) !== 0x30) {
+            return null;
+        }
+
+        $totalLen = ord($der[1]);
+        $offset = 2;
+
+        // Check if length is in long form
+        if ($totalLen & 0x80) {
+            $numLenBytes = $totalLen & 0x7f;
+            if ($numLenBytes > 2 || strlen($der) < 2 + $numLenBytes + 2) {
+                return null;
+            }
+            $totalLen = 0;
+            for ($i = 0; $i < $numLenBytes; $i++) {
+                $totalLen = ($totalLen << 8) | ord($der[2 + $i]);
+            }
+            $offset = 2 + $numLenBytes;
+        }
+
+        if (strlen($der) < $offset + $totalLen) {
+            return null;
+        }
+
+        // Parse R
+        if (ord($der[$offset]) !== 0x02) {
+            return null;
+        }
+        $rLen = ord($der[$offset + 1]);
+        $r = substr($der, $offset + 2, $rLen);
+        // Strip leading zero if present (sign bit padding)
+        if (strlen($r) > 32 && ord($r[0]) === 0x00) {
+            $r = substr($r, 1);
+        }
+        if (strlen($r) > 32) {
+            return null;
+        }
+        $r = str_pad($r, 32, "\x00", STR_PAD_LEFT);
+        $offset += 2 + $rLen;
+
+        // Parse S
+        if (ord($der[$offset]) !== 0x02) {
+            return null;
+        }
+        $sLen = ord($der[$offset + 1]);
+        $s = substr($der, $offset + 2, $sLen);
+        if (strlen($s) > 32 && ord($s[0]) === 0x00) {
+            $s = substr($s, 1);
+        }
+        if (strlen($s) > 32) {
+            return null;
+        }
+        $s = str_pad($s, 32, "\x00", STR_PAD_LEFT);
+
+        return $r . $s;
     }
 }
