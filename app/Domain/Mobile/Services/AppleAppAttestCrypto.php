@@ -281,7 +281,6 @@ final class AppleAppAttestCrypto
         }
 
         $clientDataHash = hash('sha256', $challengePlain, true);
-        $messageDigestHex = bin2hex(hash('sha256', $authenticatorData . $clientDataHash, true));
 
         // Apple App Attest returns ASN.1 DER-encoded ECDSA signatures.
         // Convert to raw 64-byte R||S format for elliptic-php.
@@ -305,7 +304,10 @@ final class AppleAppAttestCrypto
         try {
             $ec = new EC('p256');
             $key = $ec->keyFromPublic($pkHex, 'hex');
-            $ok = $ec->verify($messageDigestHex, new Signature([
+            // elliptic-php hashes the message internally with SHA-256 for P-256,
+            // so pass the raw concatenation (not a pre-computed hash).
+            $messageHex = bin2hex($authenticatorData . $clientDataHash);
+            $ok = $ec->verify($messageHex, new Signature([
                 'r' => $rHex,
                 's' => $sHex,
             ]), $key, 'hex');
