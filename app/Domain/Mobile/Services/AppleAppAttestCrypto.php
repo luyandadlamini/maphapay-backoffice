@@ -281,12 +281,19 @@ final class AppleAppAttestCrypto
         }
 
         $clientDataHash = hash('sha256', $challengePlain, true);
+        $messageDigest = hash('sha256', $authenticatorData . $clientDataHash, true);
+        $messageDigestHex = bin2hex($messageDigest);
 
         // Apple App Attest returns ASN.1 DER-encoded ECDSA signatures.
         // Convert to raw 64-byte R||S format for elliptic-php.
-        if (strlen($signature) !== 64) {
+        $originalSigLen = strlen($signature);
+        if ($originalSigLen !== 64) {
             $converted = $this->convertDerEcdsaSignatureToRaw($signature);
             if ($converted === null) {
+                Log::warning('App Attest: DER signature conversion failed', [
+                    'original_length' => $originalSigLen,
+                    'first_bytes_hex' => bin2hex(substr($signature, 0, 8)),
+                ]);
                 return ['verified' => false, 'reason' => 'assertion_signature_length_invalid'];
             }
             $signature = $converted;
@@ -301,23 +308,48 @@ final class AppleAppAttestCrypto
             return ['verified' => false, 'reason' => 'credential_public_key_hex_invalid'];
         }
 
+        Log::info('App Attest: assertion verify details', [
+            'auth_data_length' => strlen($authenticatorData),
+            'client_data_hash_length' => strlen($clientDataHash),
+            'message_digest_hex' => $messageDigestHex,
+            'signature_original_length' => $originalSigLen,
+            'signature_converted_length' => strlen($signature),
+            'r_hex' => $rHex,
+            's_hex' => $sHex,
+            'pk_hex' => $pkHex,
+        ]);
+
+        $ok = false;
+
         try {
             $ec = new EC('p256');
             $key = $ec->keyFromPublic($pkHex, 'hex');
-            // elliptic-php hashes the message internally with SHA-256 for P-256,
-            // so pass the raw concatenation (not a pre-computed hash).
-            $messageHex = bin2hex($authenticatorData . $clientDataHash);
-            $ok = $ec->verify($messageHex, new Signature([
+            $ok = $ec->verify($messageDigestHex, new Signature([
                 'r' => $rHex,
                 's' => $sHex,
             ]), $key, 'hex');
         } catch (\Throwable $e) {
-            Log::warning('App Attest: assertion verify exception', ['message' => $e->getMessage()]);
+            Log::warning('App Attest: elliptic-php verify exception', ['message' => $e->getMessage()]);
+        }
 
-            return ['verified' => false, 'reason' => 'assertion_signature_verify_exception'];
+        // Fallback: try OpenSSL if elliptic-php fails (or if PHP ext is available)
+        if (! $ok && function_exists('openssl_verify')) {
+            $opensslOk = $this->verifyWithOpenssl($messageDigest, $signature, $pkHex);
+            if ($opensslOk === true) {
+                Log::info('App Attest: OpenSSL verified where elliptic-php failed');
+                $ok = true;
+            } elseif ($opensslOk === false) {
+                Log::info('App Attest: OpenSSL also failed');
+            }
         }
 
         if (! $ok) {
+            Log::warning('App Attest: assertion signature invalid', [
+                'message_digest_hex' => $messageDigestHex,
+                'r_hex' => $rHex,
+                's_hex' => $sHex,
+                'pk_hex_prefix' => substr($pkHex, 0, 16),
+            ]);
             return ['verified' => false, 'reason' => 'assertion_signature_invalid'];
         }
 
@@ -415,5 +447,65 @@ final class AppleAppAttestCrypto
         $s = str_pad($s, 32, "\x00", STR_PAD_LEFT);
 
         return $r . $s;
+    }
+
+    /**
+     * Verify an ECDSA P-256 signature using OpenSSL as a fallback.
+     *
+     * @param  string  $messageDigest  32-byte SHA-256 digest of the signed message
+     * @param  string  $signatureRaw   64-byte raw R||S signature
+     * @param  string  $publicKeyHex   130-char uncompressed hex public key (04 + X + Y)
+     * @return bool|null  true = verified, false = invalid, null = OpenSSL error
+     */
+    private function verifyWithOpenssl(string $messageDigest, string $signatureRaw, string $publicKeyHex): ?bool
+    {
+        try {
+            // Build uncompressed point DER: 0x04 <65 bytes>
+            $pointDer = hex2bin(substr($publicKeyHex, 2));
+            if ($pointDer === false) {
+                return null;
+            }
+
+            // Build SubjectPublicKeyInfo for P-256
+            // AlgorithmIdentifier for EC P-256:
+            // SEQUENCE { OID ecPublicKey (1.2.840.10045.2.1), OID prime256v1 (1.2.840.10045.3.1.7) }
+            $algoId = hex2bin('301306072a8648ce3d020106082a8648ce3d030107');
+            if ($algoId === false) {
+                return null;
+            }
+
+            $spki = "\x30" . self::encodeAsn1Length(strlen($algoId) + 1 + strlen($pointDer))
+                . $algoId . "\x03" . self::encodeAsn1Length(1 + strlen($pointDer)) . "\x00" . $pointDer;
+
+            $pem = "-----BEGIN PUBLIC KEY-----\n"
+                . chunk_split(base64_encode($spki), 64, "\n")
+                . '-----END PUBLIC KEY-----';
+
+            $result = openssl_verify($messageDigest, $signatureRaw, $pem, OPENSSL_ALGO_SHA256);
+
+            return $result === 1;
+        } catch (\Throwable $e) {
+            Log::warning('App Attest: OpenSSL verify exception', ['message' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Encode an integer as ASN.1 length bytes.
+     */
+    private static function encodeAsn1Length(int $length): string
+    {
+        if ($length < 0x80) {
+            return chr($length);
+        }
+
+        $bytes = '';
+        while ($length > 0) {
+            $bytes = chr($length & 0xff) . $bytes;
+            $length >>= 8;
+        }
+
+        return chr(0x80 | strlen($bytes)) . $bytes;
     }
 }
