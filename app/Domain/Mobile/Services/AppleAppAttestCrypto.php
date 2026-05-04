@@ -332,7 +332,9 @@ final class AppleAppAttestCrypto
         $x = $cose[self::COSE_EC2_X] ?? null;
         $y = $cose[self::COSE_EC2_Y] ?? null;
 
-        if ($kty !== self::COSE_KTY_EC2 || $crv !== self::COSE_CRV_P256) {
+        // cbor-php normalizes unsigned integers as numeric strings,
+        // so compare loosely (string "2" == int 2).
+        if ($kty != self::COSE_KTY_EC2 || $crv != self::COSE_CRV_P256) {
             return null;
         }
 
