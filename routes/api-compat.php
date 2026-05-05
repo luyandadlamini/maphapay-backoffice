@@ -35,6 +35,7 @@ use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyReceivedStor
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyRejectController;
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyStoreController;
 use App\Http\Controllers\Api\Compatibility\Rewards\RewardsController;
+use App\Http\Controllers\Api\Compatibility\Rewards\RewardsRedeemController;
 use App\Http\Controllers\Api\Compatibility\Rewards\RewardsPointsController;
 use App\Http\Controllers\Api\Compatibility\Rewards\RewardsSyncController;
 use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendCancelController;
@@ -57,9 +58,11 @@ use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyPinControll
 use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardAddFundController;
 use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardCancelController;
 use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardEnsureDefaultController;
+use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardFreezeController;
 use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardListController;
 use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardStoreAdditionalController;
 use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardTransactionController;
+use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardUnfreezeController;
 use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardViewController;
 use App\Http\Controllers\Api\Compatibility\WalletLinking\WalletLinkingController;
 use App\Http\Controllers\Api\PublicMinorFundingLinkController;
@@ -270,6 +273,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('maphapay.compat.rewards.points');
     Route::get('rewards/sync', RewardsSyncController::class)
         ->name('maphapay.compat.rewards.sync');
+    Route::post('rewards/redeem', RewardsRedeemController::class)
+        ->name('maphapay.compat.rewards.redeem');
 });
 
 Route::middleware('auth:sanctum')
@@ -367,6 +372,14 @@ Route::middleware('auth:sanctum')
 Route::middleware('auth:sanctum')
     ->post('virtual-card/cancel/{id}', VirtualCardCancelController::class)
     ->name('maphapay.compat.virtual-card.cancel');
+
+Route::middleware('auth:sanctum')
+    ->post('virtual-card/freeze/{id}', VirtualCardFreezeController::class)
+    ->name('maphapay.compat.virtual-card.freeze');
+
+Route::middleware('auth:sanctum')
+    ->post('virtual-card/unfreeze/{id}', VirtualCardUnfreezeController::class)
+    ->name('maphapay.compat.virtual-card.unfreeze');
 
 Route::middleware('auth:sanctum')
     ->get('virtual-card/transaction', VirtualCardTransactionController::class)

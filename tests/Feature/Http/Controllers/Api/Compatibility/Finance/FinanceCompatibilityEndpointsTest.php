@@ -325,6 +325,45 @@ class FinanceCompatibilityEndpointsTest extends ControllerTestCase
     }
 
     #[Test]
+    public function test_rewards_redeem_endpoint_uses_compat_contract_and_uuid_ids(): void
+    {
+        [$user] = $this->makeUserWithAccount();
+
+        RewardProfile::create([
+            'user_id' => $user->id,
+            'points_balance' => 1000,
+        ]);
+
+        $reward = RewardShopItem::create([
+            'slug' => 'bronze-tier',
+            'title' => 'Bronze Tier',
+            'description' => 'Unlock bronze perks',
+            'points_cost' => 250,
+            'category' => 'tiers',
+            'icon' => 'medal',
+            'stock' => 10,
+            'is_active' => true,
+            'sort_order' => 1,
+        ]);
+
+        $this->postJson('/api/rewards/redeem', [
+            'reward_id' => $reward->id,
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('remark', 'reward_redeem')
+            ->assertJsonPath('data.item_id', $reward->id)
+            ->assertJsonPath('data.points_spent', 250)
+            ->assertJsonPath('data.points_balance', 750);
+
+        $this->assertDatabaseHas('reward_redemptions', [
+            'reward_profile_id' => RewardProfile::where('user_id', $user->id)->firstOrFail()->id,
+            'shop_item_id' => $reward->id,
+            'status' => 'completed',
+        ]);
+    }
+
+    #[Test]
     public function test_push_notification_compat_endpoints_list_mark_read_and_sync(): void
     {
         [$user] = $this->makeUserWithAccount();

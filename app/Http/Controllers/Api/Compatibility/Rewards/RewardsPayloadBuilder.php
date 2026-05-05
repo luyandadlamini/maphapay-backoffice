@@ -20,7 +20,7 @@ class RewardsPayloadBuilder
         $profile = $this->profile($user);
         $redeemedItemIds = RewardRedemption::query()
             ->where('reward_profile_id', $profile->id)
-            ->where('status', 'completed')
+            ->whereIn('status', ['completed', 'fulfilled'])
             ->pluck('shop_item_id')
             ->all();
 
