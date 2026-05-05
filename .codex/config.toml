@@ -1,0 +1,10 @@
+[mcp_servers.herd]
+args = ["/Users/Lihle/Library/Application Support/Herd/bin/herd-mcp.phar"]
+command = "/Users/Lihle/Library/Application Support/Herd/bin/php85"
+
+[mcp_servers.herd.env]
+HERD_SITE_PATH = "/Users/Lihle/Development/Coding/maphapay-backoffice"
+
+[mcp_servers.maphapay-graph]
+args = ["/Users/Lihle/.local/share/maphapay-graph-mcp/index.js"]
+command = "node"
