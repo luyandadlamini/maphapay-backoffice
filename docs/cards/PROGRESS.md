@@ -46,7 +46,7 @@ Phase numbers map 1:1 to [`09-implementation-phases.md`](./09-implementation-pha
 | # | Task | Status | Started | Completed | Commit | Notes |
 |---:|---|---|---|---|---|---|
 | 0.1 | Locate legacy virtual-card controllers (`grep -rn "virtual-card" routes/ app/Http/Controllers/`) and list them in this row's notes | done | 2026-05-08 | 2026-05-08 | _this_commit_ | Legacy surface: `routes/api-compat.php` imports/registers 9 `/api/virtual-card/*` routes for list, view, ensure-default, store-additional, add-fund, cancel, freeze, unfreeze, transaction. Controllers live in `app/Http/Controllers/Api/Compatibility/VirtualCard/`. Keep `app/Domain/CardIssuance/*` per docs. |
-| 0.2 | Delete legacy virtual-card controller files | in_progress | 2026-05-08 | — | — | Deleting only `app/Http/Controllers/Api/Compatibility/VirtualCard/`; retained `app/Domain/CardIssuance/`. |
+| 0.2 | Delete legacy virtual-card controller files | done | 2026-05-08 | 2026-05-08 | _this_commit_ | Deleted all 9 controller files under `app/Http/Controllers/Api/Compatibility/VirtualCard/`; retained `app/Domain/CardIssuance/`. |
 | 0.3 | Remove route registrations for `/api/virtual-card/*` in `routes/api.php` and `routes/api-compat.php` | pending | — | — | — | |
 | 0.4 | Delete any service that exists only to serve those endpoints | pending | — | — | — | |
 | 0.5 | Run existing test suite: `vendor/bin/pest`. Delete tests that depend on legacy endpoints | pending | — | — | — | |
