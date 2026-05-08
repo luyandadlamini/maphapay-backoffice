@@ -45,7 +45,7 @@ Phase numbers map 1:1 to [`09-implementation-phases.md`](./09-implementation-pha
 
 | # | Task | Status | Started | Completed | Commit | Notes |
 |---:|---|---|---|---|---|---|
-| 0.1 | Locate legacy virtual-card controllers (`grep -rn "virtual-card" routes/ app/Http/Controllers/`) and list them in this row's notes | pending | — | — | — | |
+| 0.1 | Locate legacy virtual-card controllers (`grep -rn "virtual-card" routes/ app/Http/Controllers/`) and list them in this row's notes | in_progress | 2026-05-08 | — | — | Locating current route/controller/service references before demolition. |
 | 0.2 | Delete legacy virtual-card controller files | pending | — | — | — | |
 | 0.3 | Remove route registrations for `/api/virtual-card/*` in `routes/api.php` and `routes/api-compat.php` | pending | — | — | — | |
 | 0.4 | Delete any service that exists only to serve those endpoints | pending | — | — | — | |
