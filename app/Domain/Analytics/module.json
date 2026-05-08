@@ -1,0 +1,27 @@
+{
+    "$schema": "https://finaegis.io/schemas/module.json",
+    "name": "finaegis/analytics",
+    "version": "1.0.0",
+    "description": "Analytics read models, revenue presentation, and unit economics reporting",
+    "type": "optional",
+    "dependencies": {
+        "required": {
+            "finaegis/shared": "^1.0"
+        },
+        "optional": {
+            "finaegis/account": "^1.0",
+            "finaegis/monitoring": "^1.0"
+        }
+    },
+    "provides": {
+        "interfaces": [
+            "CorMarginBridgeDataPort",
+            "UnitEconomicsDataPort"
+        ],
+        "events": [],
+        "commands": []
+    },
+    "paths": {
+        "tests": "Tests"
+    }
+}

@@ -20,6 +20,8 @@ class MobileDeviceServiceTest extends TestCase
     {
         parent::setUp();
 
+        MobileDevice::query()->delete();
+
         $this->service = new MobileDeviceService();
         $this->user = User::factory()->create();
     }

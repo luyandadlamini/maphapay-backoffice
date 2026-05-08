@@ -44,7 +44,7 @@ class MinorCardRequest extends Model
     /** @return BelongsTo<Account, self> */
     public function minorAccount(): BelongsTo
     {
-        return $this->belongsTo(Account::class, 'minor_account_uuid');
+        return $this->belongsTo(Account::class, 'minor_account_uuid', 'uuid');
     }
 
     public function isPending(): bool

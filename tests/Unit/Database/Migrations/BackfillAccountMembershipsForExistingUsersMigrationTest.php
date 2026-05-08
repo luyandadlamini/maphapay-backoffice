@@ -43,7 +43,7 @@ class BackfillAccountMembershipsForExistingUsersMigrationTest extends BaseTestCa
 
 #[Test]
     #[Ignore]
-    public function it_backfills_missing_memberships_and_only_removes_its_own_rows_on_rollback(): void
+    public function it_backfills_missing_memberships_and_preserves_live_rows_on_rollback(): void
     {
         $user = User::factory()->create();
         $team = Team::factory()->create([
@@ -112,7 +112,9 @@ class BackfillAccountMembershipsForExistingUsersMigrationTest extends BaseTestCa
             ->where('tenant_id', $tenantId)
             ->delete();
 
-        $initialCount = AccountMembership::query()->count();
+        $initialTenantCount = AccountMembership::query()
+            ->where('tenant_id', $tenantId)
+            ->count();
 
         $migration = require base_path('database/migrations/2026_04_15_200000_backfill_account_memberships_for_existing_users.php');
         $migration->up();
@@ -121,7 +123,7 @@ class BackfillAccountMembershipsForExistingUsersMigrationTest extends BaseTestCa
             ->where('tenant_id', $tenantId)
             ->get();
 
-        $this->assertSame($initialCount + 2, AccountMembership::query()->count());
+        $this->assertSame($initialTenantCount + 2, $backfilled->count());
 
         $personalMembership = $backfilled->firstWhere('account_uuid', 'acc-personal-backfill');
         $this->assertNotNull($personalMembership);
@@ -139,7 +141,11 @@ class BackfillAccountMembershipsForExistingUsersMigrationTest extends BaseTestCa
 
         $migration->down();
 
-        $remainingCount = AccountMembership::query()->count();
-        $this->assertSame($initialCount, $remainingCount, 'down() should only remove memberships this migration created');
+        $remainingTenantMemberships = AccountMembership::query()
+            ->where('tenant_id', $tenantId)
+            ->get();
+        $this->assertSame($initialTenantCount + 2, $remainingTenantMemberships->count(), 'down() is intentionally non-destructive so backfilled memberships remain live access records');
+        $this->assertNotNull($remainingTenantMemberships->firstWhere('account_uuid', 'acc-personal-backfill'));
+        $this->assertNotNull($remainingTenantMemberships->firstWhere('account_uuid', 'acc-merchant-existing'));
     }
 }

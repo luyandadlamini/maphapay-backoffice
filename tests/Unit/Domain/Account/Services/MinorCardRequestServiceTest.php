@@ -156,6 +156,11 @@ class MinorCardRequestServiceTest extends BaseTestCase
             'expires_at'             => now()->addHours(72),
         ]);
 
+        $this->accessService->shouldReceive('hasGuardianAccess')
+            ->once()
+            ->with($guardian, Mockery::on(fn ($account) => $account instanceof Account && $account->uuid === $minorAccount->uuid))
+            ->andReturn(true);
+
         $result = $this->service->approve($guardian, $request);
 
         $this->assertEquals(MinorCardConstants::STATUS_APPROVED, $result->status);
@@ -185,6 +190,11 @@ class MinorCardRequestServiceTest extends BaseTestCase
             'expires_at'             => now()->addHours(72),
         ]);
 
+        $this->accessService->shouldReceive('hasGuardianAccess')
+            ->once()
+            ->with($guardian, Mockery::on(fn ($account) => $account instanceof Account && $account->uuid === $minorAccount->uuid))
+            ->andReturn(true);
+
         $result = $this->service->deny($guardian, $request, 'Insufficient information provided');
 
         $this->assertEquals(MinorCardConstants::STATUS_DENIED, $result->status);
@@ -213,6 +223,11 @@ class MinorCardRequestServiceTest extends BaseTestCase
             'requested_network'      => 'visa',
             'expires_at'             => now()->subHours(1),
         ]);
+
+        $this->accessService->shouldReceive('hasGuardianAccess')
+            ->once()
+            ->with($guardian, Mockery::on(fn ($account) => $account instanceof Account && $account->uuid === $minorAccount->uuid))
+            ->andReturn(true);
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Request cannot be approved in its current state');
