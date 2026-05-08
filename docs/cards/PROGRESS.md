@@ -49,7 +49,7 @@ Phase numbers map 1:1 to [`09-implementation-phases.md`](./09-implementation-pha
 | 0.2 | Delete legacy virtual-card controller files | done | 2026-05-08 | 2026-05-08 | _this_commit_ | Deleted all 9 controller files under `app/Http/Controllers/Api/Compatibility/VirtualCard/`; retained `app/Domain/CardIssuance/`. |
 | 0.3 | Remove route registrations for `/api/virtual-card/*` in `routes/api.php` and `routes/api-compat.php` | done | 2026-05-08 | 2026-05-08 | _this_commit_ | Removed 9 compatibility route registrations and imports from `routes/api-compat.php`; `routes/api.php` had no matches. `php -l routes/api-compat.php` passes and `rg "virtual-card\|VirtualCard" routes/api.php routes/api-compat.php` is empty. |
 | 0.4 | Delete any service that exists only to serve those endpoints | done | 2026-05-08 | 2026-05-08 | _this_commit_ | No legacy-only service exists. Deleted controllers used shared `CardProvisioningService` / `HighRiskActionTrustPolicy`; remaining `VirtualCard` references are retained `CardIssuance`, GraphQL, feature flags, or tests. |
-| 0.5 | Run existing test suite: `vendor/bin/pest`. Delete tests that depend on legacy endpoints | in_progress | 2026-05-08 | — | — | Running `vendor/bin/pest`; will delete only tests that depend on removed `/api/virtual-card/*` compatibility endpoints. |
+| 0.5 | Run existing test suite: `vendor/bin/pest`. Delete tests that depend on legacy endpoints | in_progress | 2026-05-08 | — | — | Deleted endpoint-dependent tests `VirtualCardCancelTrustPolicyTest.php` and `VirtualCardFreezeControllerTest.php`. `rg 'api/virtual-card\|/virtual-card\|virtual-card' tests app routes` now only finds unrelated feature-flag label text. `vendor/bin/pest` did not pass: unrelated failures appeared in `BackfillAccountMembershipsForExistingUsersMigrationTest`, `MinorCardRequestServiceTest`, `AmlScreeningAggregateTest`, `LiquidityPoolServiceTest`, `MobileDeviceServiceTest`, and `ModuleManifestCompletenessTest`, then the run stalled in multi-tenancy tests and was killed. Scoped retained-domain check passes: `vendor/bin/pest tests/Domain/CardIssuance/ValueObjects/VirtualCardTest.php`. |
 | 0.6 | Verify `php artisan route:list \| grep virtual-card` returns nothing | pending | — | — | — | |
 
 Acceptance: no legacy routes; full test suite passes.
@@ -336,13 +336,21 @@ Example future entry:
 
 | Task | Blocker | Owner | Date raised |
 |---|---|---|---|
-| — | — | — | — |
+| 0.5 | Full `vendor/bin/pest` has unrelated baseline failures and stalled in multi-tenancy tests after the Phase 0 endpoint-test deletions. | Codex/user | 2026-05-08 |
 
 ---
 
 ## Handoff log
 
 Append a new entry every session. Most recent on top.
+
+### 2026-05-08 — backend phase 0 demolition partial (codex-gpt-5)
+
+- Completed: phase 0 tasks 0.1–0.4. Removed 9 legacy `/api/virtual-card/*` route registrations/imports and deleted 9 compatibility controllers under `app/Http/Controllers/Api/Compatibility/VirtualCard/`.
+- Stopped at: phase 0 task 0.5, still `in_progress` because the required full `vendor/bin/pest` gate did not pass/complete.
+- Task-specific cleanup done: deleted `tests/Feature/Http/Controllers/Api/Compatibility/VirtualCard/VirtualCardCancelTrustPolicyTest.php` and `VirtualCardFreezeControllerTest.php`.
+- Verification: `php -l routes/api-compat.php` passes; `rg "virtual-card|VirtualCard" routes/api.php routes/api-compat.php` is empty; `vendor/bin/pest tests/Domain/CardIssuance/ValueObjects/VirtualCardTest.php` passes.
+- Blocker: full `vendor/bin/pest` showed unrelated failures in account backfill, minor card request, AML aggregate, liquidity pool, mobile device, and module manifest tests, then stalled in multi-tenancy tests and was killed. Next session should decide whether to fix baseline or accept targeted verification before task 0.6.
 
 ### 2026-05-08 — initial planning + doc set published (claude-opus-4-7)
 
