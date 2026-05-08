@@ -55,15 +55,6 @@ use App\Http\Controllers\Api\Compatibility\VerificationProcess\ChallengeBiometri
 use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyBiometricController;
 use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyOtpController;
 use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyPinController;
-use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardAddFundController;
-use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardCancelController;
-use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardEnsureDefaultController;
-use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardFreezeController;
-use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardListController;
-use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardStoreAdditionalController;
-use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardTransactionController;
-use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardUnfreezeController;
-use App\Http\Controllers\Api\Compatibility\VirtualCard\VirtualCardViewController;
 use App\Http\Controllers\Api\Compatibility\WalletLinking\WalletLinkingController;
 use App\Http\Controllers\Api\PublicMinorFundingLinkController;
 use App\Http\Controllers\Api\SocialMoney\GroupController;
@@ -348,42 +339,6 @@ Route::middleware('auth:sanctum')
 Route::middleware('auth:sanctum')
     ->delete('budget/categories/{id}', BudgetCategoriesDeleteController::class)
     ->name('maphapay.compat.budget.categories.delete');
-
-Route::middleware('auth:sanctum')
-    ->get('virtual-card/list', VirtualCardListController::class)
-    ->name('maphapay.compat.virtual-card.list');
-
-Route::middleware('auth:sanctum')
-    ->get('virtual-card/view/{id}', VirtualCardViewController::class)
-    ->name('maphapay.compat.virtual-card.view');
-
-Route::middleware('auth:sanctum')
-    ->post('virtual-card/ensure-default', VirtualCardEnsureDefaultController::class)
-    ->name('maphapay.compat.virtual-card.ensure-default');
-
-Route::middleware('auth:sanctum')
-    ->post('virtual-card/store-additional', VirtualCardStoreAdditionalController::class)
-    ->name('maphapay.compat.virtual-card.store-additional');
-
-Route::middleware('auth:sanctum')
-    ->post('virtual-card/add/fund/{id}', VirtualCardAddFundController::class)
-    ->name('maphapay.compat.virtual-card.add-fund');
-
-Route::middleware('auth:sanctum')
-    ->post('virtual-card/cancel/{id}', VirtualCardCancelController::class)
-    ->name('maphapay.compat.virtual-card.cancel');
-
-Route::middleware('auth:sanctum')
-    ->post('virtual-card/freeze/{id}', VirtualCardFreezeController::class)
-    ->name('maphapay.compat.virtual-card.freeze');
-
-Route::middleware('auth:sanctum')
-    ->post('virtual-card/unfreeze/{id}', VirtualCardUnfreezeController::class)
-    ->name('maphapay.compat.virtual-card.unfreeze');
-
-Route::middleware('auth:sanctum')
-    ->get('virtual-card/transaction', VirtualCardTransactionController::class)
-    ->name('maphapay.compat.virtual-card.transaction');
 
 Route::prefix('savings/group-pockets')->middleware('auth:sanctum')->group(function (): void {
     Route::get('/', [App\Http\Controllers\Api\GroupSavings\GroupPocketController::class, 'index']);
