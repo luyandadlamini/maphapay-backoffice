@@ -80,6 +80,7 @@ class CardPlansSeededTest extends TestCase
         $this->assertSame(300, (int) $plan->fx_markup_bps);
         $this->assertSame(1, (int) $plan->free_virtual_reissues_per_month);
         $this->assertFalse((bool) $plan->atm_enabled);
+        $this->assertSame('20.00', $plan->virtual_card_replacement_fee);
     }
 
     #[Test]
@@ -114,6 +115,8 @@ class CardPlansSeededTest extends TestCase
         $this->assertSame(5, (int) $plan->max_virtual_cards);
         $this->assertSame(1, (int) $plan->max_physical_cards);
         $this->assertSame('15000.00', $plan->single_transaction_limit);
+        $this->assertSame('25000.00', $plan->daily_card_spend_limit);
+        $this->assertSame('60000.00', $plan->monthly_card_spend_limit);
         $this->assertTrue((bool) $plan->atm_enabled);
         $this->assertSame('3000.00', $plan->atm_daily_limit);
         $this->assertSame('10000.00', $plan->atm_monthly_limit);
@@ -123,6 +126,7 @@ class CardPlansSeededTest extends TestCase
         $this->assertSame('0.00', $plan->physical_card_issuance_fee);
         $this->assertSame('60.00', $plan->physical_card_replacement_fee);
         $this->assertSame(2, (int) $plan->free_virtual_reissues_per_month);
+        $this->assertSame('adult', $plan->eligibility);
     }
 
     #[Test]
