@@ -49,7 +49,7 @@ Phase numbers map 1:1 to [`09-implementation-phases.md`](./09-implementation-pha
 | 0.2 | Delete legacy virtual-card controller files | done | 2026-05-08 | 2026-05-08 | _this_commit_ | Deleted all 9 controller files under `app/Http/Controllers/Api/Compatibility/VirtualCard/`; retained `app/Domain/CardIssuance/`. |
 | 0.3 | Remove route registrations for `/api/virtual-card/*` in `routes/api.php` and `routes/api-compat.php` | done | 2026-05-08 | 2026-05-08 | _this_commit_ | Removed 9 compatibility route registrations and imports from `routes/api-compat.php`; `routes/api.php` had no matches. `php -l routes/api-compat.php` passes and `rg "virtual-card\|VirtualCard" routes/api.php routes/api-compat.php` is empty. |
 | 0.4 | Delete any service that exists only to serve those endpoints | done | 2026-05-08 | 2026-05-08 | _this_commit_ | No legacy-only service exists. Deleted controllers used shared `CardProvisioningService` / `HighRiskActionTrustPolicy`; remaining `VirtualCard` references are retained `CardIssuance`, GraphQL, feature flags, or tests. |
-| 0.5 | Run existing test suite: `vendor/bin/pest`. Delete tests that depend on legacy endpoints | pending | — | — | — | |
+| 0.5 | Run existing test suite: `vendor/bin/pest`. Delete tests that depend on legacy endpoints | in_progress | 2026-05-08 | — | — | Running `vendor/bin/pest`; will delete only tests that depend on removed `/api/virtual-card/*` compatibility endpoints. |
 | 0.6 | Verify `php artisan route:list \| grep virtual-card` returns nothing | pending | — | — | — | |
 
 Acceptance: no legacy routes; full test suite passes.
