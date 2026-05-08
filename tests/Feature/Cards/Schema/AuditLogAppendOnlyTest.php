@@ -72,19 +72,18 @@ class AuditLogAppendOnlyTest extends TestCase
     }
 
     #[Test]
-    public function it_documents_update_is_blocked_at_application_layer(): void
+    public function it_has_no_db_level_update_protection_pending_phase_11(): void
     {
-        // DB-level UPDATE/DELETE prevention is enforced at the application layer,
-        // not via a DB trigger in this migration (Phase 11 security audit adds
-        // the DB-level verification). This test documents the schema contract:
-        // card_audit_logs has no updated_at and must only be written via
-        // CardAuditLogService::append() which never issues UPDATE or DELETE.
+        // Phase 1 establishes the schema contract (no updated_at, append-only design).
+        // DB-level UPDATE/DELETE prevention (trigger or RLS policy) is a Phase 11
+        // security-audit task (11.3). This test is INCOMPLETE until that work lands.
         //
-        // Phase 11 task 11.3 will manually verify that the audit service
-        // rejects PAN-bearing content and that no update path exists.
-        $this->assertFalse(
-            Schema::hasColumn('card_audit_logs', 'updated_at'),
-            'Absence of updated_at is the schema-level append-only contract.',
+        // When Phase 11 is done, replace $this->markTestIncomplete() with:
+        //   $this->expectException(\Illuminate\Database\QueryException::class);
+        //   DB::table('card_audit_logs')->where('id', $id)->update(['actor_type' => 'hacked']);
+        $this->markTestIncomplete(
+            'DB-level UPDATE enforcement not yet implemented — see Phase 11 task 11.3. ' .
+            'Application-layer enforcement is via CardAuditLogService::append() which never calls UPDATE.',
         );
     }
 }
