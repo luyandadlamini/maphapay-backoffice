@@ -124,9 +124,12 @@ class CardSubscriptionService
         $oldPlanCode = $subscription->plan?->code ?? '';
 
         DB::transaction(function () use ($subscription, $newPlan): void {
-            $subscription->lockForUpdate();
+            $locked = CardSubscription::where('id', $subscription->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+            $locked->card_plan_id = $newPlan->id;
+            $locked->save();
             $subscription->card_plan_id = $newPlan->id;
-            $subscription->save();
         });
 
         $subscription->refresh();
@@ -181,34 +184,37 @@ class CardSubscriptionService
 
         $excess = $activeVirtualCount - $newPlan->max_virtual_cards;
 
-        if ($excess > 0) {
-            if (! $force) {
-                throw new EntitlementDeniedException(
-                    CardErrorCode::VIRTUAL_CARD_LIMIT_REACHED,
-                    'Downgrade requires card reduction.',
-                );
-            }
-
-            // Freeze excess virtual cards, latest-created first.
-            $cardsToFreeze = $subscription->cards()
-                ->where('status', 'active')
-                ->where('kind', 'virtual')
-                ->orderByDesc('created_at')
-                ->limit($excess)
-                ->get();
-
-            foreach ($cardsToFreeze as $card) {
-                $card->status = 'frozen_by_user';
-                $card->save();
-            }
+        if ($excess > 0 && ! $force) {
+            throw new EntitlementDeniedException(
+                CardErrorCode::VIRTUAL_CARD_LIMIT_REACHED,
+                'Downgrade requires card reduction.',
+            );
         }
 
         $oldPlanCode = $subscription->plan?->code ?? '';
 
-        DB::transaction(function () use ($subscription, $newPlan): void {
-            $subscription->lockForUpdate();
+        DB::transaction(function () use ($subscription, $newPlan, $excess): void {
+            $locked = CardSubscription::where('id', $subscription->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+            $locked->card_plan_id = $newPlan->id;
+            $locked->save();
             $subscription->card_plan_id = $newPlan->id;
-            $subscription->save();
+
+            if ($excess > 0) {
+                // Freeze excess virtual cards, latest-created first.
+                $cardsToFreeze = $locked->cards()
+                    ->where('status', 'active')
+                    ->where('kind', 'virtual')
+                    ->orderByDesc('created_at')
+                    ->limit($excess)
+                    ->get();
+
+                foreach ($cardsToFreeze as $card) {
+                    $card->status = 'frozen_by_user';
+                    $card->save();
+                }
+            }
         });
 
         $subscription->refresh();
@@ -230,16 +236,16 @@ class CardSubscriptionService
      */
     public function cancel(User $subscriber): CardSubscription
     {
-        $subscription = CardSubscription::where('subscriber_user_id', $subscriber->id)
-            ->whereNotIn('status', [CardSubscriptionStatus::Cancelled->value])
-            ->lockForUpdate()
-            ->latest()
-            ->firstOrFail();
-
-        DB::transaction(function () use ($subscription): void {
+        $subscription = DB::transaction(function () use ($subscriber): CardSubscription {
+            $subscription = CardSubscription::where('subscriber_user_id', $subscriber->id)
+                ->whereNotIn('status', [CardSubscriptionStatus::Cancelled->value])
+                ->lockForUpdate()
+                ->latest()
+                ->firstOrFail();
             $subscription->status       = CardSubscriptionStatus::Cancelled;
             $subscription->cancelled_at = now();
             $subscription->save();
+            return $subscription;
         });
 
         $this->audit->recordSubscriptionEvent('subscription.cancelled', $subscription, null);
