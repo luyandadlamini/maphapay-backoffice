@@ -12,7 +12,7 @@ return new class () extends Migration {
         Schema::create('card_fees', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('tenant_id')->nullable()->index();
-            $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete(); // payer
+            $table->uuid('user_id'); // payer; central users table lives outside tenant DBs
             $table->uuid('related_entity_id')->nullable()->index();
             $table->string('related_entity_type', 64)->nullable();
 

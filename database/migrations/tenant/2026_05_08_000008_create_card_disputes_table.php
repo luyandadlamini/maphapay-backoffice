@@ -12,8 +12,8 @@ return new class () extends Migration {
         Schema::create('card_disputes', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('tenant_id')->nullable()->index();
-            $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignUuid('card_transaction_id')->constrained('card_transactions')->cascadeOnDelete();
+            $table->uuid('user_id'); // central users table lives outside tenant DBs
+            $table->uuid('card_transaction_id'); // central card_transactions table lives outside tenant DBs
             $table->string('reason', 32);
             // Allowed: unrecognised, duplicate, wrong_amount, service_not_received, other
             $table->string('status', 16)->default('submitted');

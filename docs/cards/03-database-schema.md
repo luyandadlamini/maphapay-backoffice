@@ -112,14 +112,14 @@ Schema::create('card_subscriptions', function (Blueprint $table) {
     $table->uuid('id')->primary();
     $table->uuid('tenant_id')->nullable()->index();
 
-    // Subscriber: the user whose cards are billed by this subscription
-    $table->foreignUuid('subscriber_user_id')->constrained('users')->cascadeOnDelete();
+    // Subscriber: central users table lives outside tenant DBs
+    $table->uuid('subscriber_user_id');
 
-    // Payer: the wallet that gets debited (= subscriber for adults; = guardian for minors)
-    $table->foreignUuid('payer_user_id')->constrained('users')->cascadeOnDelete();
+    // Payer: central users table lives outside tenant DBs
+    $table->uuid('payer_user_id');
 
-    // Plan
-    $table->foreignUuid('card_plan_id')->constrained('card_plans');
+    // Plan: global card_plans table lives in the central DB
+    $table->uuid('card_plan_id');
 
     // Status
     $table->string('status', 32)->default('active');
@@ -161,7 +161,9 @@ The unique partial index ensures a user can have only one non-cancelled subscrip
 Schema::create('card_subscription_billing_attempts', function (Blueprint $table) {
     $table->uuid('id')->primary();
     $table->uuid('tenant_id')->nullable()->index();
-    $table->foreignUuid('card_subscription_id')->constrained('card_subscriptions')->cascadeOnDelete();
+    $table->foreignUuid('card_subscription_id')
+        ->constrained('card_subscriptions', indexName: 'card_bill_attempts_subscription_fk')
+        ->cascadeOnDelete();
     $table->string('result', 16); // success | failed
     $table->string('failure_reason', 64)->nullable();
     $table->decimal('amount', 18, 2);
@@ -171,7 +173,7 @@ Schema::create('card_subscription_billing_attempts', function (Blueprint $table)
     $table->timestamp('attempted_at');
     $table->timestamps();
 
-    $table->index(['card_subscription_id', 'attempted_at']);
+    $table->index(['card_subscription_id', 'attempted_at'], 'card_bill_attempts_subscription_attempted_idx');
 });
 ```
 
@@ -183,7 +185,7 @@ Schema::create('card_subscription_billing_attempts', function (Blueprint $table)
 Schema::create('card_fees', function (Blueprint $table) {
     $table->uuid('id')->primary();
     $table->uuid('tenant_id')->nullable()->index();
-    $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete(); // payer
+    $table->uuid('user_id'); // payer; central users table lives outside tenant DBs
     $table->uuid('related_entity_id')->nullable()->index();
     $table->string('related_entity_type', 64)->nullable();
 
@@ -259,8 +261,8 @@ Schema::create('card_audit_logs', function (Blueprint $table) {
 Schema::create('card_risk_events', function (Blueprint $table) {
     $table->uuid('id')->primary();
     $table->uuid('tenant_id')->nullable()->index();
-    $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
-    $table->foreignUuid('card_id')->nullable()->constrained('cards')->nullOnDelete();
+    $table->uuid('user_id'); // central users table lives outside tenant DBs
+    $table->uuid('card_id')->nullable(); // central cards table lives outside tenant DBs
     $table->string('event_type', 64);
     $table->string('severity', 16);
     // Allowed: low, medium, high, critical
@@ -287,8 +289,8 @@ Schema::create('card_risk_events', function (Blueprint $table) {
 Schema::create('card_disputes', function (Blueprint $table) {
     $table->uuid('id')->primary();
     $table->uuid('tenant_id')->nullable()->index();
-    $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
-    $table->foreignUuid('card_transaction_id')->constrained('card_transactions')->cascadeOnDelete();
+    $table->uuid('user_id'); // central users table lives outside tenant DBs
+    $table->uuid('card_transaction_id'); // central card_transactions table lives outside tenant DBs
     $table->string('reason', 32);
     // Allowed: unrecognised, duplicate, wrong_amount, service_not_received, other
     $table->string('status', 16)->default('submitted');
@@ -317,9 +319,9 @@ Schema::create('card_disputes', function (Blueprint $table) {
 Schema::create('physical_card_orders', function (Blueprint $table) {
     $table->uuid('id')->primary();
     $table->uuid('tenant_id')->nullable()->index();
-    $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
+    $table->uuid('user_id'); // central users table lives outside tenant DBs
     $table->foreignUuid('card_subscription_id')->constrained('card_subscriptions')->cascadeOnDelete();
-    $table->foreignUuid('card_id')->nullable()->constrained('cards')->nullOnDelete();
+    $table->uuid('card_id')->nullable(); // central cards table lives outside tenant DBs
     $table->string('order_status', 32)->default('requested');
     // Allowed: requested, paid, approved, production, dispatched, ready_for_collection, delivered, activated, cancelled
     $table->string('delivery_method', 32);

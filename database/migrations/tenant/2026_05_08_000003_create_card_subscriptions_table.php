@@ -13,14 +13,14 @@ return new class () extends Migration {
             $table->uuid('id')->primary();
             $table->uuid('tenant_id')->nullable()->index();
 
-            // Subscriber: the user whose cards are billed by this subscription
-            $table->foreignUuid('subscriber_user_id')->constrained('users')->cascadeOnDelete();
+            // Subscriber: central users table lives outside tenant DBs.
+            $table->uuid('subscriber_user_id');
 
-            // Payer: the wallet that gets debited (= subscriber for adults; = guardian for minors)
-            $table->foreignUuid('payer_user_id')->constrained('users')->cascadeOnDelete();
+            // Payer: central users table lives outside tenant DBs.
+            $table->uuid('payer_user_id');
 
-            // Plan
-            $table->foreignUuid('card_plan_id')->constrained('card_plans');
+            // Plan: global card_plans table lives in the central DB.
+            $table->uuid('card_plan_id');
 
             // Status
             $table->string('status', 32)->default('active');

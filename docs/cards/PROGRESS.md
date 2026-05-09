@@ -49,7 +49,7 @@ Phase numbers map 1:1 to [`09-implementation-phases.md`](./09-implementation-pha
 | 0.2 | Delete legacy virtual-card controller files | done | 2026-05-08 | 2026-05-08 | _this_commit_ | Deleted all 9 controller files under `app/Http/Controllers/Api/Compatibility/VirtualCard/`; retained `app/Domain/CardIssuance/`. |
 | 0.3 | Remove route registrations for `/api/virtual-card/*` in `routes/api.php` and `routes/api-compat.php` | done | 2026-05-08 | 2026-05-08 | _this_commit_ | Removed 9 compatibility route registrations and imports from `routes/api-compat.php`; `routes/api.php` had no matches. `php -l routes/api-compat.php` passes and `rg "virtual-card\|VirtualCard" routes/api.php routes/api-compat.php` is empty. |
 | 0.4 | Delete any service that exists only to serve those endpoints | done | 2026-05-08 | 2026-05-08 | _this_commit_ | No legacy-only service exists. Deleted controllers used shared `CardProvisioningService` / `HighRiskActionTrustPolicy`; remaining `VirtualCard` references are retained `CardIssuance`, GraphQL, feature flags, or tests. |
-| 0.5 | Run existing test suite: `vendor/bin/pest`. Delete tests that depend on legacy endpoints | in_progress | 2026-05-08 | — | — | Deleted endpoint-dependent tests `VirtualCardCancelTrustPolicyTest.php` and `VirtualCardFreezeControllerTest.php`. `rg 'api/virtual-card\|/virtual-card\|virtual-card' tests app routes` now only finds unrelated feature-flag label text. Baseline failures from the first suite run were repaired: account-membership rollback expectation, minor-card account relation/mock expectations, AML aggregate UUID isolation, mobile-device test isolation, and missing Analytics module manifest. Focused rerun passes: `vendor/bin/pest tests/Unit/Database/Migrations/BackfillAccountMembershipsForExistingUsersMigrationTest.php tests/Unit/Domain/Account/Services/MinorCardRequestServiceTest.php tests/Unit/Domain/Compliance/Aggregates/AmlScreeningAggregateTest.php tests/Unit/Domain/Exchange/Services/LiquidityPoolServiceTest.php tests/Unit/Domain/Mobile/Services/MobileDeviceServiceTest.php tests/Unit/Infrastructure/Domain/ModuleManifestCompletenessTest.php` (53 passed). Compliance neighbor rerun passes (46 passed). A broader `vendor/bin/pest --stop-on-failure` probe passed beyond these failures but was manually stopped before full completion due runtime; task remains in progress until a complete suite gate finishes. |
+| 0.5 | Run existing test suite: `vendor/bin/pest`. Delete tests that depend on legacy endpoints | in_progress | 2026-05-08 | — | — | Deleted endpoint-dependent tests `VirtualCardCancelTrustPolicyTest.php` and `VirtualCardFreezeControllerTest.php`. `rg 'api/virtual-card\|/virtual-card\|virtual-card' tests app routes` now only finds unrelated feature-flag label text. Baseline failures from the first suite run were repaired: account-membership rollback expectation, minor-card account relation/mock expectations, AML aggregate UUID isolation, mobile-device test isolation, and missing Analytics module manifest. Focused rerun passes: `vendor/bin/pest tests/Unit/Database/Migrations/BackfillAccountMembershipsForExistingUsersMigrationTest.php tests/Unit/Domain/Account/Services/MinorCardRequestServiceTest.php tests/Unit/Domain/Compliance/Aggregates/AmlScreeningAggregateTest.php tests/Unit/Domain/Exchange/Services/LiquidityPoolServiceTest.php tests/Unit/Domain/Mobile/Services/MobileDeviceServiceTest.php tests/Unit/Infrastructure/Domain/ModuleManifestCompletenessTest.php` (53 passed). Compliance neighbor rerun passes (46 passed). Later full-suite probe exposed Phase 1 card tenant migrations breaking unrelated tenant DB tests; cross-database FKs to central `users`, `cards`, `card_plans`, and `card_transactions` were converted to indexed UUIDs and the long billing-attempt index name was shortened. `php -l` passes for touched card tenant migrations. Full `vendor/bin/pest` still blocked by existing `RevenueAnomalyScanForTenantsCommandTest` local MySQL transaction lock waits, so task remains in progress until a complete suite gate finishes. |
 | 0.6 | Verify `php artisan route:list \| grep virtual-card` returns nothing | pending | — | — | — | |
 
 Acceptance: no legacy routes; full test suite passes.
@@ -336,13 +336,20 @@ Example future entry:
 
 | Task | Blocker | Owner | Date raised |
 |---|---|---|---|
-| 0.5 | Full `vendor/bin/pest` has unrelated baseline failures and stalled in multi-tenancy tests after the Phase 0 endpoint-test deletions. | Codex/user | 2026-05-08 |
+| 0.5 | Full `vendor/bin/pest` still blocks in `RevenueAnomalyScanForTenantsCommandTest` with local MySQL lock waits after the card migration schema errors were fixed. | Codex/user | 2026-05-09 |
 
 ---
 
 ## Handoff log
 
 Append a new entry every session. Most recent on top.
+
+### 2026-05-09 — backend phase 0 baseline repair follow-up (codex-gpt-5)
+
+- Completed: repaired card tenant migration shape that was breaking unrelated tenant database creation: removed cross-database FKs to central tables and shortened the billing-attempt index name.
+- Stopped at: phase 0 task 0.5, still `in_progress`; the required full `vendor/bin/pest` gate does not complete.
+- Verification: `php -l` passes for touched card tenant migrations; targeted tenant test now gets past the card schema errors but still hits local MySQL lock waits in `RevenueAnomalyScanForTenantsCommandTest`.
+- Next session should: fix or explicitly quarantine that tenant-test transaction harness issue before marking 0.5 done, then rerun a complete `vendor/bin/pest`.
 
 ### 2026-05-08 — backend phase 1 schema + seed complete (claude-opus-4-7 + subagents)
 

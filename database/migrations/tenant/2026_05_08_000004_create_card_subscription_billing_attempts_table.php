@@ -12,7 +12,9 @@ return new class () extends Migration {
         Schema::create('card_subscription_billing_attempts', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('tenant_id')->nullable()->index();
-            $table->foreignUuid('card_subscription_id')->constrained('card_subscriptions')->cascadeOnDelete();
+            $table->foreignUuid('card_subscription_id')
+                ->constrained('card_subscriptions', indexName: 'card_bill_attempts_subscription_fk')
+                ->cascadeOnDelete();
             $table->string('result', 16); // success | failed
             $table->string('failure_reason', 64)->nullable();
             $table->decimal('amount', 18, 2);
@@ -22,7 +24,7 @@ return new class () extends Migration {
             $table->timestamp('attempted_at');
             $table->timestamps();
 
-            $table->index(['card_subscription_id', 'attempted_at']);
+            $table->index(['card_subscription_id', 'attempted_at'], 'card_bill_attempts_subscription_attempted_idx');
         });
     }
 

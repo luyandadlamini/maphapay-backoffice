@@ -12,8 +12,8 @@ return new class () extends Migration {
         Schema::create('card_risk_events', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('tenant_id')->nullable()->index();
-            $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignUuid('card_id')->nullable()->constrained('cards')->nullOnDelete();
+            $table->uuid('user_id'); // central users table lives outside tenant DBs
+            $table->uuid('card_id')->nullable(); // central cards table lives outside tenant DBs
             $table->string('event_type', 64);
             $table->string('severity', 16);
             // Allowed: low, medium, high, critical

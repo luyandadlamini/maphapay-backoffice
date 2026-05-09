@@ -12,9 +12,9 @@ return new class () extends Migration {
         Schema::create('physical_card_orders', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('tenant_id')->nullable()->index();
-            $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
+            $table->uuid('user_id'); // central users table lives outside tenant DBs
             $table->foreignUuid('card_subscription_id')->constrained('card_subscriptions')->cascadeOnDelete();
-            $table->foreignUuid('card_id')->nullable()->constrained('cards')->nullOnDelete();
+            $table->uuid('card_id')->nullable(); // central cards table lives outside tenant DBs
             $table->string('order_status', 32)->default('requested');
             // Allowed: requested, paid, approved, production, dispatched,
             //          ready_for_collection, delivered, activated, cancelled
