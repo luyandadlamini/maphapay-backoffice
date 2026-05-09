@@ -28,12 +28,19 @@ class CardBillingService
 
     public function chargeInitialPeriod(CardSubscription $subscription): BillingAttemptResult
     {
+        // NOTE: This method is called from inside DB::transaction() in CardSubscriptionService::subscribe().
+        // The billing attempt and fee rows written here participate in that outer transaction.
+        // If the outer transaction rolls back (e.g. when CardAuditService is implemented and throws),
+        // both rows will be lost even though WalletService::withdraw() has already dispatched the workflow.
+        // Callers must ensure the outer transaction commits before any further error-prone operations.
         $idempotencyKey = sha1("initial:{$subscription->id}");
 
-        // Idempotent replay: if already attempted, return success
+        // Idempotent replay: return the actual result of the previous attempt
         $existing = CardSubscriptionBillingAttempt::where('idempotency_key', $idempotencyKey)->first();
         if ($existing !== null) {
-            return BillingAttemptResult::success();
+            return $existing->result === CardSubscriptionBillingResult::Success
+                ? BillingAttemptResult::success()
+                : BillingAttemptResult::failed($existing->failure_reason ?? 'PREVIOUS_ATTEMPT_FAILED');
         }
 
         // Load payer account
@@ -54,8 +61,26 @@ class CardBillingService
             return $result;
         }
 
-        $amountCents = (int) round((float) $subscription->plan->monthly_fee * 100);
+        // Fix 6: Use bcmul for exact integer cent conversion (avoids float rounding)
+        $amountCents = (int) bcmul((string) $subscription->plan->monthly_fee, '100', 0);
         $amountFormatted = number_format($amountCents / 100, 2, '.', '');
+
+        // Fix 2: Guard frozen account
+        if ($account->frozen) {
+            $result = BillingAttemptResult::failed('ACCOUNT_FROZEN', $amountCents);
+            CardSubscriptionBillingAttempt::create([
+                'card_subscription_id' => $subscription->id,
+                'result'               => CardSubscriptionBillingResult::Failed,
+                'failure_reason'       => 'ACCOUNT_FROZEN',
+                'amount'               => $amountFormatted,
+                'currency'             => 'SZL',
+                'idempotency_key'      => $idempotencyKey,
+                'attempted_at'         => now(),
+            ]);
+            $this->handleFailedPayment($subscription, $result);
+
+            return $result;
+        }
 
         // Check balance
         if (! $account->hasSufficientBalance('SZL', $amountCents)) {
@@ -74,8 +99,24 @@ class CardBillingService
             return $result;
         }
 
-        // Withdraw funds
-        $this->wallets->withdraw($account->uuid, 'SZL', (string) $amountCents);
+        // Fix 3: Wrap withdraw in try/catch to handle TOCTOU race conditions
+        try {
+            $this->wallets->withdraw($account->uuid, 'SZL', (string) $amountCents);
+        } catch (\Throwable $e) {
+            $result = BillingAttemptResult::failed('WITHDRAWAL_FAILED', $amountCents);
+            CardSubscriptionBillingAttempt::create([
+                'card_subscription_id' => $subscription->id,
+                'result'               => CardSubscriptionBillingResult::Failed,
+                'failure_reason'       => 'WITHDRAWAL_FAILED',
+                'amount'               => $amountFormatted,
+                'currency'             => 'SZL',
+                'idempotency_key'      => $idempotencyKey,
+                'attempted_at'         => now(),
+            ]);
+            $this->handleFailedPayment($subscription, $result);
+
+            return $result;
+        }
 
         // Persist successful billing attempt
         CardSubscriptionBillingAttempt::create([
@@ -106,10 +147,12 @@ class CardBillingService
     {
         $idempotencyKey = sha1("renewal:{$subscription->id}:{$subscription->next_billing_date->toIso8601String()}");
 
-        // Idempotent replay: if already attempted, return success
+        // Idempotent replay: return the actual result of the previous attempt
         $existing = CardSubscriptionBillingAttempt::where('idempotency_key', $idempotencyKey)->first();
         if ($existing !== null) {
-            return BillingAttemptResult::success();
+            return $existing->result === CardSubscriptionBillingResult::Success
+                ? BillingAttemptResult::success()
+                : BillingAttemptResult::failed($existing->failure_reason ?? 'PREVIOUS_ATTEMPT_FAILED');
         }
 
         // Load payer account
@@ -130,8 +173,26 @@ class CardBillingService
             return $result;
         }
 
-        $amountCents = (int) round((float) $subscription->plan->monthly_fee * 100);
+        // Fix 6: Use bcmul for exact integer cent conversion (avoids float rounding)
+        $amountCents = (int) bcmul((string) $subscription->plan->monthly_fee, '100', 0);
         $amountFormatted = number_format($amountCents / 100, 2, '.', '');
+
+        // Fix 2: Guard frozen account
+        if ($account->frozen) {
+            $result = BillingAttemptResult::failed('ACCOUNT_FROZEN', $amountCents);
+            CardSubscriptionBillingAttempt::create([
+                'card_subscription_id' => $subscription->id,
+                'result'               => CardSubscriptionBillingResult::Failed,
+                'failure_reason'       => 'ACCOUNT_FROZEN',
+                'amount'               => $amountFormatted,
+                'currency'             => 'SZL',
+                'idempotency_key'      => $idempotencyKey,
+                'attempted_at'         => now(),
+            ]);
+            $this->handleFailedPayment($subscription, $result);
+
+            return $result;
+        }
 
         // Check balance
         if (! $account->hasSufficientBalance('SZL', $amountCents)) {
@@ -150,8 +211,24 @@ class CardBillingService
             return $result;
         }
 
-        // Withdraw funds
-        $this->wallets->withdraw($account->uuid, 'SZL', (string) $amountCents);
+        // Fix 3: Wrap withdraw in try/catch to handle TOCTOU race conditions
+        try {
+            $this->wallets->withdraw($account->uuid, 'SZL', (string) $amountCents);
+        } catch (\Throwable $e) {
+            $result = BillingAttemptResult::failed('WITHDRAWAL_FAILED', $amountCents);
+            CardSubscriptionBillingAttempt::create([
+                'card_subscription_id' => $subscription->id,
+                'result'               => CardSubscriptionBillingResult::Failed,
+                'failure_reason'       => 'WITHDRAWAL_FAILED',
+                'amount'               => $amountFormatted,
+                'currency'             => 'SZL',
+                'idempotency_key'      => $idempotencyKey,
+                'attempted_at'         => now(),
+            ]);
+            $this->handleFailedPayment($subscription, $result);
+
+            return $result;
+        }
 
         // Persist successful billing attempt
         CardSubscriptionBillingAttempt::create([
@@ -185,10 +262,12 @@ class CardBillingService
     {
         $idempotencyKey = sha1("retry:{$subscription->id}:" . now()->format('Y-m-d'));
 
-        // Idempotent replay: if already attempted today, return success
+        // Idempotent replay: return the actual result of the previous attempt
         $existing = CardSubscriptionBillingAttempt::where('idempotency_key', $idempotencyKey)->first();
         if ($existing !== null) {
-            return BillingAttemptResult::success();
+            return $existing->result === CardSubscriptionBillingResult::Success
+                ? BillingAttemptResult::success()
+                : BillingAttemptResult::failed($existing->failure_reason ?? 'PREVIOUS_ATTEMPT_FAILED');
         }
 
         // Load payer account
@@ -209,8 +288,26 @@ class CardBillingService
             return $result;
         }
 
-        $amountCents = (int) round((float) $subscription->plan->monthly_fee * 100);
+        // Fix 6: Use bcmul for exact integer cent conversion (avoids float rounding)
+        $amountCents = (int) bcmul((string) $subscription->plan->monthly_fee, '100', 0);
         $amountFormatted = number_format($amountCents / 100, 2, '.', '');
+
+        // Fix 2: Guard frozen account
+        if ($account->frozen) {
+            $result = BillingAttemptResult::failed('ACCOUNT_FROZEN', $amountCents);
+            CardSubscriptionBillingAttempt::create([
+                'card_subscription_id' => $subscription->id,
+                'result'               => CardSubscriptionBillingResult::Failed,
+                'failure_reason'       => 'ACCOUNT_FROZEN',
+                'amount'               => $amountFormatted,
+                'currency'             => 'SZL',
+                'idempotency_key'      => $idempotencyKey,
+                'attempted_at'         => now(),
+            ]);
+            $this->handleFailedPayment($subscription, $result);
+
+            return $result;
+        }
 
         // Check balance
         if (! $account->hasSufficientBalance('SZL', $amountCents)) {
@@ -229,8 +326,24 @@ class CardBillingService
             return $result;
         }
 
-        // Withdraw funds
-        $this->wallets->withdraw($account->uuid, 'SZL', (string) $amountCents);
+        // Fix 3: Wrap withdraw in try/catch to handle TOCTOU race conditions
+        try {
+            $this->wallets->withdraw($account->uuid, 'SZL', (string) $amountCents);
+        } catch (\Throwable $e) {
+            $result = BillingAttemptResult::failed('WITHDRAWAL_FAILED', $amountCents);
+            CardSubscriptionBillingAttempt::create([
+                'card_subscription_id' => $subscription->id,
+                'result'               => CardSubscriptionBillingResult::Failed,
+                'failure_reason'       => 'WITHDRAWAL_FAILED',
+                'amount'               => $amountFormatted,
+                'currency'             => 'SZL',
+                'idempotency_key'      => $idempotencyKey,
+                'attempted_at'         => now(),
+            ]);
+            $this->handleFailedPayment($subscription, $result);
+
+            return $result;
+        }
 
         // Persist successful billing attempt
         CardSubscriptionBillingAttempt::create([
@@ -264,8 +377,11 @@ class CardBillingService
     {
         $wasPastDueOrSuspended = false;
         $dispatchRestored = false;
+        // Fix 5: Capture $locked->id via $subscriptionId so the event uses the
+        // locked row's ID rather than the (potentially stale) $subscription object
+        $subscriptionId = null;
 
-        DB::transaction(function () use ($subscription, &$wasPastDueOrSuspended, &$dispatchRestored): void {
+        DB::transaction(function () use ($subscription, &$wasPastDueOrSuspended, &$dispatchRestored, &$subscriptionId): void {
             $locked = CardSubscription::where('id', $subscription->id)->lockForUpdate()->firstOrFail();
 
             $wasPastDueOrSuspended = in_array($locked->status, [
@@ -291,12 +407,13 @@ class CardBillingService
 
             $locked->save();
 
+            $subscriptionId = (string) $locked->id;
             $dispatchRestored = $wasPastDueOrSuspended;
         });
 
         if ($dispatchRestored) {
             event(new CardSubscriptionRestored(
-                subscriptionId: (string) $subscription->id,
+                subscriptionId: $subscriptionId,
                 restoredAt: now()->toIso8601String(),
             ));
         }
@@ -309,6 +426,15 @@ class CardBillingService
 
         DB::transaction(function () use ($subscription, $result, &$eventToDispatch, &$eventPayload): void {
             $locked = CardSubscription::where('id', $subscription->id)->lockForUpdate()->firstOrFail();
+
+            // Fix 4: Guard against Cancelled/PendingGuardianApproval — billing must not
+            // transition a terminated or not-yet-approved subscription
+            if (in_array($locked->status, [
+                CardSubscriptionStatus::Cancelled,
+                CardSubscriptionStatus::PendingGuardianApproval,
+            ], true)) {
+                return; // No-op: billing should not transition a terminated/pending subscription
+            }
 
             $locked->failed_payment_count++;
 
