@@ -91,17 +91,17 @@ Acceptance: `SELECT COUNT(*) FROM card_plans` = 6; schema tests pass.
 
 | # | Task | Status | Started | Completed | Commit | Notes |
 |---:|---|---|---|---|---|---|
-| 2.1 | Create `app/Domain/CardSubscriptions/` folder structure per [`02-domain-architecture.md`](./02-domain-architecture.md) §1 | pending | — | — | — | |
-| 2.2 | Write `module.json` per §2 | pending | — | — | — | |
-| 2.3 | Write Eloquent models for every table (`HasUuids` + `UsesTenantConnection` where applicable) | pending | — | — | — | |
-| 2.4 | Write all enums from [`CONTRACT.md`](./CONTRACT.md) as PHP `BackedEnum` | pending | — | — | — | |
-| 2.5 | Write value objects (`CardLimitSet`, `CardControlsInput`, `CardFeePreviewInput`, etc.) | pending | — | — | — | |
-| 2.6 | Write service class skeletons (method signatures from `05-services-and-rules.md`; bodies throw `LogicException("not implemented")`) | pending | — | — | — | |
-| 2.7 | Write all event classes from `07-jobs-and-events.md` §1 (extending `ShouldBeStored`) | pending | — | — | — | |
-| 2.8 | Write `CardSubscriptionsServiceProvider`; register in `bootstrap/providers.php` | pending | — | — | — | |
-| 2.9 | Write factories for every model | pending | — | — | — | |
-| 2.10 | Write `tests/Feature/Cards/DomainBootstrapTest.php` (DI resolution, event instantiation, factory creation) | pending | — | — | — | |
-| 2.11 | All bootstrap tests pass | pending | — | — | — | |
+| 2.1 | Create `app/Domain/CardSubscriptions/` folder structure per [`02-domain-architecture.md`](./02-domain-architecture.md) §1 | done | 2026-05-08 | 2026-05-08 | — | Added documented domain directories under `app/Domain/CardSubscriptions/`. |
+| 2.2 | Write `module.json` per §2 | done | 2026-05-08 | 2026-05-08 | — | Added `app/Domain/CardSubscriptions/module.json` with the documented dependencies, events, routes, and provider. |
+| 2.3 | Write Eloquent models for every table (`HasUuids` + `UsesTenantConnection` where applicable) | done | 2026-05-08 | 2026-05-08 | — | Added 8 models for plans, subscriptions, billing attempts, fees, audit logs, risk events, disputes, and physical orders. Tenant-scoped tables use `UsesTenantConnection`. |
+| 2.4 | Write all enums from [`CONTRACT.md`](./CONTRACT.md) as PHP `BackedEnum` | done | 2026-05-08 | 2026-05-08 | — | Added contract enums plus DB-only enum casts for plan eligibility, billing result, and physical-card delivery method. |
+| 2.5 | Write value objects (`CardLimitSet`, `CardControlsInput`, `CardFeePreviewInput`, etc.) | done | 2026-05-08 | 2026-05-08 | — | Added immutable value objects, minimal input/result DTOs referenced by the service skeletons, and the missing shared `Money` VO used by the documented fee signatures. |
+| 2.6 | Write service class skeletons (method signatures from `05-services-and-rules.md`; bodies throw `LogicException("not implemented")`) | done | 2026-05-08 | 2026-05-08 | — | Added all 11 service skeletons and the typed exception classes. Fee methods now use `App\Domain\Shared\Money\Money` per the spec. |
+| 2.7 | Write all event classes from `07-jobs-and-events.md` §1 (extending `ShouldBeStored`) | done | 2026-05-08 | 2026-05-08 | — | Added all 20 stored event classes with readonly constructor payloads. |
+| 2.8 | Write `CardSubscriptionsServiceProvider`; register in `bootstrap/providers.php` | done | 2026-05-08 | 2026-05-08 | — | Registered the 11 services, CardIssuer binding, Spatie stored-event reactors, and Laravel listeners for the existing CardIssuance events. Provider is registered in Laravel bootstrap providers. |
+| 2.9 | Write factories for every model | done | 2026-05-08 | 2026-05-08 | — | Added factories for all 8 CardSubscriptions models. |
+| 2.10 | Write `tests/Feature/Cards/DomainBootstrapTest.php` (DI resolution, event instantiation, factory creation) | done | 2026-05-08 | 2026-05-08 | — | Added bootstrap coverage for container resolution, event instantiation, and in-memory factory model construction. |
+| 2.11 | All bootstrap tests pass | done | 2026-05-08 | 2026-05-08 | — | `./vendor/bin/pest tests/Feature/Cards/DomainBootstrapTest.php --colors=never` passes: 3 tests, 20 assertions. `php artisan domain:verify card-subscriptions --json --no-ansi` passes: 8/8 checks. |
 
 Acceptance: every service is resolvable from the container; every event/model is instantiable.
 
