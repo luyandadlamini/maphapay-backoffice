@@ -1,0 +1,59 @@
+{
+  "$schema": "https://finaegis.io/schemas/module.json",
+  "name": "finaegis/card-subscriptions",
+  "version": "1.0.0",
+  "description": "Card subscription, billing, entitlement, fee, risk, and physical-card lifecycle domain",
+  "type": "core",
+  "dependencies": {
+    "required": {
+      "finaegis/shared": "^1.0",
+      "finaegis/wallet": "^1.0",
+      "finaegis/card-issuance": "^1.0"
+    },
+    "optional": {
+      "finaegis/ledger": "^1.0",
+      "finaegis/mobile": "^1.0",
+      "finaegis/agent-protocol": "^1.0"
+    }
+  },
+  "provides": {
+    "interfaces": [
+      "App\\Domain\\CardSubscriptions\\Services\\CardEntitlementService",
+      "App\\Domain\\CardSubscriptions\\Services\\CardSubscriptionService",
+      "App\\Domain\\CardSubscriptions\\Services\\CardBillingService"
+    ],
+    "events": [
+      "CardSubscriptionActivated",
+      "CardSubscriptionPlanChanged",
+      "CardSubscriptionPastDue",
+      "CardSubscriptionSuspended",
+      "CardSubscriptionCancelled",
+      "CardSubscriptionRestored",
+      "CardSubscriptionBillingAttempted",
+      "CardFeeCharged",
+      "CardRiskEventOpened",
+      "CardDisputeSubmitted",
+      "PhysicalCardOrderRequested",
+      "PhysicalCardOrderActivated",
+      "MinorCardRequestApproved"
+    ],
+    "commands": []
+  },
+  "paths": {
+    "routes": "Routes/api.php",
+    "migrations": "Database/Migrations",
+    "tests": "Tests"
+  },
+  "depends_on": [
+    "shared",
+    "wallet",
+    "ledger",
+    "card-issuance",
+    "mobile",
+    "agent-protocol"
+  ],
+  "providers": [
+    "CardSubscriptionsServiceProvider"
+  ],
+  "routes": "Routes/api.php"
+}

@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\CardSubscriptions\Listeners;
+
+use App\Domain\CardSubscriptions\Events\CardFeeCharged;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Spatie\EventSourcing\EventHandlers\Reactors\Reactor;
+
+class EmitMrrAggregateRecalc extends Reactor implements ShouldQueue
+{
+    use Queueable;
+
+    public function __construct()
+    {
+        $this->onQueue('notifications');
+    }
+
+    public function onCardFeeCharged(CardFeeCharged $event): void
+    {
+        //
+    }
+}

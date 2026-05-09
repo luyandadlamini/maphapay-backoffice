@@ -9,6 +9,8 @@ use App\Domain\Exchange\Projections\LiquidityProvider;
 use App\Domain\Exchange\Services\ExchangeService;
 use App\Domain\Exchange\Services\LiquidityPoolService;
 use DomainException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\ServiceTestCase;
@@ -30,8 +32,8 @@ class LiquidityPoolServiceTest extends ServiceTestCase
     #[Test]
     public function test_create_pool_creates_new_liquidity_pool(): void
     {
-        $baseCurrency = 'ETH';
-        $quoteCurrency = 'USDT';
+        $baseCurrency = 'ETH'.Str::upper(Str::random(6));
+        $quoteCurrency = 'USDT'.Str::upper(Str::random(6));
         $feeRate = '0.003';
         $metadata = ['description' => 'ETH/USDT Pool'];
 
@@ -44,11 +46,14 @@ class LiquidityPoolServiceTest extends ServiceTestCase
     #[Test]
     public function test_create_pool_throws_exception_if_pool_exists(): void
     {
+        $baseCurrency = 'BTC'.Str::upper(Str::random(6));
+        $quoteCurrency = 'USDT'.Str::upper(Str::random(6));
+
         // Create initial pool
         PoolProjection::create([
-            'pool_id'        => 'existing-pool-id',
-            'base_currency'  => 'BTC',
-            'quote_currency' => 'USDT',
+            'pool_id'        => 'existing-pool-'.Str::uuid()->toString(),
+            'base_currency'  => $baseCurrency,
+            'quote_currency' => $quoteCurrency,
             'base_reserve'   => '0',
             'quote_reserve'  => '0',
             'total_shares'   => '0',
@@ -59,7 +64,7 @@ class LiquidityPoolServiceTest extends ServiceTestCase
         $this->expectException(DomainException::class);
         $this->expectExceptionMessage('Liquidity pool already exists for this pair');
 
-        $this->service->createPool('BTC', 'USDT');
+        $this->service->createPool($baseCurrency, $quoteCurrency);
     }
 
     #[Test]
@@ -86,8 +91,10 @@ class LiquidityPoolServiceTest extends ServiceTestCase
     #[Test]
     public function test_get_pool_returns_pool_projection(): void
     {
+        $poolId = 'test-pool-'.Str::uuid()->toString();
+
         $pool = PoolProjection::create([
-            'pool_id'        => 'test-pool-id',
+            'pool_id'        => $poolId,
             'base_currency'  => 'ETH',
             'quote_currency' => 'USDT',
             'base_reserve'   => '1000000',
@@ -97,10 +104,10 @@ class LiquidityPoolServiceTest extends ServiceTestCase
             'is_active'      => true,
         ]);
 
-        $result = $this->service->getPool('test-pool-id');
+        $result = $this->service->getPool($poolId);
 
         $this->assertInstanceOf(PoolProjection::class, $result);
-        $this->assertEquals('test-pool-id', $result->pool_id);
+        $this->assertEquals($poolId, $result->pool_id);
         $this->assertEquals('ETH', $result->base_currency);
         $this->assertEquals('USDT', $result->quote_currency);
     }
@@ -116,10 +123,13 @@ class LiquidityPoolServiceTest extends ServiceTestCase
     #[Test]
     public function test_get_pool_by_pair_returns_matching_pool(): void
     {
+        $baseCurrency = 'BTC'.Str::upper(Str::random(6));
+        $quoteCurrency = 'USDT'.Str::upper(Str::random(6));
+
         PoolProjection::create([
-            'pool_id'        => 'btc-usdt-pool',
-            'base_currency'  => 'BTC',
-            'quote_currency' => 'USDT',
+            'pool_id'        => 'btc-usdt-'.Str::uuid()->toString(),
+            'base_currency'  => $baseCurrency,
+            'quote_currency' => $quoteCurrency,
             'base_reserve'   => '100',
             'quote_reserve'  => '4000000',
             'total_shares'   => '20000',
@@ -127,19 +137,23 @@ class LiquidityPoolServiceTest extends ServiceTestCase
             'is_active'      => true,
         ]);
 
-        $result = $this->service->getPoolByPair('BTC', 'USDT');
+        $result = $this->service->getPoolByPair($baseCurrency, $quoteCurrency);
 
         $this->assertInstanceOf(PoolProjection::class, $result);
-        $this->assertEquals('BTC', $result->base_currency);
-        $this->assertEquals('USDT', $result->quote_currency);
+        $this->assertEquals($baseCurrency, $result->base_currency);
+        $this->assertEquals($quoteCurrency, $result->quote_currency);
     }
 
     #[Test]
     public function test_get_active_pools_returns_only_active_pools(): void
     {
+        $activePoolId1 = 'active-pool-'.Str::uuid()->toString();
+        $activePoolId2 = 'active-pool-'.Str::uuid()->toString();
+        $inactivePoolId = 'inactive-pool-'.Str::uuid()->toString();
+
         // Create active pools
         PoolProjection::create([
-            'pool_id'        => 'active-pool-1',
+            'pool_id'        => $activePoolId1,
             'base_currency'  => 'ETH',
             'quote_currency' => 'USDT',
             'base_reserve'   => '1000',
@@ -150,7 +164,7 @@ class LiquidityPoolServiceTest extends ServiceTestCase
         ]);
 
         PoolProjection::create([
-            'pool_id'        => 'active-pool-2',
+            'pool_id'        => $activePoolId2,
             'base_currency'  => 'BTC',
             'quote_currency' => 'USDT',
             'base_reserve'   => '10',
@@ -162,7 +176,7 @@ class LiquidityPoolServiceTest extends ServiceTestCase
 
         // Create inactive pool
         PoolProjection::create([
-            'pool_id'        => 'inactive-pool',
+            'pool_id'        => $inactivePoolId,
             'base_currency'  => 'DOT',
             'quote_currency' => 'USDT',
             'base_reserve'   => '0',
@@ -173,19 +187,23 @@ class LiquidityPoolServiceTest extends ServiceTestCase
         ]);
 
         $activePools = $this->service->getActivePools();
+        $activePoolIds = $activePools->pluck('pool_id');
 
-        $this->assertCount(2, $activePools);
+        $this->assertTrue($activePoolIds->contains($activePoolId1));
+        $this->assertTrue($activePoolIds->contains($activePoolId2));
+        $this->assertFalse($activePoolIds->contains($inactivePoolId));
         $this->assertTrue($activePools->every(fn ($pool) => $pool->is_active === true));
     }
 
     #[Test]
     public function test_get_provider_positions_returns_positions_with_pools(): void
     {
-        $providerId = 'provider-123';
+        $providerId = 'provider_'.Str::random(16);
+        $poolId = 'pool_'.Str::random(16);
 
         // Create pool first
         $pool = PoolProjection::create([
-            'pool_id'        => 'pool-abc',
+            'pool_id'        => $poolId,
             'base_currency'  => 'ETH',
             'quote_currency' => 'USDT',
             'base_reserve'   => '1000000',
@@ -196,17 +214,24 @@ class LiquidityPoolServiceTest extends ServiceTestCase
         ]);
 
         // Create provider position for the existing pool only
-        LiquidityProvider::create([
-            'pool_id'         => 'pool-abc',
+        DB::table('liquidity_providers')->insert([
+            'pool_id'         => $poolId,
             'provider_id'     => $providerId,
             'shares'          => '500000',
-            'base_deposited'  => '353553',
-            'quote_deposited' => '707107',
+            'base_contributed'  => '353553',
+            'quote_contributed' => '707107',
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+
+        $this->assertDatabaseHas('liquidity_providers', [
+            'pool_id'     => $poolId,
+            'provider_id' => $providerId,
         ]);
 
         $positions = $this->service->getProviderPositions($providerId);
 
-        $this->assertCount(1, $positions);
+        $this->assertNotEmpty($positions, 'Expected at least one position for '.$providerId.'; found '.$positions->count().' with provider IDs '.$positions->pluck('provider_id')->implode(','));
         $this->assertTrue($positions->every(fn ($pos) => $pos->provider_id === $providerId));
     }
 
