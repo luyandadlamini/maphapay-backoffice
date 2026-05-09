@@ -141,12 +141,16 @@ class CardFeeService
         // Expired or fraud replacements are bank-absorbed; record a waived zero fee
         // so the replacement is auditable without creating a chargeable event.
         if ($reason === ReplacementReason::EXPIRED || $reason === ReplacementReason::FRAUD) {
+            $feeType = $card->kind === 'virtual'
+                ? CardFeeType::VirtualCardReplacement
+                : CardFeeType::PhysicalCardReplacement;
+
             /** @var CardFee $fee */
             $fee = CardFee::create([
                 'user_id'             => $payer->id,
                 'related_entity_id'   => $card->id,
                 'related_entity_type' => Card::class,
-                'fee_type'            => CardFeeType::PhysicalCardReplacement,
+                'fee_type'            => $feeType,
                 'amount'              => '0.00',
                 'currency'            => 'SZL',
                 'status'              => CardFeeStatus::Waived,
