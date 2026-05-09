@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Worktree-specific phpunit config.
+    Uses vendor-worktree-bootstrap.php which:
+      1. Loads the main repo's vendor/autoload.php
+      2. Patches the PSR-4 and classmap to use THIS worktree's app/ directory
+    This allows tests to run against the real implementation files in the
+    worktree rather than the stub in the main branch.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="/Users/Lihle/Development/Coding/maphapay-backoffice/vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor-worktree-bootstrap.php"
+         colors="true"
+         executionOrder="depends,defects"
+         beStrictAboutOutputDuringTests="true"
+         failOnRisky="false"
+         failOnWarning="false"
+         processIsolation="false"
+         stopOnFailure="false"
+         enforceTimeLimit="true"
+         defaultTimeLimit="600"
+         displayDetailsOnTestsThatTriggerDeprecations="true"
+         displayDetailsOnTestsThatTriggerWarnings="true"
+>
+    <testsuites>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="CACHE_STORE" value="array"/>
+        <env name="DB_CONNECTION" value="mysql"/>
+        <env name="DB_HOST" value="127.0.0.1"/>
+        <env name="DB_PORT" value="3306"/>
+        <env name="DB_DATABASE" value="maphapay_backoffice_test"/>
+        <env name="DB_USERNAME" value="maphapay_test"/>
+        <env name="DB_PASSWORD" value="maphapay_test_password"/>
+        <env name="TEST_REUSE_EXISTING_MYSQL_SCHEMA" value="true"/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="PULSE_ENABLED" value="false"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="BROADCAST_CONNECTION" value="log"/>
+        <env name="LIGHTHOUSE_SCHEMA_CACHE_ENABLE" value="false"/>
+        <env name="LIGHTHOUSE_SUBSCRIPTION_STORAGE" value="array"/>
+        <env name="PEST_PARALLEL" value="false"/>
+        <ini name="memory_limit" value="2G"/>
+    </php>
+</phpunit>
