@@ -35,6 +35,18 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $cancelled_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property string $kind
+ * @property string|null $card_subscription_id
+ * @property float|null $per_transaction_limit
+ * @property float|null $daily_limit
+ * @property float|null $monthly_limit
+ * @property float|null $atm_daily_limit
+ * @property float|null $atm_monthly_limit
+ * @property bool $online_enabled
+ * @property bool $international_enabled
+ * @property bool $atm_enabled
+ * @property bool $contactless_enabled
+ * @property array<string, mixed>|null $blocked_mcc_groups
  */
 class Card extends Model
 {
@@ -63,6 +75,24 @@ class Card extends Model
         'frozen_at',
         'cancelled_at',
         'minor_account_uuid',
+        // Added by 2026_05_08_000001_alter_cards_add_monetisation_fields
+        'tier',
+        'kind',
+        'lifecycle',
+        'lifecycle_config',
+        'is_default',
+        'per_transaction_limit',
+        'daily_limit',
+        'monthly_limit',
+        'atm_daily_limit',
+        'atm_monthly_limit',
+        'contactless_per_transaction_limit',
+        'online_enabled',
+        'international_enabled',
+        'atm_enabled',
+        'contactless_enabled',
+        'blocked_mcc_groups',
+        'card_subscription_id',
     ];
 
     /**
@@ -71,11 +101,24 @@ class Card extends Model
     protected function casts(): array
     {
         return [
-            'metadata'          => 'encrypted:array',
-            'spend_limit_cents' => 'integer',
-            'expires_at'        => 'datetime',
-            'frozen_at'         => 'datetime',
-            'cancelled_at'      => 'datetime',
+            'metadata'                          => 'encrypted:array',
+            'spend_limit_cents'                 => 'integer',
+            'expires_at'                        => 'datetime',
+            'frozen_at'                         => 'datetime',
+            'cancelled_at'                      => 'datetime',
+            // Monetisation fields (2026_05_08_000001_alter_cards_add_monetisation_fields)
+            'is_default'                        => 'boolean',
+            'per_transaction_limit'             => 'decimal:2',
+            'daily_limit'                       => 'decimal:2',
+            'monthly_limit'                     => 'decimal:2',
+            'atm_daily_limit'                   => 'decimal:2',
+            'atm_monthly_limit'                 => 'decimal:2',
+            'contactless_per_transaction_limit' => 'decimal:2',
+            'online_enabled'                    => 'boolean',
+            'international_enabled'             => 'boolean',
+            'atm_enabled'                       => 'boolean',
+            'contactless_enabled'               => 'boolean',
+            'blocked_mcc_groups'                => 'array',
         ];
     }
 
