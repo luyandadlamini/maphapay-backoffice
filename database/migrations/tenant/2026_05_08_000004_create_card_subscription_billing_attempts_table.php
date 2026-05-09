@@ -19,7 +19,7 @@ return new class () extends Migration {
             $table->string('failure_reason', 64)->nullable();
             $table->decimal('amount', 18, 2);
             $table->string('currency', 3)->default('SZL');
-            $table->uuid('idempotency_key')->nullable();
+            $table->string('idempotency_key', 40)->nullable();
             $table->uuid('ledger_posting_id')->nullable();
             $table->timestamp('attempted_at');
             $table->timestamps();
