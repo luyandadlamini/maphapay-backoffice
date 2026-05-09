@@ -273,10 +273,11 @@ class CardBillingService
                 CardSubscriptionStatus::Suspended,
             ], true);
 
-            // Roll the period forward
-            $locked->current_period_start = $locked->next_billing_date;
-            $locked->current_period_end   = $locked->next_billing_date->addMonth();
-            $locked->next_billing_date    = $locked->next_billing_date->addMonth();
+            // Roll the period forward — copy() to avoid mutating the same Carbon instance
+            $nextBilling = $locked->next_billing_date->copy();
+            $locked->current_period_start = $nextBilling->copy();
+            $locked->current_period_end   = $nextBilling->copy()->addMonth();
+            $locked->next_billing_date    = $nextBilling->addMonth();
 
             $locked->failed_payment_count = 0;
             $locked->grace_period_ends_at = null;
