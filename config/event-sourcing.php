@@ -551,6 +551,28 @@ return [
         'breach_subjects_notified'  => App\Domain\Compliance\Events\BreachSubjectsNotified::class,
         'breach_detected'           => App\Domain\Compliance\Events\BreachDetected::class,
         'consent_recorded'          => App\Domain\Compliance\Events\ConsentRecorded::class,
+
+        // Card Subscriptions & Issuance events (Phase 4)
+        'card_subscription_activated'       => App\Domain\CardSubscriptions\Events\CardSubscriptionActivated::class,
+        'card_subscription_cancelled'       => App\Domain\CardSubscriptions\Events\CardSubscriptionCancelled::class,
+        'card_subscription_past_due'        => App\Domain\CardSubscriptions\Events\CardSubscriptionPastDue::class,
+        'card_subscription_plan_changed'    => App\Domain\CardSubscriptions\Events\CardSubscriptionPlanChanged::class,
+        'card_subscription_restored'        => App\Domain\CardSubscriptions\Events\CardSubscriptionRestored::class,
+        'card_subscription_suspended'       => App\Domain\CardSubscriptions\Events\CardSubscriptionSuspended::class,
+        'card_subscription_billing_attempted' => App\Domain\CardSubscriptions\Events\CardSubscriptionBillingAttempted::class,
+        'card_dispute_submitted'            => App\Domain\CardSubscriptions\Events\CardDisputeSubmitted::class,
+        'card_dispute_resolved'             => App\Domain\CardSubscriptions\Events\CardDisputeResolved::class,
+        'card_fee_charged'                  => App\Domain\CardSubscriptions\Events\CardFeeCharged::class,
+        'card_fee_refunded'                 => App\Domain\CardSubscriptions\Events\CardFeeRefunded::class,
+        'card_fee_waived'                   => App\Domain\CardSubscriptions\Events\CardFeeWaived::class,
+        'card_risk_event_opened'            => App\Domain\CardSubscriptions\Events\CardRiskEventOpened::class,
+        'card_risk_event_resolved'          => App\Domain\CardSubscriptions\Events\CardRiskEventResolved::class,
+        'minor_card_request_approved'       => App\Domain\CardSubscriptions\Events\MinorCardRequestApproved::class,
+        'minor_card_request_denied'         => App\Domain\CardSubscriptions\Events\MinorCardRequestDenied::class,
+        'physical_card_order_requested'     => App\Domain\CardSubscriptions\Events\PhysicalCardOrderRequested::class,
+        'physical_card_order_activated'     => App\Domain\CardSubscriptions\Events\PhysicalCardOrderActivated::class,
+        'physical_card_order_cancelled'     => App\Domain\CardSubscriptions\Events\PhysicalCardOrderCancelled::class,
+        'physical_card_order_status_changed' => App\Domain\CardSubscriptions\Events\PhysicalCardOrderStatusChanged::class,
     ],
 
     /*

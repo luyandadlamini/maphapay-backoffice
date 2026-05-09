@@ -15,8 +15,10 @@ use App\Domain\CardSubscriptions\Models\CardPlan;
 use App\Domain\CardSubscriptions\Models\CardSubscription;
 use App\Domain\CardSubscriptions\Services\CardAuditService;
 use App\Domain\CardSubscriptions\Services\CardBillingService;
+use App\Domain\CardSubscriptions\Services\CardEntitlementService;
 use App\Domain\CardSubscriptions\Services\CardSubscriptionService;
 use App\Domain\CardSubscriptions\ValueObjects\BillingAttemptResult;
+use App\Domain\CardSubscriptions\ValueObjects\EntitlementDecision;
 use App\Models\User;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -26,10 +28,11 @@ use Throwable;
  * Feature tests for CardSubscriptionService — subscribe, upgrade, downgrade,
  * cancel, and FSM state-transition methods.
  *
- * CardAuditService and CardBillingService are stubs (they throw
- * LogicException('not implemented')). Every test mocks both via $this->mock()
- * so the real CardEntitlementService is the only collaborator that runs
- * against the DB.
+ * CardAuditService and CardBillingService are stubs (throw LogicException).
+ * CardEntitlementService has real logic that makes fine-grained attribute
+ * checks — mocking it gives the subscription service full control over which
+ * decisions are allowed or denied in each scenario without worrying about
+ * whether test users have exactly the right kyc_level, risk_rating, etc.
  *
  * All tests that touch the database are guarded by requireDatabase() and will
  * skip gracefully when no database connection is available or when the Cards
@@ -42,6 +45,20 @@ class CardSubscriptionServiceTest extends TestCase
 
     /** @var \Mockery\MockInterface */
     private $billingMock;
+
+    /** @var \Mockery\MockInterface */
+    private $entitlementMock;
+
+    /** Controls what canSubscribeToPlan() returns; override in individual tests. */
+    private EntitlementDecision $planDecision;
+
+    /**
+     * Controls what chargeInitialPeriod() does; set to a Closure that throws or returns.
+     * Default: returns a successful BillingAttemptResult.
+     *
+     * @var \Closure|\Exception|BillingAttemptResult
+     */
+    private mixed $billingAction;
 
     protected function shouldCreateDefaultAccountsInSetup(): bool
     {
@@ -57,9 +74,34 @@ class CardSubscriptionServiceTest extends TestCase
                 ->andReturn(\Mockery::mock(CardAuditLog::class));
         });
 
+        $this->billingAction = BillingAttemptResult::success(null, 4900, 'SZL');
+
         $this->billingMock = $this->mock(CardBillingService::class, function ($mock): void {
             $mock->shouldReceive('chargeInitialPeriod')
-                ->andReturn(BillingAttemptResult::success(null, 4900, 'SZL'));
+                ->andReturnUsing(function () {
+                    $action = $this->billingAction;
+                    if ($action instanceof \Throwable) {
+                        throw $action;
+                    }
+                    return $action instanceof \Closure ? ($action)() : $action;
+                });
+        });
+
+        // Default: entitlement allows everything. Tests that need a denied
+        // response simply reassign $this->planDecision before calling the service.
+        $this->planDecision = EntitlementDecision::allow();
+
+        $this->entitlementMock = $this->mock(CardEntitlementService::class, function ($mock): void {
+            $mock->shouldReceive('canSubscribeToPlan')
+                ->andReturnUsing(fn () => $this->planDecision);
+            $mock->shouldReceive('canUseFeature')
+                ->andReturn(EntitlementDecision::allow());
+            $mock->shouldReceive('canCreateCard')
+                ->andReturn(EntitlementDecision::allow());
+            $mock->shouldReceive('canIssuePhysicalCard')
+                ->andReturn(EntitlementDecision::allow());
+            $mock->shouldReceive('canReissueVirtualCard')
+                ->andReturn(EntitlementDecision::allow());
         });
 
         $this->service = app(CardSubscriptionService::class);
@@ -133,11 +175,9 @@ class CardSubscriptionServiceTest extends TestCase
     {
         $this->requireDatabase();
 
-        $user = User::factory()->create([
-            'kyc_status' => 'approved',
-            'frozen_at'  => now(),
-            'risk_rating' => 'low',
-        ]);
+        $this->planDecision = EntitlementDecision::deny(CardErrorCode::USER_NOT_ACTIVE, 'Account is frozen.');
+
+        $user = User::factory()->create();
         $plan = $this->makePlan('FRZ_' . uniqid());
 
         $this->expectException(EntitlementDeniedException::class);
@@ -158,19 +198,23 @@ class CardSubscriptionServiceTest extends TestCase
     {
         $this->requireDatabase();
 
-        $this->billingMock->shouldReceive('chargeInitialPeriod')
-            ->andThrow(new \RuntimeException('bank error'))
-            ->once();
+        $this->billingAction = new \RuntimeException('bank error');
 
         $user = $this->makeSubscribableUser();
         $plan = $this->makePlan('BILL_ERR_' . uniqid());
 
+        // PHPUnit 10: $this->fail() throws PHPUnit\Framework\Exception which extends
+        // \RuntimeException, so we must re-throw PHPUnit exceptions from the catch block.
+        $caughtMessage = null;
         try {
             $this->service->subscribe($user, $plan->code);
-            $this->fail('Expected RuntimeException was not thrown.');
+        } catch (\PHPUnit\Framework\Exception $e) {
+            throw $e; // never swallow PHPUnit exceptions
         } catch (\RuntimeException $e) {
-            $this->assertSame('bank error', $e->getMessage());
+            $caughtMessage = $e->getMessage();
         }
+
+        $this->assertSame('bank error', $caughtMessage, 'Expected RuntimeException was not thrown.');
 
         $this->assertDatabaseMissing('card_subscriptions', [
             'subscriber_user_id' => $user->id,
@@ -393,6 +437,8 @@ class CardSubscriptionServiceTest extends TestCase
             'failed_payment_count' => 0,
         ]);
 
+        // Capture time BEFORE the call so grace_period_ends_at falls within the window.
+        $callTime = now();
         $this->service->markPastDue($subscription, 'INSUFFICIENT_FUNDS');
 
         $subscription->refresh();
@@ -401,10 +447,13 @@ class CardSubscriptionServiceTest extends TestCase
         $this->assertSame(1, $subscription->failed_payment_count);
         $this->assertNotNull($subscription->grace_period_ends_at);
 
-        $expectedGrace = now()->addDays(3);
+        // Use copy() to avoid Carbon mutation: $lowerBound and $upperBound are independent.
         $this->assertTrue(
-            $subscription->grace_period_ends_at->between($expectedGrace->subSeconds(5), $expectedGrace->addSeconds(5)),
-            'grace_period_ends_at should be ~3 days from now'
+            $subscription->grace_period_ends_at->between(
+                $callTime->copy()->addDays(3)->subSeconds(5),
+                $callTime->copy()->addDays(3)->addSeconds(5),
+            ),
+            'grace_period_ends_at should be ~3 days from when markPastDue was called'
         );
     }
 
