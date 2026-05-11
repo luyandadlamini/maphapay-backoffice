@@ -28,7 +28,7 @@ This file is the source of truth for "where are we now" on the backend side. The
 | 4 | `CardSubscriptionService` and `CardBillingService` | done | 2026-05-09 | 2026-05-09 | c932d0f8 |
 | 5 | Routes, controllers, requests, resources | pending | — | — | — |
 | 6 | Webhooks and processor adapters | pending | — | — | — |
-| 7 | Filament admin | pending | — | — | — |
+| 7 | Filament admin | done | 2026-05-11 | 2026-05-11 | _pending_commit_ |
 | 8 | Jobs and events | pending | — | — | — |
 | 9 | Risk service | pending | — | — | — |
 | 10 | End-to-end smoke test | pending | — | — | — |
@@ -207,20 +207,20 @@ Acceptance: dev can complete a full simulated card-transaction lifecycle.
 
 | # | Task | Status | Started | Completed | Commit | Notes |
 |---:|---|---|---|---|---|---|
-| 7.1 | Write `CardPlanResource` per [`06-filament-admin.md`](./06-filament-admin.md) §2 (super_admin only) | pending | — | — | — | |
-| 7.2 | Write `CardSubscriptionResource` per §3 (incl. retry/suspend/reactivate/cancel/change-plan/waive actions, all governance-wrapped) | pending | — | — | — | |
-| 7.3 | Write `MinorCardSubscriptionResource` per §4 (override-approve action for super_admin) | pending | — | — | — | |
-| 7.4 | Write `CardResource` per §5 (admin freeze/unfreeze, lost/stolen, cancel) | pending | — | — | — | |
-| 7.5 | Write `CardTransactionResource` per §6 (read-only, dispute opener, CSV export) | pending | — | — | — | |
-| 7.6 | Write `PhysicalCardOrderResource` per §7 (Kanban-style transitions) | pending | — | — | — | |
-| 7.7 | Write `CardRiskEventResource` per §8 (assign/in-review/resolve/dismiss/freeze-card) | pending | — | — | — | |
-| 7.8 | Write `CardDisputeResource` per §9 (in-review/evidence/won/lost/withdrawn) | pending | — | — | — | |
-| 7.9 | Write `CardAuditLogResource` per §10 (read-only, no edit, no delete, governed export) | pending | — | — | — | |
-| 7.10 | Write policies under `app/Policies/Cards/` for every resource (deny-by-default) | pending | — | — | — | |
-| 7.11 | Run `php artisan shield:generate` for each resource; install with `shield:install --tenant` | pending | — | — | — | |
-| 7.12 | Build operations dashboard `/admin/cards-dashboard` per §14 | pending | — | — | — | |
-| 7.13 | Write `tests/Feature/Filament/Cards/...` per phase doc list (5 tests minimum) | pending | — | — | — | |
-| 7.14 | All Filament tests pass | pending | — | — | — | |
+| 7.1 | Write `CardPlanResource` per [`06-filament-admin.md`](./06-filament-admin.md) §2 (super_admin only) | done | 2026-05-11 | 2026-05-11 | _pending_commit_ | `super-admin` role; navigation sort 16. |
+| 7.2 | Write `CardSubscriptionResource` per §3 (incl. retry/suspend/reactivate/cancel/change-plan/waive actions, all governance-wrapped) | done | 2026-05-11 | 2026-05-11 | _pending_commit_ | `declare(strict_types=1)`; `Gate` on every action; `next_billing_date` waive uses datetime string for model typing. |
+| 7.3 | Write `MinorCardSubscriptionResource` per §4 (override-approve action for super_admin) | done | 2026-05-11 | 2026-05-11 | _pending_commit_ | Override uses `minorOverrideApprove` policy (`super-admin` only). |
+| 7.4 | Write `CardResource` per §5 (admin freeze/unfreeze, lost/stolen, cancel) | done | 2026-05-11 | 2026-05-11 | _pending_commit_ | Plan filter; `Gate` on actions; `CardLifecycleService::adminFreeze` sets `frozen_by_admin`. |
+| 7.5 | Write `CardTransactionResource` per §6 (read-only, dispute opener, CSV export) | done | 2026-05-11 | 2026-05-11 | _pending_commit_ | CSV bulk export + `AdminActionGovernance`; dispute create URL query `card_transaction_id`; card/user filters via `whereRaw`. |
+| 7.6 | Write `PhysicalCardOrderResource` per §7 (Kanban-style transitions) | done | 2026-05-11 | 2026-05-11 | _pending_commit_ | Navigation sort 15; status actions unchanged from prior work. |
+| 7.7 | Write `CardRiskEventResource` per §8 (assign/in-review/resolve/dismiss/freeze-card) | done | 2026-05-11 | 2026-05-11 | _pending_commit_ | `Gate` on row actions; freeze uses `adminFreeze` on related card. |
+| 7.8 | Write `CardDisputeResource` per §9 (in-review/evidence/won/lost/withdrawn) | done | 2026-05-11 | 2026-05-11 | _pending_commit_ | `Gate::update`; create form prefills from query; `CreateCardDispute` sets `user_id` + `submitted_at`. |
+| 7.9 | Write `CardAuditLogResource` per §10 (read-only, no edit, no delete, governed export) | done | 2026-05-11 | 2026-05-11 | _pending_commit_ | Bulk CSV export; `BackofficeWorkspaceAccess::authorize('compliance')` + governance audit. |
+| 7.10 | Write policies under `app/Policies/Cards/` for every resource (deny-by-default) | done | 2026-05-11 | 2026-05-11 | _pending_commit_ | Policies aligned to hyphenated Spatie roles from `RolesAndPermissionsSeeder` (`super-admin`, `compliance-manager`, `operations-l2`, `fraud-analyst`, `support-l1`). |
+| 7.11 | Run `php artisan shield:generate` for each resource; install with `shield:install --tenant` | done | 2026-05-11 | 2026-05-11 | _pending_commit_ | **N/A:** `bezhansalleh/filament-shield` is not in `composer.json`. Access control is Laravel policies + existing roles/permissions. |
+| 7.12 | Build operations dashboard `/admin/cards-dashboard` per §14 | done | 2026-05-11 | 2026-05-11 | _pending_commit_ | `CardsDashboard` page + `CardsOperationsOverviewWidget` (stats from domain tables). |
+| 7.13 | Write `tests/Feature/Filament/Cards/...` per phase doc list (5 tests minimum) | done | 2026-05-11 | 2026-05-11 | _pending_commit_ | Six Pest files (10 tests): subscriptions list, suspend policy, audit read-only, disputes, minor override, dashboard. |
+| 7.14 | All Filament tests pass | done | 2026-05-11 | 2026-05-11 | _pending_commit_ | `pest tests/Feature/Filament/Cards`; `phpstan` on touched paths clean. |
 
 Acceptance: every admin action requires a reason, writes audit, role-gated correctly.
 
@@ -349,6 +349,14 @@ Pre-existing failures unrelated to Phase 0 — documented, not fixed per Phase 0
 ## Handoff log
 
 Append a new entry every session. Most recent on top.
+
+### 2026-05-11 — backend phase 7 Filament cards admin (agent)
+
+- Completed: Phase 7 tasks 7.1–7.14. Policies mapped to real Spatie roles (`super-admin`, `compliance-manager`, `operations-l2`, `fraud-analyst`, `support-l1`); Filament Shield package not in repo — task 7.11 documented as N/A with policy-based access instead.
+- Implemented: `Gate` on subscription/minor/card/dispute/risk actions; CSV exports (card transactions + card audit logs) with `AdminActionGovernance`; `CardsDashboard` + `CardsOperationsOverviewWidget`; `CreateCardDispute` query prefill + `mutateFormDataBeforeCreate`; `CardLifecycleService::adminFreeze` now sets `frozen_by_admin`.
+- Tests: `tests/Feature/Filament/Cards/*` (10 tests). PHPStan clean on `app/Filament/Admin/Resources/Cards`, `app/Policies/Cards`, `CardsDashboard`, widgets, `CardLifecycleService`.
+- Next: Phase 8 (jobs/events). Replace `_pending_commit_` in this file with the actual SHA after you commit.
+- Fallow: `npx fallow audit` was started but did not finish within the session timeout; re-run before commit per repo rules.
 
 ### 2026-05-09 — backend phase 4 CardSubscriptionService + CardBillingService (claude-opus-4-7 + subagents)
 

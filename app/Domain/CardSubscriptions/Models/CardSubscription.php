@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\CardSubscriptions\Models;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\MinorCardRequest;
 use App\Domain\CardIssuance\Models\Card;
 use App\Domain\CardSubscriptions\Enums\CardSubscriptionStatus;
 use App\Domain\Shared\Traits\UsesTenantConnection;
@@ -100,6 +101,14 @@ class CardSubscription extends Model
     public function minorAccount(): BelongsTo
     {
         return $this->belongsTo(Account::class, 'minor_account_uuid', 'uuid');
+    }
+
+    /**
+     * @return BelongsTo<MinorCardRequest, $this>
+     */
+    public function minorCardRequest(): BelongsTo
+    {
+        return $this->belongsTo(MinorCardRequest::class, 'minor_card_request_id');
     }
 
     /**

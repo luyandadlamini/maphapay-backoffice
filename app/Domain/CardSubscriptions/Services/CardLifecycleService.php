@@ -14,6 +14,7 @@ use App\Domain\CardSubscriptions\ValueObjects\CreateVirtualCardInput;
 use App\Domain\CardSubscriptions\ValueObjects\ReplacementReason;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 class CardLifecycleService
 {
@@ -160,11 +161,22 @@ class CardLifecycleService
 
     public function adminFreeze(User $admin, Card $card, string $reason): Card
     {
-        return $this->freezeCard($admin, $card, $reason);
+        $this->provisioning->freezeCard($card->issuer_card_token);
+
+        $card->update([
+            'status'    => 'frozen_by_admin',
+            'frozen_at' => now(),
+        ]);
+
+        return $card;
     }
 
     public function adminUnfreeze(User $admin, Card $card, string $reason): Card
     {
+        if ($card->status !== 'frozen_by_admin') {
+            throw new InvalidArgumentException('Card must be in frozen_by_admin state for admin unfreeze.');
+        }
+
         return $this->unfreezeCard($admin, $card);
     }
 }
