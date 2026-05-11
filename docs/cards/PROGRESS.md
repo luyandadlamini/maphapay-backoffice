@@ -31,7 +31,7 @@ This file is the source of truth for "where are we now" on the backend side. The
 | 7 | Filament admin | done | 2026-05-11 | 2026-05-11 | 7fa7c3f3 |
 | 8 | Jobs and events | done | 2026-05-11 | 2026-05-11 | 361bb9ce |
 | 9 | Risk service | done | 2026-05-11 | 2026-05-11 | 361bb9ce |
-| 10 | End-to-end smoke test | done | 2026-05-11 | 2026-05-11 | 1af1c5e5 |
+| 10 | End-to-end smoke test | done | 2026-05-11 | 2026-05-11 | d0492ec3 |
 | 11 | Pre-launch security audit | in_progress | 2026-05-11 | — | — |
 | 12 | Launch staging rollout (feature flag flips) | pending | — | — | — |
 
@@ -274,10 +274,10 @@ Acceptance: every threshold in `01-product-config.md` §9 has a test.
 
 | # | Task | Status | Started | Completed | Commit | Notes |
 |---:|---|---|---|---|---|---|
-| 10.1 | Write `tests/Feature/Cards/EndToEndSmokeTest.php` adult flow per phase doc | done | 2026-05-11 | 2026-05-11 | 1af1c5e5 | Subscribe → virtual card (cardholder auto-created) → auth+clearing webhooks → `GET …/transactions` lists settled row → reveal + audit → `POST …/cancel`. |
-| 10.2 | Write Khula minor flow E2E test (guardian approval → minor card → minor authorisation respecting `minor_card_limits`) | done | 2026-05-11 | 2026-05-11 | 1af1c5e5 | Guardian approve path via `POST /api/v1/minor-card-requests/{id}/approve`. Full minor subscribe + card + auth limits blocked on `MinorCardSubscriptionService::{requestSubscribe,requestCardCreation}` still `not implemented` — expand when those land. |
-| 10.3 | Both E2E tests pass on a fresh DB | done | 2026-05-11 | 2026-05-11 | 1af1c5e5 | `DB_*=maphapay_backoffice_test … vendor/bin/pest tests/Feature/Cards/EndToEndSmokeTest.php` |
-| 10.4 | Verify all 10 phases' tests still pass together (`vendor/bin/pest tests/Feature/Cards`) | done | 2026-05-11 | 2026-05-11 | 1af1c5e5 | 158 passed, 1 incomplete (`AuditLogAppendOnlyTest` DB-level guard). |
+| 10.1 | Write `tests/Feature/Cards/EndToEndSmokeTest.php` adult flow per phase doc | done | 2026-05-11 | 2026-05-11 | d0492ec3 | Subscribe → virtual card (cardholder auto-created) → auth+clearing webhooks → `GET …/transactions` lists settled row → reveal + audit → `POST …/cancel`. |
+| 10.2 | Write Khula minor flow E2E test (guardian approval → minor card → minor authorisation respecting `minor_card_limits`) | done | 2026-05-11 | 2026-05-11 | d0492ec3 | Guardian approve path via `POST /api/v1/minor-card-requests/{id}/approve`. Full minor subscribe + card + auth limits blocked on `MinorCardSubscriptionService::{requestSubscribe,requestCardCreation}` still `not implemented` — expand when those land. |
+| 10.3 | Both E2E tests pass on a fresh DB | done | 2026-05-11 | 2026-05-11 | d0492ec3 | `DB_*=maphapay_backoffice_test … vendor/bin/pest tests/Feature/Cards/EndToEndSmokeTest.php` |
+| 10.4 | Verify all 10 phases' tests still pass together (`vendor/bin/pest tests/Feature/Cards`) | done | 2026-05-11 | 2026-05-11 | d0492ec3 | 158 passed, 1 incomplete (`AuditLogAppendOnlyTest` DB-level guard). |
 
 Acceptance: the full lifecycle of an adult subscription and a minor subscription runs green in CI.
 
@@ -289,11 +289,11 @@ Acceptance: the full lifecycle of an adult subscription and a minor subscription
 
 | # | Task | Status | Started | Completed | Commit | Notes |
 |---:|---|---|---|---|---|---|
-| 11.1 | Run CI security greps from [`08-processor-gateway.md`](./08-processor-gateway.md) §11; ALL must pass | done | 2026-05-11 | 2026-05-11 | 1af1c5e5 | Added `scripts/cards-pci-security-check.sh` (scoped greps: CardSubscriptions + CardIssuance PHP + demo-cards Blade; avoids repo-wide false positives). **Wire to CI:** add a `cards-pci-static-analysis` job in `.github/workflows/04-security-tests.yml` (checkout + run script) — workflow edit was blocked in agent; apply manually. |
+| 11.1 | Run CI security greps from [`08-processor-gateway.md`](./08-processor-gateway.md) §11; ALL must pass | done | 2026-05-11 | 2026-05-11 | d0492ec3 | Added `scripts/cards-pci-security-check.sh` (scoped greps: CardSubscriptions + CardIssuance PHP + demo-cards Blade; avoids repo-wide false positives). **Wire to CI:** add a `cards-pci-static-analysis` job in `.github/workflows/04-security-tests.yml` (checkout + run script) — workflow edit was blocked in agent; apply manually. |
 | 11.2 | Verify §14 checklist (production secrets in vault, HTTPS reveal page, originWhitelist, `hash_equals`, monitoring) | pending | — | — | — | |
-| 11.3 | Manual: try inserting a 16-digit string into `card_audit_logs.metadata.notes` via the audit service; confirm rejection | done | 2026-05-11 | 2026-05-11 | 1af1c5e5 | Automated: `CardAuditService` rejects `\d{13,19}` in metadata; `tests/Feature/Cards/Services/CardAuditServicePanMetadataTest.php`. |
-| 11.4 | Manual: try calling reveal endpoint for another user's card; confirm 404 | done | 2026-05-11 | 2026-05-11 | 1af1c5e5 | Automated: `CardRevealControllerTest` cross-user case. |
-| 11.5 | Manual: try webhook replay with tampered body; confirm 401 | done | 2026-05-11 | 2026-05-11 | 1af1c5e5 | Covered by `DemoCardIssuerAdapterTest::verify webhook signature rejects tampered body` + `AuthorisationWebhookTest::invalid signature`. |
+| 11.3 | Manual: try inserting a 16-digit string into `card_audit_logs.metadata.notes` via the audit service; confirm rejection | done | 2026-05-11 | 2026-05-11 | d0492ec3 | Automated: `CardAuditService` rejects `\d{13,19}` in metadata; `tests/Feature/Cards/Services/CardAuditServicePanMetadataTest.php`. |
+| 11.4 | Manual: try calling reveal endpoint for another user's card; confirm 404 | done | 2026-05-11 | 2026-05-11 | d0492ec3 | Automated: `CardRevealControllerTest` cross-user case. |
+| 11.5 | Manual: try webhook replay with tampered body; confirm 401 | done | 2026-05-11 | 2026-05-11 | d0492ec3 | Covered by `DemoCardIssuerAdapterTest::verify webhook signature rejects tampered body` + `AuthorisationWebhookTest::invalid signature`. |
 | 11.6 | Manual: try Filament admin action without required role; confirm 403 | pending | — | — | — | |
 | 11.7 | Request external code review (e.g. via `requesting-code-review` skill or team channel) | pending | — | — | — | |
 
@@ -357,6 +357,7 @@ Append a new entry every session. Most recent on top.
 - **Phase 11:** Automated slices done (11.1 script, 11.3–11.5 tests). **Remaining manual / ops:** 11.2 checklist (secrets, HTTPS reveal, originWhitelist, monitoring), 11.6 Filament role 403 spot-check, 11.7 external review. **CI:** add security workflow step to run `scripts/cards-pci-security-check.sh` (patch blocked in agent session).
 - **Verification:** `vendor/bin/pest tests/Feature/Cards` — 158 passed, 1 incomplete. PHPStan clean on touched paths.
 - **Phase 12:** unchanged (feature-flag rollout — product/ops).
+- **Closing commit:** `d0492ec3`.
 
 ### 2026-05-11 — backend phases 8–9 + PROGRESS sync; phase 10 partial (agent)
 
