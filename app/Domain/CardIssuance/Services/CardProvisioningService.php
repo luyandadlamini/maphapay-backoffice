@@ -9,6 +9,7 @@ use App\Domain\CardIssuance\Enums\CardNetwork;
 use App\Domain\CardIssuance\Enums\WalletType;
 use App\Domain\CardIssuance\Events\CardProvisioned;
 use App\Domain\CardIssuance\Models\Card;
+use App\Domain\CardIssuance\Models\Cardholder;
 use App\Domain\CardIssuance\ValueObjects\ProvisioningData;
 use App\Domain\CardIssuance\ValueObjects\VirtualCard;
 use App\Models\User;
@@ -172,13 +173,24 @@ class CardProvisioningService
         $issuer = $this->cardIssuer->getName();
         $currency = (string) config("cardissuance.issuers.{$issuer}.currency", 'SZL');
 
-        $cardholder = \App\Domain\CardIssuance\Models\Cardholder::where('user_id', $user->id)->first();
+        $nameParts = preg_split('/\s+/', trim((string) $user->name), 2, PREG_SPLIT_NO_EMPTY) ?: [];
+        $firstName = $nameParts[0] ?? 'Cardholder';
+        $lastName = $nameParts[1] ?? 'User';
+
+        $cardholder = Cardholder::query()->firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'first_name' => $firstName,
+                'last_name'  => $lastName,
+                'kyc_status' => 'verified',
+            ],
+        );
 
         Card::query()->updateOrCreate(
             ['issuer_card_token' => $card->cardToken],
             [
                 'user_id'       => $user->id,
-                'cardholder_id' => $cardholder?->id ?? $user->id,
+                'cardholder_id' => $cardholder->id,
                 'issuer'        => $issuer,
                 'last4'         => $card->last4,
                 'network'       => $card->network->value,

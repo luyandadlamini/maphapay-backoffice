@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Domain\CardSubscriptions\Http\Controllers;
 
-use App\Domain\CardIssuance\ValueObjects\CardTransaction;
+use App\Domain\CardIssuance\Models\Card;
+use App\Domain\CardIssuance\ValueObjects\CardTransaction as CardTransactionValueObject;
 use App\Domain\CardSubscriptions\Http\Requests\CardDisputeRequest;
 use App\Domain\CardSubscriptions\Http\Resources\CardDisputeResource;
+use App\Domain\CardSubscriptions\Models\CardTransaction as CardTransactionRecord;
 use App\Domain\CardSubscriptions\Services\CardDisputeService;
 use App\Domain\CardSubscriptions\ValueObjects\DisputeInput;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -19,15 +22,36 @@ class CardTransactionController extends Controller
         private readonly CardDisputeService $disputeService
     ) {}
 
-    public function index(Request $request, string $cardId): JsonResource
+    public function index(Request $request, string $cardId): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
-        
-        // Mock returning transactions as array since CardTransaction is a ValueObject right now.
-        $transactions = [];
 
-        return JsonResource::collection(collect($transactions));
+        $card = Card::query()
+            ->whereKey($cardId)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        $rows = CardTransactionRecord::query()
+            ->where('card_id', $card->id)
+            ->orderByDesc('created_at')
+            ->limit(100)
+            ->get();
+
+        $data = $rows->map(static function (CardTransactionRecord $t): array {
+            return [
+                'id'                  => (string) $t->id,
+                'status'              => $t->status,
+                'amount'              => number_format($t->amount_cents / 100, 2, '.', ''),
+                'currency'            => $t->currency,
+                'merchant_name'       => $t->merchant_name,
+                'merchant_category'   => $t->merchant_category,
+                'settled_at'          => $t->settled_at?->toIso8601String(),
+                'authorization_id'    => $t->authorization_id,
+            ];
+        })->values()->all();
+
+        return response()->json(['data' => $data]);
     }
 
     public function show(Request $request, string $cardId, string $transactionId): JsonResource
@@ -36,7 +60,7 @@ class CardTransactionController extends Controller
         $user = $request->user();
         
         // Mock retrieval
-        $transaction = new CardTransaction(
+        $transaction = new CardTransactionValueObject(
             transactionId: $transactionId,
             cardToken: $cardId,
             merchantName: 'Mock Merchant',
@@ -55,7 +79,7 @@ class CardTransactionController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user();
         
-        $transaction = new CardTransaction(
+        $transaction = new CardTransactionValueObject(
             transactionId: $transactionId,
             cardToken: $cardId,
             merchantName: 'Mock Merchant',

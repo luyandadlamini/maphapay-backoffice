@@ -42,6 +42,32 @@ describe('GET /me', function () {
     });
 });
 
+describe('POST /card-subscriptions/cancel', function () {
+    it('cancels the current subscription', function () {
+        $this->actingAsWithScopes($this->business_user);
+
+        $this->withHeaders([
+            'X-Account-Id'    => $this->account->uuid,
+            'Idempotency-Key' => (string) \Illuminate\Support\Str::uuid(),
+        ])->postJson('/api/v1/card-subscriptions', [
+            'plan_code' => 'VIRTUAL_LITE',
+        ])->assertStatus(201);
+
+        $cancel = $this->withHeaders([
+            'X-Account-Id'    => $this->account->uuid,
+            'Idempotency-Key' => (string) \Illuminate\Support\Str::uuid(),
+        ])->postJson('/api/v1/card-subscriptions/cancel');
+
+        $cancel->assertOk();
+
+        $me = $this->withHeader('X-Account-Id', $this->account->uuid)
+            ->getJson('/api/v1/card-subscriptions/me');
+
+        $me->assertOk();
+        $me->assertJson(['data' => null]);
+    });
+});
+
 describe('POST / (create subscription)', function () {
     it('creates a subscription and the me endpoint reflects it', function () {
         $this->actingAsWithScopes($this->business_user);

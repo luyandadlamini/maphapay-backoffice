@@ -6,7 +6,7 @@ use App\Domain\CardIssuance\Models\Card;
 use App\Domain\CardSubscriptions\Models\CardSubscription;
 use App\Domain\CardSubscriptions\Enums\CardSubscriptionStatus;
 use App\Domain\CardSubscriptions\Models\CardPlan;
-use Illuminate\Support\Facades\Event;
+use App\Models\User;
 
 beforeEach(function () {
     $this->seed(\Database\Seeders\CardPlanSeeder::class);
@@ -92,5 +92,21 @@ describe('GET /api/v1/cards/{id}/reveal', function () {
             'entity_id' => $this->card->id,
             'action' => 'reveal_requested',
         ]);
+    });
+
+    it('returns 404 when another user requests reveal for a card they do not own', function () {
+        $other = User::factory()->create([
+            'kyc_status'      => 'approved',
+            'kyc_approved_at' => now(),
+        ]);
+
+        $response = $this->actingAsWithScopes($other)
+            ->withHeaders([
+                'X-Account-Id'   => $this->account->uuid,
+                'X-Mobile-Trust' => 'valid-trust-token',
+            ])
+            ->getJson("/api/v1/cards/{$this->card->id}/reveal");
+
+        $response->assertNotFound();
     });
 });

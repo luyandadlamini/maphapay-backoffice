@@ -12,6 +12,28 @@ use App\Models\User;
 class CardAuditService
 {
     /**
+     * Reject metadata that contains digit runs resembling a PAN (PCI scope).
+     *
+     * @param array<string, mixed> $metadata
+     */
+    private function assertMetadataHasNoPanLikeDigitRuns(array $metadata): void
+    {
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveArrayIterator($metadata));
+
+        foreach ($iterator as $leaf) {
+            if (! is_string($leaf)) {
+                continue;
+            }
+
+            if (preg_match('/\d{13,19}/', $leaf) === 1) {
+                throw new \InvalidArgumentException(
+                    'Card audit metadata must not contain digit sequences resembling a PAN.',
+                );
+            }
+        }
+    }
+
+    /**
      * @param array<string, mixed>|null $beforeState
      * @param array<string, mixed>|null $afterState
      * @param array<string, mixed> $metadata
@@ -26,6 +48,8 @@ class CardAuditService
         ?array $afterState,
         array $metadata = [],
     ): CardAuditLog {
+        $this->assertMetadataHasNoPanLikeDigitRuns($metadata);
+
         /** @var CardAuditLog $log */
         $log = CardAuditLog::create([
             'actor_type'   => $actorType,
@@ -36,8 +60,8 @@ class CardAuditService
             'before_state' => $beforeState,
             'after_state'  => $afterState,
             'metadata'     => $metadata,
-            'ip_address'   => request()?->ip(),
-            'user_agent'   => request()?->userAgent(),
+            'ip_address'   => request()->ip(),
+            'user_agent'   => request()->userAgent(),
         ]);
 
         return $log;
