@@ -1,4 +1,4 @@
-export class BridgeError extends Error {
+class BridgeError extends Error {
   public readonly statusCode: number;
   public readonly code: string;
 

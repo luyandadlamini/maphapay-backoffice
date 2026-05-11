@@ -17,11 +17,14 @@ use Illuminate\Support\Str;
  * the primary API surface and webhook ingress stay coherent end-to-end.
  */
 beforeEach(function (): void {
+    config(['maphapay_migration.enable_verification' => true]);
+
     $this->seed(\Database\Seeders\CardPlanSeeder::class);
 
     $this->business_user->update([
         'kyc_status'      => 'approved',
         'kyc_approved_at' => now(),
+        'transaction_pin' => '1234',
     ]);
 
     $this->app->instance(\App\Http\Middleware\CheckKycApproved::class, new class {
@@ -64,7 +67,7 @@ beforeEach(function (): void {
 it('adult subscribe → virtual card → webhooks → transactions list → reveal → cancel', function (): void {
     $user = $this->business_user;
 
-    $subscribe = $this->actingAsWithScopes($user)
+    $subscribeInit = $this->actingAsWithScopes($user)
         ->withHeaders([
             'X-Account-Id'    => $this->account->uuid,
             'Idempotency-Key' => (string) Str::uuid(),
@@ -73,7 +76,14 @@ it('adult subscribe → virtual card → webhooks → transactions list → reve
             'plan_code' => 'VIRTUAL_LITE',
         ]);
 
-    $subscribe->assertStatus(201);
+    $subscribeInit->assertStatus(200)->assertJsonPath('data.next_step', 'pin');
+
+    $this->actingAsWithScopes($user)
+        ->postJson('/api/verification-process/verify/pin', [
+            'trx'    => $subscribeInit->json('data.trx'),
+            'pin'    => '1234',
+            'remark' => 'card_product',
+        ])->assertOk();
 
     $me = $this->actingAsWithScopes($user)
         ->withHeader('X-Account-Id', $this->account->uuid)
@@ -82,7 +92,11 @@ it('adult subscribe → virtual card → webhooks → transactions list → reve
     $me->assertOk();
     expect($me->json('data.plan.code'))->toBe('VIRTUAL_LITE');
 
-    $cardResponse = $this->actingAsWithScopes($user)
+    $virtualInit = $this->actingAsWithScopes($user)
+        ->withHeaders([
+            'X-Account-Id'    => $this->account->uuid,
+            'Idempotency-Key' => (string) Str::uuid(),
+        ])
         ->postJson('/api/v1/cards/virtual', [
             'nickname'  => 'Smoke wallet',
             'lifecycle' => 'standard',
@@ -95,8 +109,17 @@ it('adult subscribe → virtual card → webhooks → transactions list → reve
             ],
         ]);
 
-    $cardResponse->assertStatus(201);
-    $cardId = $cardResponse->json('data.id');
+    $virtualInit->assertStatus(200)->assertJsonPath('data.next_step', 'pin');
+
+    $cardVerified = $this->actingAsWithScopes($user)
+        ->postJson('/api/verification-process/verify/pin', [
+            'trx'    => $virtualInit->json('data.trx'),
+            'pin'    => '1234',
+            'remark' => 'card_product',
+        ]);
+
+    $cardVerified->assertOk();
+    $cardId = $cardVerified->json('data.card.id');
 
     $card = Card::query()->whereKey($cardId)->firstOrFail();
     $issuerToken = (string) $card->issuer_card_token;
@@ -182,14 +205,21 @@ it('adult subscribe → virtual card → webhooks → transactions list → reve
         'action'      => 'reveal_requested',
     ]);
 
-    $cancel = $this->actingAsWithScopes($user)
+    $cancelInit = $this->actingAsWithScopes($user)
         ->withHeaders([
             'X-Account-Id'    => $this->account->uuid,
             'Idempotency-Key' => (string) Str::uuid(),
         ])
         ->postJson('/api/v1/card-subscriptions/cancel');
 
-    $cancel->assertOk();
+    $cancelInit->assertStatus(200)->assertJsonPath('data.next_step', 'pin');
+
+    $this->actingAsWithScopes($user)
+        ->postJson('/api/verification-process/verify/pin', [
+            'trx'    => $cancelInit->json('data.trx'),
+            'pin'    => '1234',
+            'remark' => 'card_product',
+        ])->assertOk();
 
     $sub = CardSubscription::query()
         ->where('subscriber_user_id', $user->id)
@@ -200,33 +230,6 @@ it('adult subscribe → virtual card → webhooks → transactions list → reve
     expect($sub->status)->toBe(CardSubscriptionStatus::Cancelled);
 });
 
-it('guardian can approve a pending minor card request (Khula governance smoke)', function (): void {
-    $guardian = $this->business_user;
-
-    $guardian->update([
-        'kyc_status'      => 'approved',
-        'kyc_approved_at' => now(),
-    ]);
-
-    $minorRequest = \App\Domain\Account\Models\MinorCardRequest::create([
-        'minor_account_uuid'     => $this->account->uuid,
-        'requested_by_user_uuid' => $guardian->id,
-        'request_type'           => \App\Domain\Account\Constants\MinorCardConstants::REQUEST_TYPE_PARENT_INITIATED,
-        'status'                 => \App\Domain\Account\Constants\MinorCardConstants::STATUS_PENDING_APPROVAL,
-        'requested_network'      => 'visa',
-    ]);
-
-    $approve = $this->actingAsWithScopes($guardian)
-        ->withHeaders([
-            'X-Account-Id'    => $this->account->uuid,
-            'Idempotency-Key' => (string) Str::uuid(),
-        ])
-        ->postJson("/api/v1/minor-card-requests/{$minorRequest->id}/approve");
-
-    $approve->assertOk();
-
-    $this->assertDatabaseHas('minor_card_requests', [
-        'id'     => $minorRequest->id,
-        'status' => \App\Domain\Account\Constants\MinorCardConstants::STATUS_APPROVED,
-    ]);
-});
+// Guardian minor-card approve/deny + list coverage lives in
+// tests/Feature/Cards/Http/MinorCardRequestControllerTest.php (isolated fixtures; avoids
+// cross-connection lock contention with this file's heavier card lifecycle setup).

@@ -277,4 +277,100 @@ class MinorCardRequestServiceTest extends BaseTestCase
         DB::table('cardholders')->delete();
         MinorCardRequest::query()->delete();
     }
+
+    #[Test]
+    public function create_request_rejects_first_flow_when_minor_already_has_scoped_active_card(): void
+    {
+        $guardian = User::factory()->create();
+        $child = User::factory()->create();
+
+        $minorAccount = Account::factory()->create([
+            'user_uuid' => $child->uuid,
+            'type'      => 'minor',
+            'tier'      => 'rise',
+        ]);
+
+        $this->accessService->shouldReceive('hasGuardianAccess')
+            ->andReturn(true);
+
+        $cardholderId = Str::uuid()->toString();
+        DB::table('cardholders')->insert([
+            'id'         => $cardholderId,
+            'user_id'    => $child->id,
+            'first_name' => 'Test',
+            'last_name'  => 'User',
+        ]);
+        DB::table('cards')->insert([
+            'id'                  => Str::uuid()->toString(),
+            'user_id'             => $child->id,
+            'minor_account_uuid'  => $minorAccount->uuid,
+            'cardholder_id'       => $cardholderId,
+            'issuer_card_token'   => Str::uuid()->toString(),
+            'issuer'              => 'test',
+            'last4'               => '1234',
+            'network'             => 'visa',
+            'status'              => 'active',
+            'currency'            => 'USD',
+        ]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Minor already has an active virtual card');
+
+        try {
+            $this->service->createRequest($guardian, $minorAccount, 'visa', null, null);
+        } finally {
+            DB::table('cards')->delete();
+            DB::table('cardholders')->delete();
+        }
+    }
+
+    #[Test]
+    public function create_request_allows_follow_on_intent_when_minor_has_active_card(): void
+    {
+        $guardian = User::factory()->create();
+        $child = User::factory()->create();
+
+        $minorAccount = Account::factory()->create([
+            'user_uuid' => $child->uuid,
+            'type'      => 'minor',
+            'tier'      => 'rise',
+        ]);
+
+        $this->accessService->shouldReceive('hasGuardianAccess')
+            ->andReturn(true);
+
+        $cardholderId = Str::uuid()->toString();
+        DB::table('cardholders')->insert([
+            'id'         => $cardholderId,
+            'user_id'    => $child->id,
+            'first_name' => 'Test',
+            'last_name'  => 'User',
+        ]);
+        DB::table('cards')->insert([
+            'id'                  => Str::uuid()->toString(),
+            'user_id'             => $child->id,
+            'minor_account_uuid'  => $minorAccount->uuid,
+            'cardholder_id'       => $cardholderId,
+            'issuer_card_token'   => Str::uuid()->toString(),
+            'issuer'              => 'test',
+            'last4'               => '1234',
+            'network'             => 'visa',
+            'status'              => 'active',
+            'currency'            => 'USD',
+        ]);
+
+        $intent = [
+            'request_type' => 'replace_card',
+            'payload'      => ['card_id' => 'card-1', 'reason' => 'lost'],
+        ];
+
+        $result = $this->service->createRequest($guardian, $minorAccount, 'visa', null, $intent);
+
+        $this->assertEquals(MinorCardConstants::STATUS_PENDING_APPROVAL, $result->status);
+        $this->assertEquals($intent, $result->intent_payload);
+
+        DB::table('cards')->delete();
+        DB::table('cardholders')->delete();
+        MinorCardRequest::query()->delete();
+    }
 }

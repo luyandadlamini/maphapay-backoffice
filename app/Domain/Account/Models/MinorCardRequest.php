@@ -27,6 +27,7 @@ class MinorCardRequest extends Model
         'requested_daily_limit',
         'requested_monthly_limit',
         'requested_single_limit',
+        'intent_payload',
         'denial_reason',
         'approved_by_user_uuid',
         'approved_at',
@@ -37,6 +38,7 @@ class MinorCardRequest extends Model
         'requested_daily_limit'   => 'decimal:2',
         'requested_monthly_limit' => 'decimal:2',
         'requested_single_limit'  => 'decimal:2',
+        'intent_payload'          => 'array',
         'approved_at'             => 'datetime',
         'expires_at'              => 'datetime',
     ];

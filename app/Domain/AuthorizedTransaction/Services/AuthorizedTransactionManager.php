@@ -10,6 +10,7 @@ use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderIn
 use App\Domain\AuthorizedTransaction\Exceptions\InvalidTransactionPinException;
 use App\Domain\AuthorizedTransaction\Exceptions\TransactionNotFoundException;
 use App\Domain\AuthorizedTransaction\Exceptions\TransactionPinNotSetException;
+use App\Domain\AuthorizedTransaction\Handlers\CardProductAuthorizedHandler;
 use App\Domain\AuthorizedTransaction\Handlers\RequestMoneyHandler;
 use App\Domain\AuthorizedTransaction\Handlers\RequestMoneyReceivedHandler;
 use App\Domain\AuthorizedTransaction\Handlers\ScheduledSendHandler;
@@ -59,6 +60,7 @@ class AuthorizedTransactionManager
         AuthorizedTransaction::REMARK_SCHEDULED_SEND         => ScheduledSendHandler::class,
         AuthorizedTransaction::REMARK_REQUEST_MONEY          => RequestMoneyHandler::class,
         AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED => RequestMoneyReceivedHandler::class,
+        AuthorizedTransaction::REMARK_CARD_PRODUCT          => CardProductAuthorizedHandler::class,
     ];
 
     public function __construct(
@@ -66,6 +68,7 @@ class AuthorizedTransactionManager
         private readonly ScheduledSendHandler $scheduledSendHandler,
         private readonly RequestMoneyHandler $requestMoneyHandler,
         private readonly RequestMoneyReceivedHandler $requestMoneyReceivedHandler,
+        private readonly CardProductAuthorizedHandler $cardProductAuthorizedHandler,
         private readonly MoneyMovementRiskSignalProviderInterface $riskSignals,
         private readonly OperationRecordService $operationRecordService,
         private readonly LedgerPostingService $ledgerPostingService,
@@ -555,6 +558,7 @@ class AuthorizedTransactionManager
             AuthorizedTransaction::REMARK_SCHEDULED_SEND         => $this->scheduledSendHandler,
             AuthorizedTransaction::REMARK_REQUEST_MONEY          => $this->requestMoneyHandler,
             AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED => $this->requestMoneyReceivedHandler,
+            AuthorizedTransaction::REMARK_CARD_PRODUCT          => $this->cardProductAuthorizedHandler,
             default                                              => throw new InvalidArgumentException("No handler for remark: {$remark}"),
         };
     }

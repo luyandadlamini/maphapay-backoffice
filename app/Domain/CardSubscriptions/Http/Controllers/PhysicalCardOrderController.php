@@ -8,19 +8,19 @@ use App\Domain\CardSubscriptions\Http\Requests\PhysicalCardActivationRequest;
 use App\Domain\CardSubscriptions\Http\Requests\PhysicalCardRequest;
 use App\Domain\CardSubscriptions\Http\Resources\PhysicalCardOrderResource;
 use App\Domain\CardSubscriptions\Models\CardSubscription;
+use App\Domain\CardSubscriptions\Services\CardProductAuthorizationCoordinator;
 use App\Domain\CardSubscriptions\Services\CardSubscriptionService;
-use App\Domain\CardSubscriptions\Services\PhysicalCardOrderService;
-use App\Domain\CardSubscriptions\ValueObjects\ActivateInput;
 use App\Domain\CardSubscriptions\ValueObjects\PhysicalCardDeliveryAddress;
 use App\Domain\CardSubscriptions\ValueObjects\RequestPhysicalCardInput;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class PhysicalCardOrderController extends Controller
 {
     public function __construct(
-        private readonly PhysicalCardOrderService $orderService,
+        private readonly CardProductAuthorizationCoordinator $cardProductAuthorization,
         private readonly CardSubscriptionService $subscriptionService
     ) {}
 
@@ -30,7 +30,7 @@ class PhysicalCardOrderController extends Controller
         $user = $request->user();
         $subscription = $this->subscriptionService->getCurrent($user);
 
-        if (!$subscription) {
+        if (! $subscription) {
             abort(403, 'Active subscription required.');
         }
 
@@ -39,13 +39,13 @@ class PhysicalCardOrderController extends Controller
         return PhysicalCardOrderResource::collection($orders);
     }
 
-    public function store(PhysicalCardRequest $request): PhysicalCardOrderResource
+    public function store(PhysicalCardRequest $request): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
         $subscription = $this->subscriptionService->getCurrent($user);
 
-        if (!$subscription) {
+        if (! $subscription) {
             abort(403, 'Active subscription required.');
         }
 
@@ -55,7 +55,7 @@ class PhysicalCardOrderController extends Controller
         if ($deliveryMethod === 'courier') {
             $address = $request->validated('delivery_address');
             $addressInput = new PhysicalCardDeliveryAddress(
-                recipientName: $user->name, // Using user name since it might not be in payload
+                recipientName: $user->name,
                 phone: $address['phone_number'],
                 addressLine1: $address['line1'],
                 addressLine2: $address['line2'] ?? null,
@@ -71,9 +71,24 @@ class PhysicalCardOrderController extends Controller
             collectionPointId: $request->validated('collection_point_id')
         );
 
-        $order = $this->orderService->request($user, $subscription, $input);
+        $idempotencyKey = (string) $request->header('Idempotency-Key', '');
 
-        return new PhysicalCardOrderResource($order);
+        return $this->cardProductAuthorization->begin($user, 'physical_request', [
+            'physical_request' => [
+                'delivery_method'      => $input->deliveryMethod,
+                'delivery_address'     => $deliveryMethod === 'courier'
+                    ? [
+                        'phone_number' => $address['phone_number'],
+                        'line1'        => $address['line1'],
+                        'line2'        => $address['line2'] ?? null,
+                        'city'         => $address['city'],
+                        'region'       => $address['region'] ?? 'Unknown',
+                        'country'      => $address['country'],
+                    ]
+                    : null,
+                'collection_point_id' => $request->validated('collection_point_id'),
+            ],
+        ], $idempotencyKey);
     }
 
     public function show(Request $request, string $orderId): PhysicalCardOrderResource
@@ -82,7 +97,7 @@ class PhysicalCardOrderController extends Controller
         $user = $request->user();
         $subscription = $this->subscriptionService->getCurrent($user);
 
-        if (!$subscription) {
+        if (! $subscription) {
             abort(403, 'Active subscription required.');
         }
 
@@ -91,31 +106,50 @@ class PhysicalCardOrderController extends Controller
         return new PhysicalCardOrderResource($order);
     }
 
-    public function activate(PhysicalCardActivationRequest $request, string $orderId): PhysicalCardOrderResource
+    public function activate(PhysicalCardActivationRequest $request, string $orderId): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
-        
+
         $subscription = $this->subscriptionService->getCurrent($user);
-        if (!$subscription) {
+        if (! $subscription instanceof CardSubscription) {
             abort(403, 'Active subscription required.');
         }
 
-        $order = $subscription->orders()->where('id', $orderId)->firstOrFail();
+        $subscription->orders()->where('id', $orderId)->firstOrFail();
 
-        $input = new ActivateInput(
-            activationCode: $request->validated('activation_code'),
-            metadata: ['pin' => $request->validated('pin')]
-        );
+        $idempotencyKey = (string) $request->header('Idempotency-Key', '');
 
-        $this->orderService->activate(
-            user: $user,
-            order: $order,
-            input: $input
-        );
-        
-        $order->refresh();
+        return $this->cardProductAuthorization->begin($user, 'physical_activate', [
+            'order_id' => $orderId,
+            'activate' => [
+                'activation_code' => $request->validated('activation_code'),
+                'pin'             => $request->validated('pin'),
+            ],
+        ], $idempotencyKey);
+    }
 
-        return new PhysicalCardOrderResource($order);
+    public function cancel(Request $request, string $orderId): JsonResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+
+        $subscription = $this->subscriptionService->getCurrent($user);
+        if (! $subscription instanceof CardSubscription) {
+            abort(403, 'Active subscription required.');
+        }
+
+        $subscription->orders()->where('id', $orderId)->firstOrFail();
+
+        $validated = $request->validate([
+            'reason' => ['sometimes', 'string', 'max:500'],
+        ]);
+
+        $idempotencyKey = (string) $request->header('Idempotency-Key', '');
+
+        return $this->cardProductAuthorization->begin($user, 'physical_cancel', [
+            'order_id'              => $orderId,
+            'cancellation_reason'   => (string) ($validated['reason'] ?? 'user_requested'),
+        ], $idempotencyKey);
     }
 }

@@ -55,6 +55,9 @@ class AuthorizedTransaction extends Model
 
     public const REMARK_REQUEST_MONEY_RECEIVED = 'request_money_received';
 
+    /** Card subscriptions + lifecycle + reveal (single handler; payload carries `operation`). */
+    public const REMARK_CARD_PRODUCT = 'card_product';
+
     public const VERIFICATION_OTP = 'otp';
 
     public const VERIFICATION_PIN = 'pin';

@@ -7,10 +7,8 @@ namespace App\Domain\CardSubscriptions\Http\Controllers;
 use App\Domain\CardIssuance\Models\Card;
 use App\Domain\CardIssuance\ValueObjects\CardTransaction as CardTransactionValueObject;
 use App\Domain\CardSubscriptions\Http\Requests\CardDisputeRequest;
-use App\Domain\CardSubscriptions\Http\Resources\CardDisputeResource;
 use App\Domain\CardSubscriptions\Models\CardTransaction as CardTransactionRecord;
-use App\Domain\CardSubscriptions\Services\CardDisputeService;
-use App\Domain\CardSubscriptions\ValueObjects\DisputeInput;
+use App\Domain\CardSubscriptions\Services\CardProductAuthorizationCoordinator;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,7 +17,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class CardTransactionController extends Controller
 {
     public function __construct(
-        private readonly CardDisputeService $disputeService
+        private readonly CardProductAuthorizationCoordinator $cardProductAuthorization,
     ) {}
 
     public function index(Request $request, string $cardId): JsonResponse
@@ -40,29 +38,28 @@ class CardTransactionController extends Controller
 
         $data = $rows->map(static function (CardTransactionRecord $t): array {
             return [
-                'id'                  => (string) $t->id,
-                'status'              => $t->status,
-                'amount'              => number_format($t->amount_cents / 100, 2, '.', ''),
-                'currency'            => $t->currency,
-                'merchant_name'       => $t->merchant_name,
-                'merchant_category'   => $t->merchant_category,
-                'settled_at'          => $t->settled_at?->toIso8601String(),
-                'authorization_id'    => $t->authorization_id,
+                'id'                => (string) $t->id,
+                'status'            => $t->status,
+                'amount'            => number_format($t->amount_cents / 100, 2, '.', ''),
+                'currency'          => $t->currency,
+                'merchant_name'     => $t->merchant_name,
+                'merchant_category' => $t->merchant_category,
+                'settled_at'        => $t->settled_at?->toIso8601String(),
+                'authorization_id'  => $t->authorization_id,
             ];
         })->values()->all();
 
         return response()->json(['data' => $data]);
     }
 
-    public function show(Request $request, string $cardId, string $transactionId): JsonResource
+    public function show(Request $request, string $id): JsonResource
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
-        
-        // Mock retrieval
+
         $transaction = new CardTransactionValueObject(
-            transactionId: $transactionId,
-            cardToken: $cardId,
+            transactionId: $id,
+            cardToken: $id,
             merchantName: 'Mock Merchant',
             merchantCategory: 'Mock Category',
             amountCents: 1000,
@@ -74,34 +71,28 @@ class CardTransactionController extends Controller
         return new JsonResource($transaction->toArray());
     }
 
-    public function dispute(CardDisputeRequest $request, string $cardId, string $transactionId): CardDisputeResource
+    public function dispute(CardDisputeRequest $request, string $transactionId): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
-        
-        $transaction = new CardTransactionValueObject(
-            transactionId: $transactionId,
-            cardToken: $cardId,
-            merchantName: 'Mock Merchant',
-            merchantCategory: 'Mock Category',
-            amountCents: 1000,
-            currency: 'ZAR',
-            status: 'settled',
-            timestamp: new \DateTimeImmutable()
-        );
 
-        $input = new DisputeInput(
-            reason: $request->validated('reason'),
-            description: $request->validated('description'),
-            amountCents: (int) round(((float) $request->validated('disputed_amount')) * 100)
-        );
+        $cardId = $request->validated('card_id');
 
-        $dispute = $this->disputeService->open(
-            user: $user,
-            transaction: $transaction,
-            input: $input
-        );
+        Card::query()
+            ->whereKey($cardId)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
 
-        return new CardDisputeResource($dispute);
+        $idempotencyKey = (string) $request->header('Idempotency-Key', '');
+
+        return $this->cardProductAuthorization->begin($user, 'dispute_transaction', [
+            'card_id'         => $cardId,
+            'transaction_id'  => $transactionId,
+            'dispute'         => [
+                'reason'           => $request->validated('reason'),
+                'description'      => $request->validated('description'),
+                'disputed_amount'  => $request->validated('disputed_amount'),
+            ],
+        ], $idempotencyKey);
     }
 }

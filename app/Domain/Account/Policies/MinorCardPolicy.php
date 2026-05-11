@@ -21,7 +21,9 @@ class MinorCardPolicy
 
     public function request(User $user, Account $minorAccount): bool
     {
-        return $this->accessService()->hasGuardianAccess($user, $minorAccount);
+        // Minors self-request via POST /v1/minor-card-requests (`self_request`);
+        // guardians use `minor_account_uuid`. Both must be able to open a request row.
+        return $this->accessService()->canView($user, $minorAccount);
     }
 
     public function approve(User $user, MinorCardRequest $request): bool

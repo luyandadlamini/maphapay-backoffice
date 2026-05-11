@@ -14,7 +14,7 @@ import {
   SUPPORTED_NETWORKS,
   DEFAULT_TXID_VERSION,
 } from '../engine';
-import { EngineNotReadyError, ValidationError, errorResponse } from '../utils/errors';
+import { EngineNotReadyError, ValidationError, WalletNotFoundError, errorResponse } from '../utils/errors';
 
 const router = Router();
 
@@ -73,11 +73,7 @@ router.get('/wallet/:id/balances', async (req: Request, res: Response) => {
 
     const walletInfo = walletRegistry.get(walletId);
     if (!walletInfo) {
-      res.status(404).json({
-        success: false,
-        error: { code: 'WALLET_NOT_FOUND', message: `Wallet ${walletId} not found` },
-      });
-      return;
+      throw new WalletNotFoundError(walletId);
     }
 
     const networkName = resolveNetworkName(network);
@@ -122,11 +118,7 @@ router.post('/wallet/scan', async (req: Request, res: Response) => {
 
     const walletInfo = walletRegistry.get(walletId);
     if (!walletInfo) {
-      res.status(404).json({
-        success: false,
-        error: { code: 'WALLET_NOT_FOUND', message: `Wallet ${walletId} not found` },
-      });
-      return;
+      throw new WalletNotFoundError(walletId);
     }
 
     const targetNetwork = network || 'polygon';

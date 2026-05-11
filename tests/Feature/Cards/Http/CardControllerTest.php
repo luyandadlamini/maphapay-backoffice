@@ -2,19 +2,22 @@
 
 declare(strict_types=1);
 
-use App\Models\User;
 use App\Domain\CardSubscriptions\Models\CardSubscription;
+use Illuminate\Support\Str;
 use App\Domain\CardSubscriptions\Enums\CardSubscriptionStatus;
 
 use App\Domain\CardSubscriptions\Models\CardPlan;
 use App\Domain\CardIssuance\Models\Card;
 
 beforeEach(function () {
+    config(['maphapay_migration.enable_verification' => true]);
+
     $this->seed(\Database\Seeders\CardPlanSeeder::class);
 
     $this->user->update([
-        'kyc_status' => 'approved',
-        'kyc_approved_at' => now(),
+        'kyc_status'        => 'approved',
+        'kyc_approved_at'   => now(),
+        'transaction_pin'   => '1234',
     ]);
 
     // Bypass KYC middleware
@@ -57,31 +60,52 @@ beforeEach(function () {
 
 describe('POST /api/v1/cards/virtual', function () {
     it('creates a virtual card successfully', function () {
-        $response = $this->actingAsWithScopes($this->user)
+        $init = $this->actingAsWithScopes($this->user)
+            ->withHeaders([
+                'X-Account-Id'     => $this->account->uuid,
+                'Idempotency-Key' => (string) Str::uuid(),
+            ])
             ->postJson('/api/v1/cards/virtual', [
-                'nickname' => 'Personal Spending',
+                'nickname'  => 'Personal Spending',
                 'lifecycle' => 'standard',
-                'controls' => [
+                'controls'  => [
                     'per_transaction_limit' => 1000,
-                    'daily_limit' => 5000,
-                    'monthly_limit' => 20000,
-                    'online_enabled' => true,
+                    'daily_limit'           => 5000,
+                    'monthly_limit'         => 20000,
+                    'online_enabled'        => true,
                     'international_enabled' => false,
                 ],
             ]);
 
-        $response->assertStatus(201);
-        $response->assertJsonStructure([
-            'data' => [
-                'id',
-                'mask',
-                'last4',
-                'network',
-                'status',
-                'label',
-                'currency',
-            ],
-        ]);
+        $init->assertStatus(200)
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.next_step', 'pin');
+
+        $trx = $init->json('data.trx');
+        expect($trx)->not->toBeEmpty();
+
+        $verified = $this->actingAsWithScopes($this->user)
+            ->postJson('/api/verification-process/verify/pin', [
+                'trx'    => $trx,
+                'pin'    => '1234',
+                'remark' => 'card_product',
+            ]);
+
+        $verified->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonStructure([
+                'data' => [
+                    'card' => [
+                        'id',
+                        'mask',
+                        'last4',
+                        'network',
+                        'status',
+                        'label',
+                        'currency',
+                    ],
+                ],
+            ]);
     });
 
     it('rejects virtual card creation if plan limit is reached', function () {
@@ -99,21 +123,34 @@ describe('POST /api/v1/cards/virtual', function () {
             'currency' => 'ZAR',
         ]);
 
-        $response = $this->actingAsWithScopes($this->user)
+        $init = $this->actingAsWithScopes($this->user)
+            ->withHeaders([
+                'X-Account-Id'     => $this->account->uuid,
+                'Idempotency-Key' => (string) Str::uuid(),
+            ])
             ->postJson('/api/v1/cards/virtual', [
-                'nickname' => 'Second Card',
+                'nickname'  => 'Second Card',
                 'lifecycle' => 'standard',
-                'controls' => [
+                'controls'  => [
                     'per_transaction_limit' => 1000,
-                    'daily_limit' => 5000,
-                    'monthly_limit' => 20000,
-                    'online_enabled' => true,
+                    'daily_limit'           => 5000,
+                    'monthly_limit'         => 20000,
+                    'online_enabled'        => true,
                     'international_enabled' => false,
                 ],
             ]);
 
-        $response->assertStatus(422);
-        $response->assertJsonPath('error', 'VIRTUAL_CARD_LIMIT_REACHED');
+        $init->assertStatus(200)->assertJsonPath('data.next_step', 'pin');
+
+        $verify = $this->actingAsWithScopes($this->user)
+            ->postJson('/api/verification-process/verify/pin', [
+                'trx'    => $init->json('data.trx'),
+                'pin'    => '1234',
+                'remark' => 'card_product',
+            ]);
+
+        $verify->assertStatus(422);
+        $verify->assertJsonPath('error', 'VIRTUAL_CARD_LIMIT_REACHED');
     });
 });
 

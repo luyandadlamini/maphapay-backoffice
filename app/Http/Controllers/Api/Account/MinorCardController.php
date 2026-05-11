@@ -18,6 +18,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\UnauthorizedException;
 
 class MinorCardController extends Controller
@@ -58,8 +59,12 @@ class MinorCardController extends Controller
     {
         $validated = $request->validate([
             'minor_account_uuid' => 'required_without:self_request|uuid|exists:accounts,uuid',
+            'self_request'       => 'sometimes|boolean',
             'network'            => 'in:visa,mastercard',
             'requested_limits'   => 'nullable|array',
+            'intent'              => 'nullable|array',
+            'intent.request_type' => ['required_with:intent', 'string', Rule::in(['subscribe', 'change_plan', 'create_card', 'replace_card', 'unfreeze_card'])],
+            'intent.payload'      => 'nullable|array',
         ]);
 
         /** @var User $user */
@@ -72,11 +77,19 @@ class MinorCardController extends Controller
 
         $this->authorize('request', [MinorCardRequest::class, $minor]);
 
+        $intentPayload = isset($validated['intent'])
+            ? [
+                'request_type' => $validated['intent']['request_type'],
+                'payload'      => $validated['intent']['payload'] ?? [],
+            ]
+            : null;
+
         $result = $this->requestService->createRequest(
             $user,
             $minor,
             $validated['network'] ?? 'visa',
             $validated['requested_limits'] ?? null,
+            $intentPayload,
         );
 
         return response()->json($result, 201);

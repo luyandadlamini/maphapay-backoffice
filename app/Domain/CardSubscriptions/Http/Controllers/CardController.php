@@ -11,12 +11,9 @@ use App\Domain\CardSubscriptions\Http\Requests\CreateVirtualCardRequest;
 use App\Domain\CardSubscriptions\Http\Requests\UpdateCardControlsRequest;
 use App\Domain\CardSubscriptions\Http\Resources\CardResource;
 use App\Domain\CardSubscriptions\Services\CardAuditService;
-use App\Domain\CardSubscriptions\Services\CardLifecycleService;
+use App\Domain\CardSubscriptions\Services\CardProductAuthorizationCoordinator;
 use App\Domain\CardSubscriptions\Services\CardRevealService;
 use App\Domain\CardSubscriptions\Services\CardSubscriptionService;
-use App\Domain\CardSubscriptions\ValueObjects\CardControlsInput;
-use App\Domain\CardSubscriptions\ValueObjects\CreateVirtualCardInput;
-use App\Domain\CardSubscriptions\ValueObjects\ReplacementReason;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,7 +22,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 class CardController extends Controller
 {
     public function __construct(
-        private readonly CardLifecycleService $lifecycleService,
+        private readonly CardProductAuthorizationCoordinator $cardProductAuthorization,
         private readonly CardRevealService $revealService,
         private readonly CardSubscriptionService $subscriptionService,
         private readonly CardAuditService $auditService
@@ -36,6 +33,7 @@ class CardController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user();
         $cards = Card::where('user_id', $user->id)->latest()->get();
+
         return CardResource::collection($cards);
     }
 
@@ -45,28 +43,16 @@ class CardController extends Controller
         $user = $request->user();
         $subscription = $this->subscriptionService->getCurrent($user);
 
-        if (!$subscription) {
+        if (! $subscription) {
             abort(403, 'Active subscription required.');
         }
 
-        $input = new CreateVirtualCardInput(
-            controls: CardControlsInput::fromArray([
-                'limits' => [
-                    'per_transaction_cents' => (int) ($request->validated('controls.per_transaction_limit') * 100),
-                    'daily_cents' => (int) ($request->validated('controls.daily_limit') * 100),
-                    'monthly_cents' => (int) ($request->validated('controls.monthly_limit') * 100),
-                ],
-                'online_enabled' => $request->validated('controls.online_enabled'),
-                'international_enabled' => $request->validated('controls.international_enabled'),
-            ]),
-            label: $request->validated('nickname')
-        );
+        $idempotencyKey = (string) $request->header('Idempotency-Key', '');
 
-        $card = $this->lifecycleService->createVirtualCard($user, $subscription, $input);
-
-        return (new CardResource($card))
-            ->response()
-            ->setStatusCode(201);
+        return $this->cardProductAuthorization->begin($user, 'create_virtual', [
+            'subscription_id' => (string) $subscription->id,
+            'create_virtual'  => $request->validated(),
+        ], $idempotencyKey);
     }
 
     public function show(Request $request, string $cardId): CardResource
@@ -78,92 +64,115 @@ class CardController extends Controller
         return new CardResource($card);
     }
 
+    /**
+     * Legacy single-step reveal (trust header). Prefer {@see beginRevealChallenge} + PIN verify for mobile.
+     */
     public function reveal(Request $request, string $cardId): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
         $card = Card::where('id', $cardId)->where('user_id', $user->id)->firstOrFail();
 
-        if (!$request->hasHeader('X-Mobile-Trust')) {
+        if (! $request->hasHeader('X-Mobile-Trust')) {
             abort(403, 'Step-up authentication required.');
         }
 
         $result = $this->revealService->mintRevealUrl($user, $card);
 
         $this->auditService->recordCardEvent('reveal_requested', $card, null, [
-            'expires_at' => $result->expiresAt->format('c')
+            'expires_at' => $result->expiresAt->format('c'),
         ]);
 
         return response()->json(['url' => $result->url, 'expires_at' => $result->expiresAt->format('c')]);
     }
 
-    public function updateControls(UpdateCardControlsRequest $request, string $cardId): CardResource
+    public function beginRevealChallenge(Request $request, string $cardId): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
-        $card = Card::where('id', $cardId)->where('user_id', $user->id)->firstOrFail();
+        Card::where('id', $cardId)->where('user_id', $user->id)->firstOrFail();
 
-        $input = CardControlsInput::fromArray([
-            'limits' => [
-                'per_transaction_cents' => $request->validated('controls.per_transaction_limit'),
-                'daily_cents' => $request->validated('controls.daily_limit'),
-                'monthly_cents' => $request->validated('controls.monthly_limit'),
+        $idempotencyKey = (string) $request->header('Idempotency-Key', '');
+
+        return $this->cardProductAuthorization->begin($user, 'reveal_mint', [
+            'card_id' => $cardId,
+        ], $idempotencyKey);
+    }
+
+    public function updateControls(UpdateCardControlsRequest $request, string $cardId): JsonResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        Card::where('id', $cardId)->where('user_id', $user->id)->firstOrFail();
+
+        $idempotencyKey = (string) $request->header('Idempotency-Key', '');
+
+        return $this->cardProductAuthorization->begin($user, 'update_controls', [
+            'card_id'        => $cardId,
+            'controls_patch' => [
+                'per_transaction_limit' => $request->validated('per_transaction_limit'),
+                'daily_limit'           => $request->validated('daily_limit'),
+                'monthly_limit'         => $request->validated('monthly_limit'),
+                'online_enabled'        => $request->validated('online_enabled'),
+                'international_enabled' => $request->validated('international_enabled'),
+                'atm_enabled'           => $request->validated('atm_enabled'),
+                'contactless_enabled'   => $request->validated('contactless_enabled'),
+                'blocked_mcc_groups'    => $request->validated('blocked_mcc_groups'),
             ],
-            'online_enabled' => $request->validated('controls.online_enabled'),
-            'international_enabled' => $request->validated('controls.international_enabled'),
-            'atm_enabled' => $request->validated('controls.atm_enabled'),
-            'contactless_enabled' => $request->validated('controls.contactless_enabled'),
-            'blocked_mcc_groups' => $request->validated('controls.blocked_mcc_groups')
-        ]);
-
-        $card = $this->lifecycleService->updateControls($user, $card, $input);
-
-        return new CardResource($card);
+        ], $idempotencyKey);
     }
 
-    public function freeze(CardFreezeRequest $request, string $cardId): CardResource
+    public function freeze(CardFreezeRequest $request, string $cardId): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
-        $card = Card::where('id', $cardId)->where('user_id', $user->id)->firstOrFail();
+        Card::where('id', $cardId)->where('user_id', $user->id)->firstOrFail();
 
-        $card = $this->lifecycleService->freezeCard($user, $card, $request->validated('reason', 'user_requested'));
+        $idempotencyKey = (string) $request->header('Idempotency-Key', '');
 
-        return new CardResource($card);
+        return $this->cardProductAuthorization->begin($user, 'freeze', [
+            'card_id' => $cardId,
+            'reason'  => $request->validated('reason'),
+        ], $idempotencyKey);
     }
 
-    public function unfreeze(Request $request, string $cardId): CardResource
+    public function unfreeze(Request $request, string $cardId): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
-        $card = Card::where('id', $cardId)->where('user_id', $user->id)->firstOrFail();
+        Card::where('id', $cardId)->where('user_id', $user->id)->firstOrFail();
 
-        $card = $this->lifecycleService->unfreezeCard($user, $card);
+        $idempotencyKey = (string) $request->header('Idempotency-Key', '');
 
-        return new CardResource($card);
+        return $this->cardProductAuthorization->begin($user, 'unfreeze', [
+            'card_id' => $cardId,
+        ], $idempotencyKey);
     }
 
-    public function cancel(Request $request, string $cardId): CardResource
+    public function cancel(Request $request, string $cardId): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
-        $card = Card::where('id', $cardId)->where('user_id', $user->id)->firstOrFail();
+        Card::where('id', $cardId)->where('user_id', $user->id)->firstOrFail();
 
-        $card = $this->lifecycleService->cancelCard($user, $card, 'user_requested');
+        $idempotencyKey = (string) $request->header('Idempotency-Key', '');
 
-        return new CardResource($card);
+        return $this->cardProductAuthorization->begin($user, 'cancel', [
+            'card_id' => $cardId,
+        ], $idempotencyKey);
     }
 
-    public function replace(CardReplaceRequest $request, string $cardId): CardResource
+    public function replace(CardReplaceRequest $request, string $cardId): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
-        $card = Card::where('id', $cardId)->where('user_id', $user->id)->firstOrFail();
+        Card::where('id', $cardId)->where('user_id', $user->id)->firstOrFail();
 
-        $reasonEnum = ReplacementReason::tryFrom($request->validated('reason')) ?? ReplacementReason::DAMAGED;
+        $idempotencyKey = (string) $request->header('Idempotency-Key', '');
 
-        $newCard = $this->lifecycleService->replaceCard($user, $card, $reasonEnum);
-
-        return new CardResource($newCard);
+        return $this->cardProductAuthorization->begin($user, 'replace', [
+            'card_id' => $cardId,
+            'reason'  => $request->validated('reason'),
+        ], $idempotencyKey);
     }
 }

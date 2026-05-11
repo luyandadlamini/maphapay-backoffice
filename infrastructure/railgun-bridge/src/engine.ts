@@ -38,7 +38,7 @@ export const SUPPORTED_NETWORKS: Record<string, NetworkName> = {
 };
 
 // Chain ID numeric values
-export const CHAIN_IDS: Record<string, number> = {
+const CHAIN_IDS: Record<string, number> = {
   ethereum: 1,
   polygon: 137,
   arbitrum: 42161,

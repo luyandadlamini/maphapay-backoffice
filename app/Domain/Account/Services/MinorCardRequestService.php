@@ -20,8 +20,9 @@ class MinorCardRequestService
 
     /**
      * @param  array<string, string>|null  $limits
+     * @param  array{request_type: string, payload?: array<string, mixed>}|null  $intentPayload
      */
-    public function createRequest(User $requester, Account $minor, string $network, ?array $limits): MinorCardRequest
+    public function createRequest(User $requester, Account $minor, string $network, ?array $limits, ?array $intentPayload = null): MinorCardRequest
     {
         $this->guardCanRequest($requester, $minor);
 
@@ -29,9 +30,11 @@ class MinorCardRequestService
             throw new InvalidArgumentException('Virtual cards are only available for Rise tier (ages 13+)');
         }
 
-        $hasActiveCard = $this->minorHasActiveCard($minor);
-        if ($hasActiveCard) {
-            throw new InvalidArgumentException('Minor already has an active virtual card');
+        if ($this->isFirstVirtualCardFlow($intentPayload)) {
+            $hasActiveCard = $this->minorHasActiveCard($minor);
+            if ($hasActiveCard) {
+                throw new InvalidArgumentException('Minor already has an active virtual card');
+            }
         }
 
         $hasPendingRequest = MinorCardRequest::where('minor_account_uuid', $minor->uuid)
@@ -56,8 +59,29 @@ class MinorCardRequestService
             'requested_daily_limit'   => $limits['daily'] ?? null,
             'requested_monthly_limit' => $limits['monthly'] ?? null,
             'requested_single_limit'  => $limits['single_transaction'] ?? null,
+            'intent_payload'          => $intentPayload,
             'expires_at'              => now()->addHours(MinorCardConstants::REQUEST_EXPIRY_HOURS),
         ]);
+    }
+
+    /**
+     * First-card / subscribe flows reserve the child's first virtual card slot.
+     * Follow-on Khula intents (replace, unfreeze, plan change, limit change) skip that gate.
+     *
+     * @param  array{request_type: string, payload?: array<string, mixed>}|null  $intent
+     */
+    private function isFirstVirtualCardFlow(?array $intent): bool
+    {
+        if ($intent === null) {
+            return true;
+        }
+
+        $type = $intent['request_type'] ?? null;
+        if (! is_string($type) || $type === '') {
+            return true;
+        }
+
+        return in_array($type, ['create_card', 'subscribe'], true);
     }
 
     public function approve(User $guardian, MinorCardRequest $request): MinorCardRequest

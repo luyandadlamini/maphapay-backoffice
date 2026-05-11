@@ -54,6 +54,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
             Route::get('/{id}', [CardController::class, 'show'])->name('show');
             Route::get('/{id}/transactions', [CardTransactionController::class, 'index'])->name('transactions.index');
+            Route::middleware(['idempotency', 'throttle:maphapay-card-reveal'])->group(function () {
+                Route::post('/{id}/reveal/challenge', [CardController::class, 'beginRevealChallenge'])->name('reveal.challenge');
+            });
             Route::get('/{id}/reveal', [CardController::class, 'reveal'])->middleware('throttle:maphapay-card-reveal')->name('reveal');
             Route::get('/{id}/reveal/secure', function() { return response()->json(['secure' => true]); })->name('reveal.show-secure');
             
@@ -85,7 +88,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // --- Minor Card Requests ---
         Route::prefix('minor-card-requests')->name('minor-card-requests.')->group(function () {
+            Route::get('/', [MinorCardRequestController::class, 'index'])->name('index');
             Route::middleware(['idempotency', 'throttle:maphapay-card-mutation'])->group(function () {
+                Route::post('/', [MinorCardRequestController::class, 'store'])->name('store');
                 Route::post('/{id}/approve', [MinorCardRequestController::class, 'approve'])->name('approve');
                 Route::post('/{id}/deny', [MinorCardRequestController::class, 'deny'])->name('deny');
             });

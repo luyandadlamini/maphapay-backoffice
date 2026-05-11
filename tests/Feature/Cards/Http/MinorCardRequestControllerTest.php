@@ -2,85 +2,82 @@
 
 declare(strict_types=1);
 
+namespace Tests\Feature\Cards\Http;
+
 use App\Domain\Account\Constants\MinorCardConstants;
-use App\Domain\Account\Models\MinorCardRequest;
-use App\Models\User;
+use PHPUnit\Framework\Attributes\Test;
 
-beforeEach(function () {
-    $this->guardian = $this->user;
-    $this->guardian->update([
-        'kyc_status'      => 'approved',
-        'kyc_approved_at' => now(),
-    ]);
+final class MinorCardRequestControllerTest extends MinorCardRequestHttpTestCase
+{
+    #[Test]
+    public function guardian_can_approve_a_pending_minor_card_request(): void
+    {
+        $response = $this->actingAsWithScopes($this->guardian)
+            ->withHeader('X-Account-Id', $this->minorAccount->uuid)
+            ->postJson("/api/v1/minor-card-requests/{$this->minorRequest->id}/approve");
 
-    // Bypass KYC middleware
-    $this->app->instance(\App\Http\Middleware\CheckKycApproved::class, new class {
-        public function handle($request, $next) { return $next($request); }
-    });
+        $response->assertOk();
+        $response->assertJsonPath('status', 'success');
+        $response->assertJsonPath('data.request.status', 'approved');
 
-    // Stub account context
-    $this->app->instance(\App\Http\Middleware\ResolveAccountContext::class, new class($this->account) {
-        public function __construct(private $acc) {}
-        public function handle($request, $next) {
-            $request->attributes->set('account_uuid', $this->acc->uuid);
-            return $next($request);
-        }
-    });
-
-    $this->minorRequest = MinorCardRequest::create([
-        'minor_account_uuid'    => $this->account->uuid,
-        'requested_by_user_uuid' => $this->guardian->id,
-        'request_type'          => MinorCardConstants::REQUEST_TYPE_PARENT_INITIATED,
-        'status'                => MinorCardConstants::STATUS_PENDING_APPROVAL,
-        'requested_network'     => 'visa',
-    ]);
-});
-
-it('guardian can approve a pending minor card request', function () {
-    $response = $this->actingAsWithScopes($this->guardian)
-        ->withHeader('X-Account-Id', $this->account->uuid)
-        ->postJson("/api/v1/minor-card-requests/{$this->minorRequest->id}/approve");
-
-    $response->assertOk();
-    $response->assertJsonFragment(['message' => 'Minor card request approved.']);
-
-    $this->assertDatabaseHas('minor_card_requests', [
-        'id'     => $this->minorRequest->id,
-        'status' => MinorCardConstants::STATUS_APPROVED,
-    ]);
-});
-
-it('guardian can deny a pending minor card request with a reason', function () {
-    $response = $this->actingAsWithScopes($this->guardian)
-        ->withHeader('X-Account-Id', $this->account->uuid)
-        ->postJson("/api/v1/minor-card-requests/{$this->minorRequest->id}/deny", [
-            'denial_reason' => 'Spending limits need adjustment first.',
+        $this->assertDatabaseHas('minor_card_requests', [
+            'id'     => $this->minorRequest->id,
+            'status' => MinorCardConstants::STATUS_APPROVED,
         ]);
+    }
 
-    $response->assertOk();
-    $response->assertJsonFragment(['message' => 'Minor card request denied.']);
+    #[Test]
+    public function guardian_can_deny_a_pending_minor_card_request_with_a_reason(): void
+    {
+        $response = $this->actingAsWithScopes($this->guardian)
+            ->withHeader('X-Account-Id', $this->minorAccount->uuid)
+            ->postJson("/api/v1/minor-card-requests/{$this->minorRequest->id}/deny", [
+                'denial_reason' => 'Spending limits need adjustment first.',
+            ]);
 
-    $this->assertDatabaseHas('minor_card_requests', [
-        'id'     => $this->minorRequest->id,
-        'status' => MinorCardConstants::STATUS_DENIED,
-    ]);
-});
+        $response->assertOk();
+        $response->assertJsonPath('status', 'success');
+        $response->assertJsonPath('data.request.status', 'denied');
 
-it('deny requires a denial_reason', function () {
-    $response = $this->actingAsWithScopes($this->guardian)
-        ->withHeader('X-Account-Id', $this->account->uuid)
-        ->postJson("/api/v1/minor-card-requests/{$this->minorRequest->id}/deny", []);
+        $this->assertDatabaseHas('minor_card_requests', [
+            'id'     => $this->minorRequest->id,
+            'status' => MinorCardConstants::STATUS_DENIED,
+        ]);
+    }
 
-    $response->assertStatus(422);
-    $response->assertJsonValidationErrors(['denial_reason']);
-});
+    #[Test]
+    public function deny_requires_a_denial_reason(): void
+    {
+        $response = $this->actingAsWithScopes($this->guardian)
+            ->withHeader('X-Account-Id', $this->minorAccount->uuid)
+            ->postJson("/api/v1/minor-card-requests/{$this->minorRequest->id}/deny", []);
 
-it('returns 404 for a non-existent request', function () {
-    $fakeId = '00000000-0000-0000-0000-000000000000';
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['denial_reason']);
+    }
 
-    $response = $this->actingAsWithScopes($this->guardian)
-        ->withHeader('X-Account-Id', $this->account->uuid)
-        ->postJson("/api/v1/minor-card-requests/{$fakeId}/approve");
+    #[Test]
+    public function returns_404_for_a_non_existent_request(): void
+    {
+        $fakeId = '00000000-0000-0000-0000-000000000000';
 
-    $response->assertStatus(404);
-});
+        $response = $this->actingAsWithScopes($this->guardian)
+            ->withHeader('X-Account-Id', $this->minorAccount->uuid)
+            ->postJson("/api/v1/minor-card-requests/{$fakeId}/approve");
+
+        $response->assertStatus(404);
+    }
+
+    #[Test]
+    public function lists_pending_minor_card_requests_for_a_guardian(): void
+    {
+        $response = $this->actingAsWithScopes($this->guardian)
+            ->withHeader('X-Account-Id', $this->minorAccount->uuid)
+            ->getJson('/api/v1/minor-card-requests');
+
+        $response->assertOk();
+        $response->assertJsonPath('status', 'success');
+        $response->assertJsonPath('data.requests.0.id', $this->minorRequest->id);
+        $response->assertJsonPath('data.requests.0.status', 'pending');
+    }
+}
