@@ -10,6 +10,7 @@ use App\Domain\CardSubscriptions\Http\Requests\CardReplaceRequest;
 use App\Domain\CardSubscriptions\Http\Requests\CreateVirtualCardRequest;
 use App\Domain\CardSubscriptions\Http\Requests\UpdateCardControlsRequest;
 use App\Domain\CardSubscriptions\Http\Resources\CardResource;
+use App\Domain\CardSubscriptions\Services\CardAuditService;
 use App\Domain\CardSubscriptions\Services\CardLifecycleService;
 use App\Domain\CardSubscriptions\Services\CardRevealService;
 use App\Domain\CardSubscriptions\Services\CardSubscriptionService;
@@ -26,7 +27,8 @@ class CardController extends Controller
     public function __construct(
         private readonly CardLifecycleService $lifecycleService,
         private readonly CardRevealService $revealService,
-        private readonly CardSubscriptionService $subscriptionService
+        private readonly CardSubscriptionService $subscriptionService,
+        private readonly CardAuditService $auditService
     ) {}
 
     public function index(Request $request): AnonymousResourceCollection
@@ -37,24 +39,34 @@ class CardController extends Controller
         return CardResource::collection($cards);
     }
 
-    public function createVirtual(CreateVirtualCardRequest $request): CardResource
+    public function storeVirtual(CreateVirtualCardRequest $request): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
         $subscription = $this->subscriptionService->getCurrent($user);
-        
+
         if (!$subscription) {
             abort(403, 'Active subscription required.');
         }
 
         $input = new CreateVirtualCardInput(
-            controls: CardControlsInput::fromArray([]),
+            controls: CardControlsInput::fromArray([
+                'limits' => [
+                    'per_transaction_cents' => (int) ($request->validated('controls.per_transaction_limit') * 100),
+                    'daily_cents' => (int) ($request->validated('controls.daily_limit') * 100),
+                    'monthly_cents' => (int) ($request->validated('controls.monthly_limit') * 100),
+                ],
+                'online_enabled' => $request->validated('controls.online_enabled'),
+                'international_enabled' => $request->validated('controls.international_enabled'),
+            ]),
             label: $request->validated('nickname')
         );
 
         $card = $this->lifecycleService->createVirtualCard($user, $subscription, $input);
 
-        return new CardResource($card);
+        return (new CardResource($card))
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function show(Request $request, string $cardId): CardResource
@@ -72,9 +84,17 @@ class CardController extends Controller
         $user = $request->user();
         $card = Card::where('id', $cardId)->where('user_id', $user->id)->firstOrFail();
 
+        if (!$request->hasHeader('X-Mobile-Trust')) {
+            abort(403, 'Step-up authentication required.');
+        }
+
         $result = $this->revealService->mintRevealUrl($user, $card);
 
-        return response()->json(['url' => $result->url, 'expires_at' => $result->expiresAt->format('c')]);
+        $this->auditService->recordCardEvent('reveal_requested', $card, null, [
+            'expires_at' => $result->expiresAt->format('c')
+        ]);
+
+        return response()->json(['url' => $result->revealUrl, 'expires_at' => $result->expiresAt->format('c')]);
     }
 
     public function updateControls(UpdateCardControlsRequest $request, string $cardId): CardResource

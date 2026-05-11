@@ -431,8 +431,10 @@ class CardEntitlementService
     /**
      * Return true if the user's KYC status permits transacting.
      *
-     * The `kyc_status` column is a plain string on User; this method tries to
-     * parse it as a KycVerificationStatus enum before calling `canTransact()`.
+     * The DB enum (migration 2025_06_20) stores 'approved' as the verified state.
+     * KycVerificationStatus uses 'verified' — different enum sets. Both are treated
+     * as transact-capable here so the entitlement service stays in sync with
+     * hasCompletedKyc() which gates the KYC middleware.
      */
     private function userKycCanTransact(User $user): bool
     {
@@ -443,13 +445,15 @@ class CardEntitlementService
             return false;
         }
 
-        $status = KycVerificationStatus::tryFrom($rawStatus);
-
-        if ($status === null) {
-            return false;
+        // DB canonical transact-capable value.
+        if ($rawStatus === 'approved') {
+            return true;
         }
 
-        return $status->canTransact();
+        // Forward-compat with KycVerificationStatus::VERIFIED ('verified').
+        $status = KycVerificationStatus::tryFrom($rawStatus);
+
+        return $status !== null && $status->canTransact();
     }
 
     /**
@@ -484,12 +488,16 @@ class CardEntitlementService
     {
         // TODO: Phase 4 — resolve minor status from AccountMembership when the
         //       request context (account_type attribute) is available here.
-        //       For now, check account_type if it exists as a dynamic attribute;
+        //       For now, check account_type from the request attributes if available;
         //       otherwise fall back to false.
-        /** @var string|null $accountType */
-        $accountType = $user->getAttributes()['account_type'] ?? null;
+        
+        $accountType = request()?->attributes->get('account_type');
 
-        return $accountType === 'minor';
+        if ($accountType !== null) {
+            return $accountType === 'minor';
+        }
+
+        return false;
     }
 
     /**

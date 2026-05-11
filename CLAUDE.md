@@ -81,6 +81,7 @@ declare(strict_types=1);
 namespace App\Domain\Exchange\Services;
 ```
 
+- **Test-Driven Development (TDD)**: Mandatory. Write tests BEFORE implementation. Never write tests after the code.
 - Import order: `App\Domain` → `App\Http` → `App\Models` → `Illuminate` → Third-party
 - Commits: `feat:` / `fix:` / `test:` / `refactor:` + `Co-Authored-By: Claude <noreply@anthropic.com>`
 - Tests: Always pass `['read', 'write', 'delete']` abilities to `Sanctum::actingAs()`

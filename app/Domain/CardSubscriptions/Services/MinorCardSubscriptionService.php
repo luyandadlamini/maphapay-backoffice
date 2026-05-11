@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\CardSubscriptions\Services;
 
+use App\Domain\Account\Constants\MinorCardConstants;
 use App\Domain\Account\Models\MinorCardRequest;
 use App\Domain\CardIssuance\Models\Card;
 use App\Domain\CardSubscriptions\ValueObjects\CardLimitSet;
@@ -34,11 +35,20 @@ class MinorCardSubscriptionService
 
     public function approve(User $guardian, MinorCardRequest $request, ?string $note = null): void
     {
-        throw new \LogicException('not implemented');
+        $request->transitionTo(MinorCardConstants::STATUS_APPROVED);
+
+        $request->update([
+            'approved_by_user_uuid' => (string) $guardian->id,
+            'approved_at'           => now(),
+        ]);
     }
 
     public function deny(User $guardian, MinorCardRequest $request, string $reason): void
     {
-        throw new \LogicException('not implemented');
+        $request->transitionTo(MinorCardConstants::STATUS_DENIED);
+
+        $request->update([
+            'denial_reason' => $reason,
+        ]);
     }
 }

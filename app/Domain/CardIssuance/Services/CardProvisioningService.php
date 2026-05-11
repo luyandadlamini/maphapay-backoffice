@@ -172,11 +172,13 @@ class CardProvisioningService
         $issuer = $this->cardIssuer->getName();
         $currency = (string) config("cardissuance.issuers.{$issuer}.currency", 'SZL');
 
+        $cardholder = \App\Domain\CardIssuance\Models\Cardholder::where('user_id', $user->id)->first();
+
         Card::query()->updateOrCreate(
             ['issuer_card_token' => $card->cardToken],
             [
                 'user_id'       => $user->id,
-                'cardholder_id' => $user->id,
+                'cardholder_id' => $cardholder?->id ?? $user->id,
                 'issuer'        => $issuer,
                 'last4'         => $card->last4,
                 'network'       => $card->network->value,

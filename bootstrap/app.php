@@ -230,6 +230,18 @@ return Application::configure(basePath: dirname(__DIR__))
             );
         });
 
+        // Card domain: entitlement denials → 422 with structured body.
+        $exceptions->renderable(function (App\Domain\CardSubscriptions\Exceptions\EntitlementDeniedException $e, Illuminate\Http\Request $request): ?Illuminate\Http\JsonResponse {
+            if (! ($request->is('api/*') || $request->expectsJson())) {
+                return null;
+            }
+
+            return response()->json([
+                'error'   => $e->cardErrorCode->value,
+                'message' => $e->getMessage(),
+            ], 422);
+        });
+
         // Standardize API error responses (v5.10.0)
         $exceptions->respond(function (Symfony\Component\HttpFoundation\Response $response, Throwable $e, Illuminate\Http\Request $request) {
             if (! $response instanceof Illuminate\Http\JsonResponse) {
@@ -277,5 +289,6 @@ return Application::configure(basePath: dirname(__DIR__))
             Symfony\Component\HttpKernel\Exception\HttpException::class,
             Illuminate\Database\Eloquent\ModelNotFoundException::class,
             Illuminate\Validation\ValidationException::class,
+            App\Domain\CardSubscriptions\Exceptions\EntitlementDeniedException::class,
         ]);
     })->create();

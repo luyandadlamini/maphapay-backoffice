@@ -1,0 +1,28 @@
+"Membership for adult: NOT FOUND" // tests/Feature/Cards/Http/CardPlanControllerTest.php:23
+{#9935
+  +"success": false
+  +"message": "You do not have access to this account."
+} // vendor/laravel/framework/src/Illuminate/Testing/TestResponse.php:1850
+
+   FAIL  Tests\Feature\Cards\Http\CardPlanControllerTest
+  ⨯ Card Plans API → it returns available plans for adults               2.60s  
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Cards\Http\CardPlanControllerTest > `Card Plans API…   
+  Expected response status code [200] but received 403.
+Failed asserting that 403 is identical to 200.
+
+  at tests/Feature/Cards/Http/CardPlanControllerTest.php:26
+     22▕         $membership = \App\Domain\Account\Models\AccountMembership::where('account_uuid', $userAccount->uuid)->first();
+     23▕         dump('Membership for adult: ' . ($membership ? 'FOUND' : 'NOT FOUND'));
+     24▕         
+     25▕         $response->dump();
+  ➜  26▕         $response->assertOk();
+     27▕         $response->assertJsonStructure([
+     28▕             'data' => [
+     29▕                 '*' => ['id', 'name', 'feeCents', 'benefits', 'isPhysicalAvailable', 'isVirtualAvailable']
+     30▕             ]
+
+
+  Tests:    1 failed (1 assertions)
+  Duration: 2.79s
+

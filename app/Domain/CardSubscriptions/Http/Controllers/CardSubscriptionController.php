@@ -22,22 +22,30 @@ class CardSubscriptionController extends Controller
         private readonly CardSubscriptionService $subscriptionService
     ) {}
 
-    public function listPlans(Request $request): AnonymousResourceCollection
+    public function plans(Request $request): AnonymousResourceCollection
     {
-        $plans = CardPlan::where('active', true)->get();
+        $accountType = $request->attributes->get('account_type', 'personal');
+        
+        $plans = CardPlan::where('active', true)
+            ->when($accountType === 'minor', function ($query) {
+                $query->where('eligibility', 'minor');
+            }, function ($query) {
+                $query->where('eligibility', 'adult');
+            })
+            ->get();
+            
         return CardSubscriptionPlanResource::collection($plans);
     }
 
-    public function index(Request $request): AnonymousResourceCollection
+    public function me(Request $request): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
-        $subscriptions = CardSubscription::where('subscriber_user_id', $user->id)
-            ->with('plan')
-            ->latest()
-            ->get();
+        $subscription = $this->subscriptionService->getCurrent($user);
             
-        return CardSubscriptionResource::collection($subscriptions);
+        return response()->json([
+            'data' => $subscription ? new CardSubscriptionResource($subscription) : null
+        ]);
     }
 
     public function store(CreateCardSubscriptionRequest $request): CardSubscriptionResource

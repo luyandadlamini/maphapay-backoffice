@@ -1,0 +1,48 @@
+{#9941
+  +"success": false
+  +"message": "You do not have access to this account."
+} // vendor/laravel/framework/src/Illuminate/Testing/TestResponse.php:1850
+{#12913
+  +"success": false
+  +"message": "You do not have access to this account."
+} // vendor/laravel/framework/src/Illuminate/Testing/TestResponse.php:1850
+
+   FAIL  Tests\Feature\Cards\Http\CardPlanControllerTest
+  ⨯ Card Plans API → it returns available plans for adults               2.72s  
+  ⨯ Card Plans API → it returns only MINOR_KHULA_CARD for minors         1.81s  
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Cards\Http\CardPlanControllerTest > `Card Plans API…   
+  Expected response status code [200] but received 403.
+Failed asserting that 403 is identical to 200.
+
+  at tests/Feature/Cards/Http/CardPlanControllerTest.php:23
+     19▕         $response = $this->withHeader('X-Account-Id', $userAccount->uuid)
+     20▕             ->getJson('/api/v1/card-subscriptions/plans');
+     21▕             
+     22▕         $response->dump();
+  ➜  23▕         $response->assertOk();
+     24▕         $response->assertJsonStructure([
+     25▕             'data' => [
+     26▕                 '*' => ['id', 'name', 'feeCents', 'benefits', 'isPhysicalAvailable', 'isVirtualAvailable']
+     27▕             ]
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Cards\Http\CardPlanControllerTest > `Card Plans API…   
+  Expected response status code [200] but received 403.
+Failed asserting that 403 is identical to 200.
+
+  at tests/Feature/Cards/Http/CardPlanControllerTest.php:51
+     47▕         $response = $this->withHeader('X-Account-Id', $minorAccount->uuid)
+     48▕             ->getJson('/api/v1/card-subscriptions/plans');
+     49▕             
+     50▕         $response->dump();
+  ➜  51▕         $response->assertOk();
+     52▕         $planIds = collect($response->json('data'))->pluck('id');
+     53▕         
+     54▕         expect($planIds->toArray())->toContain('MINOR_KHULA_CARD');
+     55▕         expect($planIds->count())->toBe(1);
+
+
+  Tests:    2 failed (2 assertions)
+  Duration: 4.71s
+

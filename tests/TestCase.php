@@ -517,14 +517,14 @@ abstract class TestCase extends BaseTestCase
 
             if (! Schema::hasTable('minor_card_requests')) {
                 Artisan::call('migrate', [
-                    '--path'  => 'database/migrations/tenant/2026_04_24_002653_create_minor_card_requests_table.php',
+                    '--path'  => 'database/migrations/tenant/2026_04_24_002654_create_minor_card_requests_table.php',
                     '--force' => true,
                 ]);
             }
 
             if (! Schema::hasColumns('cards', ['minor_account_uuid'])) {
                 Artisan::call('migrate', [
-                    '--path'  => 'database/migrations/tenant/2026_04_24_002653_add_minor_account_uuid_to_cards_table.php',
+                    '--path'  => 'database/migrations/tenant/2026_04_24_002655_add_minor_account_uuid_to_cards_table.php',
                     '--force' => true,
                 ]);
             }
@@ -559,6 +559,56 @@ abstract class TestCase extends BaseTestCase
                     '--force' => true,
                 ]);
             }
+        }
+
+        // Phase 5 Card Monetization migrations
+        if (! Schema::hasTable('card_subscriptions')) {
+            Artisan::call('migrate', [
+                '--path'  => 'database/migrations/tenant/2026_05_08_000003_create_card_subscriptions_table.php',
+                '--force' => true,
+            ]);
+        }
+        if (! Schema::hasTable('card_subscription_billing_attempts')) {
+            Artisan::call('migrate', [
+                '--path'  => 'database/migrations/tenant/2026_05_08_000004_create_card_subscription_billing_attempts_table.php',
+                '--force' => true,
+            ]);
+        }
+        if (! Schema::hasTable('card_fees')) {
+            Artisan::call('migrate', [
+                '--path'  => 'database/migrations/tenant/2026_05_08_000005_create_card_fees_table.php',
+                '--force' => true,
+            ]);
+        }
+        if (! Schema::hasTable('card_audit_logs')) {
+            Artisan::call('migrate', [
+                '--path'  => 'database/migrations/tenant/2026_05_08_000006_create_card_audit_logs_table.php',
+                '--force' => true,
+            ]);
+        }
+        if (! Schema::hasTable('card_risk_events')) {
+            Artisan::call('migrate', [
+                '--path'  => 'database/migrations/tenant/2026_05_08_000007_create_card_risk_events_table.php',
+                '--force' => true,
+            ]);
+        }
+        if (! Schema::hasTable('card_disputes')) {
+            Artisan::call('migrate', [
+                '--path'  => 'database/migrations/tenant/2026_05_08_000008_create_card_disputes_table.php',
+                '--force' => true,
+            ]);
+        }
+        if (! Schema::hasTable('physical_card_orders')) {
+            Artisan::call('migrate', [
+                '--path'  => 'database/migrations/tenant/2026_05_08_000009_create_physical_card_orders_table.php',
+                '--force' => true,
+            ]);
+        }
+        if (! Schema::hasTable('idempotency_keys')) {
+            Artisan::call('migrate', [
+                '--path'  => 'database/migrations/tenant/2026_05_08_000010_create_idempotency_keys_table.php',
+                '--force' => true,
+            ]);
         }
     }
 
@@ -621,9 +671,11 @@ abstract class TestCase extends BaseTestCase
      * @param  User  $user  The user to authenticate
      * @param  array<string>  $scopes  The scopes to grant (defaults to read, write, delete)
      */
-    protected function actingAsWithScopes(User $user, array $scopes = ['read', 'write', 'delete']): void
+    protected function actingAsWithScopes(User $user, array $scopes = ['read', 'write', 'delete']): self
     {
         Sanctum::actingAs($user, $scopes);
+
+        return $this;
     }
 
     /**

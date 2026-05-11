@@ -55,6 +55,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('/{id}', [CardController::class, 'show'])->name('show');
             Route::get('/{id}/transactions', [CardTransactionController::class, 'index'])->name('transactions.index');
             Route::get('/{id}/reveal', [CardController::class, 'reveal'])->middleware('throttle:maphapay-card-reveal')->name('reveal');
+            Route::get('/{id}/reveal/secure', function() { return response()->json(['secure' => true]); })->name('reveal.show-secure');
             
             Route::middleware(['idempotency', 'throttle:maphapay-card-creation'])->group(function () {
                 Route::post('/virtual', [CardController::class, 'storeVirtual'])->name('virtual.store');

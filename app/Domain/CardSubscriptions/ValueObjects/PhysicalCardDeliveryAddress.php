@@ -21,4 +21,19 @@ final readonly class PhysicalCardDeliveryAddress
         public array $metadata = [],
     ) {
     }
+
+    public function toArray(): array
+    {
+        return [
+            'recipient_name' => $this->recipientName,
+            'phone'          => $this->phone,
+            'address_line1'  => $this->addressLine1,
+            'address_line2'  => $this->addressLine2,
+            'city'           => $this->city,
+            'region'         => $this->region,
+            'country_code'   => $this->countryCode,
+            'postal_code'    => $this->postalCode,
+            'metadata'       => $this->metadata,
+        ];
+    }
 }

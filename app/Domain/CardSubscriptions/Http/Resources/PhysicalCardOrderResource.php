@@ -13,7 +13,7 @@ class PhysicalCardOrderResource extends JsonResource
         return [
             'id' => $this->id,
             'card_id' => $this->card_id,
-            'order_status' => $this->order_status,
+            'status' => $this->order_status,
             'delivery_method' => $this->delivery_method,
             'delivery_address' => $this->delivery_address,
             'collection_point_id' => $this->collection_point_id,

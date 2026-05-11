@@ -99,6 +99,7 @@ When planning new Filament features, ALWAYS follow the structured "Blueprint Pla
 
 ## Testing Strategy
 
+- **Test-Driven Development (TDD)**: You MUST always follow TDD. If a feature or code edit requires tests, write the tests FIRST before writing the implementation code. Never write tests after the code. This is a non-negotiable standard for this repository.
 - **Pest PHP**: All unit and feature tests.
 - **Harness**: Use the `MoneyMovementTransactionInspector` for transaction lifecycle verification.
 - **Sanctum**: Always pass `['read', 'write', 'delete']` abilities to `Sanctum::actingAs()`.
