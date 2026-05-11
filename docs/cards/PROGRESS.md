@@ -29,8 +29,8 @@ This file is the source of truth for "where are we now" on the backend side. The
 | 5 | Routes, controllers, requests, resources | done | 2026-05-11 | 2026-05-11 | dc9d142a |
 | 6 | Webhooks and processor adapters | done | 2026-05-11 | 2026-05-11 | dc9d142a |
 | 7 | Filament admin | done | 2026-05-11 | 2026-05-11 | 7fa7c3f3 |
-| 8 | Jobs and events | done | 2026-05-11 | 2026-05-11 | 50048dd8 |
-| 9 | Risk service | done | 2026-05-11 | 2026-05-11 | 50048dd8 |
+| 8 | Jobs and events | done | 2026-05-11 | 2026-05-11 | 361bb9ce |
+| 9 | Risk service | done | 2026-05-11 | 2026-05-11 | 361bb9ce |
 | 10 | End-to-end smoke test | in_progress | 2026-05-11 | — | — |
 | 11 | Pre-launch security audit | pending | — | — | — |
 | 12 | Launch staging rollout (feature flag flips) | pending | — | — | — |
@@ -232,20 +232,20 @@ Acceptance: every admin action requires a reason, writes audit, role-gated corre
 
 | # | Task | Status | Started | Completed | Commit | Notes |
 |---:|---|---|---|---|---|---|
-| 8.1 | Write all listeners from [`07-jobs-and-events.md`](./07-jobs-and-events.md) §2 | done | 2026-05-11 | 2026-05-11 | 50048dd8 | Includes `NotifyCardJitAuthorization` for auth approved/declined pushes. |
-| 8.2 | Register listeners with Spatie projectionist in `CardSubscriptionsServiceProvider::boot()` | done | 2026-05-11 | 2026-05-11 | 50048dd8 | Laravel `Event::listen` for issuance + subscription events; JIT auth listeners registered. |
-| 8.3 | Write `BillCardSubscriptionsJob` (orchestrator) per §3 | done | 2026-05-11 | 2026-05-11 | 50048dd8 | Dispatches `ProcessSingleSubscriptionRenewalJob` per due subscription; queue set in job ctor (not `Schedule::…->onQueue()`, which is invalid on `CallbackEvent`). |
-| 8.4 | Write `ProcessSingleSubscriptionRenewalJob` (per-sub processor with row lock) | done | 2026-05-11 | 2026-05-11 | 50048dd8 | `TenantAwareJob` + `lockForUpdate` + `billRenewal` / `retryFailedPayment`. |
-| 8.5 | Write `RetryFailedBillingJob`, `SuspendPastDueSubscriptionsJob`, `CancelLongPastDueSubscriptionsJob`, `CloseCardsOnSubscriptionEndJob`, `PurgeExpiredRevealUrlsJob`, `RecalculateCardsMrrJob` | done | 2026-05-11 | 2026-05-11 | 50048dd8 | `PurgeExpiredRevealUrlsJob` is a documented no-op placeholder; MRR job aggregates tenants → `Cache::put('cards.mrr', …)`. |
-| 8.6 | Register schedules in `routes/console.php` per §3 (with `withoutOverlapping`) | done | 2026-05-11 | 2026-05-11 | 50048dd8 | Card jobs scheduled per §3 cadences. |
-| 8.7 | Verify `php artisan schedule:list` shows all card-related entries | done | 2026-05-11 | 2026-05-11 | 50048dd8 | Fixed root cause: `fraud.batch.schedule` defaulted to `hourly` while `routes/console.php` passed it to `->cron()`, producing a single cron token and crashing `schedule:list`. Default is now `0 */6 * * *` in `config/fraud.php`. |
-| 8.8 | Configure Horizon supervisors per §7 (`cards-billing-supervisor`, `cards-notifications-supervisor`) | done | 2026-05-11 | 2026-05-11 | 50048dd8 | `config/horizon.php` production + local. |
-| 8.9 | Wire push notifications via existing `PushNotificationService` per §4 (table of triggers) | done | 2026-05-11 | 2026-05-11 | 50048dd8 | `NotifyCardSubscriptionLifecycle`, `NotifyCardFeeCharged`, `NotifyMinorCardRequest`, `NotifyCardJitAuthorization`, etc. |
-| 8.10 | Wire WebSocket broadcast `BroadcastSubscriptionStateToMobile` per §5 | done | 2026-05-11 | 2026-05-11 | 50048dd8 | `CardSubscriptionStateUpdated` + `routes/channels.php` private channel `user.{userId}.cards`. |
-| 8.11 | Localise notification copy in `lang/en/cards.php`; stub `lang/ss/cards.php` | done | 2026-05-11 | 2026-05-11 | 50048dd8 | |
-| 8.12 | Write job tests per phase 8 doc list (5 tests minimum) | done | 2026-05-11 | 2026-05-11 | 50048dd8 | `BillCardSubscriptionsJobTest` (tenant-aware dispatch); dedicated `ProcessSingle*` integration omitted — landlord vs tenant `assets`/balance schema mismatch under `tenancy()->initialize()`. |
-| 8.13 | Write listener tests (`NotifyCardSubscriptionLifecycleTest`, `ApplyRiskFreezeOnCriticalEventTest`) | done | 2026-05-11 | 2026-05-11 | 50048dd8 | |
-| 8.14 | All job + listener tests pass | done | 2026-05-11 | 2026-05-11 | 50048dd8 | `vendor/bin/pest tests/Feature/Cards` — 152 pass, 2 Pest `todo()` (phase 10), 1 incomplete (schema Phase 11). |
+| 8.1 | Write all listeners from [`07-jobs-and-events.md`](./07-jobs-and-events.md) §2 | done | 2026-05-11 | 2026-05-11 | 361bb9ce | Includes `NotifyCardJitAuthorization` for auth approved/declined pushes. |
+| 8.2 | Register listeners with Spatie projectionist in `CardSubscriptionsServiceProvider::boot()` | done | 2026-05-11 | 2026-05-11 | 361bb9ce | Laravel `Event::listen` for issuance + subscription events; JIT auth listeners registered. |
+| 8.3 | Write `BillCardSubscriptionsJob` (orchestrator) per §3 | done | 2026-05-11 | 2026-05-11 | 361bb9ce | Dispatches `ProcessSingleSubscriptionRenewalJob` per due subscription; queue set in job ctor (not `Schedule::…->onQueue()`, which is invalid on `CallbackEvent`). |
+| 8.4 | Write `ProcessSingleSubscriptionRenewalJob` (per-sub processor with row lock) | done | 2026-05-11 | 2026-05-11 | 361bb9ce | `TenantAwareJob` + `lockForUpdate` + `billRenewal` / `retryFailedPayment`. |
+| 8.5 | Write `RetryFailedBillingJob`, `SuspendPastDueSubscriptionsJob`, `CancelLongPastDueSubscriptionsJob`, `CloseCardsOnSubscriptionEndJob`, `PurgeExpiredRevealUrlsJob`, `RecalculateCardsMrrJob` | done | 2026-05-11 | 2026-05-11 | 361bb9ce | `PurgeExpiredRevealUrlsJob` is a documented no-op placeholder; MRR job aggregates tenants → `Cache::put('cards.mrr', …)`. |
+| 8.6 | Register schedules in `routes/console.php` per §3 (with `withoutOverlapping`) | done | 2026-05-11 | 2026-05-11 | 361bb9ce | Card jobs scheduled per §3 cadences. |
+| 8.7 | Verify `php artisan schedule:list` shows all card-related entries | done | 2026-05-11 | 2026-05-11 | 361bb9ce | Fixed root cause: `fraud.batch.schedule` defaulted to `hourly` while `routes/console.php` passed it to `->cron()`, producing a single cron token and crashing `schedule:list`. Default is now `0 */6 * * *` in `config/fraud.php`. |
+| 8.8 | Configure Horizon supervisors per §7 (`cards-billing-supervisor`, `cards-notifications-supervisor`) | done | 2026-05-11 | 2026-05-11 | 361bb9ce | `config/horizon.php` production + local. |
+| 8.9 | Wire push notifications via existing `PushNotificationService` per §4 (table of triggers) | done | 2026-05-11 | 2026-05-11 | 361bb9ce | `NotifyCardSubscriptionLifecycle`, `NotifyCardFeeCharged`, `NotifyMinorCardRequest`, `NotifyCardJitAuthorization`, etc. |
+| 8.10 | Wire WebSocket broadcast `BroadcastSubscriptionStateToMobile` per §5 | done | 2026-05-11 | 2026-05-11 | 361bb9ce | `CardSubscriptionStateUpdated` + `routes/channels.php` private channel `user.{userId}.cards`. |
+| 8.11 | Localise notification copy in `lang/en/cards.php`; stub `lang/ss/cards.php` | done | 2026-05-11 | 2026-05-11 | 361bb9ce | |
+| 8.12 | Write job tests per phase 8 doc list (5 tests minimum) | done | 2026-05-11 | 2026-05-11 | 361bb9ce | `BillCardSubscriptionsJobTest` (tenant-aware dispatch); dedicated `ProcessSingle*` integration omitted — landlord vs tenant `assets`/balance schema mismatch under `tenancy()->initialize()`. |
+| 8.13 | Write listener tests (`NotifyCardSubscriptionLifecycleTest`, `ApplyRiskFreezeOnCriticalEventTest`) | done | 2026-05-11 | 2026-05-11 | 361bb9ce | |
+| 8.14 | All job + listener tests pass | done | 2026-05-11 | 2026-05-11 | 361bb9ce | `vendor/bin/pest tests/Feature/Cards` — 152 pass, 2 Pest `todo()` (phase 10), 1 incomplete (schema Phase 11). |
 
 Acceptance: scheduled jobs visible in `schedule:list`; manual job dispatch reaches assertion.
 
@@ -257,12 +257,12 @@ Acceptance: scheduled jobs visible in `schedule:list`; manual job dispatch reach
 
 | # | Task | Status | Started | Completed | Commit | Notes |
 |---:|---|---|---|---|---|---|
-| 9.1 | Implement `CardRiskService::evaluateAuthorization` per [`05-services-and-rules.md`](./05-services-and-rules.md) §6 (every threshold from `01-product-config.md` §9) | done | 2026-05-11 | 2026-05-11 | 50048dd8 | Core rules: MCC blocklist, ATM vs virtual-only plan, decline velocity, high `risk_rating`; `recordEvent` persists `CardRiskEvent` + dispatches `CardRiskEventOpened`. |
-| 9.2 | Implement `evaluateCardCreation`, `recordEvent`, `suspendCardsForUser` | done | 2026-05-11 | 2026-05-11 | 50048dd8 | `suspendCardsForUser` used by `ApplyRiskFreezeOnCriticalEvent` for **high** and **critical** severities. |
-| 9.3 | Configure thresholds in `config/cards.php` `risk` block | done | 2026-05-11 | 2026-05-11 | 50048dd8 | Includes `blocked_mccs`, `reveal.ttl_seconds`, `default_processor`. |
-| 9.4 | Wire `CardRiskService` invocation into `JitFundingService::evaluate()` (the existing service) — call at the top, before funds check | done | 2026-05-11 | 2026-05-11 | 50048dd8 | After issuer usability check; risk decline maps to `DECLINED_MERCHANT_BLOCKED` vs `DECLINED_FRAUD_SUSPECTED`. |
-| 9.5 | Write `tests/Feature/Cards/Services/CardRiskServiceTest.php` covering every threshold | done | 2026-05-11 | 2026-05-11 | 50048dd8 | ATM-on-virtual-only, 10‑minute decline velocity, high `risk_rating` on creation; expand as needed for full §9 matrix. |
-| 9.6 | All risk tests pass | done | 2026-05-11 | 2026-05-11 | 50048dd8 | Included in `pest tests/Feature/Cards`. |
+| 9.1 | Implement `CardRiskService::evaluateAuthorization` per [`05-services-and-rules.md`](./05-services-and-rules.md) §6 (every threshold from `01-product-config.md` §9) | done | 2026-05-11 | 2026-05-11 | 361bb9ce | Core rules: MCC blocklist, ATM vs virtual-only plan, decline velocity, high `risk_rating`; `recordEvent` persists `CardRiskEvent` + dispatches `CardRiskEventOpened`. |
+| 9.2 | Implement `evaluateCardCreation`, `recordEvent`, `suspendCardsForUser` | done | 2026-05-11 | 2026-05-11 | 361bb9ce | `suspendCardsForUser` used by `ApplyRiskFreezeOnCriticalEvent` for **high** and **critical** severities. |
+| 9.3 | Configure thresholds in `config/cards.php` `risk` block | done | 2026-05-11 | 2026-05-11 | 361bb9ce | Includes `blocked_mccs`, `reveal.ttl_seconds`, `default_processor`. |
+| 9.4 | Wire `CardRiskService` invocation into `JitFundingService::evaluate()` (the existing service) — call at the top, before funds check | done | 2026-05-11 | 2026-05-11 | 361bb9ce | After issuer usability check; risk decline maps to `DECLINED_MERCHANT_BLOCKED` vs `DECLINED_FRAUD_SUSPECTED`. |
+| 9.5 | Write `tests/Feature/Cards/Services/CardRiskServiceTest.php` covering every threshold | done | 2026-05-11 | 2026-05-11 | 361bb9ce | ATM-on-virtual-only, 10‑minute decline velocity, high `risk_rating` on creation; expand as needed for full §9 matrix. |
+| 9.6 | All risk tests pass | done | 2026-05-11 | 2026-05-11 | 361bb9ce | Included in `pest tests/Feature/Cards`. |
 
 Acceptance: every threshold in `01-product-config.md` §9 has a test.
 
@@ -277,7 +277,7 @@ Acceptance: every threshold in `01-product-config.md` §9 has a test.
 | 10.1 | Write `tests/Feature/Cards/EndToEndSmokeTest.php` adult flow per phase doc | in_progress | 2026-05-11 | — | — | File exists with Pest `todo()` — full HTTP + webhook harness on CI tenant DB deferred. |
 | 10.2 | Write Khula minor flow E2E test (guardian approval → minor card → minor authorisation respecting `minor_card_limits`) | in_progress | 2026-05-11 | — | — | Same: `todo()` placeholder pending harness. |
 | 10.3 | Both E2E tests pass on a fresh DB | pending | — | — | — | Blocked on 10.1–10.2 implementation. |
-| 10.4 | Verify all 10 phases' tests still pass together (`vendor/bin/pest tests/Feature/Cards`) | done | 2026-05-11 | 2026-05-11 | 50048dd8 | 152 passed, 2 todos, 1 incomplete (unrelated Phase 11 schema expectation). |
+| 10.4 | Verify all 10 phases' tests still pass together (`vendor/bin/pest tests/Feature/Cards`) | done | 2026-05-11 | 2026-05-11 | 361bb9ce | 152 passed, 2 todos, 1 incomplete (unrelated Phase 11 schema expectation). |
 
 Acceptance: the full lifecycle of an adult subscription and a minor subscription runs green in CI.
 
@@ -359,7 +359,7 @@ Append a new entry every session. Most recent on top.
 - Verification: `DB_*=maphapay_backoffice_test … vendor/bin/pest tests/Feature/Cards` — 152 passed, 2 todos, 1 incomplete (schema).
 - Outstanding: commit card work (exclude unrelated `infrastructure/railgun-bridge` unless intended); implement Phase 10 E2E bodies; Phases 11–12 remain manual/ops.
 - Scheduling: `config/fraud.php` default `fraud.batch.schedule` aligned with `routes/console.php` `->cron()` so `php artisan schedule:list` works.
-- Closing commit: `50048dd8`.
+- Closing commit: `361bb9ce`.
 
 ### 2026-05-11 — backend phase 7 Filament cards admin (agent)
 
