@@ -106,4 +106,14 @@ interface CardIssuerInterface
      * Get the issuer name for identification.
      */
     public function getName(): string;
+
+    /**
+     * Mint a short-TTL signed URL for the issuer's reveal page.
+     */
+    public function generateRevealUrl(string $issuerCardToken, int $ttlSeconds): \App\Domain\CardIssuance\ValueObjects\RevealUrlResult;
+
+    /**
+     * Verify webhook payload signature.
+     */
+    public function verifyWebhookSignature(string $rawBody, string $signature): bool;
 }

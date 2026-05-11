@@ -94,7 +94,7 @@ class CardController extends Controller
             'expires_at' => $result->expiresAt->format('c')
         ]);
 
-        return response()->json(['url' => $result->revealUrl, 'expires_at' => $result->expiresAt->format('c')]);
+        return response()->json(['url' => $result->url, 'expires_at' => $result->expiresAt->format('c')]);
     }
 
     public function updateControls(UpdateCardControlsRequest $request, string $cardId): CardResource

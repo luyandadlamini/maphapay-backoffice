@@ -92,7 +92,7 @@ class CardFeeService
      */
     public function calculateAtmFee(CardPlan $plan, Money $withdrawalAmount): Money
     {
-        $fixed      = Money::fromMajorString((string) $plan->atm_fixed_fee, 'SZL');
+        $fixed      = Money::fromMajorString((string) $plan->atm_fixed_fee, $withdrawalAmount->currency);
         $percentage = $withdrawalAmount->multiplyBps($plan->atm_percentage_fee_bps);
 
         return $fixed->add($percentage);

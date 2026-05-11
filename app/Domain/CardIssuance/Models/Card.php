@@ -158,4 +158,14 @@ class Card extends Model
     {
         return $this->belongsTo(Account::class, 'minor_account_uuid', 'uuid');
     }
+
+    public function subscription(): BelongsTo
+    {
+        return $this->belongsTo(\App\Domain\CardSubscriptions\Models\CardSubscription::class, 'card_subscription_id');
+    }
+
+    public function plan(): ?\App\Domain\CardSubscriptions\Models\CardPlan
+    {
+        return $this->subscription?->plan;
+    }
 }

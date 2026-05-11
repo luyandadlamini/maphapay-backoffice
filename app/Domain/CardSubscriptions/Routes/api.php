@@ -103,3 +103,24 @@ Route::prefix('webhooks/cards')->name('api.webhooks.cards.')->group(function () 
             ->name('handle');
     });
 });
+
+// Demo reveal route (for development/tests — serves the reveal Blade page)
+Route::get('/demo-cards/reveal', function (\Illuminate\Http\Request $request) {
+    // Validate the signed route (Laravel returns 403 for expired/invalid)
+    if (! $request->hasValidSignature()) {
+        abort(403, 'Reveal link has expired or is invalid.');
+    }
+
+    $token = $request->query('token', '');
+
+    /** @var \Illuminate\Support\Facades\Cache $cache */
+    $card = \Illuminate\Support\Facades\Cache::get("card:{$token}");
+
+    return view('demo-cards.reveal', [
+        'expired'     => false,
+        'card'        => $card,
+        'demoFullPan' => '4111 1111 1111 ' . ($card?->last4 ?? '1111'),
+        'demoCvv'     => '123', // synthetic demo CVV, never real
+    ]);
+})->name('api.v1.cards.demo.reveal');
+

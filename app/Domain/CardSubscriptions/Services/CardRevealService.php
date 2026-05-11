@@ -5,31 +5,28 @@ declare(strict_types=1);
 namespace App\Domain\CardSubscriptions\Services;
 
 use App\Domain\CardIssuance\Models\Card;
-use App\Domain\CardSubscriptions\ValueObjects\RevealUrlResult;
+use App\Domain\CardIssuance\Contracts\CardIssuerInterface;
+use App\Domain\CardIssuance\ValueObjects\RevealUrlResult;
 use App\Models\User;
-use Illuminate\Support\Facades\URL;
 
 class CardRevealService
 {
     private const REVEAL_TTL_MINUTES = 5;
 
+    public function __construct(
+        private readonly CardIssuerInterface $issuer
+    ) {}
+
     public function mintRevealUrl(User $user, Card $card): RevealUrlResult
     {
-        $expiresAt = now()->addMinutes(self::REVEAL_TTL_MINUTES);
+        if (empty($card->issuer_card_token)) {
+            // Fallback for development if token isn't properly synced yet,
+            // though createCard() normally returns it. We use the card's local ID.
+            $token = $card->id;
+        } else {
+            $token = $card->issuer_card_token;
+        }
 
-        // In a real production system, this would point to a PCI-DSS compliant
-        // environment or an iframe-hosted page from the card issuer.
-        // For development, we point to a signed route that will return the demo details.
-        $url = URL::temporarySignedRoute(
-            'api.v1.cards.reveal.show-secure',
-            $expiresAt,
-            ['id' => $card->id]
-        );
-
-        return new RevealUrlResult(
-            revealUrl: $url,
-            expiresAt: $expiresAt->toDateTimeImmutable(),
-            ttlSeconds: self::REVEAL_TTL_MINUTES * 60
-        );
+        return $this->issuer->generateRevealUrl($token, self::REVEAL_TTL_MINUTES * 60);
     }
 }

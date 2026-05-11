@@ -63,6 +63,31 @@ class DemoCardIssuerAdapter implements CardIssuerInterface
         return 'demo';
     }
 
+    public function generateRevealUrl(string $issuerCardToken, int $ttlSeconds): \App\Domain\CardIssuance\ValueObjects\RevealUrlResult
+    {
+        $expiresAt = now()->addSeconds($ttlSeconds);
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'api.v1.cards.demo.reveal',
+            $expiresAt,
+            ['token' => $issuerCardToken]
+        );
+
+        return new \App\Domain\CardIssuance\ValueObjects\RevealUrlResult(
+            url: $url,
+            expiresAt: $expiresAt->toDateTimeImmutable(),
+            ttlSeconds: $ttlSeconds
+        );
+    }
+
+    public function verifyWebhookSignature(string $rawBody, string $signature): bool
+    {
+        $secret = config('cardissuance.webhook_secret', 'demo_webhook_secret');
+        if (!is_string($secret) || $secret === '') {
+            $secret = 'demo_webhook_secret';
+        }
+        return hash_equals(hash_hmac('sha256', $rawBody, $secret), $signature);
+    }
+
     /**
      * @param array<string, mixed> $metadata
      */

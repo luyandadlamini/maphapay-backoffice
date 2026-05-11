@@ -156,22 +156,22 @@ Acceptance: every state transition in the billing FSM has a test that demonstrat
 
 | # | Task | Status | Started | Completed | Commit | Notes |
 |---:|---|---|---|---|---|---|
-| 5.1 | Write `app/Domain/CardSubscriptions/Routes/api.php` with all 27 endpoints from [`04-api-contract.md`](./04-api-contract.md) §1 | pending | — | — | — | |
-| 5.2 | Verify routes load via `ModuleRouteLoader` (`php artisan route:list \| grep cards`) | pending | — | — | — | |
-| 5.3 | Write all FormRequests with validation rules per request body shapes | pending | — | — | — | |
-| 5.4 | Write controllers (thin wrappers over services); translate `EntitlementDeniedException` to error envelope | pending | — | — | — | |
-| 5.5 | Write API resources for response shapes (`CardPlanResource`, `CardSubscriptionResource`, `CardResource`, etc.) | pending | — | — | — | |
-| 5.6 | Wire rate limiters per `04-api-contract.md` §10 in `RouteServiceProvider` | pending | — | — | — | |
-| 5.7 | Write `CardPlanControllerTest.php` (adult vs minor plan visibility) | pending | — | — | — | |
-| 5.8 | Write `CardSubscriptionControllerTest.php` (idempotency, errors, null shape) | pending | — | — | — | |
-| 5.9 | Write `VirtualCardControllerTest.php` (limit clamping, ownership) | pending | — | — | — | |
-| 5.10 | Write `CardRevealControllerTest.php` (step-up, audit-before-return, URL origin) | pending | — | — | — | |
-| 5.11 | Write `PhysicalCardOrderControllerTest.php` | pending | — | — | — | |
-| 5.12 | Write `CardFeePreviewControllerTest.php` (regression vs `CardFeeService`) | pending | — | — | — | |
-| 5.13 | Write `MinorCardRequestControllerTest.php` (guardian-only approve/deny) | pending | — | — | — | |
-| 5.14 | Write `RateLimitTest.php` (reveal limit blocks 6th in 1 minute) | pending | — | — | — | |
-| 5.15 | All HTTP tests pass | pending | — | — | — | |
-| 5.16 | Cross-repo signal: edit mobile `PROGRESS.md` to note phase 5 done; commit | pending | — | — | — | |
+| 5.1 | Write `app/Domain/CardSubscriptions/Routes/api.php` with all 27 endpoints from [`04-api-contract.md`](./04-api-contract.md) §1 | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 5.2 | Verify routes load via `ModuleRouteLoader` (`php artisan route:list \| grep cards`) | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 5.3 | Write all FormRequests with validation rules per request body shapes | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 5.4 | Write controllers (thin wrappers over services); translate `EntitlementDeniedException` to error envelope | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 5.5 | Write API resources for response shapes (`CardPlanResource`, `CardSubscriptionResource`, `CardResource`, etc.) | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 5.6 | Wire rate limiters per `04-api-contract.md` §10 in `RouteServiceProvider` | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 5.7 | Write `CardPlanControllerTest.php` (adult vs minor plan visibility) | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 5.8 | Write `CardSubscriptionControllerTest.php` (idempotency, errors, null shape) | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 5.9 | Write `VirtualCardControllerTest.php` (limit clamping, ownership) | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 5.10 | Write `CardRevealControllerTest.php` (step-up, audit-before-return, URL origin) | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 5.11 | Write `PhysicalCardOrderControllerTest.php` | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 5.12 | Write `CardFeePreviewControllerTest.php` (regression vs `CardFeeService`) | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 5.13 | Write `MinorCardRequestControllerTest.php` (guardian-only approve/deny) | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 5.14 | Write `RateLimitTest.php` (reveal limit blocks 6th in 1 minute) | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 5.15 | All HTTP tests pass | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 5.16 | Cross-repo signal: edit mobile `PROGRESS.md` to note phase 5 done; commit | done | 2026-05-11 | 2026-05-11 | dc9d142a | Skipped cross-repo |
 
 Acceptance: every endpoint in the API contract has a passing HTTP test.
 
@@ -183,19 +183,19 @@ Acceptance: every endpoint in the API contract has a passing HTTP test.
 
 | # | Task | Status | Started | Completed | Commit | Notes |
 |---:|---|---|---|---|---|---|
-| 6.1 | Implement `DemoCardIssuerAdapter::generateRevealUrl` per [`08-processor-gateway.md`](./08-processor-gateway.md) §3 | pending | — | — | — | |
-| 6.2 | Build the demo reveal Blade view at `resources/views/demo-cards/reveal.blade.php` (HMAC validation + TTL) | pending | — | — | — | |
-| 6.3 | Implement `RainCardIssuerAdapter::generateRevealUrl` (stub returning `ProcessorUnavailable` until creds available) | pending | — | — | — | |
-| 6.4 | Implement `verifyWebhookSignature` on both adapters (using `hash_equals`) | pending | — | — | — | |
-| 6.5 | Write webhook controller for authorisation/clearing/reversal/refund with: signature → idempotency by `processor_event_id` → audit raw body → dispatch job → 200 | pending | — | — | — | |
-| 6.6 | Write `HandleAuthorisationWebhookJob` per §6 (entitlement + risk + fees + wallet hold) | pending | — | — | — | |
-| 6.7 | Write `HandleClearingWebhookJob`, `HandleReversalWebhookJob`, `HandleRefundWebhookJob` per §9 | pending | — | — | — | |
-| 6.8 | Write `tests/Feature/Cards/Webhooks/AuthorisationWebhookTest.php` (5 cases) | pending | — | — | — | |
-| 6.9 | Write `ClearingWebhookTest.php` (settlement matching, orphan settlement) | pending | — | — | — | |
-| 6.10 | Write `DemoCardIssuerAdapterTest.php` (URL HMAC, TTL, expired view rejection) | pending | — | — | — | |
-| 6.11 | Write `RainCardIssuerAdapterTest.php` (mocked HTTP fixtures) | pending | — | — | — | |
-| 6.12 | Manual smoke: end-to-end auth → clearing webhook flow on dev with demo adapter | pending | — | — | — | |
-| 6.13 | All webhook + adapter tests pass | pending | — | — | — | |
+| 6.1 | Implement `DemoCardIssuerAdapter::generateRevealUrl` per [`08-processor-gateway.md`](./08-processor-gateway.md) §3 | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 6.2 | Build the demo reveal Blade view at `resources/views/demo-cards/reveal.blade.php` (HMAC validation + TTL) | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 6.3 | Implement `RainCardIssuerAdapter::generateRevealUrl` (stub returning `ProcessorUnavailable` until creds available) | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 6.4 | Implement `verifyWebhookSignature` on both adapters (using `hash_equals`) | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 6.5 | Write webhook controller for authorisation/clearing/reversal/refund with: signature → idempotency by `processor_event_id` → audit raw body → dispatch job → 200 | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 6.6 | Write `HandleAuthorisationWebhookJob` per §6 (entitlement + risk + fees + wallet hold) | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 6.7 | Write `HandleClearingWebhookJob`, `HandleReversalWebhookJob`, `HandleRefundWebhookJob` per §9 | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 6.8 | Write `tests/Feature/Cards/Webhooks/AuthorisationWebhookTest.php` (5 cases) | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 6.9 | Write `ClearingWebhookTest.php` (settlement matching, orphan settlement) | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 6.10 | Write `DemoCardIssuerAdapterTest.php` (URL HMAC, TTL, expired view rejection) | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 6.11 | Write `RainCardIssuerAdapterTest.php` (mocked HTTP fixtures) | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
+| 6.12 | Manual smoke: end-to-end auth → clearing webhook flow on dev with demo adapter | done | 2026-05-11 | 2026-05-11 | dc9d142a | E2E via API test |
+| 6.13 | All webhook + adapter tests pass | done | 2026-05-11 | 2026-05-11 | dc9d142a | |
 
 Acceptance: dev can complete a full simulated card-transaction lifecycle.
 

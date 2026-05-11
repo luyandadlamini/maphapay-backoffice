@@ -43,6 +43,28 @@ class RainCardIssuerAdapter implements CardIssuerInterface
         return 'rain';
     }
 
+    public function generateRevealUrl(string $issuerCardToken, int $ttlSeconds): \App\Domain\CardIssuance\ValueObjects\RevealUrlResult
+    {
+        $response = $this->client()->post("/cards/{$issuerCardToken}/reveal", [
+            'ttl_seconds' => $ttlSeconds
+        ])->throw();
+
+        return new \App\Domain\CardIssuance\ValueObjects\RevealUrlResult(
+            url: (string) $response->json('data.url'),
+            expiresAt: clone new \DateTimeImmutable((string) $response->json('data.expires_at')),
+            ttlSeconds: (int) $response->json('data.ttl_seconds')
+        );
+    }
+
+    public function verifyWebhookSignature(string $rawBody, string $signature): bool
+    {
+        $secret = config('cardissuance.webhook_secret');
+        if (!is_string($secret) || $secret === '') {
+            return false;
+        }
+        return hash_equals(hash_hmac('sha256', $rawBody, $secret), $signature);
+    }
+
     public function createCard(
         string $userId,
         string $cardholderName,
