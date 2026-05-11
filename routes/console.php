@@ -3,6 +3,13 @@
 declare(strict_types=1);
 
 use App\Domain\Basket\Services\BasketValueCalculationService;
+use App\Domain\CardSubscriptions\Jobs\BillCardSubscriptionsJob;
+use App\Domain\CardSubscriptions\Jobs\CancelLongPastDueSubscriptionsJob;
+use App\Domain\CardSubscriptions\Jobs\CloseCardsOnSubscriptionEndJob;
+use App\Domain\CardSubscriptions\Jobs\PurgeExpiredRevealUrlsJob;
+use App\Domain\CardSubscriptions\Jobs\RecalculateCardsMrrJob;
+use App\Domain\CardSubscriptions\Jobs\RetryFailedBillingJob;
+use App\Domain\CardSubscriptions\Jobs\SuspendPastDueSubscriptionsJob;
 use App\Domain\Mobile\Jobs\CleanupExpiredChallenges;
 use App\Domain\Mobile\Jobs\CleanupStaleDevices;
 use App\Domain\Mobile\Jobs\ProcessScheduledNotifications;
@@ -219,6 +226,32 @@ Schedule::job(new ExpireStalePaymentIntents())
     ->everyMinute()
     ->description('Expire stale payment intents past their TTL')
     ->withoutOverlapping();
+
+// Card subscriptions — billing & lifecycle (see docs/cards/07-jobs-and-events.md §3)
+Schedule::job(new BillCardSubscriptionsJob())
+    ->dailyAt('02:00')
+    ->withoutOverlapping(60);
+
+Schedule::job(new RetryFailedBillingJob())
+    ->dailyAt('02:30')
+    ->withoutOverlapping(60);
+
+Schedule::job(new SuspendPastDueSubscriptionsJob())
+    ->dailyAt('03:00')
+    ->withoutOverlapping(30);
+
+Schedule::job(new CancelLongPastDueSubscriptionsJob())
+    ->dailyAt('03:30')
+    ->withoutOverlapping(30);
+
+Schedule::job(new CloseCardsOnSubscriptionEndJob())
+    ->dailyAt('04:00');
+
+Schedule::job(new PurgeExpiredRevealUrlsJob())
+    ->everyFiveMinutes();
+
+Schedule::job(new RecalculateCardsMrrJob())
+    ->hourly();
 
 // Fraud Anomaly Detection Batch Scan
 Schedule::command('fraud:scan-anomalies --hours=' . config('fraud.batch.lookback_hours', 24) . ' --chunk=' . config('fraud.batch.chunk_size', 100))

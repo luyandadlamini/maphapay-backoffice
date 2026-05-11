@@ -50,4 +50,36 @@ final readonly class AuthorizationRequest
                 : new DateTimeImmutable(),
         );
     }
+
+    /**
+     * Whether this authorisation looks like an ATM cash withdrawal.
+     */
+    public function isAtmWithdrawal(): bool
+    {
+        $mcc = $this->normalizedMcc();
+
+        if ($mcc !== null && in_array($mcc, ['6010', '6011', '6012'], true)) {
+            return true;
+        }
+
+        return str_contains(strtolower($this->merchantName), 'atm');
+    }
+
+    /**
+     * Four-digit MCC when {@see $merchantCategory} is numeric; otherwise null.
+     */
+    public function normalizedMcc(): ?string
+    {
+        $raw = trim($this->merchantCategory);
+
+        if ($raw === '') {
+            return null;
+        }
+
+        if (preg_match('/^\d{4}$/', $raw) === 1) {
+            return $raw;
+        }
+
+        return null;
+    }
 }

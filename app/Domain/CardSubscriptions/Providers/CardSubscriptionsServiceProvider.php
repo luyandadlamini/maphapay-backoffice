@@ -16,6 +16,7 @@ use App\Domain\CardSubscriptions\Listeners\EmitCardLifecycleAuditLog;
 use App\Domain\CardSubscriptions\Listeners\EmitMrrAggregateRecalc;
 use App\Domain\CardSubscriptions\Listeners\NotifyCardFeeCharged;
 use App\Domain\CardSubscriptions\Listeners\NotifyCardSubscriptionLifecycle;
+use App\Domain\CardSubscriptions\Listeners\NotifyCardJitAuthorization;
 use App\Domain\CardSubscriptions\Listeners\NotifyMinorCardRequest;
 use App\Domain\CardSubscriptions\Services\CardAuditService;
 use App\Domain\CardSubscriptions\Services\CardBillingService;
@@ -78,5 +79,8 @@ class CardSubscriptionsServiceProvider extends ServiceProvider
         Event::listen(CardProvisioned::class, EmitCardLifecycleAuditLog::class);
         Event::listen(AuthorizationApproved::class, EmitCardLifecycleAuditLog::class);
         Event::listen(AuthorizationDeclined::class, EmitCardLifecycleAuditLog::class);
+
+        Event::listen(AuthorizationApproved::class, NotifyCardJitAuthorization::class);
+        Event::listen(AuthorizationDeclined::class, NotifyCardJitAuthorization::class);
     }
 }

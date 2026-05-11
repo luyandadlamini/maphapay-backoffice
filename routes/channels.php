@@ -167,3 +167,8 @@ Broadcast::channel('trustcert.{userId}', function ($user, int $userId) {
 Broadcast::channel('wallet.{userId}', function ($user, int $userId) {
     return $user->id === $userId;
 });
+
+// Card subscription real-time updates (mobile refetch)
+Broadcast::channel('user.{userId}.cards', function ($user, int $userId) {
+    return $user->id === $userId;
+});

@@ -93,7 +93,8 @@ return [
     |--------------------------------------------------------------------------
     */
     'batch' => [
-        'schedule'       => env('FRAUD_BATCH_SCHEDULE', 'hourly'),
+        // Must be a 5-field cron expression when used with `Schedule::…->cron()` in `routes/console.php`.
+        'schedule'       => env('FRAUD_BATCH_SCHEDULE', '0 */6 * * *'),
         'chunk_size'     => (int) env('FRAUD_BATCH_CHUNK_SIZE', 100),
         'lookback_hours' => (int) env('FRAUD_BATCH_LOOKBACK_HOURS', 24),
     ],

@@ -8,7 +8,11 @@ use App\Domain\CardIssuance\Contracts\CardIssuerInterface;
 use App\Domain\CardIssuance\Enums\AuthorizationDecision;
 use App\Domain\CardIssuance\Events\AuthorizationApproved;
 use App\Domain\CardIssuance\Events\AuthorizationDeclined;
+use App\Domain\CardIssuance\Models\Card;
 use App\Domain\CardIssuance\ValueObjects\AuthorizationRequest;
+use App\Domain\CardSubscriptions\Enums\CardErrorCode;
+use App\Domain\CardSubscriptions\Services\CardRiskService;
+use App\Domain\CardSubscriptions\ValueObjects\RiskDecision;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -30,6 +34,7 @@ class JitFundingService
 
     public function __construct(
         private readonly CardIssuerInterface $cardIssuer,
+        private readonly CardRiskService $cardRisk,
     ) {
     }
 
@@ -61,6 +66,16 @@ class JitFundingService
                 : AuthorizationDecision::DECLINED_CARD_CANCELLED;
 
             return $this->decline($request, $decision);
+        }
+
+        $persistedCard = Card::query()->where('issuer_card_token', $request->cardToken)->first();
+
+        if ($persistedCard !== null) {
+            $riskDecision = $this->cardRisk->evaluateAuthorization($persistedCard, $request);
+
+            if (! $riskDecision->allowed) {
+                return $this->declineForRisk($request, $riskDecision);
+            }
         }
 
         // 2. Check stablecoin balance (demo implementation)
@@ -113,6 +128,20 @@ class JitFundingService
      *
      * @return array{approved: bool, decision: AuthorizationDecision, hold_id: null}
      */
+    /**
+     * @return array{approved: bool, decision: AuthorizationDecision, hold_id: null}
+     */
+    private function declineForRisk(AuthorizationRequest $request, RiskDecision $risk): array
+    {
+        $code = $risk->code;
+
+        $decision = ($code instanceof CardErrorCode && $code === CardErrorCode::MCC_BLOCKED)
+            ? AuthorizationDecision::DECLINED_MERCHANT_BLOCKED
+            : AuthorizationDecision::DECLINED_FRAUD_SUSPECTED;
+
+        return $this->decline($request, $decision);
+    }
+
     private function decline(
         AuthorizationRequest $request,
         AuthorizationDecision $decision

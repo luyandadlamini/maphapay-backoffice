@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\CardSubscriptions\Listeners;
 
 use App\Domain\CardSubscriptions\Events\CardFeeCharged;
+use App\Domain\CardSubscriptions\Jobs\RecalculateCardsMrrJob;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Spatie\EventSourcing\EventHandlers\Reactors\Reactor;
@@ -20,6 +21,10 @@ class EmitMrrAggregateRecalc extends Reactor implements ShouldQueue
 
     public function onCardFeeCharged(CardFeeCharged $event): void
     {
-        //
+        if ($event->feeType !== 'subscription') {
+            return;
+        }
+
+        RecalculateCardsMrrJob::dispatch()->onQueue('default');
     }
 }
