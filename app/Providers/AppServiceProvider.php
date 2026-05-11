@@ -189,6 +189,44 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perHour(10)->by((string) ($user !== null ? $user->id : $request->ip()));
         });
 
+        // Card Domain: Subscriptions, Upgrade, Downgrade, Cancel
+        RateLimiter::for('maphapay-card-subscription', function (Request $request): Limit {
+            $user = $request->user();
+
+            return Limit::perMinute(6)->by((string) ($user !== null ? $user->id : $request->ip()));
+        });
+
+        // Card Domain: Create Virtual, Request Physical, Replace
+        RateLimiter::for('maphapay-card-creation', function (Request $request): Limit {
+            $user = $request->user();
+
+            return Limit::perMinute(10)->by((string) ($user !== null ? $user->id : $request->ip()));
+        });
+
+        // Card Domain: Freeze, Unfreeze, Controls, Dispute
+        RateLimiter::for('maphapay-card-mutation', function (Request $request): Limit {
+            $user = $request->user();
+
+            return Limit::perMinute(30)->by((string) ($user !== null ? $user->id : $request->ip()));
+        });
+
+        // Card Domain: Reveal PAN/CVV
+        RateLimiter::for('maphapay-card-reveal', function (Request $request): Limit {
+            $user = $request->user();
+            $cardId = $request->route('id') ?? 'unknown-card';
+            $userKey = (string) ($user !== null ? $user->id : $request->ip());
+
+            return Limit::perMinute(5)->by("maphapay-card-reveal:{$userKey}:{$cardId}");
+        });
+
+        // Card Domain: Processor Webhooks
+        RateLimiter::for('maphapay-card-webhook', function (Request $request): Limit {
+            $processor = $request->route('processor') ?? 'unknown-processor';
+            
+            // 600 per minute per processor
+            return Limit::perMinute(600)->by("maphapay-card-webhook:{$processor}");
+        });
+
         // Treat 'demo' environment as production
         if ($this->app->environment('demo')) {
             // Force production-like settings

@@ -10,8 +10,8 @@ final readonly class RequestPhysicalCardInput
      * @param array<string, mixed> $metadata
      */
     public function __construct(
-        public PhysicalCardDeliveryAddress $deliveryAddress,
         public string $deliveryMethod,
+        public ?PhysicalCardDeliveryAddress $deliveryAddress = null,
         public ?CardControlsInput $controls = null,
         public ?string $collectionPointId = null,
         public array $metadata = [],
