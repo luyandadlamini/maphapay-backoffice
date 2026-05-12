@@ -15,6 +15,25 @@ FinAegis uses a multi-database tenancy approach where:
 php artisan tenants:migrate
 ```
 
+### Account creation (child / merchant) — if POST `/api/accounts/minor` or `/api/accounts/merchant` returns HTTP 500
+
+1. **Named rate limiters** for these routes are registered in `AppServiceProvider` (`maphapay-minor-create`, `maphapay-merchant-create`). A missing limiter surfaces as HTTP 500; deploy the application code that defines them.
+
+2. **Central database:** minor flows create a `users` row with `email = null`. Ensure this migration has run on the **central** DB:
+
+```bash
+php artisan migrate --path=database/migrations/2026_03_29_140000_make_users_email_nullable.php --force
+```
+
+3. **Tenant database(s):** minors need `accounts.type` / minor columns; merchants need `account_profiles_merchant`. Run per tenant (Laravel Cloud: use `--force` non-interactively):
+
+```bash
+php artisan tenants:migrate --path=database/migrations/tenant/2026_04_27_000001_add_missing_type_and_minor_columns_to_accounts_table.php --force
+php artisan tenants:migrate --path=database/migrations/tenant/2026_04_15_100002_create_account_profiles_merchant_table.php --force
+```
+
+Use `php artisan migrate:status` / tenant equivalents to confirm nothing is pending before production debugging.
+
 ### Run tenant migrations for specific tenant
 ```bash
 php artisan tenants:migrate --tenants=tenant-uuid-here

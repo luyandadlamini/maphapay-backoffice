@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domain\Account\Models\MinorAccountLifecycleTransition;
+use App\Domain\Account\Observers\MinorAccountLifecycleTransitionObserver;
 use App\Domain\Analytics\Contracts\CorMarginBridgeDataPort;
 use App\Domain\Analytics\Contracts\UnitEconomicsDataPort;
 use App\Domain\Analytics\Infrastructure\LocalDevCorMarginBridgeStubDataPort;
@@ -81,26 +83,26 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(CorMarginBridgeDataPort::class, function (): CorMarginBridgeDataPort {
             if ($this->app->isProduction()) {
-                return new NullCorMarginBridgeDataPort();
+                return new NullCorMarginBridgeDataPort;
             }
 
             if ((bool) config('maphapay.revenue_cor_bridge_stub_reader', false)) {
-                return new LocalDevCorMarginBridgeStubDataPort();
+                return new LocalDevCorMarginBridgeStubDataPort;
             }
 
-            return new NullCorMarginBridgeDataPort();
+            return new NullCorMarginBridgeDataPort;
         });
 
         $this->app->bind(UnitEconomicsDataPort::class, function (): UnitEconomicsDataPort {
             if ($this->app->isProduction()) {
-                return new NullUnitEconomicsDataPort();
+                return new NullUnitEconomicsDataPort;
             }
 
             if ((bool) config('maphapay.revenue_unit_economics_stub_reader', false)) {
-                return new LocalDevUnitEconomicsStubDataPort();
+                return new LocalDevUnitEconomicsStubDataPort;
             }
 
-            return new NullUnitEconomicsDataPort();
+            return new NullUnitEconomicsDataPort;
         });
     }
 
@@ -114,8 +116,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->resolving(GeneratorFactory::class, function () {
             if (config('l5-swagger.defaults.scanOptions.analyser') === null) {
                 config(['l5-swagger.defaults.scanOptions.analyser' => new ReflectionAnalyser([
-                    new DocBlockAnnotationFactory(),
-                    new AttributeAnnotationFactory(),
+                    new DocBlockAnnotationFactory,
+                    new AttributeAnnotationFactory,
                 ])]);
             }
         });
@@ -129,7 +131,7 @@ class AppServiceProvider extends ServiceProvider
             // For domain models, preserve the full path structure
             if (str_starts_with($modelName, 'App\\Domain\\')) {
                 // Replace App\ with Database\Factories\ and append Factory
-                $factoryName = str_replace('App\\', 'Database\\Factories\\', $modelName) . 'Factory';
+                $factoryName = str_replace('App\\', 'Database\\Factories\\', $modelName).'Factory';
 
                 /** @var class-string<Factory> */
                 return $factoryName;
@@ -139,7 +141,7 @@ class AppServiceProvider extends ServiceProvider
             $modelBaseName = class_basename($modelName);
 
             /** @var class-string<Factory> */
-            return 'Database\\Factories\\' . $modelBaseName . 'Factory';
+            return 'Database\\Factories\\'.$modelBaseName.'Factory';
         });
 
         // MaphaPay compatibility: per-user rate limits for money-moving endpoints.
@@ -182,6 +184,20 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perHour(3)->by((string) ($user !== null ? $user->id : $request->ip()));
         });
 
+        // Merchant account creation (mobile KYM): same cadence as company create.
+        RateLimiter::for('maphapay-merchant-create', function (Request $request): Limit {
+            $user = $request->user();
+
+            return Limit::perHour(3)->by((string) ($user !== null ? $user->id : $request->ip()));
+        });
+
+        // Minor (child) account creation: higher cap than company (guardians may add several dependents).
+        RateLimiter::for('maphapay-minor-create', function (Request $request): Limit {
+            $user = $request->user();
+
+            return Limit::perHour(10)->by((string) ($user !== null ? $user->id : $request->ip()));
+        });
+
         // Document upload: max 10 uploads per hour per user (audit requirement).
         RateLimiter::for('maphapay-company-documents', function (Request $request): Limit {
             $user = $request->user();
@@ -222,7 +238,7 @@ class AppServiceProvider extends ServiceProvider
         // Card Domain: Processor Webhooks
         RateLimiter::for('maphapay-card-webhook', function (Request $request): Limit {
             $processor = $request->route('processor') ?? 'unknown-processor';
-            
+
             // 600 per minute per processor
             return Limit::perMinute(600)->by("maphapay-card-webhook:{$processor}");
         });
@@ -246,8 +262,8 @@ class AppServiceProvider extends ServiceProvider
 
         Thread::observe(ThreadGroupSavingsObserver::class);
 
-        \App\Domain\Account\Models\MinorAccountLifecycleTransition::observe(
-            \App\Domain\Account\Observers\MinorAccountLifecycleTransitionObserver::class
+        MinorAccountLifecycleTransition::observe(
+            MinorAccountLifecycleTransitionObserver::class
         );
 
         // Fortify omits route('register') when REGISTRATION_ENABLED=false; marketing views still link to it.
