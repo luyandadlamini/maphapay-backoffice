@@ -28,6 +28,8 @@ Hard rules. The mobile equivalent is in `maphapayrn/docs/cards/06-non-negotiable
 
 12. **`CardSubscriptions` MAY depend on `CardIssuance`. The reverse is forbidden.** No file under `app/Domain/CardIssuance/` may `use App\Domain\CardSubscriptions\...`. The `module.json` `depends_on` array is enforced by the loader.
 
+12a. **Mobile-facing Cards routes have one owner.** `CardSubscriptions` owns `/v1/cards*`, `/v1/card-subscriptions*`, `/v1/card-fees*`, `/v1/card-transactions*`, `/v1/minor-card-requests*`, and `/webhooks/cards*`. `CardIssuance` may expose processor/provisioning internals only; duplicate route ownership is a production blocker.
+
 13. **Webhook signatures are verified with `hash_equals`.** Constant-time comparison. NOT `===`. NOT `==`. NOT `strcmp`.
 
 14. **Multi-tenancy: every tenant table uses `UsesTenantConnection`.** `card_plans` is the only global table. Forgetting the trait on tenant data is a P0 bug — data crosses tenants.

@@ -958,6 +958,8 @@ class MobileController extends Controller
     public function getConfig(): JsonResponse
     {
         return response()->json([
+            'status' => 'success',
+            'remark' => 'mobile_config',
             'data' => [
                 'min_app_version'    => config('mobile.min_version', '1.0.0'),
                 'latest_app_version' => config('mobile.latest_version', '1.0.0'),
@@ -968,6 +970,7 @@ class MobileController extends Controller
                     'push_notifications' => config('mobile.features.push', true),
                     'gcu_trading'        => config('mobile.features.gcu_trading', true),
                     'p2p_transfers'      => config('mobile.features.p2p_transfers', true),
+                    'cards'              => config('mobile.features.cards', []),
                 ],
                 'websocket' => [
                     'enabled' => config('broadcasting.default') !== 'log',

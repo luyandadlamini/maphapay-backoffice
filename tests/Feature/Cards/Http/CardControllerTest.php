@@ -97,12 +97,12 @@ describe('POST /api/v1/cards/virtual', function () {
                 'data' => [
                     'card' => [
                         'id',
-                        'mask',
                         'last4',
-                        'network',
+                        'card_type',
+                        'card_brand',
                         'status',
-                        'label',
-                        'currency',
+                        'nickname',
+                        'controls',
                     ],
                 ],
             ]);
@@ -176,7 +176,8 @@ describe('GET /api/v1/cards', function () {
             ->getJson('/api/v1/cards');
 
         $response->assertOk();
-        $response->assertJsonCount(1, 'data');
-        expect($response->json('data.0.id'))->toBe($card->id);
+        $response->assertJsonPath('status', 'success');
+        $response->assertJsonCount(1, 'data.cards');
+        expect($response->json('data.cards.0.id'))->toBe($card->id);
     });
 });

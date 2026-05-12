@@ -277,8 +277,9 @@ class CardProductAuthorizedHandler implements AuthorizedTransactionHandlerInterf
         ]);
 
         return [
-            'url'        => $result->url,
-            'expires_at' => $result->expiresAt->format('c'),
+            'reveal_url'  => $result->url,
+            'expires_at'  => $result->expiresAt->format('c'),
+            'ttl_seconds' => max(0, now()->diffInSeconds($result->expiresAt, false)),
         ];
     }
 

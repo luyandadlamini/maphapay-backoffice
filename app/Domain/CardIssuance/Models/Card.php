@@ -107,6 +107,7 @@ class Card extends Model
             'frozen_at'                         => 'datetime',
             'cancelled_at'                      => 'datetime',
             // Monetisation fields (2026_05_08_000001_alter_cards_add_monetisation_fields)
+            'lifecycle_config'                  => 'array',
             'is_default'                        => 'boolean',
             'per_transaction_limit'             => 'decimal:2',
             'daily_limit'                       => 'decimal:2',
@@ -129,7 +130,7 @@ class Card extends Model
 
     public function isFrozen(): bool
     {
-        return $this->status === 'frozen';
+        return in_array($this->status, ['frozen_by_user', 'frozen_by_admin'], true);
     }
 
     /**
@@ -159,6 +160,7 @@ class Card extends Model
         return $this->belongsTo(Account::class, 'minor_account_uuid', 'uuid');
     }
 
+    /** @return BelongsTo<\App\Domain\CardSubscriptions\Models\CardSubscription, $this> */
     public function subscription(): BelongsTo
     {
         return $this->belongsTo(\App\Domain\CardSubscriptions\Models\CardSubscription::class, 'card_subscription_id');

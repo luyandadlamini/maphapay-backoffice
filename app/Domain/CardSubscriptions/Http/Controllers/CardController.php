@@ -9,6 +9,7 @@ use App\Domain\CardSubscriptions\Http\Requests\CardFreezeRequest;
 use App\Domain\CardSubscriptions\Http\Requests\CardReplaceRequest;
 use App\Domain\CardSubscriptions\Http\Requests\CreateVirtualCardRequest;
 use App\Domain\CardSubscriptions\Http\Requests\UpdateCardControlsRequest;
+use App\Domain\CardSubscriptions\Http\Concerns\RespondsWithCardApiEnvelope;
 use App\Domain\CardSubscriptions\Http\Resources\CardResource;
 use App\Domain\CardSubscriptions\Services\CardAuditService;
 use App\Domain\CardSubscriptions\Services\CardProductAuthorizationCoordinator;
@@ -17,10 +18,11 @@ use App\Domain\CardSubscriptions\Services\CardSubscriptionService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class CardController extends Controller
 {
+    use RespondsWithCardApiEnvelope;
+
     public function __construct(
         private readonly CardProductAuthorizationCoordinator $cardProductAuthorization,
         private readonly CardRevealService $revealService,
@@ -28,13 +30,15 @@ class CardController extends Controller
         private readonly CardAuditService $auditService
     ) {}
 
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
         $cards = Card::where('user_id', $user->id)->latest()->get();
 
-        return CardResource::collection($cards);
+        return $this->cardSuccess('cards', [
+            'cards' => CardResource::collection($cards)->resolve($request),
+        ]);
     }
 
     public function storeVirtual(CreateVirtualCardRequest $request): JsonResponse
@@ -55,13 +59,15 @@ class CardController extends Controller
         ], $idempotencyKey);
     }
 
-    public function show(Request $request, string $cardId): CardResource
+    public function show(Request $request, string $cardId): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
         $card = Card::where('id', $cardId)->where('user_id', $user->id)->firstOrFail();
 
-        return new CardResource($card);
+        return $this->cardSuccess('card', [
+            'card' => (new CardResource($card))->resolve($request),
+        ]);
     }
 
     /**
@@ -83,7 +89,11 @@ class CardController extends Controller
             'expires_at' => $result->expiresAt->format('c'),
         ]);
 
-        return response()->json(['url' => $result->url, 'expires_at' => $result->expiresAt->format('c')]);
+        return $this->cardSuccess('card_reveal', [
+            'reveal_url'  => $result->url,
+            'expires_at'  => $result->expiresAt->format('c'),
+            'ttl_seconds' => max(0, now()->diffInSeconds($result->expiresAt, false)),
+        ]);
     }
 
     public function beginRevealChallenge(Request $request, string $cardId): JsonResponse

@@ -41,11 +41,13 @@ describe('Card Plans API', function () {
         $response->assertOk();
         $response->assertJsonStructure([
             'data' => [
-                '*' => ['code', 'name', 'monthly_fee', 'currency', 'eligibility']
+                'plans' => [
+                    '*' => ['code', 'name', 'monthly_fee', 'currency', 'eligibility'],
+                ],
             ]
         ]);
         
-        $planCodes = collect($response->json('data'))->pluck('code');
+        $planCodes = collect($response->json('data.plans'))->pluck('code');
         expect($planCodes)->not->toContain('MINOR_KHULA_CARD');
         expect($planCodes)->toContain('VIRTUAL_LITE');
         expect($planCodes)->toContain('PHYSICAL_CARD');
@@ -73,7 +75,7 @@ describe('Card Plans API', function () {
             ->getJson('/api/v1/card-subscriptions/plans');
             
         $response->assertOk();
-        $planCodes = collect($response->json('data'))->pluck('code');
+        $planCodes = collect($response->json('data.plans'))->pluck('code');
         
         expect($planCodes->toArray())->toContain('MINOR_KHULA_CARD');
         expect($planCodes->count())->toBe(1);

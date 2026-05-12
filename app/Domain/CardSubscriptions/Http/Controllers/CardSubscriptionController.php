@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\CardSubscriptions\Http\Controllers;
 
+use App\Domain\CardSubscriptions\Http\Concerns\RespondsWithCardApiEnvelope;
 use App\Domain\CardSubscriptions\Http\Requests\CreateCardSubscriptionRequest;
 use App\Domain\CardSubscriptions\Http\Requests\UpdateCardSubscriptionRequest;
 use App\Domain\CardSubscriptions\Http\Resources\CardSubscriptionPlanResource;
@@ -16,17 +17,18 @@ use App\Domain\CardSubscriptions\Services\CardSubscriptionService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class CardSubscriptionController extends Controller
 {
+    use RespondsWithCardApiEnvelope;
+
     public function __construct(
         private readonly CardSubscriptionService $subscriptionService,
         private readonly CardBillingService $billingService,
         private readonly CardProductAuthorizationCoordinator $cardProductAuthorization,
     ) {}
 
-    public function plans(Request $request): AnonymousResourceCollection
+    public function plans(Request $request): JsonResponse
     {
         $accountType = $request->attributes->get('account_type', 'personal');
 
@@ -38,7 +40,9 @@ class CardSubscriptionController extends Controller
             })
             ->get();
 
-        return CardSubscriptionPlanResource::collection($plans);
+        return $this->cardSuccess('card_subscription_plans', [
+            'plans' => CardSubscriptionPlanResource::collection($plans)->resolve($request),
+        ]);
     }
 
     public function me(Request $request): JsonResponse
@@ -47,8 +51,10 @@ class CardSubscriptionController extends Controller
         $user = $request->user();
         $subscription = $this->subscriptionService->getCurrent($user);
 
-        return response()->json([
-            'data' => $subscription ? new CardSubscriptionResource($subscription) : null,
+        return $this->cardSuccess('card_subscription', [
+            'subscription' => $subscription
+                ? (new CardSubscriptionResource($subscription->loadMissing('plan')))->resolve($request)
+                : null,
         ]);
     }
 
@@ -69,7 +75,7 @@ class CardSubscriptionController extends Controller
         return $this->cardProductAuthorization->begin($user, 'subscribe', $payload, $idempotencyKey);
     }
 
-    public function show(Request $request, string $subscriptionId): CardSubscriptionResource
+    public function show(Request $request, string $subscriptionId): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
@@ -78,10 +84,12 @@ class CardSubscriptionController extends Controller
             ->with('plan')
             ->firstOrFail();
 
-        return new CardSubscriptionResource($subscription);
+        return $this->cardSuccess('card_subscription', [
+            'subscription' => (new CardSubscriptionResource($subscription))->resolve($request),
+        ]);
     }
 
-    public function update(UpdateCardSubscriptionRequest $request, string $subscriptionId): CardSubscriptionResource
+    public function update(UpdateCardSubscriptionRequest $request, string $subscriptionId): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
@@ -93,7 +101,9 @@ class CardSubscriptionController extends Controller
 
         $subscription = $this->subscriptionService->upgrade($user, $newPlanCode);
 
-        return new CardSubscriptionResource($subscription->load('plan'));
+        return $this->cardSuccess('card_subscription', [
+            'subscription' => (new CardSubscriptionResource($subscription->load('plan')))->resolve($request),
+        ]);
     }
 
     public function upgrade(UpdateCardSubscriptionRequest $request): JsonResponse
@@ -137,13 +147,17 @@ class CardSubscriptionController extends Controller
 
         if ($subscription === null) {
             return response()->json([
-                'error'   => 'NO_ACTIVE_SUBSCRIPTION',
-                'message' => 'No subscription found to retry billing for.',
+                'status'  => 'error',
+                'remark'  => 'card_subscription_retry_unavailable',
+                'message' => ['No subscription found to retry billing for.'],
+                'data'    => ['code' => 'NO_ACTIVE_SUBSCRIPTION'],
             ], 422);
         }
 
         $this->billingService->retryFailedPayment($subscription);
 
-        return response()->json(['message' => 'Billing retry processed.']);
+        return $this->cardSuccess('card_subscription_retry', [
+            'subscription' => (new CardSubscriptionResource($subscription->refresh()->load('plan')))->resolve($request),
+        ]);
     }
 }

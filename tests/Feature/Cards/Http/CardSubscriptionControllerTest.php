@@ -42,7 +42,8 @@ describe('GET /me', function () {
             ->getJson('/api/v1/card-subscriptions/me');
 
         $response->assertOk();
-        $response->assertJson(['data' => null]);
+        $response->assertJsonPath('status', 'success');
+        $response->assertJsonPath('data.subscription', null);
     });
 });
 
@@ -84,7 +85,7 @@ describe('POST /card-subscriptions/cancel', function () {
             ->getJson('/api/v1/card-subscriptions/me');
 
         $me->assertOk();
-        $me->assertJson(['data' => null]);
+        $me->assertJsonPath('data.subscription', null);
     });
 });
 
@@ -114,7 +115,7 @@ describe('POST / (create subscription)', function () {
             ->getJson('/api/v1/card-subscriptions/me');
 
         $meResponse->assertOk();
-        expect($meResponse->json('data.plan.code'))->toBe('VIRTUAL_LITE');
+        expect($meResponse->json('data.subscription.plan_code'))->toBe('VIRTUAL_LITE');
     });
 
     it('returns 422 when a minor account tries an adult plan', function () {

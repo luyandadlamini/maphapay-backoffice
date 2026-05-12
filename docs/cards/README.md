@@ -42,7 +42,7 @@ Minimal but real:
 - Migration: ALTER `cards` to add `tier`, `kind`, `lifecycle`, `lifecycle_config`, per-category limit columns, `is_default` flag.
 - `CardProvisioningService::createVirtualCard()` accepts a `CardSubscription` argument and uses its plan's limits as the upper bound for the requested controls.
 - `JitFundingService::evaluate()` calls `CardEntitlementService` before checking funds.
-- Existing routes stay; new endpoints under `/v1/card-subscriptions/*` are added in the new domain's route file.
+- `CardSubscriptions` is the sole owner of the mobile-facing `/v1/cards*`, `/v1/card-subscriptions*`, `/v1/card-fees*`, `/v1/card-transactions*`, `/v1/minor-card-requests*`, and `/webhooks/cards*` contract paths. `CardIssuance` keeps processor/provisioning internals only; it must not register overlapping mobile routes.
 
 ## What does NOT change
 

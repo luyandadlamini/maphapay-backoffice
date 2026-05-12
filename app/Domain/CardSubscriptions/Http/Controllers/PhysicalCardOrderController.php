@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\CardSubscriptions\Http\Controllers;
 
+use App\Domain\CardSubscriptions\Http\Concerns\RespondsWithCardApiEnvelope;
 use App\Domain\CardSubscriptions\Http\Requests\PhysicalCardActivationRequest;
 use App\Domain\CardSubscriptions\Http\Requests\PhysicalCardRequest;
 use App\Domain\CardSubscriptions\Http\Resources\PhysicalCardOrderResource;
@@ -15,16 +16,17 @@ use App\Domain\CardSubscriptions\ValueObjects\RequestPhysicalCardInput;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class PhysicalCardOrderController extends Controller
 {
+    use RespondsWithCardApiEnvelope;
+
     public function __construct(
         private readonly CardProductAuthorizationCoordinator $cardProductAuthorization,
         private readonly CardSubscriptionService $subscriptionService
     ) {}
 
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
@@ -36,7 +38,9 @@ class PhysicalCardOrderController extends Controller
 
         $orders = $subscription->orders()->latest()->get();
 
-        return PhysicalCardOrderResource::collection($orders);
+        return $this->cardSuccess('physical_card_orders', [
+            'orders' => PhysicalCardOrderResource::collection($orders)->resolve($request),
+        ]);
     }
 
     public function store(PhysicalCardRequest $request): JsonResponse
@@ -91,7 +95,7 @@ class PhysicalCardOrderController extends Controller
         ], $idempotencyKey);
     }
 
-    public function show(Request $request, string $orderId): PhysicalCardOrderResource
+    public function show(Request $request, string $orderId): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
@@ -103,7 +107,9 @@ class PhysicalCardOrderController extends Controller
 
         $order = $subscription->orders()->where('id', $orderId)->firstOrFail();
 
-        return new PhysicalCardOrderResource($order);
+        return $this->cardSuccess('physical_card_order', [
+            'order' => (new PhysicalCardOrderResource($order))->resolve($request),
+        ]);
     }
 
     public function activate(PhysicalCardActivationRequest $request, string $orderId): JsonResponse

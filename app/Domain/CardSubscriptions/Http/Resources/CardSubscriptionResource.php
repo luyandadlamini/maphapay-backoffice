@@ -8,6 +8,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class CardSubscriptionResource extends JsonResource
 {
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray($request): array
     {
         if (is_null($this->resource)) {
@@ -18,6 +21,7 @@ class CardSubscriptionResource extends JsonResource
             'id' => $this->id,
             'subscriber_user_id' => $this->subscriber_user_id,
             'payer_user_id' => $this->payer_user_id,
+            'plan_code' => $this->plan?->code,
             'plan' => new CardSubscriptionPlanResource($this->whenLoaded('plan')),
             'status' => $this->status,
             'current_period_start' => $this->current_period_start?->toIso8601String(),

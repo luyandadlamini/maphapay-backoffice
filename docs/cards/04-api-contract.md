@@ -44,7 +44,7 @@ All authenticated endpoints require Sanctum bearer auth + `X-Account-Id` header 
 | POST | `/webhooks/cards/{processor}/reversal` | HMAC | by `processor_event_id` | — |
 | POST | `/webhooks/cards/{processor}/refund` | HMAC | by `processor_event_id` | — |
 
-Route registration goes in `app/Domain/CardSubscriptions/Routes/api.php` (auto-loaded by `ModuleRouteLoader`). Mobile compatibility re-export (when contract freezes) goes into `routes/api-compat.php` with the same middleware stack as send-money: `['auth:sanctum', 'account.context', 'kyc_approved', 'idempotency', 'throttle:maphapay-card-mutation']`.
+Route registration goes in `app/Domain/CardSubscriptions/Routes/api.php` (auto-loaded by `ModuleRouteLoader`). `CardSubscriptions` is the single authority for every mobile-facing `/v1/cards*`, `/v1/card-subscriptions*`, `/v1/card-fees*`, `/v1/card-transactions*`, `/v1/minor-card-requests*`, and `/webhooks/cards*` path. Legacy `CardIssuance` internals may expose processor/provisioning-only routes such as `/v1/cards/provision`, but must not reclaim these contract paths. Mobile compatibility re-export (when contract freezes) goes into `routes/api-compat.php` with the same middleware stack as send-money: `['auth:sanctum', 'account.context', 'kyc_approved', 'idempotency', 'throttle:maphapay-card-mutation']`.
 
 ---
 

@@ -94,6 +94,19 @@ return [
         'exchange'      => env('MOBILE_FEATURE_EXCHANGE', true),
         'lending'       => env('MOBILE_FEATURE_LENDING', false),
         'stablecoins'   => env('MOBILE_FEATURE_STABLECOINS', false),
+        'cards'         => [
+            'monetisation_enabled'        => env('MOBILE_FEATURE_CARDS_MONETISATION', true),
+            'subscriptions_enabled'       => env('MOBILE_FEATURE_CARDS_SUBSCRIPTIONS', true),
+            'virtual_card_lite_enabled'   => env('MOBILE_FEATURE_CARDS_VIRTUAL_LITE', true),
+            'virtual_card_plus_enabled'   => env('MOBILE_FEATURE_CARDS_VIRTUAL_PLUS', true),
+            'physical_card_enabled'       => env('MOBILE_FEATURE_CARDS_PHYSICAL', true),
+            'premium_card_enabled'        => env('MOBILE_FEATURE_CARDS_PREMIUM', true),
+            'minor_khula_card_enabled'    => env('MOBILE_FEATURE_CARDS_MINOR_KHULA', true),
+            'fx_fees_enabled'             => env('MOBILE_FEATURE_CARDS_FX_FEES', true),
+            'atm_enabled'                 => env('MOBILE_FEATURE_CARDS_ATM', true),
+            'disputes_enabled'            => env('MOBILE_FEATURE_CARDS_DISPUTES', true),
+            'admin_risk_controls_enabled' => env('MOBILE_FEATURE_CARDS_ADMIN_RISK', false),
+        ],
     ],
 
     /*

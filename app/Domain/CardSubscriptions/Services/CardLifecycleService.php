@@ -70,7 +70,7 @@ class CardLifecycleService
         $this->provisioning->freezeCard($card->issuer_card_token);
 
         $card->update([
-            'status'    => 'frozen',
+            'status'    => 'frozen_by_user',
             'frozen_at' => now(),
         ]);
 

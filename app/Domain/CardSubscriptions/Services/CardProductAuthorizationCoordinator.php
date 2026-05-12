@@ -24,9 +24,13 @@ final class CardProductAuthorizationCoordinator
      */
     public function begin(User $user, string $operation, array $operationPayload, string $idempotencyKey): JsonResponse
     {
-        $existing = $this->findReplay($user, $idempotencyKey);
-        if ($existing instanceof AuthorizedTransaction) {
-            return response()->json($this->replayEnvelope($existing));
+        if ($idempotencyKey === '') {
+            return response()->json([
+                'status'  => 'error',
+                'remark'  => 'idempotency_key_required',
+                'message' => ['Idempotency-Key header is required for card product operations.'],
+                'data'    => ['code' => 'IDEMPOTENCY_KEY_REQUIRED'],
+            ], 400);
         }
 
         $payload = array_merge(
@@ -36,6 +40,20 @@ final class CardProductAuthorizationCoordinator
             ],
             $operationPayload,
         );
+
+        $existing = $this->findReplay($user, $idempotencyKey);
+        if ($existing instanceof AuthorizedTransaction) {
+            if (! $this->payloadMatches($existing, $payload)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'remark'  => 'idempotency_payload_mismatch',
+                    'message' => ['The provided idempotency key has already been used with different request parameters.'],
+                    'data'    => ['code' => 'IDEMPOTENCY_PAYLOAD_MISMATCH'],
+                ], 409);
+            }
+
+            return response()->json($this->replayEnvelope($existing));
+        }
 
         $txn = $this->authorizedTransactionManager->initiate(
             (int) $user->getAuthIdentifier(),
@@ -64,9 +82,57 @@ final class CardProductAuthorizationCoordinator
         return AuthorizedTransaction::query()
             ->where('user_id', $user->id)
             ->where('remark', AuthorizedTransaction::REMARK_CARD_PRODUCT)
+            // @phpstan-ignore-next-line Laravel supports JSON path where clauses.
             ->where('payload->_idempotency_key', $idempotencyKey)
             ->latest('created_at')
             ->first();
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function payloadMatches(AuthorizedTransaction $txn, array $payload): bool
+    {
+        $existingPayload = $txn->payload;
+        if (is_string($existingPayload)) {
+            $decoded = json_decode($existingPayload, true);
+            $existingPayload = is_array($decoded) ? $decoded : [];
+        }
+        if (is_object($existingPayload)) {
+            $existingPayload = (array) $existingPayload;
+        }
+        if (! is_array($existingPayload)) {
+            return false;
+        }
+
+        unset($existingPayload['_idempotency_key']);
+
+        return $this->canonicalPayloadHash($existingPayload) === $this->canonicalPayloadHash($payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function canonicalPayloadHash(array $payload): string
+    {
+        return hash('sha256', (string) json_encode($this->sortRecursive($payload), JSON_THROW_ON_ERROR));
+    }
+
+    private function sortRecursive(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        foreach ($value as $key => $item) {
+            $value[$key] = $this->sortRecursive($item);
+        }
+
+        if (! array_is_list($value)) {
+            ksort($value);
+        }
+
+        return $value;
     }
 
     /**

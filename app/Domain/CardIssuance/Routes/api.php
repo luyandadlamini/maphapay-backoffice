@@ -9,20 +9,13 @@ use App\Http\Controllers\Api\CardIssuance\JitFundingWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/cards')->name('api.cards.')->group(function () {
-    // Authenticated endpoints
+    // Card monetisation owns the mobile-facing /v1/cards contract in
+    // app/Domain/CardSubscriptions/Routes/api.php. Keep only the legacy
+    // provisioning endpoint here to avoid duplicate route ownership.
     Route::middleware(['auth:sanctum'])->group(function () {
-        Route::get('/', [CardController::class, 'index'])->name('index');
-        Route::post('/', [CardController::class, 'store'])
-            ->middleware('transaction.rate_limit:card_provision')
-            ->name('store');
         Route::post('/provision', [CardController::class, 'provision'])
             ->middleware('transaction.rate_limit:card_provision')
             ->name('provision');
-        Route::get('/{cardId}', [CardController::class, 'show'])->name('show');
-        Route::get('/{cardId}/transactions', [CardController::class, 'transactions'])->name('transactions');
-        Route::post('/{cardId}/freeze', [CardController::class, 'freeze'])->name('freeze');
-        Route::delete('/{cardId}/freeze', [CardController::class, 'unfreeze'])->name('unfreeze');
-        Route::delete('/{cardId}', [CardController::class, 'cancel'])->name('cancel');
     });
 });
 
