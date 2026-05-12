@@ -22,5 +22,6 @@ class DatabaseSeeder extends Seeder
         $this->call(GCUBasketSeeder::class);
         $this->call(SettingSeeder::class);
         $this->call(RewardsSeeder::class);
+        $this->call(CardPlanSeeder::class);
     }
 }
