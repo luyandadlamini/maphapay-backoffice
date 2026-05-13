@@ -175,6 +175,20 @@ class AccountPolicyTest extends BaseTestCase
     }
 
     #[Test]
+    public function test_createMinor_allows_legacy_standard_wallet_owner(): void
+    {
+        $parent = User::factory()->create();
+        $personalAccount = Account::factory()->create([
+            'user_uuid' => $parent->uuid,
+            'type'      => 'standard',
+        ]);
+
+        $this->createMembership($parent, $personalAccount, 'owner', 'active', 'standard');
+
+        $this->assertTrue($this->policy->createMinor($parent));
+    }
+
+    #[Test]
     public function test_createMinor_denies_minor_account_user(): void
     {
         $child = User::factory()->create();
@@ -292,6 +306,20 @@ class AccountPolicyTest extends BaseTestCase
         ]);
 
         $this->createMembership($parent, $personalAccount, 'owner', 'active', 'personal');
+
+        $this->assertTrue($this->policy->manageChildren($parent));
+    }
+
+    #[Test]
+    public function test_manageChildren_allows_legacy_standard_wallet_owner(): void
+    {
+        $parent = User::factory()->create();
+        $personalAccount = Account::factory()->create([
+            'user_uuid' => $parent->uuid,
+            'type'      => 'standard',
+        ]);
+
+        $this->createMembership($parent, $personalAccount, 'owner', 'active', 'standard');
 
         $this->assertTrue($this->policy->manageChildren($parent));
     }

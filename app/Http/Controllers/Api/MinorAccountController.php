@@ -81,7 +81,7 @@ class MinorAccountController extends Controller
             ->forUser($user->uuid)
             ->active()
             ->where('role', 'owner')
-            ->where('account_type', 'personal')
+            ->personalWallet()
             ->first();
 
         if ($parentMembership === null) {

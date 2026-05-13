@@ -100,6 +100,63 @@ class MultiAccountControllerTest extends BaseTestCase
         ], 'central');
     }
 
+    public function test_creates_merchant_account_for_legacy_standard_wallet_owner(): void
+    {
+        [$user, $tenant] = $this->createUserAndTenant();
+
+        AccountMembership::query()->create([
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $tenant->id,
+            'account_uuid' => 'acc-standard',
+            'account_type' => 'standard',
+            'role'         => 'owner',
+            'status'       => 'active',
+            'joined_at'    => now(),
+        ]);
+
+        Sanctum::actingAs($user, ['write']);
+
+        $response = $this->postJson('/api/accounts/merchant', [
+            'trade_name'        => 'Khanya Market Stall',
+            'merchant_category' => 'food_and_beverage',
+            'classification'    => 'informal',
+            'settlement_method' => 'maphapay_wallet',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.account_type', 'merchant')
+            ->assertJsonPath('data.role', 'owner');
+    }
+
+    public function test_creates_company_account_for_legacy_standard_wallet_owner(): void
+    {
+        [$user, $tenant] = $this->createUserAndTenant();
+
+        AccountMembership::query()->create([
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $tenant->id,
+            'account_uuid' => 'acc-standard',
+            'account_type' => 'standard',
+            'role'         => 'owner',
+            'status'       => 'active',
+            'joined_at'    => now(),
+        ]);
+
+        Sanctum::actingAs($user, ['write']);
+
+        $response = $this->postJson('/api/accounts/company', [
+            'company_name'      => 'Khanya Trading',
+            'business_type'     => 'informal',
+            'settlement_method' => 'maphapay_wallet',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.account_type', 'company')
+            ->assertJsonPath('data.role', 'owner');
+    }
+
     public function test_prevents_duplicate_merchant_account(): void
     {
         [$user, $tenant] = $this->createUserAndTenant();
@@ -166,6 +223,10 @@ class MultiAccountControllerTest extends BaseTestCase
 
             if (! Schema::connection('tenant')->hasTable('account_profiles_merchant')) {
                 (require base_path('database/migrations/tenant/2026_04_15_100002_create_account_profiles_merchant_table.php'))->up();
+            }
+
+            if (! Schema::connection('tenant')->hasTable('account_profiles_company')) {
+                (require base_path('database/migrations/tenant/2026_04_15_100003_create_account_profiles_company_table.php'))->up();
             }
 
             if (! Schema::connection('tenant')->hasTable('account_audit_logs')) {

@@ -122,7 +122,7 @@ class AccountController extends Controller
         // Verify personal account membership exists
         $personalMembership = AccountMembership::query()
             ->forUser($user->uuid)
-            ->where('account_type', 'personal')
+            ->personalWallet()
             ->where('status', 'active')
             ->first();
 
@@ -218,7 +218,7 @@ class AccountController extends Controller
 
         $personalMembership = AccountMembership::query()
             ->forUser($user->uuid)
-            ->where('account_type', 'personal')
+            ->personalWallet()
             ->where('status', 'active')
             ->first();
 

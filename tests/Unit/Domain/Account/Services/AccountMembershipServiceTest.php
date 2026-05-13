@@ -114,6 +114,21 @@ class AccountMembershipServiceTest extends BaseTestCase
         ], 'central');
     }
 
+    public function test_create_owner_membership_normalizes_legacy_standard_wallet_to_personal(): void
+    {
+        $account = new Account([
+            'uuid'         => (string) Str::uuid(),
+            'user_uuid'    => $this->user->uuid,
+            'name'         => 'Maphapay Wallet',
+            'display_name' => 'Maphapay Wallet',
+            'type'         => 'standard',
+        ]);
+
+        $membership = $this->service->createOwnerMembership($this->user, $this->tenant->id, $account);
+
+        $this->assertSame('personal', $membership->account_type);
+    }
+
     public function test_user_has_access_to_account_only_for_active_memberships(): void
     {
         AccountMembership::create([

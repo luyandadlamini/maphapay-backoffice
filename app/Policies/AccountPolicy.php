@@ -85,7 +85,7 @@ class AccountPolicy
             ->forUser($user->uuid)
             ->active()
             ->where('role', 'owner')
-            ->where('account_type', 'personal')
+            ->personalWallet()
             ->exists();
     }
 
@@ -132,7 +132,7 @@ class AccountPolicy
             ->forUser($user->uuid)
             ->active()
             ->where('role', 'owner')
-            ->where('account_type', 'personal')
+            ->personalWallet()
             ->exists();
     }
 

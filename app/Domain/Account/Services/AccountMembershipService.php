@@ -19,7 +19,7 @@ class AccountMembershipService
     public function createOwnerMembership(User $user, string $tenantId, Account $account, ?string $displayName = null, array $extra = []): AccountMembership
     {
         $values = array_merge([
-            'account_type' => (string) ($account->type ?? 'personal'),
+            'account_type' => $this->normalizeOwnerAccountType((string) ($account->type ?? 'personal')),
             'role'         => 'owner',
             'status'       => 'active',
             'joined_at'    => now(),
@@ -97,5 +97,10 @@ class AccountMembershipService
             ->forAccount($accountUuid)
             ->active()
             ->first();
+    }
+
+    private function normalizeOwnerAccountType(string $accountType): string
+    {
+        return $accountType === 'standard' ? 'personal' : $accountType;
     }
 }

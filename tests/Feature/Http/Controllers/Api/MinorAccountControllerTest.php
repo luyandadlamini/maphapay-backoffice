@@ -103,6 +103,28 @@ class MinorAccountControllerTest extends TestCase
     }
 
     #[Test]
+    public function test_react_native_minor_account_creation_accepts_legacy_standard_parent_wallet(): void
+    {
+        AccountMembership::query()
+            ->forUser($this->user->uuid)
+            ->forAccount($this->parentAccount->uuid)
+            ->update(['account_type' => 'standard']);
+
+        Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
+
+        $response = $this->postJson('/api/accounts/minor', [
+            'display_name'   => 'Khanya',
+            'age'            => 8,
+            'spending_limit' => 50,
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.account.account_type', 'minor')
+            ->assertJsonPath('data.account.name', 'Khanya');
+    }
+
+    #[Test]
     public function test_tier_assignment_grow_for_age_10(): void
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);

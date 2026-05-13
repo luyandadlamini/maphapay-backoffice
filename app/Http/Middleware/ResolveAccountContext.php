@@ -130,7 +130,7 @@ class ResolveAccountContext
         return AccountMembership::query()
             ->forUser($userUuid)
             ->active()
-            ->orderByRaw("case when account_type = 'personal' then 0 else 1 end")
+            ->orderByRaw("case when account_type in ('personal', 'standard') then 0 else 1 end")
             ->orderByDesc('joined_at')
             ->first();
     }

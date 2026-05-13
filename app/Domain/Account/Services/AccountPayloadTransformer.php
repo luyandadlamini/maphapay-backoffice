@@ -18,7 +18,7 @@ class AccountPayloadTransformer
     {
         $memberships = $user->activeAccountMemberships()
             ->with('user')
-            ->orderByRaw("case when account_type = 'personal' then 0 else 1 end")
+            ->orderByRaw("case when account_type in ('personal', 'standard') then 0 else 1 end")
             ->orderByDesc('joined_at')
             ->get();
 
@@ -40,7 +40,7 @@ class AccountPayloadTransformer
                 $payload = [
                     'account_uuid'      => $membership->account_uuid,
                     'tenant_id'         => $membership->tenant_id,
-                    'account_type'      => $membership->account_type,
+                    'account_type'      => $this->normalizeAccountType((string) $membership->account_type),
                     'display_name'      => $this->resolveDisplayName($membership, $currentUser, $account),
                     'role'              => $membership->role,
                     'capabilities'      => $membership->capabilities ?? [],
@@ -78,7 +78,7 @@ class AccountPayloadTransformer
 
     private function resolveDisplayName(AccountMembership $membership, ?User $currentUser, ?Account $minorAccount): string
     {
-        if ($membership->account_type === 'personal') {
+        if ($this->normalizeAccountType((string) $membership->account_type) === 'personal') {
             return $membership->display_name
                 ?: $currentUser?->name
                 ?: $membership->user?->name
@@ -94,6 +94,11 @@ class AccountPayloadTransformer
         }
 
         return $membership->account_uuid;
+    }
+
+    private function normalizeAccountType(string $accountType): string
+    {
+        return $accountType === 'standard' ? 'personal' : $accountType;
     }
 
     /**

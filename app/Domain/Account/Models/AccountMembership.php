@@ -13,6 +13,8 @@ class AccountMembership extends Model
 {
     use HasUuids;
 
+    public const PERSONAL_ACCOUNT_TYPES = ['personal', 'standard'];
+
     protected $connection = 'central';
 
     protected $table = 'account_memberships';
@@ -47,5 +49,10 @@ class AccountMembership extends Model
     public function scopeForAccount($query, string $accountUuid)
     {
         return $query->where('account_uuid', $accountUuid);
+    }
+
+    public function scopePersonalWallet($query)
+    {
+        return $query->whereIn('account_type', self::PERSONAL_ACCOUNT_TYPES);
     }
 }
