@@ -35,7 +35,7 @@ class VerifyPinController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'trx'    => ['required', 'string'],
-            'pin'    => ['required', 'string', 'digits:4'],
+            'pin'    => ['required', 'string', 'digits_between:4,6'],
             'remark' => ['sometimes', 'string'],
         ]);
 

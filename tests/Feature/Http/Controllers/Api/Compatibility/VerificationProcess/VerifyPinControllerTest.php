@@ -54,7 +54,7 @@ class VerifyPinControllerTest extends ControllerTestCase
         return AuthorizedTransaction::create([
             'user_id' => $user->id,
             'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx'     => 'TRX-PINTEST-' . Str::upper((string) Str::ulid()),
+            'trx'     => 'TRX-' . Str::upper(Str::random(8)),
             'payload' => [
                 'from_account_uuid' => '00000000-0000-0000-0000-000000000001',
                 'to_account_uuid'   => '00000000-0000-0000-0000-000000000002',
@@ -116,6 +116,36 @@ class VerifyPinControllerTest extends ControllerTestCase
     }
 
     #[Test]
+    public function test_six_digit_pin_is_accepted_for_development_card_flow(): void
+    {
+        $user = $this->makeUserWithPin();
+        $txn = $this->makePendingTransaction($user);
+        $txn->update(['remark' => AuthorizedTransaction::REMARK_CARD_PRODUCT]);
+
+        $this->mock(AuthorizedTransactionManager::class, function ($mock) use ($txn): void {
+            $mock->shouldReceive('verifyPin')
+                ->once()
+                ->with($txn->trx, $txn->user_id, '123456')
+                ->andReturn(['subscription' => ['id' => 'sub-dev']]);
+        });
+
+        Sanctum::actingAs($user, ['read', 'write', 'delete']);
+
+        $response = $this->postJson(self::ROUTE, [
+            'trx'    => $txn->trx,
+            'pin'    => '123456',
+            'remark' => 'card_product',
+        ]);
+
+        $response->assertOk()
+            ->assertExactJson([
+                'status' => 'success',
+                'remark' => 'card_product',
+                'data'   => ['subscription' => ['id' => 'sub-dev']],
+            ]);
+    }
+
+    #[Test]
     public function test_wrong_pin_returns_422_with_error_envelope(): void
     {
         $user = $this->makeUserWithPin();
@@ -167,7 +197,7 @@ class VerifyPinControllerTest extends ControllerTestCase
             ->assertExactJson([
                 'status'  => 'error',
                 'remark'  => 'send_money',
-                'message' => ['The pin field must be 4 digits.'],
+                'message' => ['The pin field must be between 4 and 6 digits.'],
                 'data'    => null,
             ]);
     }
@@ -286,7 +316,7 @@ class VerifyPinControllerTest extends ControllerTestCase
         $txn = AuthorizedTransaction::create([
             'user_id'           => $user->id,
             'remark'            => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx'               => 'TRX-COMPLETED-' . Str::upper((string) Str::ulid()),
+            'trx'               => 'TRX-DONE-' . Str::upper(Str::random(6)),
             'payload'           => ['amount' => '5.00'],
             'status'            => AuthorizedTransaction::STATUS_COMPLETED,
             'verification_type' => AuthorizedTransaction::VERIFICATION_PIN,
