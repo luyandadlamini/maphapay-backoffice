@@ -10,6 +10,7 @@ use App\Domain\Wallet\Contracts\WalletMovementRequest;
 use App\Domain\Wallet\Contracts\WalletMovementResult;
 use App\Domain\Wallet\Contracts\WalletMovementStatus;
 use App\Domain\Wallet\Contracts\WalletProviderAdapter;
+use Error;
 use ReflectionClass;
 use Tests\TestCase;
 
@@ -92,6 +93,13 @@ final class WalletContractsTest extends TestCase
         $this->assertSame('failed', WalletMovementResult::STATUS_FAILED);
     }
 
+    public function test_wallet_movement_status_constants_match_string_literals(): void
+    {
+        $this->assertSame('pending', WalletMovementStatus::STATUS_PENDING);
+        $this->assertSame('successful', WalletMovementStatus::STATUS_SUCCESSFUL);
+        $this->assertSame('failed', WalletMovementStatus::STATUS_FAILED);
+    }
+
     public function test_wallet_movement_status_holds_documented_properties_and_nullable_settled_at(): void
     {
         $statusWithoutSettledAt = new WalletMovementStatus(
@@ -167,6 +175,74 @@ final class WalletContractsTest extends TestCase
                 $reflection->isReadonly(),
                 "{$className} must be a readonly class"
             );
+        }
+    }
+
+    public function test_dto_properties_throw_on_mutation_attempt(): void
+    {
+        $this->assertReadonlyMutationThrows(
+            new WalletLinkResult(
+                providerId: 'test_provider',
+                providerAccountRef: 'ref123',
+                displayName: 'Test Account',
+                linkToken: 'token_abc',
+                linkStatus: 'active',
+            ),
+            'providerId',
+            'new_provider',
+        );
+
+        $this->assertReadonlyMutationThrows(
+            new WalletMovementRequest(
+                providerId: 'test_provider',
+                providerAccountRef: 'ref456',
+                linkToken: 'token_xyz',
+                amountMinor: 1050,
+                currency: 'ZAR',
+                idempotencyKey: 'idempotency_123',
+                callbackUrl: 'https://example.com/callback',
+                memo: 'Test payment',
+            ),
+            'amountMinor',
+            2000,
+        );
+
+        $this->assertReadonlyMutationThrows(
+            new WalletMovementResult(
+                providerRequestId: 'req_123',
+                status: 'successful',
+                failureReason: null,
+            ),
+            'status',
+            'failed',
+        );
+
+        $this->assertReadonlyMutationThrows(
+            new WalletMovementStatus(
+                providerRequestId: 'req_789',
+                status: 'pending',
+                failureReason: null,
+                settledAt: null,
+            ),
+            'providerRequestId',
+            'req_new',
+        );
+    }
+
+    /**
+     * @param object $object
+     * @param mixed $newValue
+     */
+    private function assertReadonlyMutationThrows(
+        object $object,
+        string $propertyName,
+        mixed $newValue
+    ): void {
+        try {
+            $object->{$propertyName} = $newValue; // @phpstan-ignore-next-line
+            $this->fail('Should not allow mutation of readonly property ' . $propertyName);
+        } catch (Error $e) {
+            $this->assertStringContainsString('Cannot modify readonly property', $e->getMessage());
         }
     }
 }
