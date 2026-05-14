@@ -8,6 +8,7 @@ use App\Domain\CardIssuance\Models\Card;
 use App\Domain\CardIssuance\Contracts\CardIssuerInterface;
 use App\Domain\CardIssuance\ValueObjects\RevealUrlResult;
 use App\Models\User;
+use RuntimeException;
 
 class CardRevealService
 {
@@ -19,12 +20,16 @@ class CardRevealService
 
     public function mintRevealUrl(User $user, Card $card): RevealUrlResult
     {
-        if (empty($card->issuer_card_token)) {
-            // Fallback for development if token isn't properly synced yet,
-            // though createCard() normally returns it. We use the card's local ID.
-            $token = $card->id;
-        } else {
-            $token = $card->issuer_card_token;
+        $token = $card->issuer_card_token;
+
+        if (! is_string($token) || $token === '') {
+            // A card without an issuer token is unrevealable. The Stripe driver
+            // requires `ic_*` to mint a reveal page; the demo driver also needs
+            // a stable token. Silent fallback to the local UUID used to produce
+            // signed URLs that 404 inside the iframe.
+            throw new RuntimeException(
+                "Card {$card->id} has no issuer_card_token; cannot generate reveal URL."
+            );
         }
 
         return $this->issuer->generateRevealUrl($token, self::REVEAL_TTL_MINUTES * 60);
