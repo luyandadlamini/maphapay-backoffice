@@ -75,7 +75,16 @@ class MinorAccountController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        abort_unless($this->accountPolicy->createMinor($user), 403);
+        if (! $this->accountPolicy->createMinor($user)) {
+            Log::warning('MinorAccountController: createMinor policy denied', [
+                'user_uuid' => $user->uuid,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An active owner-level personal account is required to create a child account.',
+            ], 403);
+        }
 
         $parentMembership = AccountMembership::query()
             ->forUser($user->uuid)
@@ -87,7 +96,7 @@ class MinorAccountController extends Controller
         if ($parentMembership === null) {
             return response()->json([
                 'success' => false,
-                'message' => 'A personal account is required before creating a minor account.',
+                'message' => 'A personal account is required before creating a child account.',
             ], 403);
         }
 

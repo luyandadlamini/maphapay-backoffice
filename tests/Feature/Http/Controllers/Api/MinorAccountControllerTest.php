@@ -244,6 +244,30 @@ class MinorAccountControllerTest extends TestCase
     }
 
     #[Test]
+    public function test_returns_clear_error_when_user_lacks_owner_personal_membership(): void
+    {
+        // Demote the personal membership so AccountPolicy::createMinor returns false.
+        AccountMembership::query()
+            ->forUser($this->user->uuid)
+            ->forAccount($this->parentAccount->uuid)
+            ->update(['role' => 'co_guardian']);
+
+        Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
+
+        $response = $this->postJson('/api/accounts/minor', [
+            'name'          => 'Emma',
+            'date_of_birth' => now()->subYears(10)->format('Y-m-d'),
+        ]);
+
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false);
+
+        $message = (string) $response->json('message');
+        $this->assertNotSame('', $message, 'Backend must return a non-empty message so mobile does not show generic "Access denied".');
+        $this->assertMatchesRegularExpression('/personal account/i', $message);
+    }
+
+    #[Test]
     public function test_membership_created_with_correct_account_type(): void
     {
         Sanctum::actingAs($this->user, ['read', 'write', 'delete']);
