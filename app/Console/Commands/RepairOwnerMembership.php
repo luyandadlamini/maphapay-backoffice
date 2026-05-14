@@ -13,6 +13,7 @@ use App\Models\Team;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Artisan;
 use Stancl\Tenancy\Tenancy;
 
 /**
@@ -108,6 +109,24 @@ class RepairOwnerMembership extends Command
 
         $previousTenancyInitialized = $tenancy->initialized;
         $tenancy->initialize($tenant);
+
+        // If this is a freshly created tenant its schema will be empty — run migrations.
+        try {
+            $tableCount = \Illuminate\Support\Facades\DB::connection('tenant')
+                ->select("SELECT COUNT(*) as cnt FROM information_schema.tables WHERE table_schema = DATABASE()");
+            if (($tableCount[0]->cnt ?? 0) < 5) {
+                $this->line('Fresh tenant schema detected — running tenant migrations…');
+                Artisan::call('migrate', [
+                    '--path'  => 'database/migrations/tenant',
+                    '--force' => true,
+                ]);
+                $this->line(Artisan::output());
+            }
+        } catch (\Throwable) {
+            // If schema check fails, attempt migration anyway.
+            $this->line('Could not check schema — running tenant migrations defensively…');
+            Artisan::call('migrate', ['--path' => 'database/migrations/tenant', '--force' => true]);
+        }
 
         try {
             $personalAccount = Account::query()
