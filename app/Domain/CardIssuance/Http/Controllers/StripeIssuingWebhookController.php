@@ -37,22 +37,30 @@ class StripeIssuingWebhookController extends Controller
             return response()->json(['error' => 'malformed payload'], 400);
         }
 
-        $existing = DB::table('stripe_webhook_events')
-            ->where('event_id', $event['id'])
-            ->first();
+        // Atomic claim-or-skip: insertOrIgnore relies on the unique index on
+        // event_id so concurrent Stripe retries cannot both insert. If the
+        // insert is ignored (0 rows affected), another delivery already
+        // landed — check whether it finished and bail accordingly.
+        $inserted = DB::table('stripe_webhook_events')->insertOrIgnore([
+            'event_id'    => $event['id'],
+            'event_type'  => $event['type'],
+            'received_at' => now(),
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
 
-        if ($existing !== null && $existing->processed_at !== null) {
-            return response()->json(['status' => 'duplicate']);
-        }
+        if ($inserted === 0) {
+            $existing = DB::table('stripe_webhook_events')
+                ->where('event_id', $event['id'])
+                ->first();
 
-        if ($existing === null) {
-            DB::table('stripe_webhook_events')->insert([
-                'event_id'    => $event['id'],
-                'event_type'  => $event['type'],
-                'received_at' => now(),
-                'created_at'  => now(),
-                'updated_at'  => now(),
-            ]);
+            if ($existing !== null && $existing->processed_at !== null) {
+                return response()->json(['status' => 'duplicate']);
+            }
+
+            // A concurrent delivery is still processing. Tell Stripe to
+            // retry later rather than racing.
+            return response()->json(['status' => 'in_progress'], 409);
         }
 
         try {
