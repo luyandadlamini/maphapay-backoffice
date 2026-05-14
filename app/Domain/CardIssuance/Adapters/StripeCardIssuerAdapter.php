@@ -206,7 +206,6 @@ class StripeCardIssuerAdapter implements CardIssuerInterface
             url: $url,
             expiresAt: $expiresAt->toDateTimeImmutable(),
             ttlSeconds: $ttlSeconds,
-            stripeCardId: $issuerCardToken,
         );
     }
 

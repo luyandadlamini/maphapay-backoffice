@@ -87,8 +87,6 @@ describe('GET /api/v1/cards/{id}/reveal', function () {
                 'reveal_url',
                 'expires_at',
                 'ttl_seconds',
-                'ephemeral_key',
-                'stripe_card_id',
             ],
         ]);
 

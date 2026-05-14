@@ -90,11 +90,9 @@ class CardController extends Controller
         ]);
 
         return $this->cardSuccess('card_reveal', [
-            'reveal_url'     => $result->url,
-            'expires_at'     => $result->expiresAt->format('c'),
-            'ttl_seconds'    => max(0, now()->diffInSeconds($result->expiresAt, false)),
-            'ephemeral_key'  => $result->ephemeralKey,
-            'stripe_card_id' => $result->stripeCardId,
+            'reveal_url'  => $result->url,
+            'expires_at'  => $result->expiresAt->format('c'),
+            'ttl_seconds' => max(0, now()->diffInSeconds($result->expiresAt, false)),
         ]);
     }
 

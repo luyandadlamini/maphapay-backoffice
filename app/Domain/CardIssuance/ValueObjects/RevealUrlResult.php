@@ -12,7 +12,5 @@ final readonly class RevealUrlResult
         public string $url,
         public DateTimeImmutable $expiresAt,
         public int $ttlSeconds,
-        public ?string $ephemeralKey = null,
-        public ?string $stripeCardId = null,
     ) {}
 }

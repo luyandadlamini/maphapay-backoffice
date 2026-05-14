@@ -26,7 +26,6 @@ class StripeCardIssuerAdapterRevealTest extends TestCase
         $this->assertStringContainsString('/stripe-cards/reveal', $result->url);
         $this->assertStringContainsString('signature=', $result->url);
         $this->assertSame(60, $result->ttlSeconds);
-        $this->assertNull($result->ephemeralKey);
-        $this->assertSame('ic_test_123', $result->stripeCardId);
+        $this->assertStringContainsString('card=ic_test_123', $result->url);
     }
 }
