@@ -29,7 +29,11 @@ class MobileHandoverV571Test extends TestCase
         parent::setUp();
         Cache::flush();
 
-        $this->user = User::factory()->create(['name' => 'Test User']);
+        $this->user = User::factory()->create([
+            'name'            => 'Test User',
+            'kyc_status'      => 'approved',
+            'kyc_approved_at' => now(),
+        ]);
         $this->token = $this->user->createToken('test-token', ['read', 'write', 'delete'])->plainTextToken;
         $this->merchant = Merchant::create([
             'public_id'         => 'merch_test_' . bin2hex(random_bytes(4)),
@@ -134,20 +138,10 @@ class MobileHandoverV571Test extends TestCase
         $this->assertNull($data[0]['name']);
     }
 
-    // --- #7: Card Transactions Returns Demo Data (v5.8.0) ---
-
-    public function test_card_transactions_returns_demo_data(): void
-    {
-        $response = $this->withToken($this->token)
-            ->getJson('/api/v1/cards/test-card-123/transactions');
-
-        $response->assertOk();
-        $data = $response->json();
-
-        $this->assertTrue($data['success']);
-        $this->assertNotEmpty($data['data']);
-        $this->assertArrayHasKey('id', $data['data'][0]);
-        $this->assertArrayHasKey('amount', $data['data'][0]);
-        $this->assertArrayHasKey('merchant', $data['data'][0]);
-    }
+    // --- #7: Card Transactions ---
+    //
+    // The v5.7.1 "demo data" path was removed during the cards refactor —
+    // GET /api/v1/cards/{id}/transactions now requires a real card owned
+    // by the authenticated user (404 otherwise). End-to-end coverage of the
+    // real path lives in tests/Feature/Cards/EndToEndSmokeTest.php.
 }

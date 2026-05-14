@@ -129,7 +129,7 @@ class MinorCardControllerTest extends BaseTestCase
 
         Sanctum::actingAs($this->guardian, ['read', 'write', 'delete']);
 
-        $response = $this->postJson("/api/v1/minor-cards/requests/{$request->uuid}/approve");
+        $response = $this->postJson("/api/v1/minor-cards/requests/{$request->id}/approve");
 
         $response->assertStatus(200);
 
@@ -152,7 +152,7 @@ class MinorCardControllerTest extends BaseTestCase
 
         Sanctum::actingAs($nonGuardian, ['read', 'write', 'delete']);
 
-        $response = $this->postJson("/api/v1/minor-cards/requests/{$request->uuid}/approve");
+        $response = $this->postJson("/api/v1/minor-cards/requests/{$request->id}/approve");
 
         $response->assertStatus(403);
 
@@ -173,7 +173,7 @@ class MinorCardControllerTest extends BaseTestCase
 
         Sanctum::actingAs($this->guardian, ['read', 'write', 'delete']);
 
-        $response = $this->postJson("/api/v1/minor-cards/requests/{$request->uuid}/deny", [
+        $response = $this->postJson("/api/v1/minor-cards/requests/{$request->id}/deny", [
             'reason' => 'Missing required documents',
         ]);
 
@@ -199,7 +199,7 @@ class MinorCardControllerTest extends BaseTestCase
 
         Sanctum::actingAs($nonGuardian, ['read', 'write', 'delete']);
 
-        $response = $this->postJson("/api/v1/minor-cards/requests/{$request->uuid}/deny", [
+        $response = $this->postJson("/api/v1/minor-cards/requests/{$request->id}/deny", [
             'reason' => 'Invalid request',
         ]);
 

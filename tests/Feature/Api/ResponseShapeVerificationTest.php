@@ -669,7 +669,7 @@ describe('Network status - GET /api/v1/networks/status', function () {
 // ==========================================================================
 
 describe('Card issuance - GET /api/v1/cards', function () {
-    test('card list returns success with data array', function () {
+    test('card list returns success envelope with data array', function () {
         [$user, $token] = createShapeTestUser();
 
         $response = $this->withToken($token)->getJson('/api/v1/cards');
@@ -678,9 +678,11 @@ describe('Card issuance - GET /api/v1/cards', function () {
 
         $json = $response->json();
 
-        expect($json)->toHaveKey('success', true);
+        // Card endpoints use the cardSuccess envelope:
+        //   { status: 'success', remark: '...', data: ... }
+        expect($json)->toHaveKey('status', 'success');
+        expect($json)->toHaveKey('remark');
         expect($json)->toHaveKey('data');
-        expect($json['data'])->toBeArray();
 
         assertKeysAreSnakeCase($json);
     });
@@ -692,48 +694,13 @@ describe('Card issuance - GET /api/v1/cards', function () {
     });
 });
 
-describe('Card issuance - POST /api/v1/cards', function () {
-    test('card creation returns success with data object', function () {
-        [$user, $token] = createShapeTestUser();
+// Note: POST /api/v1/cards was removed during the cards refactor — the
+// current creation flow lives at POST /api/v1/cards/virtual and goes through
+// KYC + idempotency + card-product step-up. Shape verification for that
+// surface is covered by tests/Feature/Cards/Http/PhysicalCardOrderControllerTest
+// and the dedicated CardController feature tests.
 
-        $response = $this->withToken($token)->postJson('/api/v1/cards', [
-            'cardholder_name' => 'Test User',
-            'currency'        => 'USD',
-            'network'         => 'visa',
-        ]);
-
-        // Accept either 201 (created) or 400 (external service unavailable in test)
-        // The shape verification is the important part
-        $status = $response->getStatusCode();
-        expect($status)->toBeIn([201, 400]);
-
-        $json = $response->json();
-
-        // Both success and error responses must have 'success' boolean
-        expect($json)->toHaveKey('success');
-
-        if ($status === 201) {
-            expect($json['success'])->toBeTrue();
-            expect($json)->toHaveKey('data');
-        } else {
-            expect($json['success'])->toBeFalse();
-            expect($json)->toHaveKey('error');
-            expect($json['error'])->toHaveKey('code');
-            expect($json['error'])->toHaveKey('message');
-        }
-
-        assertKeysAreSnakeCase($json);
-    });
-
-    test('card creation requires authentication', function () {
-        $response = $this->postJson('/api/v1/cards', [
-            'cardholder_name' => 'Test User',
-            'currency'        => 'USD',
-        ]);
-
-        $response->assertUnauthorized();
-    });
-});
+// POST /api/v1/cards was removed during the cards refactor — see comment above.
 
 // ==========================================================================
 //  8. CROSS-CUTTING: snake_case VERIFICATION

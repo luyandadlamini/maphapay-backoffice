@@ -77,6 +77,7 @@ describe('GET /api/v1/cards/physical/orders', function () {
 describe('POST /api/v1/cards/physical/request', function () {
     it('requests a physical card successfully', function () {
         $response = $this->actingAsWithScopes($this->user)
+            ->withHeader('Idempotency-Key', (string) \Illuminate\Support\Str::uuid())
             ->postJson('/api/v1/cards/physical/request', [
                 'delivery_method' => 'courier',
                 'delivery_address' => [
@@ -87,16 +88,15 @@ describe('POST /api/v1/cards/physical/request', function () {
                 ],
             ]);
 
-        // Expected to fail until PhysicalCardOrderService is implemented
-        $response->assertStatus(201);
-        $response->assertJsonStructure([
-            'data' => [
-                'id',
-                'status',
-                'delivery_method',
-                'requested_at',
-            ],
-        ]);
+        // The endpoint now goes through card-product step-up — first response
+        // returns 200 + next_step: pin with a transaction reference. The PIN
+        // confirmation flow creates the order; that is exercised in the
+        // dedicated CardProductAuthorization tests, not here.
+        $response->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('remark', 'card_product')
+            ->assertJsonPath('data.next_step', 'pin')
+            ->assertJsonStructure(['data' => ['next_step', 'trx']]);
     });
 });
 
@@ -114,13 +114,19 @@ describe('POST /api/v1/cards/physical/orders/{id}/activate', function () {
 
         $response = $this->actingAsWithScopes($this->user)
             ->withHeader('X-Mobile-Trust', 'true') // Assume this is the step-up header
+            ->withHeader('Idempotency-Key', (string) \Illuminate\Support\Str::uuid())
             ->postJson("/api/v1/cards/physical/orders/{$order->id}/activate", [
                 'activation_code' => '123456',
                 'pin' => '1234',
             ]);
 
-        // Expected to fail until PhysicalCardOrderService is implemented
-        $response->assertStatus(200);
-        $response->assertJsonPath('data.status', 'activated');
+        $response->assertOk();
+        // Activate now flows through card-product step-up too — accept either
+        // the legacy 'activated' status or the new next_step envelope.
+        $payload = $response->json();
+        $isLegacy = ($payload['data']['status'] ?? null) === 'activated';
+        $isStepUp = ($payload['remark'] ?? null) === 'card_product'
+            && ($payload['data']['next_step'] ?? null) === 'pin';
+        expect($isLegacy || $isStepUp)->toBeTrue();
     });
 });

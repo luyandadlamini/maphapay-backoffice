@@ -34,8 +34,11 @@ it('checks active and frozen states', function (): void {
     expect($card->isActive())->toBeTrue();
     expect($card->isFrozen())->toBeFalse();
 
-    $card->status = 'frozen';
+    $card->status = 'frozen_by_user';
     expect($card->isActive())->toBeFalse();
+    expect($card->isFrozen())->toBeTrue();
+
+    $card->status = 'frozen_by_admin';
     expect($card->isFrozen())->toBeTrue();
 });
 

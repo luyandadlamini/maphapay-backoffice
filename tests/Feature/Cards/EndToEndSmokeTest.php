@@ -90,7 +90,7 @@ it('adult subscribe → virtual card → webhooks → transactions list → reve
         ->getJson('/api/v1/card-subscriptions/me');
 
     $me->assertOk();
-    expect($me->json('data.plan.code'))->toBe('VIRTUAL_LITE');
+    expect($me->json('data.subscription.plan.code'))->toBe('VIRTUAL_LITE');
 
     $virtualInit = $this->actingAsWithScopes($user)
         ->withHeaders([
@@ -187,7 +187,7 @@ it('adult subscribe → virtual card → webhooks → transactions list → reve
         ->getJson("/api/v1/cards/{$cardId}/transactions");
 
     $txList->assertOk();
-    $txList->assertJsonPath('data.0.status', 'settled');
+    $txList->assertJsonPath('data.transactions.0.status', 'settled');
 
     $reveal = $this->actingAsWithScopes($user)
         ->withHeaders([
@@ -197,7 +197,7 @@ it('adult subscribe → virtual card → webhooks → transactions list → reve
         ->getJson("/api/v1/cards/{$cardId}/reveal");
 
     $reveal->assertOk();
-    $reveal->assertJsonStructure(['url', 'expires_at']);
+    $reveal->assertJsonStructure(['data' => ['reveal_url', 'expires_at', 'ttl_seconds']]);
 
     $this->assertDatabaseHas('card_audit_logs', [
         'entity_type' => Card::class,
