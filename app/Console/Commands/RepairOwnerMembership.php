@@ -9,6 +9,7 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Services\AccountMembershipService;
 use App\Domain\Account\Services\AccountService;
+use App\Models\Team;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -90,9 +91,14 @@ class RepairOwnerMembership extends Command
 
         $team = $user->ownedTeams()->where('personal_team', true)->first();
         if ($team === null) {
-            $this->error('User has no personal team — cannot resolve tenant. Aborting.');
-
-            return self::FAILURE;
+            $this->warn('User has no personal team. Creating one now…');
+            $team = Team::forceCreate([
+                'user_id'       => $user->id,
+                'name'          => explode(' ', $user->name, 2)[0] . "'s Team",
+                'personal_team' => true,
+            ]);
+            $user->ownedTeams()->save($team);
+            $this->line("  Created team: id={$team->id} name={$team->name}");
         }
 
         $tenant = Tenant::query()->firstOrCreate(
