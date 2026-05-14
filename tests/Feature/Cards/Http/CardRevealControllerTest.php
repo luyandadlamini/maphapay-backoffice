@@ -83,8 +83,13 @@ describe('GET /api/v1/cards/{id}/reveal', function () {
 
         $response->assertOk();
         $response->assertJsonStructure([
-            'url',
-            'expires_at',
+            'data' => [
+                'reveal_url',
+                'expires_at',
+                'ttl_seconds',
+                'ephemeral_key',
+                'stripe_card_id',
+            ],
         ]);
 
         $this->assertDatabaseHas('card_audit_logs', [

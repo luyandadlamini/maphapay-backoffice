@@ -11,7 +11,15 @@ return [
     'default_processor' => env('CARDS_DEFAULT_PROCESSOR', 'demo'),
 
     'processors' => [
+        'demo' => [],
         'rain' => [],
+        'stripe' => [
+            'secret_key'      => env('STRIPE_SECRET'),
+            'publishable_key' => env('STRIPE_KEY'),
+            'webhook_secret'  => env('STRIPE_WEBHOOK_SECRET'),
+            'fx_rate_usd_szl' => (float) env('STRIPE_FX_RATE_USD_SZL', 18.50),
+            'api_version'     => '2026-04-22.dahlia',
+        ],
     ],
 
     'reveal' => [

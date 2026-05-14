@@ -130,6 +130,7 @@ class User extends Authenticatable implements FilamentUser
         'send_money_step_up_threshold_override_reason',
         'send_money_step_up_threshold_override_updated_at',
         'send_money_step_up_threshold_override_updated_by',
+        'stripe_cardholder_id',
     ];
 
     /**

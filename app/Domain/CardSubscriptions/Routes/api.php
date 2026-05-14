@@ -15,6 +15,9 @@ use Illuminate\Support\Facades\Route;
 
 // Domain: Card Subscriptions and Cards
 Route::prefix('v1')->name('api.v1.')->group(function () {
+    Route::post('cards/webhooks/stripe-issuing', \App\Domain\CardIssuance\Http\Controllers\StripeIssuingWebhookController::class)
+        ->middleware('throttle:maphapay-card-webhook')
+        ->name('cards.webhooks.stripe-issuing');
 
     // Authenticated endpoints
     Route::middleware(['auth:sanctum', 'account.context'])->group(function () {
@@ -112,6 +115,15 @@ Route::prefix('webhooks/cards')->name('api.webhooks.cards.')->group(function () 
             ->name('handle');
     });
 });
+
+// Stripe Issuing reveal route (serves Stripe.js Issuing Elements in mobile WebView)
+Route::get('/stripe-cards/reveal', [\App\Domain\CardIssuance\Http\Controllers\StripeIssuingRevealController::class, 'show'])
+    ->middleware('throttle:maphapay-card-reveal')
+    ->name('api.v1.cards.stripe.reveal');
+
+Route::post('/stripe-cards/reveal/ephemeral-key', [\App\Domain\CardIssuance\Http\Controllers\StripeIssuingRevealController::class, 'ephemeralKey'])
+    ->middleware('throttle:maphapay-card-reveal')
+    ->name('api.v1.cards.stripe.reveal.ephemeral-key');
 
 // Demo reveal route (for development/tests — serves the reveal Blade page)
 Route::get('/demo-cards/reveal', function (Illuminate\Http\Request $request) {
