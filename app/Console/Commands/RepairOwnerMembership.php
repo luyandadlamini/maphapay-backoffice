@@ -1,0 +1,150 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Console\Commands;
+
+use App\Domain\Account\DataObjects\Account as AccountData;
+use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountMembership;
+use App\Domain\Account\Services\AccountMembershipService;
+use App\Domain\Account\Services\AccountService;
+use App\Models\Tenant;
+use App\Models\User;
+use Illuminate\Console\Command;
+use Stancl\Tenancy\Tenancy;
+
+/**
+ * One-shot repair: ensure a user has an active owner-level personal-wallet
+ * AccountMembership so AccountPolicy::createMinor() / createMerchant /
+ * createCompany return true.
+ *
+ * Idempotent. Reports state before and after.
+ *
+ *   php artisan accounts:repair-owner-membership user@example.com
+ *   php artisan accounts:repair-owner-membership user@example.com --dry-run
+ */
+class RepairOwnerMembership extends Command
+{
+    protected $signature = 'accounts:repair-owner-membership
+                            {email : The user email to inspect/repair}
+                            {--dry-run : Report only; make no changes}';
+
+    protected $description = 'Ensure a user has an active owner-level personal-wallet AccountMembership.';
+
+    public function handle(
+        AccountService $accountService,
+        AccountMembershipService $membershipService,
+        Tenancy $tenancy,
+    ): int {
+        $email = (string) $this->argument('email');
+        $dryRun = (bool) $this->option('dry-run');
+
+        $user = User::query()->where('email', $email)->first();
+        if ($user === null) {
+            $this->error("No user found with email {$email}.");
+
+            return self::FAILURE;
+        }
+
+        $this->line("User: {$user->email} (uuid={$user->uuid}, id={$user->id})");
+
+        $memberships = AccountMembership::query()
+            ->forUser($user->uuid)
+            ->get();
+
+        $this->line('Current memberships:');
+        if ($memberships->isEmpty()) {
+            $this->line('  (none)');
+        }
+        foreach ($memberships as $m) {
+            $this->line(sprintf(
+                '  - account_uuid=%s account_type=%s role=%s status=%s tenant_id=%s',
+                $m->account_uuid,
+                $m->account_type,
+                $m->role,
+                $m->status,
+                $m->tenant_id,
+            ));
+        }
+
+        $ownerPersonal = $memberships
+            ->where('status', 'active')
+            ->whereIn('account_type', AccountMembership::PERSONAL_ACCOUNT_TYPES)
+            ->where('role', 'owner')
+            ->first();
+
+        if ($ownerPersonal !== null) {
+            $this->info('OK: an active owner-level personal-wallet membership already exists. Nothing to repair.');
+
+            return self::SUCCESS;
+        }
+
+        $this->warn('No active owner-level personal-wallet membership found. Repair needed.');
+
+        if ($dryRun) {
+            $this->line('--dry-run: skipping changes.');
+
+            return self::SUCCESS;
+        }
+
+        $team = $user->ownedTeams()->where('personal_team', true)->first();
+        if ($team === null) {
+            $this->error('User has no personal team — cannot resolve tenant. Aborting.');
+
+            return self::FAILURE;
+        }
+
+        $tenant = Tenant::query()->firstOrCreate(
+            ['team_id' => $team->id],
+            ['name' => $team->name, 'plan' => 'default'],
+        );
+
+        $previousTenancyInitialized = $tenancy->initialized;
+        $tenancy->initialize($tenant);
+
+        try {
+            $personalAccount = Account::query()
+                ->where('user_uuid', $user->uuid)
+                ->whereIn('type', ['personal', 'standard'])
+                ->orderBy('created_at')
+                ->first();
+
+            if ($personalAccount === null) {
+                $this->line('No personal/standard account exists. Creating one…');
+                $accountUuid = $accountService->createDirect(
+                    new AccountData(name: 'Maphapay Wallet', userUuid: $user->uuid)
+                );
+                $personalAccount = Account::query()->where('uuid', $accountUuid)->first();
+            }
+
+            if ($personalAccount === null) {
+                $this->error('Failed to resolve or create a personal account.');
+
+                return self::FAILURE;
+            }
+
+            $this->line("Personal account: uuid={$personalAccount->uuid} type={$personalAccount->type}");
+
+            $membership = $membershipService->createOwnerMembership(
+                $user,
+                (string) $tenant->id,
+                $personalAccount,
+            );
+
+            $this->info(sprintf(
+                'Created/updated owner membership: account_uuid=%s account_type=%s role=%s status=%s',
+                $membership->account_uuid,
+                $membership->account_type,
+                $membership->role,
+                $membership->status,
+            ));
+
+            return self::SUCCESS;
+        } finally {
+            if (! $previousTenancyInitialized && $tenancy->initialized) {
+                $tenancy->end();
+            }
+        }
+    }
+}
