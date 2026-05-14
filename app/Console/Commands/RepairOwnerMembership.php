@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Domain\Account\DataObjects\Account as AccountData;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Services\AccountMembershipService;
-use App\Domain\Account\Services\AccountService;
 use App\Models\Team;
 use App\Models\Tenant;
 use App\Models\User;
@@ -35,7 +33,6 @@ class RepairOwnerMembership extends Command
     protected $description = 'Ensure a user has an active owner-level personal-wallet AccountMembership.';
 
     public function handle(
-        AccountService $accountService,
         AccountMembershipService $membershipService,
         Tenancy $tenancy,
     ): int {
@@ -137,10 +134,13 @@ class RepairOwnerMembership extends Command
 
             if ($personalAccount === null) {
                 $this->line('No personal/standard account exists. Creating one…');
-                $accountUuid = $accountService->createDirect(
-                    new AccountData(name: 'Maphapay Wallet', userUuid: $user->uuid)
-                );
-                $personalAccount = Account::query()->where('uuid', $accountUuid)->first();
+                $personalAccount = Account::create([
+                    'uuid'      => (string) \Illuminate\Support\Str::uuid(),
+                    'user_uuid' => $user->uuid,
+                    'name'      => 'Maphapay Wallet',
+                    'type'      => 'personal',
+                    'status'    => 'active',
+                ]);
             }
 
             if ($personalAccount === null) {
