@@ -43,6 +43,7 @@ return [
     App\Providers\TestingServiceProvider::class,
     App\Providers\VirtualsAgentServiceProvider::class,
     App\Providers\VisaCliServiceProvider::class,
+    App\Providers\WalletProviderServiceProvider::class,
     App\Providers\WalletServiceProvider::class,
     App\Providers\X402ServiceProvider::class,
     App\Providers\WebhookServiceProvider::class,
