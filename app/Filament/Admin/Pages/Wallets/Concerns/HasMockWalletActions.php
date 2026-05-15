@@ -31,6 +31,7 @@ trait HasMockWalletActions
     {
         return Action::make('fund')
             ->label('Fund account')
+            ->hidden(fn (): bool => !Auth::user()?->can('wallet.manage_mock'))
             ->modalHeading(static::$providerLabel.' — sandbox only — not real funds')
             ->color('success')
             ->form([
@@ -89,6 +90,7 @@ trait HasMockWalletActions
     {
         return Action::make('balance')
             ->label('Check balance')
+            ->hidden(fn (): bool => !Auth::user()?->can('wallet.manage_mock'))
             ->modalHeading(static::$providerLabel.' — mock balance lookup')
             ->color('gray')
             ->form([
