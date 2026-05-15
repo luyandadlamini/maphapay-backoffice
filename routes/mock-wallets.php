@@ -13,6 +13,9 @@ use App\Http\Controllers\Mock\Wallets\FnbEwallet\TransferController as FnbTransf
 use App\Http\Controllers\Mock\Wallets\MtnMomo\CollectionController;
 use App\Http\Controllers\Mock\Wallets\MtnMomo\DisbursementController;
 use App\Http\Controllers\Mock\Wallets\MtnMomo\TokenController;
+use App\Http\Controllers\Mock\Wallets\NedbankSendMoney\InboundController as NedbankInboundController;
+use App\Http\Controllers\Mock\Wallets\NedbankSendMoney\OutboundController as NedbankOutboundController;
+use App\Http\Controllers\Mock\Wallets\NedbankSendMoney\TokenController as NedbankTokenController;
 use App\Http\Controllers\Mock\Wallets\StandardUnayo\CashInController as UnayoCashInController;
 use App\Http\Controllers\Mock\Wallets\StandardUnayo\CashOutController as UnayoCashOutController;
 use App\Http\Controllers\Mock\Wallets\StandardUnayo\TokenController as UnayoTokenController;
@@ -61,5 +64,13 @@ Route::prefix('__mock/wallets')->middleware(['api'])->group(function (): void {
         Route::get('unayo/v1/cashin/{ref}', [UnayoCashInController::class, 'show']);
         Route::post('unayo/v1/cashout', [UnayoCashOutController::class, 'create']);
         Route::get('unayo/v1/cashout/{ref}', [UnayoCashOutController::class, 'show']);
+    });
+
+    Route::prefix('nedbank-send-money')->group(function (): void {
+        Route::post('oauth2/token', NedbankTokenController::class);
+        Route::post('sendmoney/v1/payments/inbound', [NedbankInboundController::class, 'create']);
+        Route::get('sendmoney/v1/payments/inbound/{ref}', [NedbankInboundController::class, 'show']);
+        Route::post('sendmoney/v1/payments/outbound', [NedbankOutboundController::class, 'create']);
+        Route::get('sendmoney/v1/payments/outbound/{ref}', [NedbankOutboundController::class, 'show']);
     });
 });

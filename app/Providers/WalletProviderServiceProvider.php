@@ -10,6 +10,8 @@ use App\Domain\Wallet\Providers\FnbEwallet\FnbEwalletAdapter;
 use App\Domain\Wallet\Providers\FnbEwallet\FnbEwalletSettler;
 use App\Domain\Wallet\Providers\MtnMomo\MtnMomoAdapter;
 use App\Domain\Wallet\Providers\MtnMomo\MtnMomoSettler;
+use App\Domain\Wallet\Providers\NedbankSendMoney\NedbankSendMoneyAdapter;
+use App\Domain\Wallet\Providers\NedbankSendMoney\NedbankSendMoneySettler;
 use App\Domain\Wallet\Providers\StandardUnayo\StandardUnayoAdapter;
 use App\Domain\Wallet\Providers\StandardUnayo\StandardUnayoSettler;
 use App\Domain\Wallet\Providers\WalletProviderRegistry;
@@ -29,6 +31,8 @@ final class WalletProviderServiceProvider extends ServiceProvider
         $this->app->singleton(FnbEwalletSettler::class);
         $this->app->singleton(StandardUnayoAdapter::class);
         $this->app->singleton(StandardUnayoSettler::class);
+        $this->app->singleton(NedbankSendMoneyAdapter::class);
+        $this->app->singleton(NedbankSendMoneySettler::class);
 
         $this->app->singleton(MoneySettlerService::class, function ($app) {
             return new MoneySettlerService([
@@ -36,6 +40,7 @@ final class WalletProviderServiceProvider extends ServiceProvider
                 $app->make(EmaliSettler::class),
                 $app->make(FnbEwalletSettler::class),
                 $app->make(StandardUnayoSettler::class),
+                $app->make(NedbankSendMoneySettler::class),
             ]);
         });
     }

@@ -11,36 +11,27 @@ use Tests\TestCase;
 
 final class WalletProviderRegistryTest extends TestCase
 {
-    public function test_for_returns_mtn_momo_adapter(): void
+    /**
+     * @return iterable<array{0:string}>
+     */
+    public static function allProviderIds(): iterable
     {
-        $adapter = $this->app->make(WalletProviderRegistry::class)->for('mtn_momo');
-
-        $this->assertInstanceOf(WalletProviderAdapter::class, $adapter);
-        $this->assertSame('mtn_momo', $adapter->providerId());
+        yield 'mtn_momo' => ['mtn_momo'];
+        yield 'emali_eswatini_mobile' => ['emali_eswatini_mobile'];
+        yield 'fnb_ewallet' => ['fnb_ewallet'];
+        yield 'standard_unayo' => ['standard_unayo'];
+        yield 'nedbank_send_money' => ['nedbank_send_money'];
     }
 
-    public function test_for_returns_emali_adapter(): void
+    /**
+     * @dataProvider allProviderIds
+     */
+    public function test_for_returns_adapter(string $providerId): void
     {
-        $adapter = $this->app->make(WalletProviderRegistry::class)->for('emali_eswatini_mobile');
+        $adapter = $this->app->make(WalletProviderRegistry::class)->for($providerId);
 
         $this->assertInstanceOf(WalletProviderAdapter::class, $adapter);
-        $this->assertSame('emali_eswatini_mobile', $adapter->providerId());
-    }
-
-    public function test_for_returns_fnb_ewallet_adapter(): void
-    {
-        $adapter = $this->app->make(WalletProviderRegistry::class)->for('fnb_ewallet');
-
-        $this->assertInstanceOf(WalletProviderAdapter::class, $adapter);
-        $this->assertSame('fnb_ewallet', $adapter->providerId());
-    }
-
-    public function test_for_returns_standard_unayo_adapter(): void
-    {
-        $adapter = $this->app->make(WalletProviderRegistry::class)->for('standard_unayo');
-
-        $this->assertInstanceOf(WalletProviderAdapter::class, $adapter);
-        $this->assertSame('standard_unayo', $adapter->providerId());
+        $this->assertSame($providerId, $adapter->providerId());
     }
 
     public function test_for_unknown_provider_throws_exception_with_provider_id(): void
@@ -50,22 +41,6 @@ final class WalletProviderRegistryTest extends TestCase
             $this->fail('Expected UnknownWalletProviderException to be thrown.');
         } catch (UnknownWalletProviderException $exception) {
             $this->assertSame('unknown', $exception->providerId);
-        }
-    }
-
-    public function test_remaining_phase_one_providers_are_not_wired_yet(): void
-    {
-        $registry = $this->app->make(WalletProviderRegistry::class);
-
-        foreach ([
-            'nedbank_send_money',
-        ] as $providerId) {
-            try {
-                $registry->for($providerId);
-                $this->fail("Expected {$providerId} to remain unwired.");
-            } catch (UnknownWalletProviderException $exception) {
-                $this->assertSame($providerId, $exception->providerId);
-            }
         }
     }
 }
