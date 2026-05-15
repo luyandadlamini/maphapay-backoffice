@@ -6,6 +6,7 @@ namespace App\Domain\AuthorizedTransaction\Services;
 
 use App\Console\Commands\ExecuteScheduledSends;
 use App\Domain\AuthorizedTransaction\Contracts\AuthorizedTransactionHandlerInterface;
+use App\Domain\AuthorizedTransaction\Events\AuthorizedTransactionFinalized;
 use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderInterface;
 use App\Domain\AuthorizedTransaction\Exceptions\InvalidTransactionPinException;
 use App\Domain\AuthorizedTransaction\Exceptions\TransactionNotFoundException;
@@ -328,6 +329,12 @@ class AuthorizedTransactionManager
                 );
 
                 $txn->update(['result' => $result]);
+
+                // The raw atomic claim above bypasses Eloquent observers, so dispatch an
+                // explicit domain event. Listeners run inside this DB transaction; any
+                // side effects (e.g. chat-sync) must defer themselves with DB::afterCommit.
+                $txn->refresh();
+                event(new AuthorizedTransactionFinalized($txn));
 
                 return $result;
             });

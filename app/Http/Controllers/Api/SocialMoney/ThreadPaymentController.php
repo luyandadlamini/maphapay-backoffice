@@ -21,10 +21,11 @@ class ThreadPaymentController extends Controller
     public function store(Request $request, int $threadId): JsonResponse
     {
         $request->validate([
-            'amount'          => 'required|numeric|min:0.01',
-            'note'            => 'nullable|string|max:2000',
-            'recipientUserId' => 'required|integer',
-            'linkedRequestId' => 'nullable|string',
+            'amount'                  => 'required|numeric|min:0.01',
+            'note'                    => 'nullable|string|max:2000',
+            'recipientUserId'         => 'required|integer',
+            'linkedRequestId'         => 'nullable|string',
+            'authorizedTransactionId' => 'nullable|string',
         ]);
 
         $thread = Thread::findOrFail($threadId);
@@ -33,17 +34,22 @@ class ThreadPaymentController extends Controller
         $userId = (int) $user->getAuthIdentifier();
         $this->ensureActiveMember($thread, $userId);
 
+        $authorizedTransactionId = $request->input('authorizedTransactionId');
         $message = Message::create([
             'thread_id' => $thread->id,
             'sender_id' => $userId,
             'type'      => 'payment',
             'text'      => 'Payment sent',
             'payload'   => [
-                'amount'          => (float) $request->input('amount'),
-                'note'            => $request->input('note'),
-                'recipientUserId' => (string) $request->input('recipientUserId'),
-                'linkedRequestId' => $request->input('linkedRequestId'),
+                'amount'                  => (float) $request->input('amount'),
+                'note'                    => $request->input('note'),
+                'recipientUserId'         => (string) $request->input('recipientUserId'),
+                'linkedRequestId'         => $request->input('linkedRequestId'),
+                'authorizedTransactionId' => $authorizedTransactionId,
             ],
+            'idempotency_key' => is_string($authorizedTransactionId) && $authorizedTransactionId !== ''
+                ? "tx:{$authorizedTransactionId}"
+                : null,
             'created_at' => now(),
         ]);
 

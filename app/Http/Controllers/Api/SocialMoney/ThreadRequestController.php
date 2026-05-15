@@ -63,18 +63,19 @@ class ThreadRequestController extends Controller
                 ]);
 
                 $message = Message::create([
-                    'thread_id' => $thread->id,
-                    'sender_id' => $userId,
-                    'type'      => 'request',
-                    'text'      => 'Money request',
-                    'payload'   => [
+                    'thread_id'       => $thread->id,
+                    'sender_id'       => $userId,
+                    'type'            => 'request',
+                    'text'            => 'Money request',
+                    'payload'         => [
                         'moneyRequestId' => $moneyRequest->id,
                         'amount'         => (float) $request->input('amount'),
                         'note'           => $request->input('note'),
                         'status'         => 'pending',
                         'targetUserId'   => (string) $targetId,
                     ],
-                    'created_at' => now(),
+                    'idempotency_key' => "mr:{$moneyRequest->id}:created",
+                    'created_at'      => now(),
                 ]);
 
                 $messageIds[] = $message->id;

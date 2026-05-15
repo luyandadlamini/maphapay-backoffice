@@ -13,12 +13,17 @@ use App\Domain\Analytics\Infrastructure\LocalDevUnitEconomicsStubDataPort;
 use App\Domain\Analytics\Infrastructure\NullCorMarginBridgeDataPort;
 use App\Domain\Analytics\Infrastructure\NullUnitEconomicsDataPort;
 use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderInterface;
+use App\Domain\AuthorizedTransaction\Events\AuthorizedTransactionFinalized;
 use App\Domain\AuthorizedTransaction\Services\DatabaseMoneyMovementRiskSignalProvider;
+use App\Domain\SocialMoney\Observers\AuthorizedTransactionChatSyncObserver;
+use App\Domain\SocialMoney\Observers\MoneyRequestChatSyncObserver;
+use Illuminate\Support\Facades\Event;
 use App\Domain\Governance\Strategies\AssetWeightedVoteStrategy;
 use App\Domain\Governance\Strategies\AssetWeightedVotingStrategy;
 use App\Domain\Governance\Strategies\OneUserOneVoteStrategy;
 use App\Domain\Mobile\Contracts\AppAttestVerifierInterface;
 use App\Domain\Mobile\Services\AppAttestVerifier;
+use App\Models\MoneyRequest;
 use App\Models\Thread;
 use App\Observers\ThreadGroupSavingsObserver;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -265,6 +270,15 @@ class AppServiceProvider extends ServiceProvider
         MinorAccountLifecycleTransition::observe(
             MinorAccountLifecycleTransitionObserver::class
         );
+
+        // AuthorizedTransaction status is flipped via a raw UPDATE inside the manager,
+        // so we hook into the explicit AuthorizedTransactionFinalized event instead of
+        // a model observer. MoneyRequest is updated via Eloquent so observer works there.
+        Event::listen(
+            AuthorizedTransactionFinalized::class,
+            [AuthorizedTransactionChatSyncObserver::class, 'handle'],
+        );
+        MoneyRequest::observe(MoneyRequestChatSyncObserver::class);
 
         // Fortify omits route('register') when REGISTRATION_ENABLED=false; marketing views still link to it.
         $this->app->booted(function (): void {
