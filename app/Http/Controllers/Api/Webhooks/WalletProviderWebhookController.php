@@ -43,7 +43,7 @@ final class WalletProviderWebhookController extends Controller
      */
     private function providerRequestId(array $payload): string
     {
-        foreach (['referenceId', 'providerRequestId', 'provider_request_id'] as $key) {
+        foreach (['referenceId', 'reference_id', 'providerRequestId', 'provider_request_id'] as $key) {
             if (isset($payload[$key]) && is_scalar($payload[$key])) {
                 return (string) $payload[$key];
             }
