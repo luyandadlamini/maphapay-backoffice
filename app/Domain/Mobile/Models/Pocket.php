@@ -15,6 +15,8 @@ class Pocket extends Model
 {
     use HasUlids;
 
+    protected $connection = 'mysql';
+
     protected $table = 'pockets';
 
     protected static function boot(): void

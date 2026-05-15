@@ -12,6 +12,8 @@ class PocketSmartRule extends Model
 {
     use HasUlids;
 
+    protected $connection = 'mysql';
+
     protected $table = 'pocket_smart_rules';
 
     protected $fillable = [
