@@ -195,6 +195,19 @@ Schedule::command('mtn:reconcile-disbursements')
         Log::critical('MTN MoMo reconciliation cron failed to run');
     });
 
+// Polls each provider's status API for PENDING wallet_provider_transactions
+// older than --min-age minutes (default 15) and replays the result through
+// MoneySettlerService — same path as a real webhook. Covers all five
+// Eswatini providers (eMali, FNB, Unayo, Nedbank, plus MTN if rows exist).
+Schedule::command('wallet:reconcile --min-age=15 --chunk=200')
+    ->everyFifteenMinutes()
+    ->description('Reconcile stuck PENDING wallet_provider_transactions across all providers')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/wallet-reconcile.log'))
+    ->onFailure(function () {
+        Log::critical('Wallet provider reconciliation cron failed to run');
+    });
+
 // Mobile Backend Jobs
 // Process scheduled mobile push notifications every minute
 Schedule::job(new ProcessScheduledNotifications())
