@@ -9,6 +9,7 @@ use App\Domain\Wallet\Contracts\WalletProviderAdapter;
 use App\Domain\Wallet\Providers\Emali\EmaliAdapter;
 use App\Domain\Wallet\Providers\FnbEwallet\FnbEwalletAdapter;
 use App\Domain\Wallet\Providers\MtnMomo\MtnMomoAdapter;
+use App\Domain\Wallet\Providers\StandardUnayo\StandardUnayoAdapter;
 use Illuminate\Contracts\Container\Container;
 
 final class WalletProviderRegistry
@@ -24,6 +25,7 @@ final class WalletProviderRegistry
             'mtn_momo'              => $this->container->make(MtnMomoAdapter::class),
             'emali_eswatini_mobile' => $this->container->make(EmaliAdapter::class),
             'fnb_ewallet'           => $this->container->make(FnbEwalletAdapter::class),
+            'standard_unayo'        => $this->container->make(StandardUnayoAdapter::class),
             default                 => throw new UnknownWalletProviderException($providerId),
         };
     }

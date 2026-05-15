@@ -13,6 +13,9 @@ use App\Http\Controllers\Mock\Wallets\FnbEwallet\TransferController as FnbTransf
 use App\Http\Controllers\Mock\Wallets\MtnMomo\CollectionController;
 use App\Http\Controllers\Mock\Wallets\MtnMomo\DisbursementController;
 use App\Http\Controllers\Mock\Wallets\MtnMomo\TokenController;
+use App\Http\Controllers\Mock\Wallets\StandardUnayo\CashInController as UnayoCashInController;
+use App\Http\Controllers\Mock\Wallets\StandardUnayo\CashOutController as UnayoCashOutController;
+use App\Http\Controllers\Mock\Wallets\StandardUnayo\TokenController as UnayoTokenController;
 use Illuminate\Support\Facades\Route;
 
 if (
@@ -50,5 +53,13 @@ Route::prefix('__mock/wallets')->middleware(['api'])->group(function (): void {
         Route::get('wallets/v1/credits/{ref}', [FnbCreditController::class, 'show']);
         Route::post('wallets/v1/transfers', [FnbTransferController::class, 'create']);
         Route::get('wallets/v1/transfers/{ref}', [FnbTransferController::class, 'show']);
+    });
+
+    Route::prefix('standard-unayo')->group(function (): void {
+        Route::post('oauth/token', UnayoTokenController::class);
+        Route::post('unayo/v1/cashin', [UnayoCashInController::class, 'create']);
+        Route::get('unayo/v1/cashin/{ref}', [UnayoCashInController::class, 'show']);
+        Route::post('unayo/v1/cashout', [UnayoCashOutController::class, 'create']);
+        Route::get('unayo/v1/cashout/{ref}', [UnayoCashOutController::class, 'show']);
     });
 });

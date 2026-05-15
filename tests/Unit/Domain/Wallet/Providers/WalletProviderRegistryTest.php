@@ -35,6 +35,14 @@ final class WalletProviderRegistryTest extends TestCase
         $this->assertSame('fnb_ewallet', $adapter->providerId());
     }
 
+    public function test_for_returns_standard_unayo_adapter(): void
+    {
+        $adapter = $this->app->make(WalletProviderRegistry::class)->for('standard_unayo');
+
+        $this->assertInstanceOf(WalletProviderAdapter::class, $adapter);
+        $this->assertSame('standard_unayo', $adapter->providerId());
+    }
+
     public function test_for_unknown_provider_throws_exception_with_provider_id(): void
     {
         try {
@@ -50,7 +58,6 @@ final class WalletProviderRegistryTest extends TestCase
         $registry = $this->app->make(WalletProviderRegistry::class);
 
         foreach ([
-            'standard_unayo',
             'nedbank_send_money',
         ] as $providerId) {
             try {
