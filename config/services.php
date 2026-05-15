@@ -245,4 +245,9 @@ return [
         'rpc_url'        => env('SOLANA_RPC_URL', 'https://api.mainnet-beta.solana.com'),
     ],
 
+    'mock_wallets' => [
+        'base_url' => env('MOCK_WALLETS_BASE_URL', null),
+        'enabled'  => env('MOCK_WALLETS_ENABLED', env('APP_ENV') !== 'production'),
+    ],
+
 ];
