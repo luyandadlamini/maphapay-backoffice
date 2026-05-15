@@ -155,11 +155,10 @@ final class MockWalletStore
     ): void {
         $this->assertKind($kind);
 
-        Redis::set(
+        Redis::setex(
             $this->requestKey($providerId, $kind, $requestId),
-            json_encode($payload, JSON_THROW_ON_ERROR),
-            'EX',
             self::TTL_SECONDS,
+            json_encode($payload, JSON_THROW_ON_ERROR),
         );
 
         if (isset($payload['account_ref']) && is_string($payload['account_ref'])) {
@@ -213,11 +212,10 @@ final class MockWalletStore
             return;
         }
 
-        Redis::set(
+        Redis::setex(
             $this->requestKey($providerId, $kind, $requestId),
-            json_encode(array_merge($existing, $payload), JSON_THROW_ON_ERROR),
-            'EX',
             self::TTL_SECONDS,
+            json_encode(array_merge($existing, $payload), JSON_THROW_ON_ERROR),
         );
     }
 
@@ -233,9 +231,13 @@ final class MockWalletStore
         $key = $this->idempotencyKey($providerId, $idempotencyKey);
         $encoded = json_encode($response, JSON_THROW_ON_ERROR);
 
-        $result = Redis::set($key, $encoded, 'EX', $ttl, 'NX');
+        $created = (bool) Redis::setnx($key, $encoded);
 
-        return $result === true || (is_string($result) && strtoupper($result) === 'OK');
+        if ($created) {
+            Redis::expire($key, $ttl);
+        }
+
+        return $created;
     }
 
     /**

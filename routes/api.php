@@ -36,6 +36,7 @@ use App\Http\Controllers\Api\Webhook\AlchemyWebhookController;
 use App\Http\Controllers\Api\Webhook\HeliusWebhookController;
 use App\Http\Controllers\Api\Webhook\HyperSwitchWebhookController;
 use App\Http\Controllers\Api\Webhook\VisaCliWebhookController;
+use App\Http\Controllers\Api\Webhooks\WalletProviderWebhookController;
 use App\Http\Controllers\Api\WebSocket\PaidChannelController;
 use App\Http\Controllers\Api\WebSocketController;
 use App\Http\Controllers\CoinbaseWebhookController;
@@ -228,6 +229,7 @@ Route::prefix('webhooks/custodian')->middleware(['api.rate_limit:webhook'])->gro
 Route::prefix('webhooks')->middleware(['api.rate_limit:webhook'])->group(function () {
     Route::post('/coinbase-commerce', [CoinbaseWebhookController::class, 'handleWebhook'])
         ->middleware('webhook.signature:coinbase');
+    Route::post('/wallets/{provider}', WalletProviderWebhookController::class);
 });
 
 // Ondato KYC webhook endpoints

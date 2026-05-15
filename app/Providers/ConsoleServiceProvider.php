@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Console\Commands\MockWalletFundCommand;
 use App\Domain\Basket\Console\Commands\RebalanceBasketsCommand;
 use Illuminate\Support\ServiceProvider;
 
@@ -15,6 +16,7 @@ class ConsoleServiceProvider extends ServiceProvider
      * @var array
      */
     protected $commands = [
+        MockWalletFundCommand::class,
         RebalanceBasketsCommand::class,
     ];
 
