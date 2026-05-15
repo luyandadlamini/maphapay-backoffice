@@ -84,16 +84,25 @@ class SyncTransactionToChatTest extends TestCase
         $recipient = User::factory()->create();
         // intentionally no friendship row
 
+        $authTxnId = Str::uuid()->toString();
         $this->service()->postPaymentMessage(
             senderUserId: $sender->id,
             recipientUserId: $recipient->id,
             amount: 100.0,
             assetCode: 'SZL',
             note: null,
-            authorizedTransactionId: Str::uuid()->toString(),
+            authorizedTransactionId: $authTxnId,
         );
 
-        $this->assertDatabaseCount('messages', 0);
+        // Scoped to this test's transaction — global counts would catch leftover rows
+        // from prior tests since the base TestCase does not RefreshDatabase.
+        $this->assertDatabaseMissing('messages', ['idempotency_key' => "tx:{$authTxnId}"]);
+        $threadId = DB::table('thread_participants as tp1')
+            ->join('thread_participants as tp2', 'tp1.thread_id', '=', 'tp2.thread_id')
+            ->where('tp1.user_id', $sender->id)
+            ->where('tp2.user_id', $recipient->id)
+            ->value('tp1.thread_id');
+        $this->assertNull($threadId);
         Event::assertNotDispatched(ChatMessageSent::class);
     }
 
@@ -114,9 +123,16 @@ class SyncTransactionToChatTest extends TestCase
             authorizedTransactionId: $authTxnId,
         );
 
-        $threadId = DB::table('threads')->where('type', 'direct')->value('id');
+        $threadId = DB::table('thread_participants as tp1')
+            ->join('thread_participants as tp2', 'tp1.thread_id', '=', 'tp2.thread_id')
+            ->join('threads', 'threads.id', '=', 'tp1.thread_id')
+            ->where('threads.type', 'direct')
+            ->where('tp1.user_id', $sender->id)
+            ->where('tp2.user_id', $recipient->id)
+            ->value('tp1.thread_id');
         $this->assertNotNull($threadId);
-        $this->assertDatabaseCount('thread_participants', 2);
+        $participantCount = DB::table('thread_participants')->where('thread_id', $threadId)->count();
+        $this->assertEquals(2, $participantCount);
         $this->assertDatabaseHas('messages', ['thread_id' => $threadId, 'type' => 'system']);
         $this->assertDatabaseHas('messages', ['thread_id' => $threadId, 'type' => 'payment', 'idempotency_key' => "tx:{$authTxnId}"]);
     }
