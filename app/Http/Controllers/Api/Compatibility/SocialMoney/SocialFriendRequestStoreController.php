@@ -20,7 +20,7 @@ class SocialFriendRequestStoreController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'userId' => ['required', 'integer', 'exists:users,id'],
+            'userId' => ['required', 'integer', 'exists:mysql.users,id'],
         ]);
 
         /** @var User $authUser */
@@ -36,9 +36,10 @@ class SocialFriendRequestStoreController extends Controller
             ], 422);
         }
 
-        $payload = DB::transaction(function () use ($senderId, $recipientId): array {
+        $centralDb = DB::connection('mysql');
+        $payload = $centralDb->transaction(function () use ($senderId, $recipientId, $centralDb): array {
             // Already friends: return accepted for idempotent UX.
-            $alreadyFriends = DB::table('friendships')
+            $alreadyFriends = $centralDb->table('friendships')
                 ->where('user_id', $senderId)
                 ->where('friend_id', $recipientId)
                 ->where('status', 'accepted')
@@ -52,21 +53,21 @@ class SocialFriendRequestStoreController extends Controller
             }
 
             // If recipient already requested sender, auto-accept that request.
-            $incoming = DB::table('friend_requests')
+            $incoming = $centralDb->table('friend_requests')
                 ->where('sender_id', $recipientId)
                 ->where('recipient_id', $senderId)
                 ->where('status', 'pending')
                 ->first();
 
             if ($incoming !== null) {
-                DB::table('friend_requests')
+                $centralDb->table('friend_requests')
                     ->where('id', $incoming->id)
                     ->update([
                         'status'     => 'accepted',
                         'updated_at' => now(),
                     ]);
 
-                DB::table('friendships')->upsert(
+                $centralDb->table('friendships')->upsert(
                     [
                         [
                             'user_id'    => $senderId,
@@ -93,7 +94,7 @@ class SocialFriendRequestStoreController extends Controller
                 ];
             }
 
-            DB::table('friend_requests')->upsert(
+            $centralDb->table('friend_requests')->upsert(
                 [
                     'sender_id'    => $senderId,
                     'recipient_id' => $recipientId,
@@ -105,7 +106,7 @@ class SocialFriendRequestStoreController extends Controller
                 ['status', 'updated_at'],
             );
 
-            $requestId = DB::table('friend_requests')
+            $requestId = $centralDb->table('friend_requests')
                 ->where('sender_id', $senderId)
                 ->where('recipient_id', $recipientId)
                 ->value('id');

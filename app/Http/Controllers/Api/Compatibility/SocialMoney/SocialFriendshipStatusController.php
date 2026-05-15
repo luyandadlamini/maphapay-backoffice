@@ -39,7 +39,9 @@ class SocialFriendshipStatusController extends Controller
             ]);
         }
 
-        $friends = DB::table('friendships')
+        $centralDb = DB::connection('mysql');
+
+        $friends = $centralDb->table('friendships')
             ->where('user_id', $authId)
             ->where('friend_id', $userId)
             ->where('status', 'accepted')
@@ -56,7 +58,7 @@ class SocialFriendshipStatusController extends Controller
             ]);
         }
 
-        $outgoing = DB::table('friend_requests')
+        $outgoing = $centralDb->table('friend_requests')
             ->where('sender_id', $authId)
             ->where('recipient_id', $userId)
             ->where('status', 'pending')
@@ -73,7 +75,7 @@ class SocialFriendshipStatusController extends Controller
             ]);
         }
 
-        $incoming = DB::table('friend_requests')
+        $incoming = $centralDb->table('friend_requests')
             ->where('sender_id', $userId)
             ->where('recipient_id', $authId)
             ->where('status', 'pending')

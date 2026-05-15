@@ -25,7 +25,7 @@ class SocialFriendRequestsController extends Controller
         /** @var User $authUser */
         $authUser = $request->user();
         $authId = (int) $authUser->getAuthIdentifier();
-        $requests = DB::table('friend_requests')
+        $requests = DB::connection('mysql')->table('friend_requests')
             ->join('users', 'users.id', '=', 'friend_requests.sender_id')
             ->where('friend_requests.recipient_id', $authId)
             ->where('friend_requests.status', 'pending')
@@ -56,7 +56,7 @@ class SocialFriendRequestsController extends Controller
         /** @var User $authUser */
         $authUser = $request->user();
         $authId = (int) $authUser->getAuthIdentifier();
-        $requests = DB::table('friend_requests')
+        $requests = DB::connection('mysql')->table('friend_requests')
             ->join('users', 'users.id', '=', 'friend_requests.recipient_id')
             ->where('friend_requests.sender_id', $authId)
             ->where('friend_requests.status', 'pending')
@@ -87,7 +87,8 @@ class SocialFriendRequestsController extends Controller
         /** @var User $authUser */
         $authUser = $request->user();
         $authId = (int) $authUser->getAuthIdentifier();
-        $fr = DB::table('friend_requests')
+        $centralDb = DB::connection('mysql');
+        $fr = $centralDb->table('friend_requests')
             ->where('id', $id)
             ->where('recipient_id', $authId)
             ->where('status', 'pending')
@@ -97,13 +98,13 @@ class SocialFriendRequestsController extends Controller
             return $this->notFound();
         }
 
-        DB::transaction(function () use ($fr): void {
-            DB::table('friend_requests')->where('id', $fr->id)->update([
+        $centralDb->transaction(function () use ($fr, $centralDb): void {
+            $centralDb->table('friend_requests')->where('id', $fr->id)->update([
                 'status'     => 'accepted',
                 'updated_at' => now(),
             ]);
 
-            DB::table('friendships')->upsert(
+            $centralDb->table('friendships')->upsert(
                 [
                     [
                         'user_id'    => $fr->sender_id,
@@ -137,7 +138,7 @@ class SocialFriendRequestsController extends Controller
         /** @var User $authUser */
         $authUser = $request->user();
         $authId = (int) $authUser->getAuthIdentifier();
-        $updated = DB::table('friend_requests')
+        $updated = DB::connection('mysql')->table('friend_requests')
             ->where('id', $id)
             ->where('recipient_id', $authId)
             ->where('status', 'pending')
@@ -159,7 +160,7 @@ class SocialFriendRequestsController extends Controller
         /** @var User $authUser */
         $authUser = $request->user();
         $authId = (int) $authUser->getAuthIdentifier();
-        $updated = DB::table('friend_requests')
+        $updated = DB::connection('mysql')->table('friend_requests')
             ->where('id', $id)
             ->where('sender_id', $authId)
             ->where('status', 'pending')

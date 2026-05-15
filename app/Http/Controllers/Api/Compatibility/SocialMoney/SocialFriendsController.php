@@ -21,7 +21,7 @@ class SocialFriendsController extends Controller
         $authUser = $request->user();
         $userId = (int) $authUser->getAuthIdentifier();
 
-        $friends = DB::table('friendships')
+        $friends = DB::connection('mysql')->table('friendships')
             ->join('users', 'users.id', '=', 'friendships.friend_id')
             ->where('friendships.user_id', $userId)
             ->where('friendships.status', 'accepted')

@@ -122,7 +122,7 @@ class ThreadController extends Controller
         $userId = (int) $user->getAuthIdentifier();
         $friendId = (int) $request->input('friendId');
 
-        $isFriend = DB::table('friendships')
+        $isFriend = DB::connection('mysql')->table('friendships')
             ->where('user_id', $userId)
             ->where('friend_id', $friendId)
             ->where('status', 'accepted')

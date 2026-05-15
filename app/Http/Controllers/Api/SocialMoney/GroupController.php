@@ -46,7 +46,7 @@ class GroupController extends Controller
             ], 422);
         }
 
-        $friendCount = DB::table('friendships')
+        $friendCount = DB::connection('mysql')->table('friendships')
             ->where('user_id', $userId)
             ->whereIn('friend_id', $memberIds)
             ->where('status', 'accepted')
@@ -167,7 +167,7 @@ class GroupController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Would exceed group member limit'], 422);
         }
 
-        $friendCount = DB::table('friendships')
+        $friendCount = DB::connection('mysql')->table('friendships')
             ->where('user_id', $userId)
             ->whereIn('friend_id', $newUserIds)
             ->where('status', 'accepted')

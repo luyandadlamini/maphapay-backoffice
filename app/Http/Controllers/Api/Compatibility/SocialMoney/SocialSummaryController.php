@@ -23,11 +23,12 @@ class SocialSummaryController extends Controller
         /** @var User $authUser */
         $authUser = $request->user();
         $userId = (int) $authUser->getAuthIdentifier();
-        $friendsCount = DB::table('friendships')
+        $centralDb = DB::connection('mysql');
+        $friendsCount = $centralDb->table('friendships')
             ->where('user_id', $userId)
             ->where('status', 'accepted')
             ->count();
-        $pendingIncoming = DB::table('friend_requests')
+        $pendingIncoming = $centralDb->table('friend_requests')
             ->where('recipient_id', $userId)
             ->where('status', 'pending')
             ->count();
