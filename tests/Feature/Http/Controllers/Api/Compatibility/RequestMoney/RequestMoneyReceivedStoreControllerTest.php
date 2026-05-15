@@ -53,6 +53,12 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
             'Idempotency-Key' => $idempotencyKey ?? (string) Str::uuid(),
         ];
 
+        // HighRiskActionTrustPolicy returns `degrade` (HTTP 428) when there is no
+        // attestation proof and the device isn't trusted. The sibling SendMoney
+        // tests pass a synthetic 'trusted-proof' string; mirror that here so we
+        // cover the controller logic rather than the trust-policy gate.
+        $payload = array_replace(['attestation' => 'trusted-proof'], $payload);
+
         return $this->withHeaders($headers)
             ->postJson("/api/request-money/received-store/{$moneyRequestId}", $payload);
     }
@@ -80,6 +86,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $response = $this->postReceivedStore($moneyRequestId, [
             'verification_type' => 'sms',
+            'attestation'       => 'trusted-proof',
         ]);
 
         $response->assertOk()
@@ -240,6 +247,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
             'Idempotency-Key' => '00000000-0000-0000-0000-000000000020',
         ])->postJson("/api/request-money/received-store/{$moneyRequestId}", [
             'verification_type' => 'pin',
+            'attestation'       => 'trusted-proof',
         ]);
 
         $response->assertOk();
@@ -276,12 +284,14 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $first = $this->withHeaders($headers)->postJson("/api/request-money/received-store/{$moneyRequestId}", [
             'verification_type' => 'pin',
+            'attestation'       => 'trusted-proof',
         ]);
 
         $first->assertOk();
 
         $second = $this->withHeaders($headers)->postJson("/api/request-money/received-store/{$moneyRequestId}", [
             'verification_type' => 'pin',
+            'attestation'       => 'trusted-proof',
         ]);
 
         $second->assertOk()
@@ -326,6 +336,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $first = $this->withHeaders($headers)->postJson("/api/request-money/received-store/{$moneyRequestId}", [
             'verification_type' => 'sms',
+            'attestation'       => 'trusted-proof',
         ]);
 
         $first->assertOk()
@@ -335,6 +346,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $second = $this->withHeaders($headers)->postJson("/api/request-money/received-store/{$moneyRequestId}", [
             'verification_type' => 'pin',
+            'attestation'       => 'trusted-proof',
         ]);
 
         $second->assertOk()
@@ -375,6 +387,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $this->postJson("/api/request-money/received-store/{$moneyRequestId}", [
             'verification_type' => 'pin',
+            'attestation'       => 'trusted-proof',
         ])->assertOk()
             ->assertJsonPath('status', 'success')
             ->assertJsonPath('data.next_step', 'otp');
@@ -405,6 +418,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $response = $this->postReceivedStore($moneyRequestId, [
             'verification_type' => 'sms',
+            'attestation'       => 'trusted-proof',
         ]);
 
         $response->assertOk()
@@ -447,6 +461,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
 
         $response = $this->postReceivedStore($moneyRequestId, [
             'verification_type' => 'pin',
+            'attestation'       => 'trusted-proof',
         ]);
 
         $response->assertOk()
@@ -507,6 +522,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
             'Idempotency-Key' => '00000000-0000-0000-0000-000000000021',
         ])->postJson("/api/request-money/received-store/{$moneyRequestId}", [
             'verification_type' => 'sms',
+            'attestation'       => 'trusted-proof',
         ]);
 
         $response->assertOk()
@@ -548,6 +564,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
             'Idempotency-Key' => '00000000-0000-0000-0000-000000000041',
         ])->postJson("/api/request-money/received-store/{$moneyRequestId}", [
             'verification_type' => 'sms',
+            'attestation'       => 'trusted-proof',
         ]);
 
         $first->assertOk()
@@ -557,6 +574,7 @@ class RequestMoneyReceivedStoreControllerTest extends ControllerTestCase
             'Idempotency-Key' => '00000000-0000-0000-0000-000000000042',
         ])->postJson("/api/request-money/received-store/{$moneyRequestId}", [
             'verification_type' => 'sms',
+            'attestation'       => 'trusted-proof',
         ]);
 
         $second->assertStatus(422)

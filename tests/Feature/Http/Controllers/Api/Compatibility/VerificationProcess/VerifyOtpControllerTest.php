@@ -37,7 +37,9 @@ class VerifyOtpControllerTest extends ControllerTestCase
         return AuthorizedTransaction::create([
             'user_id' => $user->id,
             'remark'  => AuthorizedTransaction::REMARK_SEND_MONEY,
-            'trx'     => 'TRX-OTPTEST-' . Str::upper((string) Str::ulid()),
+            // Production `trx` is `TRX-XXXXXXXX` (12 chars); the column is varchar(32)
+            // and a 26-char ULID suffix overflowed it. Match the production format.
+            'trx'     => 'TRX-OTP-' . Str::upper(Str::random(8)),
             'payload' => [
                 'from_account_uuid' => '00000000-0000-0000-0000-000000000001',
                 'to_account_uuid'   => '00000000-0000-0000-0000-000000000002',
