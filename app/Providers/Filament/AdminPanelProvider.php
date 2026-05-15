@@ -52,6 +52,7 @@ class AdminPanelProvider extends PanelProvider
                     'Customers',
                     'Merchants & Orgs',
                     'Wallets & Ledgers',
+                    'E-Wallets',
                     'Youth & family accounts',
                     'Transactions',
                     'Revenue & Performance',
