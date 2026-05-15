@@ -9,7 +9,11 @@ use App\Http\Controllers\Mock\Wallets\MtnMomo\DisbursementController;
 use App\Http\Controllers\Mock\Wallets\MtnMomo\TokenController;
 use Illuminate\Support\Facades\Route;
 
-if (app()->environment('production') && (bool) config('wallet_mocks.enabled')) {
+if (
+    app()->environment('production')
+    && (bool) config('wallet_mocks.enabled')
+    && ! (bool) config('wallet_mocks.allow_in_production')
+) {
     throw new RuntimeException('Wallet mocks cannot be enabled in production.');
 }
 

@@ -97,7 +97,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             if ((bool) config('wallet_mocks.enabled')) {
-                if (app()->environment('production')) {
+                if (app()->environment('production') && ! (bool) config('wallet_mocks.allow_in_production')) {
                     throw new RuntimeException('Wallet mocks cannot be enabled in production.');
                 }
 

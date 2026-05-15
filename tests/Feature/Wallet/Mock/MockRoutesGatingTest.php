@@ -20,11 +20,23 @@ final class MockRoutesGatingTest extends TestCase
     public function test_production_guard_throws_when_mocks_are_enabled(): void
     {
         config(['wallet_mocks.enabled' => true]);
+        config(['wallet_mocks.allow_in_production' => false]);
         $this->app->detectEnvironment(fn (): string => 'production');
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Wallet mocks cannot be enabled in production.');
 
         require base_path('routes/mock-wallets.php');
+    }
+
+    public function test_production_guard_allows_when_allow_in_production_is_true(): void
+    {
+        config(['wallet_mocks.enabled' => true]);
+        config(['wallet_mocks.allow_in_production' => true]);
+        $this->app->detectEnvironment(fn (): string => 'production');
+
+        require base_path('routes/mock-wallets.php');
+
+        $this->addToAssertionCount(1);
     }
 }

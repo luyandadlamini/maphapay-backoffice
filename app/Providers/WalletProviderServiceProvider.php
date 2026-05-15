@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Domain\Wallet\Providers\MtnMomo\MtnMomoAdapter;
+use App\Domain\Wallet\Providers\MtnMomo\MtnMomoSettler;
 use App\Domain\Wallet\Providers\WalletProviderRegistry;
+use App\Domain\Wallet\Services\MoneySettlerService;
 use Illuminate\Support\ServiceProvider;
 
 final class WalletProviderServiceProvider extends ServiceProvider
@@ -14,6 +16,13 @@ final class WalletProviderServiceProvider extends ServiceProvider
     {
         $this->app->singleton(WalletProviderRegistry::class);
         $this->app->singleton(MtnMomoAdapter::class);
+        $this->app->singleton(MtnMomoSettler::class);
+
+        $this->app->singleton(MoneySettlerService::class, function ($app) {
+            return new MoneySettlerService([
+                $app->make(MtnMomoSettler::class),
+            ]);
+        });
     }
 
     public function boot(): void
