@@ -7,6 +7,9 @@ use App\Http\Controllers\Mock\Wallets\AdminFundController;
 use App\Http\Controllers\Mock\Wallets\Emali\CollectionController as EmaliCollectionController;
 use App\Http\Controllers\Mock\Wallets\Emali\DisbursementController as EmaliDisbursementController;
 use App\Http\Controllers\Mock\Wallets\Emali\TokenController as EmaliTokenController;
+use App\Http\Controllers\Mock\Wallets\FnbEwallet\CreditController as FnbCreditController;
+use App\Http\Controllers\Mock\Wallets\FnbEwallet\TokenController as FnbTokenController;
+use App\Http\Controllers\Mock\Wallets\FnbEwallet\TransferController as FnbTransferController;
 use App\Http\Controllers\Mock\Wallets\MtnMomo\CollectionController;
 use App\Http\Controllers\Mock\Wallets\MtnMomo\DisbursementController;
 use App\Http\Controllers\Mock\Wallets\MtnMomo\TokenController;
@@ -39,5 +42,13 @@ Route::prefix('__mock/wallets')->middleware(['api'])->group(function (): void {
         Route::get('v1/collections/{ref}', [EmaliCollectionController::class, 'show']);
         Route::post('v1/disbursements', [EmaliDisbursementController::class, 'create']);
         Route::get('v1/disbursements/{ref}', [EmaliDisbursementController::class, 'show']);
+    });
+
+    Route::prefix('fnb-ewallet')->group(function (): void {
+        Route::post('oauth/v2/token', FnbTokenController::class);
+        Route::post('wallets/v1/credits', [FnbCreditController::class, 'create']);
+        Route::get('wallets/v1/credits/{ref}', [FnbCreditController::class, 'show']);
+        Route::post('wallets/v1/transfers', [FnbTransferController::class, 'create']);
+        Route::get('wallets/v1/transfers/{ref}', [FnbTransferController::class, 'show']);
     });
 });
