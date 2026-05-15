@@ -73,6 +73,27 @@ php -d max_execution_time=300 ./vendor/bin/pest <tests...>
 - **Post-Quantum Crypto**: ML-KEM-768, ML-DSA-65, hybrid encryption
 - **Stack**: PHP 8.4 / Laravel 12 / MySQL 8 / Redis / Pest / PHPStan Level 8
 
+### Wallet Provider Integration (Eswatini)
+
+Five wallet providers are wired behind a strategy-dispatcher pattern.
+Adding a new provider is purely additive — no edits to `MoneySettlerService`
+or `WalletProviderWebhookController` needed.
+
+- **Contract**: `App\Domain\Wallet\Contracts\WalletProviderAdapter` —
+  `link()`, `collect()`, `disburse()`, `status()`, `verifyWebhookSignature()`
+- **Settlement**: `App\Domain\Wallet\Contracts\ProviderSettler` strategy;
+  `MoneySettlerService` dispatches webhook outcomes by `provider_id`.
+- **Projection**: `wallet_provider_transactions` table (polymorphic;
+  `App\Domain\Wallet\Models\WalletProviderTransaction`) holds per-provider
+  collect/disburse settlement state. MTN keeps its own `mtn_momo_transactions`
+  table for the legacy event-sourced flow.
+- **Mocks**: `routes/mock-wallets.php` mounts realistic HTTP mocks under
+  `/__mock/wallets/<provider>/...` when `WALLET_MOCKS_ENABLED=true` and
+  not production. Each mock reuses `MockWalletStore`, `MockFailureRules`,
+  and `DispatchMockWalletCallbackJob` — only the controllers differ.
+- **Wired providers**: `mtn_momo`, `emali_eswatini_mobile`, `fnb_ewallet`,
+  `standard_unayo`, `nedbank_send_money` (see `WalletProviderRegistry`).
+
 ## Code Conventions
 
 ```php

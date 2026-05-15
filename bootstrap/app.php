@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2024-2026 FinAegis Contributors
 
@@ -93,6 +95,14 @@ return Application::configure(basePath: dirname(__DIR__))
                     ->prefix('api')
                     ->group(base_path('routes/api-compat.php'));
             }
+
+            if ((bool) config('wallet_mocks.enabled')) {
+                if (app()->environment('production') && ! (bool) config('wallet_mocks.allow_in_production')) {
+                    throw new RuntimeException('Wallet mocks cannot be enabled in production.');
+                }
+
+                Route::group([], base_path('routes/mock-wallets.php'));
+            }
         },
         commands: __DIR__ . '/../routes/console.php',
     )
@@ -119,7 +129,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'check.blocked.ip'       => App\Http\Middleware\CheckBlockedIp::class,
             'ip.blocking'            => App\Http\Middleware\IpBlocking::class,
             'require.2fa.admin'      => App\Http\Middleware\RequireTwoFactorForAdmin::class,
-            'internal.api'        => App\Http\Middleware\InternalApiAuth::class,
+            'internal.api'           => App\Http\Middleware\InternalApiAuth::class,
             // Agent Protocol authentication middleware
             'auth.agent'       => App\Http\Middleware\AuthenticateAgentDID::class,
             'agent.scope'      => App\Http\Middleware\CheckAgentScope::class,
@@ -127,7 +137,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // BaaS partner authentication middleware
             'partner.auth' => App\Http\Middleware\PartnerAuthMiddleware::class,
             // Multi-tenancy middleware
-            'tenant' => App\Http\Middleware\InitializeTenancyByTeam::class,
+            'tenant'          => App\Http\Middleware\InitializeTenancyByTeam::class,
             'account.context' => App\Http\Middleware\ResolveAccountContext::class,
             // Performance monitoring middleware
             'query.performance' => App\Http\Middleware\QueryPerformanceMiddleware::class,
