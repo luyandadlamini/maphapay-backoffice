@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BillSplitParticipant extends Model
 {
+    protected $connection = 'mysql';
+
     public $timestamps = false;
 
     protected $fillable = ['bill_split_id', 'user_id', 'amount', 'status', 'paid_at'];

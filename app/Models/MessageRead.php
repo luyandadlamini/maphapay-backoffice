@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MessageRead extends Model
 {
+    protected $connection = 'mysql';
+
     public $timestamps = false;
 
     public $incrementing = false;

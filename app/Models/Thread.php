@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Thread extends Model
 {
+    protected $connection = 'mysql';
+
     protected $fillable = ['type', 'name', 'avatar_url', 'created_by', 'max_participants', 'settings'];
 
     protected $casts = [

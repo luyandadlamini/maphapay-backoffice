@@ -30,6 +30,8 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  */
 class GroupPocket extends Model
 {
+    protected $connection = 'mysql';
+
     protected $fillable = [
         'thread_id', 'created_by', 'name', 'category', 'color',
         'target_amount', 'current_amount', 'target_date',

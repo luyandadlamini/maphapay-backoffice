@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BillSplit extends Model
 {
+    protected $connection = 'mysql';
+
     protected $fillable = [
         'message_id', 'thread_id', 'created_by', 'description',
         'total_amount', 'asset_code', 'split_method', 'status',

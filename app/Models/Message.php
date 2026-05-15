@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Message extends Model
 {
+    protected $connection = 'mysql';
+
     public $timestamps = false;
 
     protected $fillable = ['thread_id', 'sender_id', 'type', 'text', 'payload', 'idempotency_key', 'status', 'created_at'];

@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ThreadParticipant extends Model
 {
+    protected $connection = 'mysql';
+
     public $timestamps = false;
 
     protected $fillable = ['thread_id', 'user_id', 'role', 'joined_at', 'left_at', 'added_by'];
