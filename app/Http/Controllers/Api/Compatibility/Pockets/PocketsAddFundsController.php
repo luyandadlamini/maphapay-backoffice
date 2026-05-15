@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Compatibility\Pockets;
 
 use App\Domain\Account\Exceptions\NotEnoughFunds;
+use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountBalance;
+use App\Domain\Asset\Models\Asset;
 use App\Domain\Mobile\Models\Pocket;
 use App\Domain\Mobile\Services\PocketTransferService;
 use App\Http\Controllers\Controller;
@@ -73,9 +76,35 @@ class PocketsAddFundsController extends Controller
             'status'  => 'success',
             'message' => ['Funds added successfully'],
             'data'    => [
-                'pocket' => $this->formatPocket($pocket),
+                'pocket'         => $this->formatPocket($pocket),
+                'wallet_balance' => $this->resolveWalletBalanceMajor($user),
             ],
         ]);
+    }
+
+    /**
+     * Read the user's fresh wallet balance as a major-unit string (e.g. "129229.00").
+     * Returned alongside the pocket so the mobile client can set its wallet snapshot
+     * directly instead of inferring the delta from a possibly-stale local cache.
+     */
+    private function resolveWalletBalanceMajor(\App\Models\User $user): string
+    {
+        $assetCode = (string) config('banking.default_currency', 'SZL');
+        $asset = Asset::query()->where('code', $assetCode)->first();
+        $precision = $asset?->precision ?? 2;
+        $divisor = 10 ** $precision;
+
+        $account = Account::query()->where('user_uuid', $user->uuid)->orderBy('id')->first();
+        if (! $account) {
+            return number_format(0, $precision, '.', '');
+        }
+
+        $balanceMinor = AccountBalance::query()
+            ->where('account_uuid', $account->uuid)
+            ->where('asset_code', $assetCode)
+            ->value('balance') ?? 0;
+
+        return number_format((int) $balanceMinor / $divisor, $precision, '.', '');
     }
 
     /**
