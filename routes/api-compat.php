@@ -325,6 +325,11 @@ Route::middleware('auth:sanctum')
     ->name('maphapay.compat.wallet-linking.store');
 
 Route::middleware('auth:sanctum')
+    ->delete('wallet-linking/{linking}', \App\Http\Controllers\Api\Compatibility\WalletLinking\WalletLinkingDestroyController::class)
+    ->where('linking', '[0-9]+')
+    ->name('maphapay.compat.wallet-linking.destroy');
+
+Route::middleware('auth:sanctum')
     ->get('budget', BudgetController::class)
     ->name('maphapay.compat.budget');
 
