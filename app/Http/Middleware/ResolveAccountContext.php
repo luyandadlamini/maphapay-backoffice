@@ -121,18 +121,33 @@ class ResolveAccountContext
                 }
             }
 
+            if ($this->allowsStaleAccountHeaderFallback($request)) {
+                return $this->resolveDefaultMembership($userUuid);
+            }
+
             return response()->json([
                 'success' => false,
                 'message' => 'You do not have access to this account.',
             ], 403);
         }
 
+        return $this->resolveDefaultMembership($userUuid);
+    }
+
+    private function resolveDefaultMembership(string $userUuid): ?AccountMembership
+    {
         return AccountMembership::query()
             ->forUser($userUuid)
             ->active()
             ->orderByRaw("case when account_type in ('personal', 'standard') then 0 else 1 end")
             ->orderByDesc('joined_at')
             ->first();
+    }
+
+    private function allowsStaleAccountHeaderFallback(Request $request): bool
+    {
+        return $request->routeIs('api.auth.me')
+            || $request->is('api/auth/user');
     }
 
     private function applyMembershipContext(Request $request, AccountMembership $membership): void

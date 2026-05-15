@@ -26,6 +26,7 @@ use RuntimeException;
  * @property string $user_uuid
  * @property int $balance
  * @property bool $frozen
+ * @property string|null $status
  * @property string|null $team_uuid
  * @property string|null $type
  * @property string|null $tier

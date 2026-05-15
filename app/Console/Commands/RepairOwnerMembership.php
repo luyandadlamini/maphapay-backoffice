@@ -12,7 +12,9 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
+use Stancl\Tenancy\Database\DatabaseManager;
 use Stancl\Tenancy\Tenancy;
+use Throwable;
 
 /**
  * One-shot repair: ensure a user has an active owner-level personal-wallet
@@ -35,6 +37,7 @@ class RepairOwnerMembership extends Command
     public function handle(
         AccountMembershipService $membershipService,
         Tenancy $tenancy,
+        DatabaseManager $databaseManager,
     ): int {
         $email = (string) $this->argument('email');
         $dryRun = (bool) $this->option('dry-run');
@@ -87,7 +90,10 @@ class RepairOwnerMembership extends Command
             return self::SUCCESS;
         }
 
-        $team = $user->ownedTeams()->where('personal_team', true)->first();
+        $team = Team::query()
+            ->where('user_id', $user->id)
+            ->where('personal_team', true)
+            ->first();
         if ($team === null) {
             $this->warn('User has no personal team. Creating one now…');
             $team = Team::forceCreate([
@@ -104,13 +110,28 @@ class RepairOwnerMembership extends Command
             ['name' => $team->name, 'plan' => 'default'],
         );
 
+        $tenant->database()->makeCredentials();
+        $tenantDatabase = $tenant->database()->getName();
+        if ($tenantDatabase === null) {
+            $this->error('Unable to resolve tenant database name.');
+
+            return self::FAILURE;
+        }
+
+        if (! $tenant->database()->manager()->databaseExists($tenantDatabase)) {
+            $this->warn("Tenant database {$tenantDatabase} is missing. Creating it now...");
+            $databaseManager->ensureTenantCanBeCreated($tenant);
+            $tenant->database()->manager()->createDatabase($tenant);
+            $this->line("  Created tenant database: {$tenantDatabase}");
+        }
+
         $previousTenancyInitialized = $tenancy->initialized;
         $tenancy->initialize($tenant);
 
         // If this is a freshly created tenant its schema will be empty — run migrations.
         try {
             $tableCount = \Illuminate\Support\Facades\DB::connection('tenant')
-                ->select("SELECT COUNT(*) as cnt FROM information_schema.tables WHERE table_schema = DATABASE()");
+                ->select('SELECT COUNT(*) as cnt FROM information_schema.tables WHERE table_schema = DATABASE()');
             if (($tableCount[0]->cnt ?? 0) < 5) {
                 $this->line('Fresh tenant schema detected — running tenant migrations…');
                 Artisan::call('migrate', [
@@ -119,7 +140,7 @@ class RepairOwnerMembership extends Command
                 ]);
                 $this->line(Artisan::output());
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // If schema check fails, attempt migration anyway.
             $this->line('Could not check schema — running tenant migrations defensively…');
             Artisan::call('migrate', ['--path' => 'database/migrations/tenant', '--force' => true]);

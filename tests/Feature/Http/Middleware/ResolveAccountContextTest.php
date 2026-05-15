@@ -119,6 +119,33 @@ class ResolveAccountContextTest extends BaseTestCase
             ->assertJsonPath('message', 'You do not have access to this account.');
     }
 
+    public function test_auth_profile_bootstrap_ignores_stale_account_header(): void
+    {
+        $this->withoutMiddleware(\App\Http\Middleware\TracingMiddleware::class);
+
+        [$user, $tenant] = $this->createUserAndTenant();
+
+        AccountMembership::query()->create([
+            'user_uuid'    => $user->uuid,
+            'tenant_id'    => $tenant->id,
+            'account_uuid' => 'acc-personal',
+            'account_type' => 'personal',
+            'role'         => 'owner',
+            'status'       => 'active',
+            'joined_at'    => now(),
+        ]);
+
+        Sanctum::actingAs($user, ['read', 'write', 'delete']);
+
+        $response = $this->withHeaders(['X-Account-Id' => 'stale-account-from-previous-session'])
+            ->getJson('/api/auth/me');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('active_account_id', 'acc-personal')
+            ->assertJsonPath('accounts.0.account_uuid', 'acc-personal');
+    }
+
     public function test_rejects_suspended_membership(): void
     {
         [$user, $tenant] = $this->createUserAndTenant();

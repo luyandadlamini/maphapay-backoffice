@@ -7,7 +7,9 @@ namespace App\Domain\Account\Services;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class AccountPayloadTransformer
 {
@@ -35,7 +37,7 @@ class AccountPayloadTransformer
     {
         return $memberships
             ->map(function (AccountMembership $membership) use ($currentUser, $includeStatus): array {
-                $account = Account::query()->where('uuid', $membership->account_uuid)->first();
+                $account = $this->resolveAccountForMembership($membership);
 
                 $payload = [
                     'account_uuid'      => $membership->account_uuid,
@@ -119,10 +121,10 @@ class AccountPayloadTransformer
                 ->whereNotIn('uuid', $existingAccountUuids)
                 ->orderBy('id')
                 ->get();
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             // The accounts table is missing columns (tenant schema behind migrations).
             // Log a warning and return what we have so login is not blocked.
-            \Illuminate\Support\Facades\Log::warning('AccountPayloadTransformer: accounts schema behind migrations, skipping minor child lookup', [
+            Log::warning('AccountPayloadTransformer: accounts schema behind migrations, skipping minor child lookup', [
                 'user_uuid' => $user->uuid,
                 'error'     => $e->getMessage(),
             ]);
@@ -166,5 +168,22 @@ class AccountPayloadTransformer
         }
 
         return array_values($payloads);
+    }
+
+    private function resolveAccountForMembership(AccountMembership $membership): ?Account
+    {
+        try {
+            return Account::query()
+                ->where('uuid', $membership->account_uuid)
+                ->first();
+        } catch (QueryException $e) {
+            Log::warning('AccountPayloadTransformer: unable to resolve tenant account for membership payload', [
+                'account_uuid' => $membership->account_uuid,
+                'tenant_id'    => $membership->tenant_id,
+                'error'        => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 }
