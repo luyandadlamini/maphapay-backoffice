@@ -321,6 +321,10 @@ Route::middleware('auth:sanctum')
     ->name('maphapay.compat.wallet-linking');
 
 Route::middleware('auth:sanctum')
+    ->post('wallet-linking', \App\Http\Controllers\Api\Compatibility\WalletLinking\WalletLinkingStoreController::class)
+    ->name('maphapay.compat.wallet-linking.store');
+
+Route::middleware('auth:sanctum')
     ->get('budget', BudgetController::class)
     ->name('maphapay.compat.budget');
 
