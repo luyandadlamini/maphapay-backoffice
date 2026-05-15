@@ -30,7 +30,9 @@ use App\Policies\Cards\CardSubscriptionPolicy;
 use App\Policies\Cards\CardTransactionPolicy;
 use App\Policies\Cards\PhysicalCardOrderPolicy;
 use App\Policies\RevenueTargetPolicy;
+use App\Policies\WalletAdminPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -53,4 +55,9 @@ class AuthServiceProvider extends ServiceProvider
         CardAuditLog::class      => CardAuditLogPolicy::class,
         CardPlan::class          => CardPlanPolicy::class,
     ];
+
+    public function boot(): void
+    {
+        Gate::define('wallet.manage_mock', [WalletAdminPolicy::class, 'manageMockWallets']);
+    }
 }
