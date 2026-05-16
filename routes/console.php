@@ -15,6 +15,8 @@ use App\Domain\Mobile\Jobs\CleanupStaleDevices;
 use App\Domain\Mobile\Jobs\ProcessScheduledNotifications;
 use App\Domain\Mobile\Jobs\RetryFailedNotifications;
 use App\Domain\MobilePayment\Jobs\ExpireStalePaymentIntents;
+use App\Jobs\Pricing\BuildRevenueDailyRollupJob;
+use App\Jobs\Pricing\RefreshSegmentMembershipsJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -311,6 +313,18 @@ Schedule::command('minor-accounts:lifecycle-exceptions-flag-sla-breaches')
     ->description('Set sla_escalated_at on open minor-account lifecycle exceptions past SLA due time')
     ->appendOutputTo(storage_path('logs/minor-account-lifecycle-sla-breaches.log'))
     ->withoutOverlapping();
+
+// Segment membership refresh — rebuild dynamic/hybrid memberships nightly
+Schedule::job(new RefreshSegmentMembershipsJob())
+    ->dailyAt('03:30')
+    ->name('refresh-segment-memberships')
+    ->withoutOverlapping();
+
+// Pricing revenue rollup — aggregate yesterday's fee_events into revenue_daily_rollups
+Schedule::job(new BuildRevenueDailyRollupJob())
+    ->dailyAt('02:15')
+    ->withoutOverlapping()
+    ->description('Aggregate daily fee revenue rollup from fee_events');
 
 // Wallet revenue — read-only anomaly scan per tenant DB (REQ-ALR-001 v1)
 Schedule::command('revenue:scan-anomalies:for-tenants')
