@@ -57,11 +57,32 @@ class DashboardController extends Controller
             $currencySymbol = config('banking.currency_symbol', 'E');
 
             $account = Account::where('user_uuid', $user->uuid)->first();
-            $balanceMinor = $account !== null ? $account->getBalance('SZL') : 0;
+
+            Log::info('[compat:dashboard] Debug', [
+                'user_id'     => $user->id,
+                'user_uuid'   => $user->uuid,
+                'account'     => $account ? $account->toArray() : null,
+                'account_id'  => $account?->id,
+                'account_uuid'=> $account?->uuid,
+            ]);
+
+            $balanceMinor = 0;
+            if ($account !== null) {
+                $balanceMinor = $account->getBalance('SZL');
+                Log::info('[compat:dashboard] Balance check', [
+                    'account_uuid' => $account->uuid,
+                    'balanceMinor' => $balanceMinor,
+                    'SZL balance record' => $account->getBalanceForAsset('SZL'),
+                ]);
+            }
             $balanceStr = number_format($balanceMinor / $divisor, $precision, '.', '');
 
             // @phpstan-ignore argument.type
             $accountUuids = $user->accounts()->pluck('uuid');
+            Log::info('[compat:dashboard] Account UUIDs', [
+                'accountUuids' => $accountUuids->toArray(),
+            ]);
+
             $totalBalanceMinor = $accountUuids->isNotEmpty()
                 ? AccountBalance::whereIn('account_uuid', $accountUuids)->where('asset_code', 'SZL')->sum('balance')
                 : 0;
