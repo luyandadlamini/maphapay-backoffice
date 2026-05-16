@@ -13,7 +13,6 @@ use App\Domain\Mobile\Services\PocketTransferService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 class PocketsAddFundsController extends Controller
@@ -96,29 +95,14 @@ class PocketsAddFundsController extends Controller
         $divisor = 10 ** $precision;
 
         $account = Account::query()->where('user_uuid', $user->uuid)->orderBy('id')->first();
-
-        Log::info('[pockets:add-funds] resolveWalletBalanceMajor', [
-            'user_id'     => $user->id,
-            'user_uuid'   => $user->uuid,
-            'assetCode'   => $assetCode,
-            'account'     => $account ? ['id' => $account->id, 'uuid' => $account->uuid] : null,
-        ]);
-
         if (! $account) {
             return number_format(0, $precision, '.', '');
         }
 
-        $balanceRecord = AccountBalance::query()
+        $balanceMinor = AccountBalance::query()
             ->where('account_uuid', $account->uuid)
             ->where('asset_code', $assetCode)
-            ->first();
-
-        Log::info('[pockets:add-funds] balance record', [
-            'account_uuid' => $account->uuid,
-            'balanceRecord' => $balanceRecord?->toArray(),
-        ]);
-
-        $balanceMinor = $balanceRecord?->balance ?? 0;
+            ->value('balance') ?? 0;
 
         return number_format((int) $balanceMinor / $divisor, $precision, '.', '');
     }
