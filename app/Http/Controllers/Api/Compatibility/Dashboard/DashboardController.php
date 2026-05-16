@@ -30,14 +30,14 @@ use Illuminate\Support\Facades\Log;
  *     }
  *   }
  *
- * The user object mirrors the login response shape so the mobile app can use the
- * same status checks (has_completed_onboarding, kyc_status, mobile_verified_at)
- * without needing separate endpoints.
+ * Balance is always SZL (the canonical user-facing currency in Eswatini).
+ * Accounts funded only in other assets (e.g. USD from Stripe card provisioning)
+ * report 0.00 here — by design, so the displayed balance never disagrees with
+ * what send-money will accept. Crediting non-SZL inflows back to SZL is the
+ * responsibility of the funding pipeline, not this read endpoint.
  *
  * Balance is cached per user for 30 seconds. User status fields are read fresh
  * each request as they change during onboarding/KYC flows.
- *
- * If the user has no account (not yet on-boarded) the balance returns as '0.00'.
  */
 class DashboardController extends Controller
 {
@@ -57,32 +57,11 @@ class DashboardController extends Controller
             $currencySymbol = config('banking.currency_symbol', 'E');
 
             $account = Account::where('user_uuid', $user->uuid)->first();
-
-            Log::info('[compat:dashboard] Debug', [
-                'user_id'     => $user->id,
-                'user_uuid'   => $user->uuid,
-                'account'     => $account ? $account->toArray() : null,
-                'account_id'  => $account?->id,
-                'account_uuid'=> $account?->uuid,
-            ]);
-
-            $balanceMinor = 0;
-            if ($account !== null) {
-                $balanceMinor = $account->getBalance('SZL');
-                Log::info('[compat:dashboard] Balance check', [
-                    'account_uuid' => $account->uuid,
-                    'balanceMinor' => $balanceMinor,
-                    'SZL balance record' => $account->getBalanceForAsset('SZL'),
-                ]);
-            }
+            $balanceMinor = $account !== null ? $account->getBalance('SZL') : 0;
             $balanceStr = number_format($balanceMinor / $divisor, $precision, '.', '');
 
             // @phpstan-ignore argument.type
             $accountUuids = $user->accounts()->pluck('uuid');
-            Log::info('[compat:dashboard] Account UUIDs', [
-                'accountUuids' => $accountUuids->toArray(),
-            ]);
-
             $totalBalanceMinor = $accountUuids->isNotEmpty()
                 ? AccountBalance::whereIn('account_uuid', $accountUuids)->where('asset_code', 'SZL')->sum('balance')
                 : 0;

@@ -94,6 +94,41 @@ class DashboardControllerTest extends ControllerTestCase
             ->assertJsonPath('data.user.balance', '0.00');
     }
 
+    /**
+     * SZL is the canonical user-facing currency. An account funded only in USD
+     * (e.g. by Stripe card provisioning during testing) has no spendable SZL,
+     * so the dashboard must report 0.00 — never a USD→SZL display conversion.
+     *
+     * If we ever show a converted value here, send-money (which checks
+     * AccountBalance::where('asset_code', 'SZL') directly) will reject the
+     * transfer and the UI will be lying to the user.
+     */
+    #[Test]
+    public function test_usd_only_account_reports_zero_szl_balance_with_no_fx_conversion(): void
+    {
+        Asset::firstOrCreate(
+            ['code' => 'USD'],
+            ['name' => 'US Dollar', 'type' => 'fiat', 'precision' => 2, 'is_active' => true],
+        );
+
+        $user = User::factory()->create(['kyc_status' => 'approved', 'kyc_expires_at' => null]);
+        $account = Account::factory()->create(['user_uuid' => $user->uuid, 'frozen' => false]);
+
+        AccountBalance::factory()
+            ->forAccount($account)
+            ->forAsset('USD')
+            ->withBalance(100_00)
+            ->create();
+
+        Sanctum::actingAs($user, ['read', 'write', 'delete']);
+
+        $this->getJson(self::ROUTE)
+            ->assertOk()
+            ->assertJsonPath('data.balance', '0.00')
+            ->assertJsonPath('data.user.balance', '0.00')
+            ->assertJsonPath('data.total_balance', '0.00');
+    }
+
     #[Test]
     public function test_offers_is_empty_array(): void
     {
@@ -120,7 +155,7 @@ class DashboardControllerTest extends ControllerTestCase
         $second = $this->getJson(self::ROUTE)->assertOk()->json('data.balance');
 
         $this->assertSame($first, $second);
-        $this->assertTrue(Cache::has("maphapay.dashboard.{$user->id}"));
+        $this->assertTrue(Cache::has("maphapay.dashboard.balance.{$user->id}"));
     }
 
     #[Test]
