@@ -38,7 +38,7 @@ class BuildRevenueDailyRollupJob implements ShouldQueue
 
         $rows = DB::table('fee_events')
             ->whereDate('assessed_at', $date)
-            ->selectRaw("
+            ->selectRaw('
                 DATE(assessed_at)         AS `date`,
                 product_code,
                 segment_id,
@@ -47,7 +47,7 @@ class BuildRevenueDailyRollupJob implements ShouldQueue
                 COUNT(*)                  AS fee_count,
                 COUNT(DISTINCT user_id)   AS unique_users,
                 ROUND(AVG(amount_minor))  AS avg_fee_minor
-            ")
+            ')
             ->groupBy(DB::raw('DATE(assessed_at)'), 'product_code', 'segment_id', 'currency')
             ->get()
             ->map(fn (object $row): array => [
