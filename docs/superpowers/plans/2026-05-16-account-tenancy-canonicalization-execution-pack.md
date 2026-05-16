@@ -4,755 +4,443 @@ Companion to: [`2026-05-16-account-tenancy-canonicalization.md`](2026-05-16-acco
 
 ## How to use this pack
 
-1. Tasks are grouped into **waves**. Within a wave, tasks have no dependency on each other and **can** run in parallel sessions. Between waves, you must wait for the previous wave to finish.
-2. Each task lists its **model floor** (cheapest model that can do it safely). Open a new session with that model. Paste the prompt verbatim.
-3. The prompt assumes nothing about the new session. It tells the agent to read the plan first, then execute its specific task.
-4. After the agent replies `DONE <sha>`, mark it off and move on.
-5. If the agent replies `BLOCKED: <reason>`, escalate the model one tier (Haiku→Sonnet, Sonnet→Opus) and re-issue.
+- Work happens directly on branch `refactor/account-tenancy-canonicalization` off of `main`. No worktrees.
+- The 33 tasks in the plan are **bundled into 21 prompts** (one per wave). Each prompt does multiple related tasks in one session — that way you copy/paste 21 times instead of 33, and each session amortizes loading the plan.
+- Each prompt lists its **model floor** (cheapest model that can do it safely). Open a session with that model, paste verbatim.
+- After the agent replies `DONE`, mark off and move to the next wave.
+- If the agent replies `BLOCKED`, escalate one model tier (Haiku → Sonnet → Sonnet → Opus) and re-issue.
 
-### Parallelism note
+Prompts are designed so a fresh session needs nothing from you beyond the paste. Each opens with the same preamble; each ends with explicit reply-format instructions.
 
-Tasks within a wave **share the same branch**. If you actually run them in parallel sessions, each session will try to push to `refactor/account-tenancy-canonicalization` and the second one will be rejected on conflict. **Two safe options:**
-
-- **(Easier) Run wave-internal tasks sequentially in separate sessions.** You still gain the cheaper-model cost savings; you only lose wall-clock parallelism.
-- **(Faster) Have each parallel session work in its own git worktree + sub-branch**, then merge each back into `refactor/account-tenancy-canonicalization` at the end of the wave. Append the *Worktree variant* block (shown once below) to the task prompt when using this path.
-
-### Worktree variant (append to any task prompt to run truly in parallel)
-
-```
-Before starting: this task runs in parallel with siblings. Create an isolated worktree:
-
-  git fetch origin
-  git worktree add ../maphapay-backoffice-task-N.M -b refactor/account-tenancy/task-N.M origin/refactor/account-tenancy-canonicalization
-
-cd into that worktree and do all work there. When done, push your sub-branch:
-
-  git push -u origin refactor/account-tenancy/task-N.M
-
-Reply with: DONE <commit-sha> on branch refactor/account-tenancy/task-N.M (do NOT merge into refactor/account-tenancy-canonicalization yourself).
-```
-
-The user merges each completed sub-branch at the wave boundary.
-
----
-
-## Standard prompt preamble (referenced by every task)
-
-Each task prompt expands the placeholder `<PREAMBLE>` to this block. To save scrolling, the preamble is shown once here. Every task prompt below starts with it.
+## Standard preamble (every prompt starts with this)
 
 ```
 Repo: /Users/Lihle/Development/Coding/maphapay-backoffice
 Plan: docs/superpowers/plans/2026-05-16-account-tenancy-canonicalization.md
-Branch: refactor/account-tenancy-canonicalization (verify checked out, pull first)
-PHP: "/Users/Lihle/Library/Application Support/Herd/bin/php"
-Test DB env (prepend to pest commands):
+Branch: refactor/account-tenancy-canonicalization (off main; create from main if missing, otherwise checkout + pull)
+PHP binary: "/Users/Lihle/Library/Application Support/Herd/bin/php"
+Test DB env (prepend to every pest invocation):
   DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 \
   DB_DATABASE=maphapay_backoffice_test DB_USERNAME=maphapay_test \
   DB_PASSWORD='maphapay_test_password'
 
-Hard rules:
-- TDD per CLAUDE.md: write the failing test first, prove it fails, then write impl, prove it passes.
-- Run php-cs-fixer + phpstan on every file you change BEFORE committing.
-- ONE commit per task. Use the exact commit message template from the task body in the plan.
-- Do NOT improvise outside the task spec. If something blocks you, reply BLOCKED and stop.
-- Do NOT modify files outside the "Files:" list in the task.
+Hard rules (do not deviate):
+- TDD per CLAUDE.md: failing test first, prove it fails, then implementation, prove it passes.
+- Run php-cs-fixer + phpstan on every changed file BEFORE committing.
+- One commit per task in the bundle (so we can bisect later) using the exact message template in each task body.
+- After each task's commit, push so subsequent waves see the change.
+- Do NOT modify files outside each task's listed "Files:" section.
+- If stuck, reply BLOCKED — do not improvise.
 
-Reply format at the end:
-  DONE <commit-sha>
+Final reply format:
+  DONE
+    task 0.1 → <commit-sha>
+    task 0.2 → <commit-sha>
+    ...
 or:
-  BLOCKED: <one-sentence reason>
+  BLOCKED at task <id>: <one-sentence reason>
 ```
 
 ---
 
-## Wave 1 — Branch bootstrap (1 task, sequential gate)
+## Wave 1 — Branch bootstrap
 
-Must succeed before anything else.
-
-### Task 0.1 — model: **Haiku**
+### Prompt 1/21 (model: **Haiku**) — Task 0.1
 
 ```
 <PREAMBLE>
 
-Execute Task 0.1 (Create feature branch) from the plan. Section 6 of the plan.
+Bundle:
+- Task 0.1 (Create feature branch)
 
-The branch may already exist (someone may have started). If `git rev-parse refactor/account-tenancy-canonicalization` succeeds, just check it out and pull. If not, create it from latest main.
+Read Section 6 of the plan. Execute Task 0.1. If the branch already exists, just check it out and pull. No commit needed for branch creation.
 
-Reply DONE branch-ready after `git status` shows the right branch and a clean tree. No commit needed for this task.
+Reply DONE branch-ready or BLOCKED.
 ```
 
 ---
 
-## Wave 2 — Baseline verification + factory (3 tasks, parallel-eligible)
+## Wave 2 — Baseline + factory
 
-These have no dependency on each other. Wave 1 must be done.
-
-### Task 0.2 — model: **Haiku**
+### Prompt 2/21 (model: **Haiku**) — Tasks 0.2, 0.3, 1.5
 
 ```
 <PREAMBLE>
 
-Execute Task 0.2 (Verify baseline test suite is green) from the plan. Section 6.
+Bundle (run in this order):
+- Task 0.2 (Verify baseline test suite green) — no commit
+- Task 0.3 (PHPStan + cs-fixer baseline) — no commit; record counts
+- Task 1.5 (Add AccountMembership factory if missing) — commit only if you create the file
 
-Run only the test command from Task 0.2 Step 1. Capture the final "Tests:" line.
+Read Sections 6 and 7 of the plan. Execute each task.
 
-If green: reply DONE baseline-green.
-If anything red: reply BLOCKED with the first failing test name. DO NOT attempt to fix — that's outside scope.
-```
+For Task 1.5: first check whether `database/factories/AccountMembershipFactory.php` exists. If yes, skip. If no, read `app/Domain/Account/Models/AccountMembership.php` to get the fillable fields, then create the factory.
 
-### Task 0.3 — model: **Haiku**
-
-```
-<PREAMBLE>
-
-Execute Task 0.3 (PHPStan + cs-fixer baseline) from the plan. Section 6.
-
-Run both commands. Capture the error count and the "Fixed N of M" line. Reply DONE baseline-static-<phpstan-error-count>-<cs-fixer-fixed-count>. No code changes; this is record-only.
-```
-
-### Task 1.5 — model: **Haiku**
-
-```
-<PREAMBLE>
-
-Execute Task 1.5 (Add AccountMembership factory if missing) from the plan. Section 7.
-
-1. Check whether `database/factories/AccountMembershipFactory.php` exists.
-2. If it exists, reply DONE factory-already-present (no commit).
-3. If missing, read `app/Domain/Account/Models/AccountMembership.php` first to confirm the fillable fields and required columns. Then create the factory exactly as shown in Task 1.5 Step 2 of the plan, adapting only field names that the model demands differently.
-4. Commit using the template in Task 1.5 Step 4.
-
-Reply DONE <sha>.
+Reply:
+  DONE
+    0.2 → baseline-green (or BLOCKED with first failing test)
+    0.3 → phpstan-errors=<N>, cs-fixer-fixes=<M>
+    1.5 → <commit-sha or "already-exists">
 ```
 
 ---
 
-## Wave 3 — Concern + helper tests (2 tasks, parallel-eligible)
+## Wave 3 — Foundation traits (red + green, both)
 
-Both are failing-test-first tasks for the foundation traits. Wave 2 must be done.
-
-### Task 1.1 — model: **Sonnet**
+### Prompt 3/21 (model: **Sonnet**) — Tasks 1.1, 1.2, 1.3, 1.4
 
 ```
 <PREAMBLE>
 
-Execute Task 1.1 (Write failing test for WithAccountTenancy::initializeTenancyForRecord) from the plan. Section 7.
+Bundle (run in this exact order — TDD red/green for two parallel foundation traits):
+1. Task 1.1 (Failing test for WithAccountTenancy) — commit red
+2. Task 1.3 (Failing test for WithTenantContext) — commit red
+3. Task 1.2 (Implement WithAccountTenancy) — commit green
+4. Task 1.4 (Implement WithTenantContext) — commit green
 
-Copy the test code from Task 1.1 Step 1 verbatim into the new test file. Run pest. Confirm it fails with "Class WithAccountTenancy not found".
+Read Section 7 of the plan. Copy code blocks verbatim from each task body.
 
-Commit (no code yet, just the failing test):
-  git add tests/Feature/Filament/Admin/Concerns/WithAccountTenancyTest.php
-  git commit -m "test(admin): failing tests for WithAccountTenancy concern
+Commits:
+- After step 1: "test(admin): failing tests for WithAccountTenancy concern"
+- After step 2: "test(shared): failing tests for WithTenantContext helper"
+- After step 3 (Task 1.2 Step 4 template): "feat(admin): add WithAccountTenancy concern for tenant init"
+- After step 4 (Task 1.4 Step 4 template): "feat(shared): add WithTenantContext helper for non-HTTP code paths"
 
-  Red phase of TDD; concern is implemented in the next commit.
+All 4 commits include `Co-Authored-By: Claude <noreply@anthropic.com>`.
 
-  Co-Authored-By: Claude <noreply@anthropic.com>"
-
-Reply DONE <sha>.
-```
-
-### Task 1.3 — model: **Sonnet**
-
-```
-<PREAMBLE>
-
-Execute Task 1.3 (Write failing test for WithTenantContext helper) from the plan. Section 7.
-
-Copy the test code from Task 1.3 Step 1 verbatim. Run pest. Confirm it fails with "Class WithTenantContext not found".
-
-Commit (test only):
-  git add tests/Feature/Domain/Shared/Concerns/WithTenantContextTest.php
-  git commit -m "test(shared): failing tests for WithTenantContext helper
-
-  Red phase of TDD; trait is implemented in the next commit.
-
-  Co-Authored-By: Claude <noreply@anthropic.com>"
-
-Reply DONE <sha>.
+Reply DONE with 4 SHAs or BLOCKED.
 ```
 
 ---
 
-## Wave 4 — Concern + helper implementations (2 tasks, parallel-eligible)
+## Wave 4 — Integration smoke
 
-Each turns the matching Wave-3 failing test green. Wave 3 must be done.
-
-### Task 1.2 — model: **Sonnet**
+### Prompt 4/21 (model: **Sonnet**) — Task 1.6
 
 ```
 <PREAMBLE>
 
-Execute Task 1.2 (Implement WithAccountTenancy concern) from the plan. Section 7.
+Bundle:
+- Task 1.6 (End-to-end smoke test of the concern)
 
-Copy the trait code from Task 1.2 Step 1 verbatim into `app/Filament/Admin/Concerns/WithAccountTenancy.php`. Run the test from Task 1.1 — it must pass (3 tests). Run cs-fixer + phpstan. Commit per Task 1.2 Step 4.
+Read Section 7 Task 1.6 of the plan.
 
-Reply DONE <sha>.
-```
-
-### Task 1.4 — model: **Sonnet**
-
-```
-<PREAMBLE>
-
-Execute Task 1.4 (Implement WithTenantContext helper) from the plan. Section 7.
-
-Copy the trait code from Task 1.4 Step 1 verbatim into `app/Domain/Shared/Concerns/WithTenantContext.php`. Run the test from Task 1.3 — it must pass (3 tests). Run cs-fixer + phpstan. Commit per Task 1.4 Step 4.
-
-Reply DONE <sha>.
-```
-
----
-
-## Wave 5 — Integration smoke for the concern (1 task, sequential)
-
-Depends on Task 1.2.
-
-### Task 1.6 — model: **Sonnet**
-
-```
-<PREAMBLE>
-
-Execute Task 1.6 (End-to-end smoke test of the concern) from the plan. Section 7.
-
-The integration test in Task 1.6 may fail if the test environment doesn't have multi-tenant DBs wired. If that happens (look for `UsesTenantConnection::shouldUseDefaultConnection()` returning true under 'testing'), DO NOT skip — instead:
+Critical: if the test environment's `UsesTenantConnection::shouldUseDefaultConnection()` returns true for 'testing' (likely — see trait at app/Domain/Shared/Traits/UsesTenantConnection.php:73-76), the integration test cannot actually swap DBs. Do not skip silently:
 1. Write the test as shown.
-2. Document the limitation as a `$this->markTestSkipped(...)` with a clear reason, AND
-3. Add a runtime smoke entry to `docs/migration-runs/2026-05-16-concern-smoke.md` describing how Task 7.4 (the cmd:run prod smoke) covers this gap.
+2. Wrap the assertions in a `$this->markTestSkipped("...")` with a clear reason if you detect the limitation.
+3. Add a smoke-test entry to `docs/migration-runs/2026-05-16-concern-smoke.md` describing how Task 7.4 (the production cmd:run) will cover this gap.
 
-If you can't decide, reply BLOCKED: integration-test-needs-opus-design-review.
+Commit per Task 1.6 Step 3 template.
 
-Otherwise commit per Task 1.6 Step 3. Reply DONE <sha>.
+Reply DONE <sha> or BLOCKED.
 ```
 
 ---
 
-## Wave 6 — Phase 2 canary test (1 task, sequential gate)
+## Wave 5 — Phase 2 canary (red + green proving the pattern)
 
-Proves the pattern works on one real Filament page before mass application.
-
-### Task 2.1 — model: **Sonnet**
+### Prompt 5/21 (model: **Sonnet**) — Tasks 2.1, 2.2
 
 ```
 <PREAMBLE>
 
-Execute Task 2.1 (TDD canary: assert ViewAccount initializes tenancy) from the plan. Section 8.
+Bundle (TDD red/green for the Filament pattern):
+1. Task 2.1 (Failing canary test for ViewAccount tenancy init) — commit red
+2. Task 2.2 (Apply concern to ViewAccount) — commit green
 
-Write the failing test exactly per Task 2.1 Step 1. Run it. Confirm it fails on the Tenancy::initialized assertion (the concern hasn't been applied to ViewAccount yet).
+Read Section 8 of the plan including the "Pattern (memorize this)" sub-section. Tasks 2.1 and 2.2 are the proof point that the rest of Wave 6/7 can apply mechanically.
 
-Commit test-only:
-  git add tests/Feature/Filament/Admin/Resources/AccountResource/Pages/ViewAccountTenancyTest.php
-  git commit -m "test(admin): failing canary for ViewAccount tenancy init
+Commits:
+- After 2.1: "test(admin): failing canary for ViewAccount tenancy init"
+- After 2.2 (Task 2.2 Step 4 template): "fix(admin): initialize tenancy on ViewAccount page"
 
-  Red. Phase-2 pattern application turns it green in the next commit.
-
-  Co-Authored-By: Claude <noreply@anthropic.com>"
-
-Reply DONE <sha>.
+Reply DONE 2.1=<sha> 2.2=<sha> or BLOCKED.
 ```
 
 ---
 
-## Wave 7 — Apply concern to ViewAccount (1 task, sequential gate)
+## Wave 6 — Mechanical concern application (Haiku-eligible files)
 
-Proves the pattern. Wave 6 must be done.
-
-### Task 2.2 — model: **Haiku**
+### Prompt 6/21 (model: **Haiku**) — Tasks 2.3, 2.7, 2.8, 2.9
 
 ```
 <PREAMBLE>
 
-Execute Task 2.2 (Apply concern to ViewAccount page) from the plan. Section 8.
+Bundle (apply the same Section-8 pattern to each; commit per file):
+1. Task 2.3 (EditAccount — skip if file doesn't exist)
+2. Task 2.7 (every RelationManager in app/Filament/Admin/Resources/AccountResource/RelationManagers/ that operates on Account)
+3. Task 2.8 (ReconciliationDiscrepancyWidget — skip and flag for Phase 4 if it's a dashboard-mode widget)
+4. Task 2.9 (verify-and-test the AccountStatsOverview header widget on ViewAccount)
 
-Mechanical change:
-1. Open `app/Filament/Admin/Resources/AccountResource/Pages/ViewAccount.php`.
-2. Add `use App\Filament\Admin\Concerns\WithAccountTenancy;` to the imports.
-3. Inside the class body, add `use WithAccountTenancy;` near the top (before `protected static string $resource = …;`).
-4. Add the `mount` method exactly as shown in Task 2.2 Step 1.
+For each: write the canary test (template = Task 2.1's test, change only the class name), apply the concern via `use WithAccountTenancy` + `mount()` override, run the canary, lint, commit.
 
-Run the canary test from Wave 6 — it must now pass. Run cs-fixer + phpstan on the changed file. Commit per Task 2.2 Step 4.
+Pattern reminder:
+  use App\Filament\Admin\Concerns\WithAccountTenancy;
+  // inside class body:
+  use WithAccountTenancy;
+  public function mount(int|string $record): void {
+      parent::mount($record);
+      $this->initializeTenancyForRecord($this->record);
+  }
 
-Reply DONE <sha>.
+For 2.7's relation managers that don't extend a class with `mount(int|string)`, use whichever lifecycle method sees `$this->ownerRecord` first.
+
+If any task's file genuinely cannot accept the pattern, reply for that task: SKIP <reason>.
+
+Reply DONE with one line per task showing sha or SKIP.
 ```
 
 ---
 
-## Wave 8 — Apply concern to remaining single-record surfaces (parallel-eligible)
+## Wave 7 — Concern application with design judgment (FundManagement)
 
-7 sub-tasks. Each touches a different file → independent. Wave 7 must be done (pattern proven). Worktrees recommended if running concurrently.
-
-### Task 2.3 — model: **Haiku**
+### Prompt 7/21 (model: **Sonnet**) — Tasks 2.4, 2.5, 2.6
 
 ```
 <PREAMBLE>
 
-Execute Task 2.3 from Section 8 of the plan (Apply concern to EditAccount).
+Bundle (each is a mutation page where account is selected by dropdown — NOT mount-time):
+1. Task 2.4 (FundAccountPage)
+2. Task 2.5 (AdjustBalancePage)
+3. Task 2.6 (TransferBetweenAccountsPage — TWO accounts, possibly two tenants)
 
-1. Check if `app/Filament/Admin/Resources/AccountResource/Pages/EditAccount.php` exists.
-2. If it does NOT exist: reply DONE n-a-no-edit-page, no commit.
-3. If it does: apply the Section-8 pattern (import, trait, mount with `parent::mount($record); $this->initializeTenancyForRecord($this->record);`). Write a canary test mirroring `ViewAccountTenancyTest.php` — change only the page class name. Run, lint, commit per the Wave 7 pattern.
+For 2.4 and 2.5: hook tenancy init into the account-Select's `afterStateUpdated` callback, NOT in mount. The account isn't selected at mount time.
 
-Reply DONE <sha>.
-```
+For 2.6: use `WithTenantContext::withAccountTenancy()` (not the Filament concern) inside the transfer action handler. Two calls — one wrapping the debit on source's tenant, one wrapping the credit on destination's tenant. Never hold both tenancies open simultaneously.
 
-### Task 2.4 — model: **Sonnet**
+Each task: write a Livewire test that proves tenancy is initialized correctly for the page action. Lint, one commit per task with the standard commit template (see Section 8 for examples).
 
-```
-<PREAMBLE>
+If 2.4 or 2.5's form construction makes the afterStateUpdated approach impossible, reply BLOCKED at <task>: fund-page-form-structure-needs-design.
 
-Execute Task 2.4 from Section 8 (Apply concern to FundAccountPage).
-
-This page is different: account selected via dropdown into `$selectedAccount`. DO NOT call the concern in `mount` — the account isn't selected yet. Instead:
-
-1. Find the form field that sets `$selectedAccount` (likely a Filament `Select` component on an account_uuid).
-2. On that Select, add `->afterStateUpdated(function ($state) { if ($state) { $this->initializeTenancyForRecord($this->form->getRecord() ?? \App\Domain\Account\Models\Account::where('uuid', $state)->firstOrFail()); } })`.
-3. Apply `use App\Filament\Admin\Concerns\WithAccountTenancy;` and `use WithAccountTenancy;` to the page.
-
-Write a Livewire-based test asserting that selecting an account in the dropdown initializes tenancy to that account's tenant.
-
-If the page's actual form construction makes this approach awkward, reply BLOCKED: fund-page-form-structure-needs-design.
-
-Lint + commit per the Section-8 pattern.
-
-Reply DONE <sha>.
-```
-
-### Task 2.5 — model: **Sonnet**
-
-```
-<PREAMBLE>
-
-Execute Task 2.5 from Section 8 (Apply concern to AdjustBalancePage).
-
-Same approach as Task 2.4: dropdown selects the account; hook tenancy init into the Select's `afterStateUpdated`. Use Task 2.4's commit as the reference style.
-
-Reply DONE <sha>.
-```
-
-### Task 2.6 — model: **Sonnet**
-
-```
-<PREAMBLE>
-
-Execute Task 2.6 from Section 8 (Apply concern to TransferBetweenAccountsPage).
-
-CRITICAL: this page has TWO accounts (source + destination) that may belong to DIFFERENT tenants. The credit must run in destination's tenant; the debit must run in source's tenant. Do NOT hold both tenancies open at once.
-
-Strategy:
-1. Apply `use App\Domain\Shared\Concerns\WithTenantContext;` to the page (NOT `WithAccountTenancy` — we need the wrap-callback form).
-2. In the transfer action handler:
-   - `$this->withAccountTenancy($source->uuid, fn () => /* perform debit */);`
-   - `$this->withAccountTenancy($destination->uuid, fn () => /* perform credit */);`
-3. Add a Livewire test using two `Tenant::factory()->create()` and two memberships to assert both legs land in the correct tenants.
-
-If the page currently delegates to a service that itself does the debit+credit atomically, refactor to two service calls — one per tenant. Document this in the commit message.
-
-If unclear, reply BLOCKED: transfer-page-needs-design.
-
-Lint + commit. Reply DONE <sha>.
-```
-
-### Task 2.7 — model: **Haiku**
-
-```
-<PREAMBLE>
-
-Execute the Section-8 pattern application for `app/Filament/Admin/Resources/AccountResource/RelationManagers/` — every RelationManager class in that directory.
-
-For each RelationManager:
-1. If it extends `RelationManager` and operates on Account records, apply `use WithAccountTenancy` and override the appropriate lifecycle method (try `mount`; if absent, use `boot`).
-2. If it operates on a non-Account model (e.g. notes on a user), skip — reply for that file: SKIP non-account.
-
-Write one canary test per RelationManager you modify. Group all changes into one commit if they share semantics, otherwise one commit per file.
-
-Reply DONE <sha-list>.
-```
-
-### Task 2.8 — model: **Haiku**
-
-```
-<PREAMBLE>
-
-Execute Section-8 pattern for `app/Filament/Admin/Resources/ReconciliationReportResource/Widgets/ReconciliationDiscrepancyWidget.php`.
-
-Filament widgets often receive `$record` via the page they're embedded in. If this widget is record-scoped, apply the concern via `mount()`. If it's a dashboard-mode widget (cross-account), DO NOT apply — flag for Phase 4 instead.
-
-Write a canary test if you apply the concern.
-
-Reply DONE <sha> or DONE flag-for-phase-4 (no commit).
-```
-
-### Task 2.9 — model: **Haiku**
-
-```
-<PREAMBLE>
-
-Execute Task 2.9 from Section 8 (verify AccountStatsOverview header widget on ViewAccount sees correct tenant).
-
-This is a verification-and-regression-test task, not a code change (Task 2.2 already inits tenancy on ViewAccount, and the widget is a child of that page, so it inherits tenancy).
-
-1. Write a test that seeds an account with a known SZL balance in a tenant DB, opens ViewAccount, asserts the AccountStatsOverview widget displays that exact number.
-2. Run, expect green (no code change needed if Task 2.2 is correct).
-3. If the test fails, escalate — that's a design gap.
-
-Commit the test-only addition.
-
-Reply DONE <sha>.
+Reply DONE 2.4=<sha> 2.5=<sha> 2.6=<sha> or BLOCKED.
 ```
 
 ---
 
-## Wave 9 — User-scoped Filament surfaces (2 tasks, parallel-eligible)
+## Wave 8 — User-scoped surfaces
 
-### Task 3.1 — model: **Sonnet**
-
-```
-<PREAMBLE>
-
-Execute Task 3.1 from Section 9 (Apply concern to AccountsRelationManager per-row).
-
-This is harder than Wave-8 tasks because the relation manager renders MANY rows (one per user account) and each may live in a different tenant. The pattern: use `WithTenantContext` (not `WithAccountTenancy`) and wrap the balance column's `getStateUsing` in `withAccountTenancy` per row.
-
-Implementation pattern is shown in Task 3.1 Step 2. Performance: O(N) tenant inits per page render. Add a TODO comment pointing to a follow-up issue for batching (no need to actually create the issue here; just leave the breadcrumb).
-
-Write a test with two memberships (two different tenants) and assert both balances display correctly in the relation manager.
-
-Lint + commit. Reply DONE <sha>.
-```
-
-### Task 3.2 — model: **Haiku**
+### Prompt 8/21 (model: **Sonnet**) — Tasks 3.1, 3.2
 
 ```
 <PREAMBLE>
 
-Execute Task 3.2 from Section 9 — Section-8 pattern application to ReconciliationDiscrepancyWidget. Skip if already done in Task 2.8.
+Bundle:
+1. Task 3.1 (AccountsRelationManager per-row tenancy)
+2. Task 3.2 (ReconciliationDiscrepancyWidget — skip if already done in Wave 6)
 
-If not yet done: apply concern via `mount`, add canary test, commit.
+Task 3.1: each row in the relation manager may belong to a different tenant. Wrap the balance column's `getStateUsing` in `$this->withAccountTenancy($record->uuid, fn () => $record->fresh()->getBalance('SZL'))` using `WithTenantContext` trait. Note O(N) tenant inits per page render; add a TODO comment for batching follow-up.
 
-Reply DONE <sha> or DONE already-done-in-2.8.
+Task 3.2: if Wave 6 already handled it, reply DONE 3.2=already-done. Otherwise apply the standard concern via mount.
+
+Reply DONE 3.1=<sha> 3.2=<sha-or-already-done> or BLOCKED.
 ```
 
 ---
 
-## Wave 10 — Cross-tenant aggregates (3 tasks, parallel-eligible)
+## Wave 9 — Cross-tenant aggregates (easier two)
 
-Each rewrites a widget/page that fundamentally cannot live in one tenant context.
-
-### Task 4.1 — model: **Sonnet**
+### Prompt 9/21 (model: **Sonnet**) — Tasks 4.1, 4.3
 
 ```
 <PREAMBLE>
 
-Execute Task 4.1 from Section 10 (Rewrite AccountStatsOverview dashboard mode to iterate tenants).
+Bundle:
+1. Task 4.1 (Rewrite AccountStatsOverview dashboard mode to iterate tenants)
+2. Task 4.3 (Audit + fix or skip PendingAdjustmentsWidget and OperationsStatsOverview)
 
-Spec is fully in the plan. Notable requirements:
-- Use `Tenant::on('central')->lazy(100)->each(...)` to iterate without loading all tenants into memory.
-- Init Stancl tenancy per tenant in a try/finally.
-- Use `is_frozen` column (tenant schema), NOT `frozen` (central schema) — verify the actual column on the tenant accounts table first via `cmd:run` or a local tenant migration.
-- Sum BIGINT balances as int, not float (use `(int) AccountBalance::sum('balance')`).
-- Optionally cache the result 60s with `Cache::remember`.
+Task 4.1 spec is fully in Section 10. Key points:
+- Use `Tenant::on('central')->lazy(100)->each(fn ($t) => …)` to iterate.
+- Init Stancl tenancy per tenant inside the loop with try/finally end.
+- Tenant schema uses `is_frozen` (boolean), NOT `frozen`. If you can't verify this locally because the test env lacks tenant DBs, proceed with `is_frozen` and add a docblock TODO that Task 7.4 must verify in prod.
+- Sum balances as int: `(int) AccountBalance::query()->where('asset_code', $cur)->sum('balance')`.
+- Optionally cache 60s with `Cache::remember`.
 
-Write the failing test exactly as in Task 4.1 Step 1. Then implement Step 2. Lint + commit.
+Task 4.3: for each of the two widget files (if they exist), grep for `Account::` or `AccountBalance::` calls. If found, apply the same iterate-tenants pattern. If not found, reply SKIP no-account-access for that file.
 
-If you cannot verify the `is_frozen` vs `frozen` column locally (no tenant DB in test env), proceed with `is_frozen` and add a docblock note that production verification is required during Task 7.4.
+Commits: one per file modified. Templates per the standard convention.
 
-Reply DONE <sha>.
-```
-
-### Task 4.2 — model: **Sonnet** (escalate to Opus if Filament custom data source is unfamiliar)
-
-```
-<PREAMBLE>
-
-Execute Task 4.2 from Section 10 (Build central directory for ListAccounts).
-
-Pick implementation (b) from the plan: iterate tenants and merge results into a Collection. This is the simpler path; (a) is a follow-up scale optimization.
-
-Override `AccountResource::getEloquentQuery()` to return a query against `AccountMembership` joined with `users`, projecting columns that match the existing list columns. For the balance column, use a per-row tenant init (same pattern as Task 3.1).
-
-If Filament v3's custom data source API is unclear to you (you'd be guessing about `query()` returning a Collection vs a Builder), STOP and reply BLOCKED: filament-custom-query-needs-opus.
-
-Write a failing test before changing code: list-page request shows accounts across two tenants. Implement, test, lint, commit.
-
-Reply DONE <sha>.
-```
-
-### Task 4.3 — model: **Haiku**
-
-```
-<PREAMBLE>
-
-Execute Task 4.3 from Section 10 (Audit remaining cross-account widgets).
-
-For each of these files (verify they exist):
-- `app/Filament/Admin/Widgets/PendingAdjustmentsWidget.php`
-- `app/Filament/Admin/Widgets/OperationsStatsOverview.php`
-
-Read the file. If it queries `Account` or `AccountBalance` cross-user (no `$record` scoping), apply the Tenant::on('central')->lazy iteration pattern from Task 4.1.
-
-If it does NOT touch Account/AccountBalance, reply for that file: SKIP no-account-access.
-
-One commit per file modified. If no files needed changes: DONE no-changes-needed.
-
-Reply DONE <sha-list-or-no-changes>.
+Reply DONE 4.1=<sha> 4.3=<sha-list-or-no-changes> or BLOCKED.
 ```
 
 ---
 
-## Wave 11 — Manual admin smoke (1 task, sequential)
+## Wave 10 — ListAccounts cross-tenant directory
 
-Depends on Waves 8-10 done. Manual UI verification.
-
-### Task 4.4 — model: **Sonnet**
+### Prompt 10/21 (model: **Sonnet**, escalate to Opus if Filament custom data source is unclear) — Task 4.2
 
 ```
 <PREAMBLE>
 
-Execute Task 4.4 from Section 10 (Manual smoke test of admin panel).
+Bundle:
+- Task 4.2 (Build central directory for ListAccounts)
 
-1. Boot the admin panel locally (`php artisan serve` + open `http://localhost:8000/admin`).
-2. Click through: AccountResource list → ViewAccount → run Freeze action → run Unfreeze → open FundAccountPage → select an account → confirm the balance shown matches what the seeded tenant has → submit a small fund → confirm no 500 errors.
-3. Capture screenshots into `docs/superpowers/plans/2026-05-16-account-tenancy-canonicalization-screenshots/` (create dir if missing). Name them `wave-11-step-N-<desc>.png`.
+Read Section 10 Task 4.2. Pick implementation (b) — iterate tenants and merge into a Collection. Implementation (a) is a future scale optimization; out of scope here.
 
-Reply with a summary table:
-  | Step | Status |
-  |---|---|
-  | AccountResource list loads | ok / fail |
-  | ViewAccount loads | ok / fail |
-  | Freeze works | ok / fail |
-  | FundAccountPage loads | ok / fail |
-  | Balance display correct | ok / fail |
+Override `AccountResource::getEloquentQuery()` (or whichever Filament hook returns the table data) so it does NOT call into the tenant-scoped Account model. Instead, build the rows by iterating `Tenant::on('central')->lazy()`, initializing each tenant briefly, fetching Account rows, accumulating into a Collection.
 
-Commit the screenshots dir:
-  git add docs/superpowers/plans/2026-05-16-account-tenancy-canonicalization-screenshots/
-  git commit -m "test(admin): manual smoke evidence for Wave 11
+For the balance column, reuse the per-row pattern from Task 3.1.
 
-  Co-Authored-By: Claude <noreply@anthropic.com>"
+If Filament v3's custom query/data-source API is unclear to you (you'd be guessing about `query()` returning a Collection vs a Builder), reply BLOCKED: filament-custom-query-needs-opus.
 
-If anything is fail, reply BLOCKED with which step.
+Write a Pest test with two tenants asserting all accounts appear in the list with correct balances. Lint, commit with template.
 
-Reply DONE <sha> + table.
+Reply DONE <sha> or BLOCKED.
 ```
 
 ---
 
-## Wave 12 — Workflow + CLI remediation (7 tasks, parallel-eligible)
+## Wave 11 — Manual admin smoke
 
-Each task touches a different file. Independent. Use worktrees if running concurrently.
-
-### Task 5.1 — model: **Sonnet**
+### Prompt 11/21 (model: **Sonnet**, requires you-the-human in a browser) — Task 4.4
 
 ```
 <PREAMBLE>
 
-Execute Task 5.1 from Section 11 (BlockchainWithdrawalActivities).
+Bundle:
+- Task 4.4 (Manual smoke of admin panel after Waves 6-10)
 
-1. Open `app/Domain/Wallet/Workflows/Activities/BlockchainWithdrawalActivities.php`.
-2. Identify the method signatures: which methods take an account uuid as input?
-3. Write a failing test that invokes one of those methods outside an HTTP request (e.g. via `dispatch_sync`) and asserts the write lands in the tenant DB (not central).
-4. Add `use App\Domain\Shared\Concerns\WithTenantContext;` to the class.
-5. Wrap each `DB::table('account_balance_locks')->insert(...)`, `DB::table('transactions')->insert(...)` and similar raw writes in `$this->withAccountTenancy($accountUuid, fn () => /* the write */);`.
-6. Run the test; expect green.
-7. Lint, commit.
+Read Section 10 Task 4.4. This needs you (the human) at a browser. The agent's job is to:
+1. Tell you to start the dev server (`php artisan serve`) and open http://localhost:8000/admin.
+2. Walk you through each smoke step.
+3. After you report results, capture them into `docs/superpowers/plans/2026-05-16-account-tenancy-canonicalization-screenshots/` (create dir if missing). If you provide screenshots, save them. If not, capture text-summary results.
+4. Commit the evidence with the template from Task 4.4.
 
-If the test environment cannot exercise the tenant swap (testing env falls back to default), document the limitation in the test and add a smoke-test entry analogous to Task 1.6's pattern.
-
-Reply DONE <sha>.
-```
-
-### Task 5.2 — model: **Sonnet**
-
-```
-<PREAMBLE>
-
-Same pattern as Task 5.1, applied to `app/Domain/Wallet/Workflows/Activities/BlockchainDepositActivities.php`. Follow Task 5.1's structure verbatim.
-
-Reply DONE <sha>.
-```
-
-### Task 5.3 — model: **Sonnet**
-
-```
-<PREAMBLE>
-
-Same pattern as Task 5.1, applied to `app/Domain/Lending/Workflows/Activities/LoanApplicationActivities.php` (lines around 30, 89, 142).
-
-Reply DONE <sha>.
-```
-
-### Task 5.4 — model: **Sonnet**
-
-```
-<PREAMBLE>
-
-Execute Task 5.4 from Section 11 (MigrateLegacyBalances command).
-
-1. Open `app/Console/Commands/MigrateLegacyBalances.php`.
-2. Add a `--tenant=<uuid>` option to the command signature. When provided, the command should resolve the tenant and init Stancl tenancy before running its existing logic.
-3. When the option is NOT provided, the command should refuse to run with a clear error directing the operator to specify a tenant (or use `--all-tenants` if you add that as a separate iteration helper).
-4. Wrap balance creation in `WithTenantContext::withAccountTenancy(...)` or the tenant-init pattern.
-5. Write a Pest test for both code paths (with --tenant and without).
-6. Lint, commit.
-
-Reply DONE <sha>.
-```
-
-### Task 5.5 — model: **Sonnet**
-
-```
-<PREAMBLE>
-
-Same as Task 5.4 for `app/Console/Commands/RunLoadTests.php`. Add tenant scoping; refuse to run without explicit tenant context.
-
-Reply DONE <sha>.
-```
-
-### Task 5.6 — model: **Sonnet**
-
-```
-<PREAMBLE>
-
-Same as Task 5.4 for `app/Console/Commands/RepairOwnerMembership.php`. Add `--tenant=<uuid>` option; wrap writes in `withAccountTenancy`.
-
-Reply DONE <sha>.
-```
-
-### Task 5.7 — model: **Sonnet**
-
-```
-<PREAMBLE>
-
-Execute Task 5.7 from Section 11 (DemoDataSeeder).
-
-1. Open `database/seeders/DemoDataSeeder.php`.
-2. For every `Account::factory()->create()` or related call, wrap in `WithTenantContext::withAccountTenancy(...)`. The seeder must establish a tenant per demo user before creating accounts.
-3. Add a smoke test asserting the seeder runs without throwing and the resulting accounts are in tenant DBs.
-4. Lint, commit.
-
-Reply DONE <sha>.
+Reply DONE <sha> with a pass/fail table for each step, or BLOCKED with the failing step.
 ```
 
 ---
 
-## Wave 13 — Invariant guard (2 tasks, sequential)
+## Wave 12 — Workflow + CLI remediation (all in one)
 
-Task 6.2 depends on 6.1. Don't run in parallel.
-
-### Task 6.1 — model: **Sonnet**
+### Prompt 12/21 (model: **Sonnet**) — Tasks 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7
 
 ```
 <PREAMBLE>
 
-Execute Task 6.1 from Section 12 (Failing test that writing without tenancy throws).
+Bundle (each file independent; do in this order, one commit per file):
+1. Task 5.1 — BlockchainWithdrawalActivities (lines 197, 282, 296)
+2. Task 5.2 — BlockchainDepositActivities
+3. Task 5.3 — LoanApplicationActivities (lines 30, 89, 142)
+4. Task 5.4 — MigrateLegacyBalances command (add --tenant=<uuid> option)
+5. Task 5.5 — RunLoadTests command
+6. Task 5.6 — RepairOwnerMembership command (add --tenant=<uuid> option)
+7. Task 5.7 — DemoDataSeeder
 
-Copy the test code from Task 6.1 Step 1 verbatim. Run, expect failure (no guard yet).
+Read Section 11 of the plan. Pattern for all activities/commands:
+- Add `use App\Domain\Shared\Concerns\WithTenantContext;` to the class.
+- Wrap each raw `DB::table('accounts'|'account_balances'|'transactions'|'account_balance_locks')->...->insert/update` call in `$this->withAccountTenancy($accountUuid, fn () => /* the write */);`.
+- For commands: add `--tenant=<uuid>` option that resolves the tenant and calls `withAccountTenancy` for the duration of the command body.
 
-Commit test-only:
-  git add tests/Feature/Domain/Account/TenancyInvariantTest.php
-  git commit -m "test(account): failing invariant — writes without tenancy must throw
+For each task: write a failing Pest test that proves the write lands in the tenant DB (not central). If the test env can't validate the swap, add a doc note and a runtime smoke entry like Task 1.6 did.
 
-  Red. Guard impl in next commit.
+Commit messages: `fix(<domain>): require tenant context for <file>` with the standard co-author footer.
 
-  Co-Authored-By: Claude <noreply@anthropic.com>"
+If any single task gets stuck, reply BLOCKED at <task>: <reason>. Do not skip — that task gets escalated and re-issued.
 
-Reply DONE <sha>.
-```
-
-### Task 6.2 — model: **Sonnet**
-
-```
-<PREAMBLE>
-
-Execute Task 6.2 from Section 12 (Add guard to Account and AccountBalance).
-
-1. Create `app/Domain/Shared/Traits/RequiresTenantContext.php` exactly as shown in Task 6.2 Step 1.
-2. Add `use App\Domain\Shared\Traits\RequiresTenantContext;` and `use RequiresTenantContext;` to:
-   - `app/Domain/Account/Models/Account.php`
-   - `app/Domain/Account/Models/AccountBalance.php`
-3. Run the invariant test from Task 6.1 — must pass.
-4. Run the full Pest suite. If anything else fails: those failures are real bugs — code paths that mutate Account without initializing tenancy. DO NOT weaken the guard. Reply BLOCKED with the list of failing tests.
-5. If all green: lint, commit.
-
-Reply DONE <sha> or BLOCKED: tests-N-Y-failing-revealing-untenant-write-paths.
+Reply DONE with one SHA per task or BLOCKED.
 ```
 
 ---
 
-## Wave 14 — Full suite verification (1 task, sequential gate)
+## Wave 13 — Invariant guard (red + green)
 
-Hard gate before any data migration.
-
-### Task 6.3 — model: **Sonnet**
+### Prompt 13/21 (model: **Sonnet**) — Tasks 6.1, 6.2
 
 ```
 <PREAMBLE>
 
-Execute Task 6.3 from Section 12.
+Bundle:
+1. Task 6.1 (Failing test that writes without tenancy throw) — commit red
+2. Task 6.2 (Add RequiresTenantContext trait + apply to Account & AccountBalance) — commit green
 
-Run:
-  DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 \
-  DB_DATABASE=maphapay_backoffice_test DB_USERNAME=maphapay_test \
-  DB_PASSWORD='maphapay_test_password' \
-  "$PHP" -d max_execution_time=600 ./vendor/bin/pest --parallel --stop-on-failure
+Read Section 12 of the plan.
 
-If green: reply DONE suite-green.
-If red: reply BLOCKED with the test ID and one-line failure summary. Stop. The data migration must NOT run until the suite is green.
+Task 6.2 Step 4 will run the full suite. If anything other than 6.1's test goes red, those reds are the bugs this guard is designed to catch — code paths that mutate Account without initializing tenancy. DO NOT weaken the guard. DO NOT widen test exclusions. Reply BLOCKED at task 6.2: tests-X-Y-Z-failing-revealing-missed-write-paths with the list.
 
-No code changes in this task. No commit.
+Otherwise commit per the standard template.
+
+Reply DONE 6.1=<sha> 6.2=<sha> or BLOCKED.
 ```
 
 ---
 
-## Wave 15 — Build the sweep command (1 task, sequential)
+## Wave 14 — Full suite verification (hard gate)
 
-### Task 7.1 — model: **Sonnet**
+### Prompt 14/21 (model: **Sonnet**) — Task 6.3
 
 ```
 <PREAMBLE>
 
-Execute Task 7.1 from Section 13 (Build SweepOrphanCentralBalancesCommand).
+Bundle:
+- Task 6.3 (Run the full Pest suite end-to-end)
 
-The command must:
-- Be named `maphapay:sweep-orphan-central-balances`
-- Accept `--apply` flag (default is dry-run)
-- Accept `--user=<email|uuid>` to scope to one user (for the canary run)
-- Query `central.accounts` joined with `central.account_balances` (use connection 'mysql' explicitly).
-- For each result, look up the user's `AccountMembership` (in central) and find the tenant_id.
-- Init Stancl tenancy for that tenant.
-- Check if `account_balances` for `(membership.account_uuid, asset_code)` already exists in tenant DB.
-- If not: build an insert plan with the central balance value.
-- With `--apply`: idempotently `AccountBalance::updateOrCreate([…], ['balance' => …])` and zero the central balance row in the same DB transaction (where possible — cross-DB transactions are tricky; document the ordering carefully).
-- Without `--apply`: print a table of planned changes (account_uuid, asset_code, amount, src tenant).
+Read Section 12 Task 6.3. No code changes, no commits.
 
-Write a Pest test with two-tenant fixture proving:
-1. Dry run produces a plan, doesn't mutate.
-2. --apply migrates, second run finds nothing to do (idempotent).
-
-Lint, commit.
-
-Reply DONE <sha>.
+If green: reply DONE suite-green. Wave 15 is unblocked.
+If red: reply BLOCKED with the first failing test id + 1-line failure summary. STOP. The data migration in Wave 15+ MUST NOT proceed until the suite is green — fix any reds in a follow-up before running Wave 15.
 ```
 
 ---
 
-## Wave 16 — Production data migration for one user (1 task, sequential, REQUIRES HUMAN APPROVAL)
+## Wave 15 — Build the migration command
 
-### Task 7.2 — model: **Sonnet**
+### Prompt 15/21 (model: **Sonnet**) — Task 7.1
 
 ```
 <PREAMBLE>
 
-Execute Task 7.2 from Section 13 (Apply migration in production for lihledlam@gmail.com).
+Bundle:
+- Task 7.1 (Build SweepOrphanCentralBalancesCommand)
 
-CRITICAL: this mutates production data. Before running --apply:
-1. Run --user=lihledlam@gmail.com WITHOUT --apply first. Print the plan. Reply STOP-FOR-REVIEW with the plan; wait for human confirmation before continuing.
-2. Only after the human replies "approved", run with --apply.
+Read Section 13 Task 7.1.
 
-After --apply succeeds:
-3. Via cmd:run, verify the tenant DB for tenant 4f601144-3214-4921-9451-d8cb69afec67 now has an SZL `account_balances` row with `balance = 12922900`.
-4. Verify the central balance row for account a633f32c-… is now 0.
-5. Ask the human (lihledlam@gmail.com) to open the mobile app and pull-to-refresh; confirm the balance displays E 129,229.00.
+Requirements (from the plan):
+- Command name: `maphapay:sweep-orphan-central-balances`
+- Options: `--apply` (default dry-run), `--user=<email|uuid>` (scope to one user)
+- Joins central.accounts with central.account_balances; for each, resolves AccountMembership for the user (NOTE: membership.account_uuid will likely differ from the central accounts.uuid — match by user_uuid).
+- Inits tenancy per tenant; checks if tenant `account_balances` already has a row for (membership.account_uuid, asset_code).
+- With --apply: idempotent `AccountBalance::updateOrCreate([...], ['balance' => ...])` AND zero out the central balance row.
+- Without --apply: prints a table.
 
-Save the cmd:run outputs of dry-run and apply to:
+Pest test must prove:
+1. Dry run produces correct plan, no mutation.
+2. --apply migrates correctly.
+3. Re-running --apply is a no-op (idempotent).
+
+Lint, commit with template.
+
+Reply DONE <sha> or BLOCKED.
+```
+
+---
+
+## Wave 16 — Production data migration for the affected user (HUMAN APPROVAL REQUIRED)
+
+### Prompt 16/21 (model: **Sonnet**) — Task 7.2
+
+```
+<PREAMBLE>
+
+Bundle:
+- Task 7.2 (Apply migration in production for lihledlam@gmail.com)
+
+Read Section 13 Task 7.2. This mutates production data.
+
+Mandatory flow:
+1. Run --user=lihledlam@gmail.com WITHOUT --apply via:
+
+     "$PHP" vendor/laravel/cloud-cli/builds/cloud cmd:run env-a163f1c0-2c3b-4aef-a936-dfa1f14adc63 \
+       --cmd='php artisan maphapay:sweep-orphan-central-balances --user=lihledlam@gmail.com'
+
+2. Print the full plan output.
+3. Reply STOP-FOR-REVIEW <plan-summary>. Wait for human to reply "approved" before continuing.
+4. On approval, re-run with --apply.
+5. Verify via cmd:run that:
+   - Tenant DB tenant4f601144-3214-4921-9451-d8cb69afec67 has account_balances row (account_uuid=dcb74026-..., asset_code=SZL, balance=12922900).
+   - Central account_balances row for account a633f32c-... is now 0.
+6. Tell the human to open the mobile app, pull to refresh, confirm E 129,229.00 displays.
+
+Save full cmd:run output of both dry-run and --apply to:
   docs/migration-runs/2026-05-16-orphan-sweep-user-2-dryrun.txt
   docs/migration-runs/2026-05-16-orphan-sweep-user-2-apply.txt
 
@@ -762,240 +450,173 @@ Commit:
 
   Co-Authored-By: Claude <noreply@anthropic.com>"
 
-Reply DONE <sha> mobile-shows-correct-balance:yes/no.
+Reply DONE <sha> mobile-balance-confirmed=yes/no or BLOCKED.
 ```
 
 ---
 
-## Wave 17 — Production data migration for all users (1 task, REQUIRES HUMAN APPROVAL)
+## Wave 17 — Production data migration for ALL users (HUMAN APPROVAL REQUIRED)
 
-### Task 7.3 — model: **Sonnet**
+### Prompt 17/21 (model: **Sonnet**) — Task 7.3
 
 ```
 <PREAMBLE>
 
-Execute Task 7.3 from Section 13 (Apply migration for all remaining affected users).
+Bundle:
+- Task 7.3 (Apply migration for all remaining affected users)
 
-Same approval flow as Task 7.2:
-1. Run without --apply; print plan; STOP-FOR-REVIEW.
-2. On approval, run with --apply.
-3. Save outputs to `docs/migration-runs/2026-05-16-orphan-sweep-all-{dryrun,apply}.txt`.
-4. Spot-check 3 random affected users via cmd:run.
+Same approval flow as Wave 16:
+1. Dry run without --user, without --apply. Print full plan.
+2. STOP-FOR-REVIEW; wait for "approved".
+3. Run with --apply.
+4. Save outputs to docs/migration-runs/2026-05-16-orphan-sweep-all-{dryrun,apply}.txt.
+5. Spot-check 3 random affected users via cmd:run; confirm each tenant DB now has the expected SZL balance row.
 
-Commit the runbook. Reply DONE <sha>.
+Commit runbook with standard template.
+
+Reply DONE <sha> spot-checks=<count-passing>/3 or BLOCKED.
 ```
 
 ---
 
-## Wave 18 — End-to-end smoke + cron sweep (2 tasks, parallel-eligible)
+## Wave 18 — E2E smoke + cron drift detection
 
-### Task 7.4 — model: **Sonnet**
-
-```
-<PREAMBLE>
-
-Execute Task 7.4 from Section 13 (End-to-end smoke from prod).
-
-For at least 2 users (lihledlam@gmail.com + one other migrated user), perform:
-1. Admin opens AccountResource list — note balance.
-2. Mobile dashboard — note balance.
-3. Admin funds E 1.00 via FundAccountPage.
-4. Mobile pulls-to-refresh; assert balance increased by E 1.00.
-5. Mobile send-money of E 1.00 to a peer.
-6. Admin AccountResource refresh; assert balance decreased by E 1.00.
-
-Document in `docs/migration-runs/2026-05-16-e2e-smoke.md`. Commit. Reply DONE <sha> + pass/fail.
-```
-
-### Task 7.5 — model: **Sonnet**
+### Prompt 18/21 (model: **Sonnet**) — Tasks 7.4, 7.5
 
 ```
 <PREAMBLE>
 
-Execute Task 7.5 from Section 13 (Cron sweep for drift detection).
+Bundle:
+1. Task 7.4 (End-to-end smoke from production)
+2. Task 7.5 (Cron sweep for drift detection)
 
-1. In `routes/console.php` (or equivalent), schedule `php artisan maphapay:sweep-orphan-central-balances` (no --apply) to run nightly at e.g. 02:00.
-2. Wrap in: if it finds ANY drift, send an alert (use the existing log channel or any monitoring hook in the codebase — find an existing alert pattern, don't invent a new one).
-3. Pest test for the schedule registration.
-4. Lint, commit.
+Task 7.4 requires the human in a browser + on the mobile app. Walk them through:
+- 2 users (lihledlam@gmail.com + one other migrated)
+- For each: admin opens AccountResource → notes balance; mobile dashboard → notes balance (must match); admin funds E 1.00 via FundAccountPage; mobile pull-to-refresh → balance up by E 1.00; mobile sends E 1.00 to a peer; admin refreshes → balance down by E 1.00.
+- Document each step + result in docs/migration-runs/2026-05-16-e2e-smoke.md.
 
-Reply DONE <sha>.
+Task 7.5:
+- In routes/console.php (or equivalent scheduling file), schedule the sweep daily at 02:00 with no --apply.
+- Find an existing alerting/log channel in the codebase (don't invent a new one); wire it so any nonzero drift triggers an alert.
+- Pest test for the schedule registration.
+
+One commit per task. Reply DONE 7.4=<sha> 7.5=<sha> with e2e pass/fail summary, or BLOCKED.
 ```
 
 ---
 
-## Wave 19 — Decommission (3 tasks, sequential within wave)
+## Wave 19 — Decommission (rename + guard + remove fallback)
 
-Task 8.3 is intentionally a separate 30-day-later task — NOT in this wave.
-
-### Task 8.1 — model: **Sonnet**
+### Prompt 19/21 (model: **Sonnet**) — Tasks 8.1, 8.2, 8.4
 
 ```
 <PREAMBLE>
 
-Execute Task 8.1 from Section 14 (Rename central tables to legacy).
+Bundle (sequential within session; commit per task; push only at the end):
+1. Task 8.1 (Rename central accounts/account_balances → *_legacy_pre_canonicalization)
+2. Task 8.2 (AssertNoCentralAccountAccessCommand + schedule)
+3. Task 8.4 (Remove UsesTenantConnection silent-fallback behavior)
 
-1. Create the migration exactly as shown in Task 8.1 Step 1.
-2. BEFORE committing: run `git grep -nE "DB::connection\\(\\s*'mysql'\\s*\\)->table\\(\\s*'(accounts|account_balances)'\\s*\\)" app/` and `git grep -F "Schema::connection('mysql')->table('accounts')" app/`. If anything matches, those code paths will break — list them and reply BLOCKED: <paths> still reference central tables directly.
-3. If grep is clean: run the migration locally (test DB) to confirm it executes. Roll back to leave local clean.
-4. Commit. DO NOT push yet — Task 8.2 ships in the same wave.
+Read Section 14 of the plan.
 
-Reply DONE <sha>.
-```
+Pre-check before Task 8.1 commits:
+  git grep -nE "DB::connection\(\s*'mysql'\s*\)->table\(\s*'(accounts|account_balances)'\s*\)" app/
+  git grep -F "Schema::connection('mysql')->table('accounts')" app/
 
-### Task 8.2 — model: **Sonnet**
+If anything matches, reply BLOCKED at 8.1: <paths-still-using-central-tables> — those paths must be migrated to use tenant context FIRST. Do not proceed to rename.
 
-```
-<PREAMBLE>
+If clean: run the rename migration locally on test DB to confirm it executes, roll back to leave local clean, commit.
 
-Execute Task 8.2 from Section 14 (Add CI guard that central tables stay quiet).
+Task 8.4 will likely surface latent paths. If `vendor/bin/pest --parallel` goes red after applying 8.4: reply BLOCKED at 8.4 with the failing tests. DO NOT weaken the throw — those tests reveal the bug class this whole plan exists to kill.
 
-1. Create `app/Console/Commands/AssertNoCentralAccountAccessCommand.php` that:
-   - Queries `accounts_legacy_pre_canonicalization` row count.
-   - Compares against a baseline file at `storage/app/central-legacy-baseline.json` (you write it on first run).
-   - Asserts row count hasn't changed. Throws if it has.
-2. Schedule nightly in `routes/console.php`.
-3. Pest test.
-4. Lint, commit.
+After all three pass: push the wave in one push.
 
-Reply DONE <sha>.
-```
-
-### Task 8.4 — model: **Sonnet**
-
-```
-<PREAMBLE>
-
-Execute Task 8.4 from Section 14 (Remove UsesTenantConnection fallback).
-
-1. Open `app/Domain/Shared/Traits/UsesTenantConnection.php`.
-2. Change `getConnectionName()` to throw `RuntimeException` if `app(Tenancy::class)->initialized === false` and `app()->environment() !== 'testing'`.
-3. Run the full Pest suite. Any failure indicates a code path that still reaches Account without tenancy — fix that path, don't weaken the guard.
-4. Lint, commit.
-
-If suite goes red and you can't trivially fix the failing path: reply BLOCKED with the failing tests.
-
-Reply DONE <sha>.
-
-Push the whole Wave-19 chain (Tasks 8.1 + 8.2 + 8.4) at the end.
+Reply DONE 8.1=<sha> 8.2=<sha> 8.4=<sha> or BLOCKED.
 ```
 
 ---
 
-## Wave 20 — Documentation (3 tasks, parallel-eligible)
+## Wave 20 — Documentation
 
-### Task 9.1 — model: **Haiku**
-
-```
-<PREAMBLE>
-
-Execute Task 9.1 from Section 15 (Update CLAUDE.md).
-
-Add a `## Multi-Tenancy Contract` section under the existing structure. Required content:
-- Tenant DB is canonical for Account and AccountBalance.
-- HTTP routes get tenancy from `account.context` middleware (link to ResolveAccountContext.php).
-- Non-HTTP code must use `WithTenantContext::withAccountTenancy()`.
-- Filament admin uses `WithAccountTenancy` concern on every record page.
-- Cross-tenant aggregates iterate `Tenant::on('central')->lazy()`.
-- Link: `docs/superpowers/plans/2026-05-16-account-tenancy-canonicalization.md`
-
-Commit. Reply DONE <sha>.
-```
-
-### Task 9.2 — model: **Haiku**
+### Prompt 20/21 (model: **Haiku**) — Tasks 9.1, 9.2, 9.3
 
 ```
 <PREAMBLE>
 
-Execute Task 9.2 from Section 15 (Write ADR).
+Bundle (one commit per doc):
+1. Task 9.1 (Add "Multi-Tenancy Contract" section to CLAUDE.md)
+2. Task 9.2 (Create docs/architecture/ADR-001-account-tenancy.md)
+3. Task 9.3 (Append "Final Resolution" to docs/INVESTIGATION_BALANCE_BUG_2026_05_16.md)
 
-Create `docs/architecture/ADR-001-account-tenancy.md` using a standard ADR template:
-- Title
-- Status: Accepted
-- Date: 2026-05-16
-- Context (the split-brain bug, root cause)
-- Decision (Direction A — tenant canonical)
-- Alternatives considered (Direction B, Direction C from the plan)
-- Consequences (positive + negative)
-- Implementation pointer (link to the plan)
+Read Section 15 of the plan. Each task's content requirements are spelled out there. Standard ADR template for 9.2: Title / Status / Date / Context / Decision / Alternatives / Consequences / Implementation pointer.
 
-Commit. Reply DONE <sha>.
-```
+Commits use `docs:` prefix with the standard co-author footer.
 
-### Task 9.3 — model: **Haiku**
-
-```
-<PREAMBLE>
-
-Execute Task 9.3 from Section 15 (Update investigation doc).
-
-Open `docs/INVESTIGATION_BALANCE_BUG_2026_05_16.md`. Append a `## Final Resolution` section pointing to the plan and the merged refactor branch. Mark the original investigation status as "Superseded by refactor; see plan".
-
-Commit. Reply DONE <sha>.
+Reply DONE 9.1=<sha> 9.2=<sha> 9.3=<sha> or BLOCKED.
 ```
 
 ---
 
-## Wave 21 — Drop legacy tables (1 task, scheduled +30 days)
+## Wave 21 — Drop legacy tables (run +30 days after Wave 17 — NOT NOW)
 
-DO NOT run within 30 days of Wave 17 completion. Tracker only — set a reminder.
-
-### Task 8.3 — model: **Sonnet**
+### Prompt 21/21 (model: **Sonnet**) — Task 8.3
 
 ```
 <PREAMBLE>
 
-Execute Task 8.3 from Section 14 (Drop central accounts_legacy tables).
+Bundle:
+- Task 8.3 (DROP central accounts_legacy_pre_canonicalization tables)
 
-Pre-conditions to verify before running:
-- At least 30 days have elapsed since Wave 17's --apply commit.
-- `AssertNoCentralAccountAccessCommand` has run nightly with zero drift for that entire window.
+PRE-CONDITIONS (refuse to run if any fail; reply BLOCKED):
+- At least 30 days have elapsed since the Wave 17 --apply commit was merged to main.
+- AssertNoCentralAccountAccessCommand has run nightly with zero drift across the entire 30-day window. Read the recorded baselines + latest results.
 - A fresh Laravel Cloud DB snapshot exists and is verified restorable.
 
-Then:
-1. Create the drop migration.
-2. Run on staging if available.
-3. Apply on prod during a scheduled window.
-4. Commit, push.
+If pre-conditions all pass:
+1. Create the drop migration (down() restores via a no-op stub with a clear comment, since this is intentionally irreversible).
+2. Run on staging if available; if not, schedule a maintenance window with the human.
+3. Apply on prod via the standard deploy flow.
+4. Commit with template.
 
-Reply DONE <sha> tables-dropped-at <utc-timestamp>.
+Reply DONE <sha> dropped-at <utc-timestamp> or BLOCKED.
 ```
 
 ---
 
-## Wave-by-wave checklist (cut-and-keep)
+## Cut-and-keep checklist
 
-| Wave | Tasks | Parallel? | Model spread | Gate |
+| # | Wave | Tasks bundled | Model | Gate |
 |---|---|---|---|---|
-| 1 | 0.1 | n | Haiku | branch ready |
-| 2 | 0.2, 0.3, 1.5 | y (3 sessions) | Haiku × 3 | baseline known |
-| 3 | 1.1, 1.3 | y (2) | Sonnet × 2 | red tests in place |
-| 4 | 1.2, 1.4 | y (2) | Sonnet × 2 | concerns implemented + green |
-| 5 | 1.6 | n | Sonnet | integration smoke recorded |
-| 6 | 2.1 | n | Sonnet | canary test red |
-| 7 | 2.2 | n | Haiku | canary green; pattern proven |
-| 8 | 2.3-2.9 | y (up to 7) | Haiku ×5 + Sonnet ×2 | all single-record pages tenant-aware |
-| 9 | 3.1, 3.2 | y (2) | Sonnet + Haiku | RelMgr + Reconciliation done |
-| 10 | 4.1, 4.2, 4.3 | y (3) | Sonnet ×3 | cross-tenant aggregates correct |
-| 11 | 4.4 | n | Sonnet | admin manual smoke evidence captured |
-| 12 | 5.1-5.7 | y (up to 7) | Sonnet ×7 | workflow + CLI remediated |
-| 13 | 6.1, 6.2 | n | Sonnet ×2 | guard active |
-| 14 | 6.3 | n | Sonnet | full suite green |
-| 15 | 7.1 | n | Sonnet | sweep command shipped |
-| 16 | 7.2 | n | Sonnet | one-user migration verified |
-| 17 | 7.3 | n | Sonnet | all users migrated |
-| 18 | 7.4, 7.5 | y (2) | Sonnet ×2 | e2e + cron drift detection |
-| 19 | 8.1, 8.2, 8.4 | n (chain) | Sonnet ×3 | legacy renamed + guarded + fallback removed |
-| 20 | 9.1, 9.2, 9.3 | y (3) | Haiku ×3 | docs done |
-| 21 | 8.3 | n (+30d) | Sonnet | legacy dropped |
+| 1 | Branch bootstrap | 0.1 | Haiku | branch ready |
+| 2 | Baseline + factory | 0.2, 0.3, 1.5 | Haiku | baseline known, factory ready |
+| 3 | Foundation traits | 1.1, 1.3, 1.2, 1.4 | Sonnet | concerns + helper green |
+| 4 | Integration smoke | 1.6 | Sonnet | smoke recorded |
+| 5 | Phase 2 canary | 2.1, 2.2 | Sonnet | pattern proven on ViewAccount |
+| 6 | Mechanical pattern (Haiku-eligible) | 2.3, 2.7, 2.8, 2.9 | Haiku | misc record pages tenant-aware |
+| 7 | FundManagement (judgment) | 2.4, 2.5, 2.6 | Sonnet | mutation pages tenant-aware |
+| 8 | User-scoped surfaces | 3.1, 3.2 | Sonnet | RelMgr + Reconciliation |
+| 9 | Cross-tenant aggregates (easier) | 4.1, 4.3 | Sonnet | StatsOverview + widgets correct |
+| 10 | ListAccounts cross-tenant directory | 4.2 | Sonnet (escalate Opus if needed) | list view cross-tenant |
+| 11 | Manual admin smoke | 4.4 | Sonnet + human-in-browser | evidence captured |
+| 12 | Workflow + CLI remediation | 5.1-5.7 | Sonnet | all non-HTTP writes tenant-aware |
+| 13 | Invariant guard | 6.1, 6.2 | Sonnet | guard active |
+| 14 | Full suite gate | 6.3 | Sonnet | suite green |
+| 15 | Sweep command | 7.1 | Sonnet | migration tool shipped |
+| 16 | Prod migration: user-2 (approval) | 7.2 | Sonnet + human-approve | device confirmed E 129,229.00 |
+| 17 | Prod migration: all users (approval) | 7.3 | Sonnet + human-approve | all migrated |
+| 18 | E2E smoke + cron drift | 7.4, 7.5 | Sonnet + human-test | drift detection live |
+| 19 | Decommission | 8.1, 8.2, 8.4 | Sonnet | central renamed + guarded + fallback removed |
+| 20 | Documentation | 9.1, 9.2, 9.3 | Haiku | docs done |
+| 21 | Drop legacy (+30 days) | 8.3 | Sonnet | tables dropped |
 
-Total: 33 tasks across 21 waves. Max concurrent: 7 (Wave 8 or 12). Practical concurrent (no worktree pain): 1-2.
+**21 prompts. Sequential — one wave at a time. No worktrees.**
 
-## Token cost orientation (rough)
+### Model usage tally
 
-The plan is ~1700 lines; loading it once per session costs ~6-8k input tokens. Multiplied across 33 task sessions ≈ 200-260k input tokens just for context. Two ways to reduce:
+- Haiku: Waves 1, 2, 6, 20 → 4 sessions
+- Sonnet: Waves 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21 → 17 sessions
+- Opus: 0 (only as escalation fallback)
 
-1. **Excerpt strategy**: in each prompt, replace "Read sections 0, 1, 2, 3 of the plan" with the actual text of those sections inlined. Doubles each prompt's size but eliminates the agent's read step.
-2. **Slim preamble**: drop the requirement to read sections 0-3 for Haiku tasks (they don't need decision context). Keep it for Sonnet tasks that involve judgment.
-
-Apply if budget bites. For first run, leave as-is.
+The expensive part is the 17 Sonnet sessions. If budget bites, two levers (also in the original pack):
+1. **Inline plan excerpts**: replace "Read Section X" with the actual section text in the prompt. Bigger prompts, but the agent skips the read step.
+2. **Skip plan reading for tasks with full code blocks**: Wave 3 prompt could inline all four code blocks from the plan and tell the agent to type them out without reading.

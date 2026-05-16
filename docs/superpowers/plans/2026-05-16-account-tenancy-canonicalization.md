@@ -167,7 +167,7 @@ Category meanings:
 | 8 | Decommission central legacy tables (rename + guard) | Sonnet | 4 | 1 h | 7 |
 | 9 | Documentation (CLAUDE.md, ADR, runbook) | Haiku | 3 | 45 min | 8 |
 
-Phases 2, 3, 5 contain many similar Haiku-friendly sub-tasks ideal for `dispatching-parallel-agents`.
+Phases 2, 3, 5 contain many similar Haiku-friendly sub-tasks. Bundle siblings into a single sequential session per the execution pack — they share enough context that loading the plan once amortizes well.
 
 ---
 
@@ -1055,7 +1055,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 
 ### Tasks 2.3 - 2.9: Apply the same pattern to remaining single-record pages [Haiku each]
 
-Each sub-task is structurally identical to 2.2: write a tiny canary test (or copy 2.1's template), apply the concern, run tests, commit. Do them in a `subagent-driven-development` loop or `dispatching-parallel-agents` batch.
+Each sub-task is structurally identical to 2.2: write a tiny canary test (or copy 2.1's template), apply the concern, run tests, commit. Bundle the mechanical (Haiku) ones into a single sequential session per the execution pack; do the Sonnet ones (FundManagement, TransferBetweenAccounts) in their own bundle since they need design judgment.
 
 For each file below: copy the Section 8 pattern. Verify the file actually extends a Filament page class with a `mount` method. If it has a different lifecycle (e.g. a custom Livewire component), call `$this->initializeTenancyForRecord(...)` from whichever method runs first with the record in scope.
 
