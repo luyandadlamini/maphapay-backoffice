@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Domain\Account;
 
-use App\Domain\Account\Models\AccountMembership;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +22,26 @@ class SweepOrphanCentralBalancesCommandTest extends TestCase
     protected function connectionsToTransact(): array
     {
         return ['mysql', 'central'];
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // account_balances.asset_code has a FK to assets.code.
+        // Seed the SZL asset so balance inserts don't violate the constraint.
+        DB::table('assets')->insertOrIgnore([
+            'code'         => 'SZL',
+            'name'         => 'Swazi Lilangeni',
+            'type'         => 'fiat',
+            'precision'    => 2,
+            'is_active'    => 1,
+            'is_basket'    => 0,
+            'is_tradeable' => 1,
+            'metadata'     => '{}',
+            'created_at'   => now(),
+            'updated_at'   => now(),
+        ]);
     }
 
     #[Test]
@@ -52,11 +71,25 @@ class SweepOrphanCentralBalancesCommandTest extends TestCase
             'updated_at'   => now(),
         ]);
 
-        // Create an active membership pointing to a different (tenant-side) UUID.
-        AccountMembership::factory()->create([
+        // Insert tenant + membership via raw SQL to bypass Stancl's CreateDatabase
+        // DDL job, which invalidates MySQL prepared statement cache (error 1615).
+        $tenantId = (string) Str::uuid();
+        DB::connection('mysql')->table('tenants')->insert([
+            'id'   => $tenantId,
+            'name' => 'Test Tenant ' . $tenantId,
+            'data' => json_encode(['tenancy_db_name' => 'tenant' . $tenantId]),
+        ]);
+        DB::connection('mysql')->table('account_memberships')->insert([
+            'id'           => (string) Str::uuid(),
             'user_uuid'    => $user->uuid,
             'account_uuid' => $tenantUuid,
+            'tenant_id'    => $tenantId,
+            'account_type' => 'personal',
+            'role'         => 'owner',
             'status'       => 'active',
+            'joined_at'    => now(),
+            'created_at'   => now(),
+            'updated_at'   => now(),
         ]);
 
         // Dry-run (default — no --apply flag).
@@ -138,10 +171,23 @@ class SweepOrphanCentralBalancesCommandTest extends TestCase
             'updated_at'   => now(),
         ]);
 
-        AccountMembership::factory()->create([
+        $tenantId = (string) Str::uuid();
+        DB::connection('mysql')->table('tenants')->insert([
+            'id'   => $tenantId,
+            'name' => 'Test Tenant ' . $tenantId,
+            'data' => json_encode(['tenancy_db_name' => 'tenant' . $tenantId]),
+        ]);
+        DB::connection('mysql')->table('account_memberships')->insert([
+            'id'           => (string) Str::uuid(),
             'user_uuid'    => $user->uuid,
             'account_uuid' => $sharedUuid, // same UUID — already canonical
+            'tenant_id'    => $tenantId,
+            'account_type' => 'personal',
+            'role'         => 'owner',
             'status'       => 'active',
+            'joined_at'    => now(),
+            'created_at'   => now(),
+            'updated_at'   => now(),
         ]);
 
         $exitCode = Artisan::call('maphapay:sweep-orphan-central-balances');
