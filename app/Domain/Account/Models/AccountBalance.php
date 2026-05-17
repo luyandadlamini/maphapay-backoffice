@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Account\Models;
 
 use App\Domain\Asset\Models\Asset;
+use App\Domain\Shared\Traits\RequiresTenantContext;
 use App\Domain\Shared\Traits\UsesTenantConnection;
 use Database\Factories\AccountBalanceFactory;
 use Exception;
@@ -58,6 +59,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class AccountBalance extends Model
 {
+    use RequiresTenantContext;
     use UsesTenantConnection;
     use HasFactory;
 
