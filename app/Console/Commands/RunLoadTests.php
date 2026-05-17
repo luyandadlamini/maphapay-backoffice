@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Asset\Models\ExchangeRate;
+use App\Domain\Shared\Concerns\WithTenantContext;
 use App\Domain\Webhook\Models\Webhook;
 use App\Models\User;
 use Exception;
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\DB;
 
 class RunLoadTests extends Command
 {
+    use WithTenantContext;
+
     /**
      * The name and signature of the console command.
      *
@@ -161,7 +164,9 @@ class RunLoadTests extends Command
             // Create user and account directly
             $user = User::factory()->create();
             $account = Account::factory()->forUser($user)->create();
-            // Create initial balance for testing
+            // NOTE: withAccountTenancy() cannot be used here because factory-created
+            // accounts have no AccountMembership, so tenant lookup would throw.
+            // This command is intended for local/staging load testing only.
             AccountBalance::create(
                 [
                     'account_uuid' => $account->uuid,
@@ -185,7 +190,9 @@ class RunLoadTests extends Command
         for ($i = 0; $i < $concurrent; $i++) {
             $user = User::factory()->create();
             $account = Account::factory()->forUser($user)->create();
-            // Create initial balance for testing
+            // NOTE: withAccountTenancy() cannot be used here because factory-created
+            // accounts have no AccountMembership, so tenant lookup would throw.
+            // This command is intended for local/staging load testing only.
             AccountBalance::create(
                 [
                     'account_uuid' => $account->uuid,
