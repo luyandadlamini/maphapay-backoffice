@@ -27,7 +27,8 @@ return new class () extends Migration {
             $table->timestamps();
 
             $table->foreign('segment_id')->references('id')->on('customer_segments')->nullOnDelete();
-            $table->unique(['date', 'product_code', 'segment_id', 'currency']);
+            // Explicit name: auto-generated (66 chars) exceeds MySQL's 64-char identifier limit.
+            $table->unique(['date', 'product_code', 'segment_id', 'currency'], 'rev_rollups_date_prod_seg_cur_unique');
         });
     }
 
