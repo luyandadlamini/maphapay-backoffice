@@ -34,6 +34,8 @@ class MoneyRequest extends Model
 
     public const STATUS_FULFILLED = 'fulfilled';
 
+    protected $connection = 'central';
+
     public $incrementing = false;
 
     protected $keyType = 'string';

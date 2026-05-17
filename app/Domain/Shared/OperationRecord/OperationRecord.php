@@ -34,6 +34,8 @@ class OperationRecord extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    protected $connection = 'central';
+
     protected $fillable = [
         'id',
         'user_id',

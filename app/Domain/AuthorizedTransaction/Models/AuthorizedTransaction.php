@@ -64,6 +64,8 @@ class AuthorizedTransaction extends Model
 
     public const VERIFICATION_NONE = 'none';
 
+    protected $connection = 'central';
+
     protected $table = 'authorized_transactions';
 
     protected $fillable = [

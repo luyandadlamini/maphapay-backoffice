@@ -24,6 +24,8 @@ class AuthorizedTransactionBiometricChallenge extends Model
 
     public const CHALLENGE_TTL_SECONDS = 300;
 
+    protected $connection = 'central';
+
     protected $table = 'authorized_transaction_biometric_challenges';
 
     protected $fillable = [
