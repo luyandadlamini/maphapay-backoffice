@@ -128,10 +128,10 @@ class SweepOrphanCentralBalancesCommand extends Command
                     });
                 });
 
-                // Zero the central balance row (does NOT delete the account row —
-                // that is left for a future clean-up pass once data is verified).
+                // Zero the central balance row in the renamed legacy table (does NOT delete
+                // the account row — that is left for a future clean-up pass once data is verified).
                 DB::connection('mysql')
-                    ->table('account_balances')
+                    ->table('account_balances_legacy_pre_canonicalization')
                     ->where('account_uuid', $item['central_account_uuid'])
                     ->where('asset_code', $item['asset_code'])
                     ->update(['balance' => 0]);
