@@ -20,14 +20,14 @@ final class StandardUnayoTransactionsPage extends AbstractTransactionsPage
     {
         return [
             NavigationItem::make('Overview')
-                ->url(static fn () => StandardUnayoOverviewPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(StandardUnayoOverviewPage::getRouteName())),
+                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\StandardUnayo\StandardUnayoOverviewPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\StandardUnayo\StandardUnayoOverviewPage::getRouteName())),
             NavigationItem::make('Linked accounts')
-                ->url(static fn () => StandardUnayoLinkedAccountsPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(StandardUnayoLinkedAccountsPage::getRouteName())),
+                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\StandardUnayo\StandardUnayoLinkedAccountsPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\StandardUnayo\StandardUnayoLinkedAccountsPage::getRouteName())),
             NavigationItem::make('Transactions')
-                ->url(static fn () => StandardUnayoTransactionsPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(StandardUnayoTransactionsPage::getRouteName())),
+                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\StandardUnayo\StandardUnayoTransactionsPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\StandardUnayo\StandardUnayoTransactionsPage::getRouteName())),
         ];
     }
 }

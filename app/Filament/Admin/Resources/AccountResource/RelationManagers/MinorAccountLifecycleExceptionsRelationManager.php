@@ -4,15 +4,25 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\AccountResource\RelationManagers;
 
+use App\Filament\Admin\Concerns\WithAccountTenancy;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class MinorAccountLifecycleExceptionsRelationManager extends RelationManager
 {
+    use WithAccountTenancy;
+
     protected static string $relationship = 'lifecycleExceptions';
 
     protected static ?string $title = 'Lifecycle exceptions';
+
+    public function mount(): void
+    {
+        parent::mount();
+
+        $this->initializeTenancyForRecord($this->ownerRecord);
+    }
 
     public function isReadOnly(): bool
     {

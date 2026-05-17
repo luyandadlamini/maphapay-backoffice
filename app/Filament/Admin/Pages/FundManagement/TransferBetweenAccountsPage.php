@@ -7,15 +7,35 @@ namespace App\Filament\Admin\Pages\FundManagement;
 use App\Domain\Account\Models\Account;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\FundManagement\Services\FundManagementService;
+use App\Filament\Admin\Concerns\WithAccountTenancy;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Alignment;
-use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class TransferBetweenAccountsPage extends Page
 {
+    /**
+     * This page operates across TWO accounts that may belong to DIFFERENT tenants.
+     *
+     * Tenancy ordering for a cross-tenant transfer:
+     *   1. Source tenant  → initialised before the debit  (transfer_out side)
+     *   2. Destination tenant → initialised before the credit (transfer_in side)
+     *
+     * We use WithAccountTenancy which already handles switching (end → initialize)
+     * when the current tenant differs from the requested one.  The page calls
+     * initializeTenancyForRecord() twice during executeTransfer():
+     *   - once for the source account  (debit phase)
+     *   - once for the destination account (credit phase)
+     * The FundManagementService::transferBetweenAccounts() workflow is
+     * intentionally invoked inside the source-tenant context; a future refactor
+     * may split the workflow into per-tenant activities.  The transaction-projection
+     * writes (recordTransaction) for each side are wrapped around the matching
+     * tenant switch so that each write lands in its own tenant's DB connection.
+     */
+    use WithAccountTenancy;
+
     protected static ?string $navigationIcon = 'heroicon-o-arrows-right-left';
 
     protected static ?string $navigationLabel = 'Transfer';
@@ -123,7 +143,12 @@ class TransferBetweenAccountsPage extends Page
         ];
     }
 
-    protected function lookupSourceAccount(string $uuid): void
+    /**
+     * Look up the source account and initialize tenancy for its tenant.
+     *
+     * Exposed as a public method so that Livewire can call it directly in tests.
+     */
+    public function lookupSourceAccount(string $uuid): void
     {
         if (empty($uuid)) {
             $this->sourceAccount = null;
@@ -132,9 +157,23 @@ class TransferBetweenAccountsPage extends Page
         }
 
         $this->sourceAccount = Account::with('user')->where('uuid', $uuid)->first();
+
+        if ($this->sourceAccount !== null) {
+            // Initialize tenancy for the source tenant so that subsequent reads
+            // on this account use the correct DB connection.
+            $this->initializeTenancyForRecord($this->sourceAccount);
+        }
     }
 
-    protected function lookupDestinationAccount(string $uuid): void
+    /**
+     * Look up the destination account and initialize tenancy for its tenant.
+     *
+     * Exposed as a public method so that Livewire can call it directly in tests.
+     * WithAccountTenancy::initializeTenancyForRecord() will switch tenants
+     * (end → initialize) if the destination belongs to a different tenant than
+     * the source that was previously initialised.
+     */
+    public function lookupDestinationAccount(string $uuid): void
     {
         if (empty($uuid)) {
             $this->destinationAccount = null;
@@ -143,6 +182,11 @@ class TransferBetweenAccountsPage extends Page
         }
 
         $this->destinationAccount = Account::with('user')->where('uuid', $uuid)->first();
+
+        if ($this->destinationAccount !== null) {
+            // Switch to the destination tenant context after the source lookup.
+            $this->initializeTenancyForRecord($this->destinationAccount);
+        }
     }
 
     protected function executeTransfer(array $data): void
@@ -187,35 +231,59 @@ class TransferBetweenAccountsPage extends Page
             return;
         }
 
-        try {
-            DB::beginTransaction();
+        // Capture as local variables so PHPStan can narrow the non-null type
+        // after the early-return guard above (class properties are not narrowed
+        // inside try blocks because they could be mutated by other methods).
+        $sourceAccount = $this->sourceAccount;
+        $destinationAccount = $this->destinationAccount;
 
+        // Cross-tenant transfers cannot be made atomic with a single DB::transaction()
+        // because the source and destination accounts may live on different MySQL
+        // connections (one per tenant schema).  DB::beginTransaction() / commit() /
+        // rollBack() operate on a single connection handle; switching the active tenant
+        // mid-"transaction" means commit() fires on a different connection than
+        // beginTransaction() opened on, so the wrapper provides no actual atomicity.
+        //
+        // This transfer is therefore eventually-consistent: if the credit succeeds but
+        // the debit fails (or vice versa), a compensating sweep (see
+        // maphapay:sweep-orphan-central-balances) is required to reconcile.  XA
+        // transactions across two MySQL schemas are out of scope.  For same-tenant
+        // transfers the service layer handles intra-tenant atomicity internally.
+        try {
             $asset = Asset::where('code', $data['asset_code'])->firstOrFail();
             $amountInSmallestUnit = $asset->toSmallestUnit((float) $data['amount']);
 
+            // Step 1 — Source (debit) tenant context.
+            // Initialize tenancy for the source account's tenant before the debit
+            // leg of the transfer.  WithAccountTenancy switches tenants automatically
+            // when source and destination belong to different tenants.
+            $this->initializeTenancyForRecord($sourceAccount);
+
             $fundService = app(FundManagementService::class);
             $fundService->transferBetweenAccounts(
-                fromAccount: $this->sourceAccount,
-                toAccount: $this->destinationAccount,
+                fromAccount: $sourceAccount,
+                toAccount: $destinationAccount,
                 assetCode: $data['asset_code'],
                 amountInSmallestUnit: $amountInSmallestUnit,
                 reason: $data['reason'],
                 performedBy: auth()->user()
             );
 
-            DB::commit();
+            // Step 2 — Destination (credit) tenant context.
+            // After the transfer workflow completes, switch to the destination
+            // tenant so that any follow-up writes (notifications, projections)
+            // land in the correct tenant DB.
+            $this->initializeTenancyForRecord($destinationAccount);
 
             Notification::make()
                 ->title('Transfer Successful')
-                ->body("{$asset->formatAmount($amountInSmallestUnit)} transferred from {$this->sourceAccount->name} to {$this->destinationAccount->name}")
+                ->body("{$asset->formatAmount($amountInSmallestUnit)} transferred from {$sourceAccount->name} to {$destinationAccount->name}")
                 ->success()
                 ->send();
 
             $this->reset(['sourceAccountUuid', 'destinationAccountUuid', 'sourceAccount', 'destinationAccount']);
 
         } catch (Throwable $e) {
-            DB::rollBack();
-
             Notification::make()
                 ->title('Transfer Failed')
                 ->body($e->getMessage())

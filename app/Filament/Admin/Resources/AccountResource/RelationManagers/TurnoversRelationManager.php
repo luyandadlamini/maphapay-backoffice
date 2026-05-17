@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\AccountResource\RelationManagers;
 
+use App\Filament\Admin\Concerns\WithAccountTenancy;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -13,11 +14,20 @@ use Illuminate\Database\Eloquent\Builder;
 
 class TurnoversRelationManager extends RelationManager
 {
+    use WithAccountTenancy;
+
     protected static string $relationship = 'turnovers';
 
     protected static ?string $recordTitleAttribute = 'id';
 
     protected static ?string $title = 'Account Turnovers';
+
+    public function mount(): void
+    {
+        parent::mount();
+
+        $this->initializeTenancyForRecord($this->ownerRecord);
+    }
 
     public function table(Table $table): Table
     {

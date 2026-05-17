@@ -11,9 +11,11 @@ use App\Domain\Support\Models\SupportCase;
 use App\Filament\Admin\Resources\AdjustmentRequestResource;
 use App\Filament\Admin\Resources\KycDocumentResource;
 use App\Filament\Admin\Resources\SupportCaseResource;
+use App\Models\Tenant;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Carbon;
+use Stancl\Tenancy\Tenancy;
 
 class OperationsStatsOverview extends BaseWidget
 {
@@ -39,7 +41,12 @@ class OperationsStatsOverview extends BaseWidget
         $openCases = SupportCase::where('status', 'open')->count();
         $urgentCases = SupportCase::where('status', 'open')->where('priority', 'urgent')->count();
 
-        $pendingKyc = KycDocument::pending()->count();
+        $pendingKyc = 0;
+        $tenancy = app(Tenancy::class);
+        Tenant::on('central')->lazy()->each(function (Tenant $tenant) use (&$pendingKyc, $tenancy) {
+            $tenancy->initialize($tenant);
+            $pendingKyc += KycDocument::pending()->count();
+        });
 
         $pendingAdjustments = AdjustmentRequest::where('status', 'pending')->count();
 

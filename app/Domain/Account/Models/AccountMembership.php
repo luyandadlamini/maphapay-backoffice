@@ -5,12 +5,17 @@ declare(strict_types=1);
 namespace App\Domain\Account\Models;
 
 use App\Models\User;
+use Database\Factories\Domain\Account\Models\AccountMembershipFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AccountMembership extends Model
 {
+    /** @use HasFactory<AccountMembershipFactory> */
+    use HasFactory;
     use HasUuids;
 
     public const PERSONAL_ACCOUNT_TYPES = ['personal', 'standard'];
@@ -51,7 +56,11 @@ class AccountMembership extends Model
         return $query->where('account_uuid', $accountUuid);
     }
 
-    public function scopePersonalWallet($query)
+    /**
+     * @param  Builder<AccountMembership>  $query
+     * @return Builder<AccountMembership>
+     */
+    public function scopePersonalWallet(Builder $query): Builder
     {
         return $query->whereIn('account_type', self::PERSONAL_ACCOUNT_TYPES);
     }

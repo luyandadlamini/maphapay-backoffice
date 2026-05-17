@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Asset\Models\Asset;
+use App\Domain\Shared\Concerns\WithTenantContext;
 use App\Domain\Shared\Money\MoneyConverter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
@@ -16,12 +17,15 @@ use Throwable;
 
 class MigrateLegacyBalances extends Command
 {
+    use WithTenantContext;
+
     protected $signature = 'legacy:migrate-balances
                             {--dry-run : Log planned work only; perform no writes}
                             {--snapshot : Take a new balance snapshot (default: use existing snapshot)}
                             {--chunk=500 : Number of rows to process per batch}
                             {--threshold=0.01 : Parity check tolerance in major units (default 0.01)}
                             {--cohort= : Comma-separated list of legacy user IDs to process (default: all)}
+                            {--tenant= : Scope processing to a single tenant UUID (optional)}
                             {--force : Skip prerequisite confirmation prompt}';
 
     protected $description = 'Phase 17: Backfill FinAegis wallet balances from legacy MaphaPay (Option A — rolling snapshot with delta reconciliation)';
@@ -95,10 +99,15 @@ class MigrateLegacyBalances extends Command
         }
 
         $cohortIds = $this->getCohortIds();
+        $tenantUuid = $this->option('tenant') !== null ? (string) $this->option('tenant') : null;
+
+        if ($tenantUuid !== null) {
+            $this->info(sprintf('[tenant] Scoped to tenant UUID: %s', $tenantUuid));
+        }
 
         $this->info(sprintf('Processing %d user(s) in legacy cohort…', count($cohortIds)));
 
-        $status = $this->migrateBalances($asset, $cohortIds);
+        $status = $this->migrateBalances($asset, $cohortIds, $tenantUuid);
 
         $this->newLine();
         if ($status === Command::SUCCESS) {
@@ -113,7 +122,7 @@ class MigrateLegacyBalances extends Command
     /**
      * @param list<int> $cohortIds
      */
-    private function migrateBalances(Asset $asset, array $cohortIds): int
+    private function migrateBalances(Asset $asset, array $cohortIds, ?string $tenantUuid = null): int
     {
         $inserted = 0;
         $skipped = 0;
@@ -121,6 +130,17 @@ class MigrateLegacyBalances extends Command
         $deltaApplied = 0;
 
         $identityMap = $this->loadIdentityMap();
+
+        // When scoped to a single tenant, pre-load the set of account UUIDs that
+        // have an active membership for that tenant (central connection lookup).
+        $tenantAccountUuids = $tenantUuid !== null
+            ? DB::table('account_memberships')
+                ->where('tenant_id', $tenantUuid)
+                ->where('status', 'active')
+                ->pluck('account_uuid')
+                ->flip()
+                ->all()
+            : null;
 
         $legacyUsers = DB::connection('legacy')
             ->table('users')
@@ -130,6 +150,8 @@ class MigrateLegacyBalances extends Command
             ->chunk($this->chunkSize, function ($rows) use (
                 $asset,
                 $identityMap,
+                $tenantUuid,
+                $tenantAccountUuids,
                 &$inserted,
                 &$skipped,
                 &$parityFailed,
@@ -148,6 +170,15 @@ class MigrateLegacyBalances extends Command
                     $account = Account::query()->where('user_uuid', $finaegisUuid)->first();
                     if (! $account) {
                         $this->warn(sprintf('  [%s] No FinAegis account for finaegis_uuid=%s — skipping', $row->id, $finaegisUuid));
+                        $skipped++;
+
+                        continue;
+                    }
+
+                    // When scoped to a specific tenant, skip accounts that do not have
+                    // an active membership for that tenant.
+                    if ($tenantAccountUuids !== null && ! array_key_exists($account->uuid, $tenantAccountUuids)) {
+                        $this->line(sprintf('  [%s] Account %s not in tenant %s — skipping', $row->id, $account->uuid, $tenantUuid));
                         $skipped++;
 
                         continue;
@@ -198,22 +229,24 @@ class MigrateLegacyBalances extends Command
                     );
 
                     try {
-                        DB::transaction(function () use ($account, $asset, $amountMinor): void {
-                            $balance = AccountBalance::query()
-                                ->where('account_uuid', $account->uuid)
-                                ->where('asset_code', $asset->code)
-                                ->lockForUpdate()
-                                ->first();
+                        $this->withAccountTenancy($account->uuid, function () use ($account, $asset, $amountMinor): void {
+                            DB::transaction(function () use ($account, $asset, $amountMinor): void {
+                                $balance = AccountBalance::query()
+                                    ->where('account_uuid', $account->uuid)
+                                    ->where('asset_code', $asset->code)
+                                    ->lockForUpdate()
+                                    ->first();
 
-                            if ($balance) {
-                                $balance->update(['balance' => $amountMinor]);
-                            } else {
-                                AccountBalance::create([
-                                    'account_uuid' => $account->uuid,
-                                    'asset_code'   => $asset->code,
-                                    'balance'      => $amountMinor,
-                                ]);
-                            }
+                                if ($balance) {
+                                    $balance->update(['balance' => $amountMinor]);
+                                } else {
+                                    AccountBalance::create([
+                                        'account_uuid' => $account->uuid,
+                                        'asset_code'   => $asset->code,
+                                        'balance'      => $amountMinor,
+                                    ]);
+                                }
+                            });
                         });
 
                         $this->info(sprintf('  [%s] ✓ Migrated %s %s (minor: %d)', $row->id, $targetBalanceMajor, self::ASSET_CODE, $amountMinor));

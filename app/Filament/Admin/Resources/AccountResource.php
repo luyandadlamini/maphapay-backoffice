@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
-use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Services\AccountService;
 use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Filament\Admin\Resources\AccountResource\Pages;
@@ -19,7 +19,6 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,7 +30,7 @@ class AccountResource extends Resource
     use HasBackofficeWorkspace;
     use RespectsModuleVisibility;
 
-    protected static ?string $model = Account::class;
+    protected static ?string $model = AccountMembership::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
 
@@ -57,7 +56,7 @@ class AccountResource extends Resource
 
     public static function canEdit(Model $record): bool
     {
-        return false;
+        return app(BackofficeWorkspaceAccess::class)->canAccess(static::getBackofficeWorkspace());
     }
 
     public static function canDelete(Model $record): bool
@@ -70,6 +69,23 @@ class AccountResource extends Resource
         return false;
     }
 
+    /**
+     * Use AccountMembership (central DB) as the list data source.
+     *
+     * Account uses UsesTenantConnection so a single cross-tenant query is not
+     * possible. AccountMembership is on the central connection and provides all
+     * identifiers needed to render the list: account_uuid, tenant_id, user_uuid,
+     * account_type, role, and status. Balance and frozen state are omitted from
+     * the list — they are visible on the per-record ViewAccount detail page which
+     * initialises tenancy correctly.
+     *
+     * @return Builder<AccountMembership>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        return AccountMembership::query()->with('user');
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -79,51 +95,46 @@ class AccountResource extends Resource
                         ->description('Basic account details')
                         ->schema(
                             [
-                                Forms\Components\TextInput::make('uuid')
+                                Forms\Components\TextInput::make('account_uuid')
                                     ->label('Account UUID')
                                     ->disabled()
-                                    ->dehydrated(false)
-                                    ->visibleOn('edit'),
-                                Forms\Components\TextInput::make('name')
-                                    ->label('Account Name')
-                                    ->required()
-                                    ->maxLength(255)
-                                    ->placeholder('e.g., John Doe Savings'),
+                                    ->dehydrated(false),
+                                Forms\Components\TextInput::make('display_name')
+                                    ->label('Display Name')
+                                    ->disabled()
+                                    ->dehydrated(false),
                                 Forms\Components\TextInput::make('user_uuid')
                                     ->label('User UUID')
-                                    ->required()
-                                    ->placeholder('UUID of the account owner')
+                                    ->disabled()
+                                    ->dehydrated(false)
                                     ->helperText('The unique identifier of the user who owns this account'),
+                                Forms\Components\TextInput::make('tenant_id')
+                                    ->label('Tenant')
+                                    ->disabled()
+                                    ->dehydrated(false),
                             ]
                         )->columns(2),
 
-                    Section::make('Financial Details')
-                        ->description('Account balance and status')
+                    Section::make('Membership Details')
+                        ->description('Account membership status and role')
                         ->schema(
                             [
-                                Forms\Components\TextInput::make('balance')
-                                    ->label('Current Balance')
-                                    ->required()
-                                    ->numeric()
-                                    ->default(0)
-                                    ->prefix(BankingDisplay::currencySymbolForForms())
+                                Forms\Components\TextInput::make('account_type')
+                                    ->label('Account Type')
                                     ->disabled()
-                                    ->dehydrated(false)
-                                    ->helperText('Balance can only be modified through transactions'),
-                                Forms\Components\Toggle::make('frozen')
-                                    ->label('Account Frozen')
-                                    ->helperText('Frozen accounts cannot perform transactions')
-                                    ->reactive()
-                                    ->afterStateUpdated(
-                                        function ($state, $old): void {
-                                            if ($state !== $old && $old !== null) {
-                                                Notification::make()
-                                                    ->title($state ? 'Account will be frozen' : 'Account will be unfrozen')
-                                                    ->warning()
-                                                    ->send();
-                                            }
-                                        }
-                                    ),
+                                    ->dehydrated(false),
+                                Forms\Components\TextInput::make('role')
+                                    ->label('Role')
+                                    ->disabled()
+                                    ->dehydrated(false),
+                                Forms\Components\TextInput::make('status')
+                                    ->label('Status')
+                                    ->disabled()
+                                    ->dehydrated(false),
+                                Forms\Components\TextInput::make('verification_tier')
+                                    ->label('Verification Tier')
+                                    ->disabled()
+                                    ->dehydrated(false),
                             ]
                         )->columns(2),
                 ]
@@ -135,41 +146,53 @@ class AccountResource extends Resource
         return $table
             ->columns(
                 [
-                    Tables\Columns\TextColumn::make('uuid')
+                    Tables\Columns\TextColumn::make('account_uuid')
                         ->label('Account ID')
                         ->copyable()
                         ->copyMessage('Account ID copied')
                         ->copyMessageDuration(1500)
                         ->searchable(),
-                    Tables\Columns\TextColumn::make('name')
+                    Tables\Columns\TextColumn::make('display_name')
                         ->label('Account Name')
                         ->searchable()
                         ->sortable()
-                        ->weight('bold'),
+                        ->weight('bold')
+                        ->placeholder('—'),
                     Tables\Columns\TextColumn::make('user_uuid')
                         ->label('User ID')
                         ->copyable()
                         ->toggleable(),
-                    Tables\Columns\TextColumn::make('balance')
-                        ->label('Balance')
-                        ->money(config('banking.default_currency', 'SZL'), 100)
+                    Tables\Columns\TextColumn::make('tenant_id')
+                        ->label('Tenant')
+                        ->searchable()
                         ->sortable()
-                        ->color(fn ($state): string => $state < 0 ? 'danger' : 'success')
-                        ->weight('bold'),
-                    Tables\Columns\IconColumn::make('frozen')
+                        ->toggleable(),
+                    Tables\Columns\TextColumn::make('account_type')
+                        ->label('Type')
+                        ->badge()
+                        ->sortable(),
+                    Tables\Columns\TextColumn::make('role')
+                        ->label('Role')
+                        ->badge()
+                        ->sortable()
+                        ->toggleable(),
+                    Tables\Columns\TextColumn::make('status')
                         ->label('Status')
-                        ->boolean()
-                        ->trueIcon('heroicon-o-lock-closed')
-                        ->falseIcon('heroicon-o-lock-open')
-                        ->trueColor('danger')
-                        ->falseColor('success'),
-                    Tables\Columns\TextColumn::make('created_at')
-                        ->label('Created')
+                        ->badge()
+                        ->color(fn (string $state): string => match ($state) {
+                            'active'    => 'success',
+                            'suspended' => 'danger',
+                            'invited'   => 'warning',
+                            default     => 'gray',
+                        })
+                        ->sortable(),
+                    Tables\Columns\TextColumn::make('joined_at')
+                        ->label('Joined')
                         ->dateTime('M j, Y g:i A')
                         ->sortable()
                         ->toggleable(),
-                    Tables\Columns\TextColumn::make('updated_at')
-                        ->label('Last Updated')
+                    Tables\Columns\TextColumn::make('created_at')
+                        ->label('Created')
                         ->dateTime('M j, Y g:i A')
                         ->sortable()
                         ->toggleable(isToggledHiddenByDefault: true),
@@ -178,63 +201,32 @@ class AccountResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->filters(
                 [
-                    SelectFilter::make('frozen')
+                    SelectFilter::make('status')
                         ->label('Account Status')
                         ->options(
                             [
-                                '0' => 'Active',
-                                '1' => 'Frozen',
+                                'active'    => 'Active',
+                                'suspended' => 'Suspended',
+                                'invited'   => 'Invited',
+                                'removed'   => 'Removed',
                             ]
                         ),
-                    Filter::make('balance')
-                        ->form(
+                    SelectFilter::make('account_type')
+                        ->label('Account Type')
+                        ->options(
                             [
-                                Forms\Components\Select::make('balance_operator')
-                                    ->label('Balance')
-                                    ->options(
-                                        [
-                                            '>' => 'Greater than',
-                                            '<' => 'Less than',
-                                            '=' => 'Equal to',
-                                        ]
-                                    )
-                                    ->default('>')
-                                    ->required(),
-                                Forms\Components\TextInput::make('balance_amount')
-                                    ->label('Amount')
-                                    ->numeric()
-                                    ->default(0)
-                                    ->prefix(BankingDisplay::currencySymbolForForms())
-                                    ->required(),
+                                'personal' => 'Personal',
+                                'standard' => 'Standard',
+                                'merchant' => 'Merchant',
+                                'company'  => 'Company',
                             ]
-                        )
-                        ->query(
-                            function (Builder $query, array $data): Builder {
-                                return $query
-                                    ->when(
-                                        $data['balance_amount'] ?? null,
-                                        fn (Builder $query, $amount): Builder => $query->where(
-                                            'balance',
-                                            $data['balance_operator'] ?? '>',
-                                            $amount * 100
-                                        ),
-                                    );
-                            }
-                        )
-                        ->indicateUsing(
-                            function (array $data): ?string {
-                                if (! $data['balance_amount']) {
-                                    return null;
-                                }
-
-                                return 'Balance ' . $data['balance_operator'] . ' ' . BankingDisplay::majorUnitsAsString((float) $data['balance_amount']);
-                            }
                         ),
                 ]
             )
             ->actions(
                 [
-                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\ViewAction::make()
+                        ->url(fn (AccountMembership $record): string => static::getUrl('view', ['record' => $record->account_uuid])),
                     Tables\Actions\Action::make('deposit')
                         ->label('Deposit')
                         ->icon('heroicon-o-plus-circle')
@@ -257,18 +249,18 @@ class AccountResource extends Resource
                             ]
                         )
                         ->action(
-                            function (Account $record, array $data): void {
+                            function (AccountMembership $record, array $data): void {
                                 static::adminActionGovernance()->submitApprovalRequest(
                                     workspace: static::getBackofficeWorkspace(),
                                     action: 'backoffice.accounts.deposit',
                                     reason: $data['reason'],
-                                    targetType: Account::class,
-                                    targetIdentifier: (string) $record->getKey(),
+                                    targetType: AccountMembership::class,
+                                    targetIdentifier: $record->account_uuid,
                                     payload: [
                                         'operation'    => 'deposit',
                                         'asset_code'   => 'USD',
                                         'amount_minor' => (int) round((float) $data['amount'] * 100),
-                                        'account_uuid' => $record->uuid,
+                                        'account_uuid' => $record->account_uuid,
                                     ],
                                     metadata: [
                                         'mode'            => 'request_approve',
@@ -283,7 +275,7 @@ class AccountResource extends Resource
                                     ->send();
                             }
                         )
-                        ->visible(fn (Account $record): bool => ! $record->frozen),
+                        ->visible(fn (AccountMembership $record): bool => $record->status === 'active'),
                     Tables\Actions\Action::make('withdraw')
                         ->label('Withdraw')
                         ->icon('heroicon-o-minus-circle')
@@ -306,18 +298,17 @@ class AccountResource extends Resource
                             ]
                         )
                         ->action(
-                            function (Account $record, array $data): void {
+                            function (AccountMembership $record, array $data): void {
                                 static::adminActionGovernance()->submitApprovalRequest(
                                     workspace: static::getBackofficeWorkspace(),
                                     action: 'backoffice.accounts.withdraw',
                                     reason: $data['reason'],
-                                    targetType: Account::class,
-                                    targetIdentifier: (string) $record->getKey(),
+                                    targetType: AccountMembership::class,
+                                    targetIdentifier: $record->account_uuid,
                                     payload: [
-                                        'operation'             => 'withdraw',
-                                        'amount_minor'          => (int) round((float) $data['amount'] * 100),
-                                        'current_balance_minor' => $record->getBalance('USD'),
-                                        'account_uuid'          => $record->uuid,
+                                        'operation'    => 'withdraw',
+                                        'amount_minor' => (int) round((float) $data['amount'] * 100),
+                                        'account_uuid' => $record->account_uuid,
                                     ],
                                     metadata: [
                                         'mode'            => 'request_approve',
@@ -332,7 +323,7 @@ class AccountResource extends Resource
                                     ->send();
                             }
                         )
-                        ->visible(fn (Account $record): bool => ! $record->frozen),
+                        ->visible(fn (AccountMembership $record): bool => $record->status === 'active'),
                     Tables\Actions\Action::make('freeze')
                         ->label('Freeze')
                         ->icon('heroicon-o-lock-closed')
@@ -350,8 +341,8 @@ class AccountResource extends Resource
                             ]
                         )
                         ->action(
-                            function (Account $record, array $data): void {
-                                static::freezeAccount($record, $data['reason']);
+                            function (AccountMembership $record, array $data): void {
+                                static::freezeAccount($record->account_uuid, $data['reason']);
 
                                 Notification::make()
                                     ->title('Account Frozen')
@@ -360,7 +351,7 @@ class AccountResource extends Resource
                                     ->send();
                             }
                         )
-                        ->visible(fn (Account $record): bool => ! $record->frozen),
+                        ->visible(fn (AccountMembership $record): bool => $record->status === 'active'),
                     Tables\Actions\Action::make('unfreeze')
                         ->label('Unfreeze')
                         ->icon('heroicon-o-lock-open')
@@ -370,11 +361,9 @@ class AccountResource extends Resource
                         ->modalDescription('Are you sure you want to unfreeze this account? This will allow transactions again.')
                         ->modalSubmitActionLabel('Yes, unfreeze account')
                         ->action(
-                            function (Account $record): void {
-                                $oldValues = ['frozen' => true];
-
+                            function (AccountMembership $record): void {
                                 app(AccountService::class)->unfreeze(
-                                    $record->uuid,
+                                    $record->account_uuid,
                                     reason: 'account_resource_unfreeze',
                                     authorizedBy: auth()->user()?->email,
                                 );
@@ -384,12 +373,12 @@ class AccountResource extends Resource
                                     action: 'backoffice.accounts.unfrozen',
                                     reason: 'Account unfrozen from resource table',
                                     auditable: $record,
-                                    oldValues: $oldValues,
+                                    oldValues: ['frozen' => true],
                                     newValues: ['frozen' => false],
                                     metadata: [
                                         'mode'         => 'direct_elevated',
                                         'workspace'    => 'finance',
-                                        'account_uuid' => $record->uuid,
+                                        'account_uuid' => $record->account_uuid,
                                         'context'      => 'account_resource',
                                     ],
                                     tags: 'backoffice,finance,accounts'
@@ -402,7 +391,7 @@ class AccountResource extends Resource
                                     ->send();
                             }
                         )
-                        ->visible(fn (Account $record): bool => $record->frozen),
+                        ->visible(fn (AccountMembership $record): bool => $record->status === 'suspended'),
                 ]
             )
             ->bulkActions(
@@ -432,7 +421,7 @@ class AccountResource extends Resource
                                             payload: [
                                                 'requested_state' => 'frozen',
                                                 'record_count'    => $records->count(),
-                                                'account_uuids'   => $records->map(fn (Account $a): string => $a->uuid)->values()->all(),
+                                                'account_uuids'   => $records->map(fn (AccountMembership $a): string => $a->account_uuid)->values()->all(),
                                             ],
                                             metadata: [
                                                 'mode' => 'request_approve',
@@ -452,14 +441,12 @@ class AccountResource extends Resource
             );
     }
 
-    public static function freezeAccount(Account $record, string $reason): void
+    public static function freezeAccount(string $accountUuid, string $reason): void
     {
         static::authorizeWorkspace();
 
-        $oldValues = ['frozen' => false];
-
         app(AccountService::class)->freeze(
-            $record->uuid,
+            $accountUuid,
             reason: $reason,
             authorizedBy: auth()->user()?->email,
         );
@@ -468,14 +455,14 @@ class AccountResource extends Resource
             workspace: static::getBackofficeWorkspace(),
             action: 'backoffice.accounts.frozen',
             reason: $reason,
-            auditable: $record,
-            oldValues: $oldValues,
+            auditable: null,
+            oldValues: ['frozen' => false],
             newValues: ['frozen' => true],
             metadata: [
                 'mode'         => 'direct_elevated',
                 'workspace'    => 'finance',
                 'reason'       => $reason,
-                'account_uuid' => $record->uuid,
+                'account_uuid' => $accountUuid,
                 'context'      => 'account_resource',
             ],
             tags: 'backoffice,finance,accounts'
@@ -525,17 +512,18 @@ class AccountResource extends Resource
         ];
     }
 
-    public static function getGlobalSearchResultDetails($record): array
+    public static function getGlobalSearchResultDetails(Model $record): array
     {
+        /** @var AccountMembership $record */
         return [
-            'User'    => $record->user_uuid,
-            'Balance' => BankingDisplay::minorUnitsAsString($record->balance),
-            'Status'  => $record->frozen ? 'Frozen' : 'Active',
+            'User'   => $record->user_uuid,
+            'Type'   => $record->account_type,
+            'Status' => $record->status,
         ];
     }
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['uuid', 'name', 'user_uuid'];
+        return ['account_uuid', 'user_uuid', 'tenant_id', 'display_name'];
     }
 }

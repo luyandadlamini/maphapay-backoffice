@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\AccountResource\RelationManagers;
 
 use App\Domain\Banking\Models\BankAccountModel;
+use App\Filament\Admin\Concerns\WithAccountTenancy;
 use Filament\Forms\Components\Textarea;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
@@ -13,11 +14,20 @@ use Filament\Tables\Table;
 
 class LinkedWalletsRelationManager extends RelationManager
 {
+    use WithAccountTenancy;
+
     protected static string $relationship = 'linkedWallets';
 
     protected static ?string $recordTitleAttribute = 'bank_code';
 
     protected static ?string $title = 'Linked External Wallets & Banks';
+
+    public function mount(): void
+    {
+        parent::mount();
+
+        $this->initializeTenancyForRecord($this->ownerRecord);
+    }
 
     public function table(Table $table): Table
     {

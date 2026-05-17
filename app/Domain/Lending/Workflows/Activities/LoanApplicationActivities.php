@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domain\Lending\Workflows\Activities;
 
+use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Lending\Services\CreditScoringService;
 use App\Domain\Lending\Services\RiskAssessmentService;
+use App\Domain\Shared\Concerns\WithTenantContext;
 use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +15,8 @@ use Illuminate\Support\Str;
 
 class LoanApplicationActivities
 {
+    use WithTenantContext;
+
     public function __construct(
         private CreditScoringService $creditScoring,
         private RiskAssessmentService $riskAssessment
@@ -361,30 +365,43 @@ class LoanApplicationActivities
 
     private function disburseFunds(string $userId, string $amount): void
     {
-        // Get user's primary account
-        $account = DB::table('accounts')
-            ->where('user_id', $userId)
-            ->where('currency', 'USD')
+        // Resolve the account UUID from the borrower's active membership so we
+        // can initialize tenant context before writing to tenant-scoped tables.
+        $membership = AccountMembership::query()
+            ->where('user_uuid', $userId)
             ->where('status', 'active')
             ->first();
 
-        if (! $account) {
-            throw new Exception('No active account found');
+        if ($membership === null) {
+            throw new Exception('No active account membership found for borrower');
         }
 
-        // Credit the loan amount
-        DB::table('transactions')->insert([
-            'account_id'  => $account->id,
-            'type'        => 'credit',
-            'amount'      => $amount,
-            'description' => 'Loan disbursement',
-            'created_at'  => now(),
-        ]);
+        $this->withAccountTenancy($membership->account_uuid, function () use ($userId, $amount): void {
+            // Get user's primary account
+            $account = DB::table('accounts')
+                ->where('user_id', $userId)
+                ->where('currency', 'USD')
+                ->where('status', 'active')
+                ->first();
 
-        // Update account balance
-        DB::table('accounts')
-            ->where('id', $account->id)
-            ->increment('balance', (int) $amount);
+            if (! $account) {
+                throw new Exception('No active account found');
+            }
+
+            // Credit the loan amount
+            DB::table('transactions')->insert([
+                'account_id'  => $account->id,
+                'type'        => 'credit',
+                'amount'      => $amount,
+                'description' => 'Loan disbursement',
+                'created_at'  => now(),
+            ]);
+
+            // Update account balance
+            DB::table('accounts')
+                ->where('id', $account->id)
+                ->increment('balance', (int) $amount);
+        });
     }
 
     // Keep the other methods from the original file for backward compatibility

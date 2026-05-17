@@ -94,6 +94,37 @@ or `WalletProviderWebhookController` needed.
 - **Wired providers**: `mtn_momo`, `emali_eswatini_mobile`, `fnb_ewallet`,
   `standard_unayo`, `nedbank_send_money` (see `WalletProviderRegistry`).
 
+## Multi-Tenancy Contract
+
+- **Tenant DB is canonical** for `Account` and `AccountBalance`. Central DB tables (`accounts`, `account_balances`) are legacy stubs being decommissioned.
+- **HTTP routes** get tenancy from the `account.context` middleware alias (`App\Http\Middleware\ResolveAccountContext`). All routes in `api-compat.php` use this — do not remove it.
+- **Filament admin pages** that operate on a single Account record must use `WithAccountTenancy` concern and call `$this->initializeTenancyForRecord($this->record)` in `mount()`. See `app/Filament/Admin/Concerns/WithAccountTenancy.php`.
+- **Non-HTTP code** (Temporal activities, queued jobs, CLI commands, seeders) must use `WithTenantContext::withAccountTenancy($accountUuid, fn() => ...)`. See `app/Domain/Shared/Concerns/WithTenantContext.php`.
+- **Cross-tenant aggregates** (dashboard widgets, list pages) must iterate `Tenant::on('central')->lazy()->each()` and initialize tenancy per tenant. See `AccountStatsOverview` for the pattern.
+- **Guard**: `Account` and `AccountBalance` will throw `RuntimeException` in production/staging if saved without tenant context. This is intentional — fix the caller, not the guard.
+- **See**: `docs/architecture/ADR-001-account-tenancy.md` for the full decision record.
+
+### Wallet Provider Integration (Eswatini)
+
+Five wallet providers are wired behind a strategy-dispatcher pattern.
+Adding a new provider is purely additive — no edits to `MoneySettlerService`
+or `WalletProviderWebhookController` needed.
+
+- **Contract**: `App\Domain\Wallet\Contracts\WalletProviderAdapter` —
+  `link()`, `collect()`, `disburse()`, `status()`, `verifyWebhookSignature()`
+- **Settlement**: `App\Domain\Wallet\Contracts\ProviderSettler` strategy;
+  `MoneySettlerService` dispatches webhook outcomes by `provider_id`.
+- **Projection**: `wallet_provider_transactions` table (polymorphic;
+  `App\Domain\Wallet\Models\WalletProviderTransaction`) holds per-provider
+  collect/disburse settlement state. MTN keeps its own `mtn_momo_transactions`
+  table for the legacy event-sourced flow.
+- **Mocks**: `routes/mock-wallets.php` mounts realistic HTTP mocks under
+  `/__mock/wallets/<provider>/...` when `WALLET_MOCKS_ENABLED=true` and
+  not production. Each mock reuses `MockWalletStore`, `MockFailureRules`,
+  and `DispatchMockWalletCallbackJob` — only the controllers differ.
+- **Wired providers**: `mtn_momo`, `emali_eswatini_mobile`, `fnb_ewallet`,
+  `standard_unayo`, `nedbank_send_money` (see `WalletProviderRegistry`).
+
 ## Code Conventions
 
 ```php

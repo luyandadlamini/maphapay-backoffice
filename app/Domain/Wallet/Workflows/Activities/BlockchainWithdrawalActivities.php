@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Wallet\Workflows\Activities;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Shared\Concerns\WithTenantContext;
 use App\Domain\Wallet\Services\BlockchainWalletService;
 use App\Domain\Wallet\Services\KeyManagementService;
 use App\Models\User;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 
 class BlockchainWithdrawalActivities
 {
+    use WithTenantContext;
+
     public function __construct(
         private BlockchainWalletService $walletService,
         private KeyManagementService $keyManager,
@@ -194,15 +197,17 @@ class BlockchainWithdrawalActivities
 
         // This would interact with the Account aggregate to lock funds
         // For now, we'll use a simple DB update
-        DB::table('account_balance_locks')->insert(
-            [
-                'account_id' => $accountId,
-                'amount'     => $amount,
-                'reason'     => 'blockchain_withdrawal',
-                'expires_at' => now()->addHours(24),
-                'created_at' => now(),
-            ]
-        );
+        $this->withAccountTenancy($accountId, function () use ($accountId, $amount): void {
+            DB::table('account_balance_locks')->insert(
+                [
+                    'account_id' => $accountId,
+                    'amount'     => $amount,
+                    'reason'     => 'blockchain_withdrawal',
+                    'expires_at' => now()->addHours(24),
+                    'created_at' => now(),
+                ]
+            );
+        });
     }
 
     private function getNextNonce(string $address, string $chain): int
@@ -279,16 +284,18 @@ class BlockchainWithdrawalActivities
             $totalAmount = BigDecimal::of($amount)->plus($fees['total_fee']);
 
             // This would normally use the Account aggregate's methods
-            DB::table('transactions')->insert(
-                [
-                    'account_id'  => $accountId,
-                    'type'        => 'debit',
-                    'amount'      => $totalAmount->toScale(2)->__toString(),
-                    'description' => 'Blockchain withdrawal',
-                    'reference'   => $walletId,
-                    'created_at'  => now(),
-                ]
-            );
+            $this->withAccountTenancy($accountId, function () use ($accountId, $walletId, $totalAmount): void {
+                DB::table('transactions')->insert(
+                    [
+                        'account_id'  => $accountId,
+                        'type'        => 'debit',
+                        'amount'      => $totalAmount->toScale(2)->__toString(),
+                        'description' => 'Blockchain withdrawal',
+                        'reference'   => $walletId,
+                        'created_at'  => now(),
+                    ]
+                );
+            });
         }
 
         // Record fees as revenue
