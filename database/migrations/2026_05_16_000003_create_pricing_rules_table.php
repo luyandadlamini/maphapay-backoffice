@@ -33,8 +33,8 @@ return new class () extends Migration {
             $table->timestamps();
 
             $table->foreign('product_id')->references('id')->on('pricing_products')->onDelete('cascade');
-            $table->foreign('segment_id')->references('id')->on('customer_segments')->onDelete('setNull');
-            $table->foreign('parent_rule_id')->references('id')->on('pricing_rules')->onDelete('setNull');
+            $table->foreign('segment_id')->references('id')->on('customer_segments')->nullOnDelete();
+            $table->foreign('parent_rule_id')->references('id')->on('pricing_rules')->nullOnDelete();
 
             $table->index(['status', 'effective_from', 'effective_to']);
             $table->index(['product_id', 'priority']);

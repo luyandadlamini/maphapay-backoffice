@@ -26,8 +26,8 @@ class SweepOrphanCentralBalancesCommand extends Command
     public function handle(): int
     {
         $centralAccounts = DB::connection('mysql')
-            ->table('accounts as a')
-            ->join('account_balances as ab', 'a.uuid', '=', 'ab.account_uuid')
+            ->table('accounts_legacy_pre_canonicalization as a')
+            ->join('account_balances_legacy_pre_canonicalization as ab', 'a.uuid', '=', 'ab.account_uuid')
             ->where('ab.balance', '>', 0)
             ->when($this->option('user'), function ($q): void {
                 $q->join('users as u', 'a.user_uuid', '=', 'u.uuid')
