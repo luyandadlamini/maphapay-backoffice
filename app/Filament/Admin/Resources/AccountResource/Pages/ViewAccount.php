@@ -6,6 +6,7 @@ namespace App\Filament\Admin\Resources\AccountResource\Pages;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Services\AccountService;
+use App\Filament\Admin\Concerns\WithAccountTenancy;
 use App\Filament\Admin\Resources\AccountResource;
 use App\Support\Backoffice\AdminActionGovernance;
 use App\Support\Backoffice\BackofficeWorkspaceAccess;
@@ -14,11 +15,23 @@ use Filament\Forms;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
 class ViewAccount extends ViewRecord
 {
+    use WithAccountTenancy;
+
     protected static string $resource = AccountResource::class;
+
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+
+        if ($this->record instanceof Model) {
+            $this->initializeTenancyForRecord($this->record);
+        }
+    }
 
     protected function getHeaderActions(): array
     {
