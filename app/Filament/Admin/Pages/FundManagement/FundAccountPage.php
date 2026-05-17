@@ -7,6 +7,7 @@ namespace App\Filament\Admin\Pages\FundManagement;
 use App\Domain\Account\Models\Account;
 use App\Domain\Asset\Models\Asset;
 use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
+use App\Filament\Admin\Concerns\WithAccountTenancy;
 use App\Support\Backoffice\AdminActionGovernance;
 use App\Support\Backoffice\BackofficeWorkspaceAccess;
 use Filament\Actions\Action;
@@ -18,6 +19,7 @@ use Throwable;
 class FundAccountPage extends Page
 {
     use HasBackofficeWorkspace;
+    use WithAccountTenancy;
 
     protected static ?string $navigationIcon = 'heroicon-o-plus-circle';
 
@@ -143,7 +145,7 @@ class FundAccountPage extends Page
         ];
     }
 
-    protected function lookupAccount(string $uuid, callable $set): void
+    public function selectAccount(string $uuid): void
     {
         if (empty($uuid)) {
             $this->selectedAccount = null;
@@ -152,6 +154,15 @@ class FundAccountPage extends Page
         }
 
         $this->selectedAccount = Account::with('user')->where('uuid', $uuid)->first();
+
+        if ($this->selectedAccount !== null) {
+            $this->initializeTenancyForRecord($this->selectedAccount);
+        }
+    }
+
+    protected function lookupAccount(string $uuid, callable $set): void
+    {
+        $this->selectAccount($uuid);
     }
 
     /** @param array<string, mixed> $data */
