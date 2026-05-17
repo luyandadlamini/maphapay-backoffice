@@ -10,12 +10,15 @@ use App\Domain\Governance\Enums\PollStatus;
 use App\Domain\Governance\Models\Poll;
 use App\Domain\Governance\Models\Vote;
 use App\Domain\Governance\Services\VotingTemplateService;
+use App\Domain\Shared\Concerns\WithTenantContext;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class DemoDataSeeder extends Seeder
 {
+    use WithTenantContext;
+
     /**
      * Run the database seeds.
      */
@@ -175,6 +178,8 @@ class DemoDataSeeder extends Seeder
 
     /**
      * Set up user bank preferences.
+     *
+     * @param array<string, int> $allocations Bank code to allocation percentage map.
      */
     private function setupUserBanks(User $user, array $allocations): void
     {
@@ -199,6 +204,13 @@ class DemoDataSeeder extends Seeder
 
     /**
      * Fund an account with specific asset amount.
+     *
+     * NOTE: withAccountTenancy() cannot be used here because demo accounts are
+     * created via Account::factory() without AccountMembership records, so tenant
+     * lookup would throw. This seeder is intended for local/staging environments only.
+     * If this seeder is ever run against a tenant-aware schema with memberships in
+     * place, wrap the writes below inside:
+     *   $this->withAccountTenancy($account->uuid, function () use (...) { ... });
      */
     private function fundAccount(Account $account, string $assetCode, int $amount): void
     {
@@ -237,7 +249,7 @@ class DemoDataSeeder extends Seeder
         $lastMonthPoll = $votingService->createMonthlyBasketVotingPoll(now()->subMonth()->startOfMonth());
         $lastMonthPoll->update([
             'status'   => PollStatus::EXECUTED,
-            'metadata' => array_merge($lastMonthPoll->metadata, [
+            'metadata' => array_merge((array) $lastMonthPoll->metadata, [
                 'results' => [
                     'USD' => 35,
                     'EUR' => 25,
