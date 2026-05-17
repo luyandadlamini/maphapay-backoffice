@@ -10,6 +10,7 @@ use App\Domain\Account\Services\AccountService;
 use App\Domain\Account\Workflows\FreezeAccountWorkflow;
 use App\Domain\Account\Workflows\UnfreezeAccountWorkflow;
 use App\Domain\Shared\Concerns\WithTenantContext;
+use App\Filament\Admin\Concerns\WithAccountTenancy;
 use Exception;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -21,9 +22,16 @@ use Workflow\WorkflowStub;
 
 class AccountsRelationManager extends RelationManager
 {
+    use WithAccountTenancy;
     use WithTenantContext;
 
     protected static string $relationship = 'accounts';
+
+    public function mount(): void
+    {
+        parent::mount();
+        $this->initializeTenancyForUserUuid((string) $this->getOwnerRecord()->uuid);
+    }
 
     protected static ?string $recordTitleAttribute = 'name';
 

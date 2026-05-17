@@ -72,6 +72,41 @@ trait WithAccountTenancy
         $this->restoreDefaultConnection();
     }
 
+    public function initializeTenancyForUserUuid(string $userUuid): void
+    {
+        $membership = AccountMembership::query()
+            ->where('user_uuid', $userUuid)
+            ->where('status', 'active')
+            ->first();
+
+        if ($membership === null) {
+            return;
+        }
+
+        $tenant = Tenant::find($membership->tenant_id);
+
+        if ($tenant === null) {
+            return;
+        }
+
+        $tenancy = app(Tenancy::class);
+
+        $currentTenant = $tenancy->tenant;
+        if ($tenancy->initialized && $currentTenant instanceof TenantContract && $currentTenant->getTenantKey() === $tenant->getTenantKey()) {
+            return;
+        }
+
+        if ($tenancy->initialized) {
+            $tenancy->end();
+        }
+
+        $this->accountTenancyPreviousDefault = config('database.default');
+
+        $tenancy->initialize($tenant);
+
+        $this->restoreDefaultConnection();
+    }
+
     public function releaseAccountTenancy(): void
     {
         $tenancy = app(Tenancy::class);

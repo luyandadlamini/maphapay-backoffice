@@ -5,17 +5,26 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\UserResource\RelationManagers;
 
 use App\Domain\Account\Models\TransactionProjection;
+use App\Filament\Admin\Concerns\WithAccountTenancy;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class TransactionsRelationManager extends RelationManager
 {
+    use WithAccountTenancy;
+
     protected static string $relationship = 'transactionProjections';
 
     protected static ?string $recordTitleAttribute = 'uuid';
 
     protected static ?string $title = 'Transaction History';
+
+    public function mount(): void
+    {
+        parent::mount();
+        $this->initializeTenancyForUserUuid((string) $this->getOwnerRecord()->uuid);
+    }
 
     public function table(Table $table): Table
     {

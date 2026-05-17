@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources;
 
 use App\Domain\Account\Models\AccountBalance;
+use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Shared\Services\OtpService;
 use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Filament\Admin\Concerns\MasksPii;
@@ -229,29 +230,9 @@ class UserResource extends Resource
                         ->tooltip(fn (User $record): string => $record->frozen_at
                             ? 'Frozen: ' . ($record->frozen_reason ?? 'No reason')
                             : 'Active'),
-                    Tables\Columns\TextColumn::make('accounts_sum_balance')
-                        ->label('Total Balance')
-                        ->money('SZL', 100)
-                        ->state(function (?User $record): ?int {
-                            if ($record === null) {
-                                return null;
-                            }
-
-                            $accountUuids = $record->accounts()->pluck('uuid');
-                            if ($accountUuids->isEmpty()) {
-                                return 0;
-                            }
-
-                            return (int) AccountBalance::query()
-                                ->whereIn('account_uuid', $accountUuids)
-                                ->where('asset_code', config('banking.default_currency', 'SZL'))
-                                ->sum('balance');
-                        })
-                        ->color(fn ($state): string => ($state ?? 0) < 0 ? 'danger' : 'success')
-                        ->weight('bold'),
                     Tables\Columns\TextColumn::make('accounts_count')
                         ->label('Accounts')
-                        ->counts('accounts'),
+                        ->state(fn (User $record): int => AccountMembership::where('user_uuid', $record->uuid)->count()),
                     Tables\Columns\IconColumn::make('email_verified_at')
                         ->label('Email Verified')
                         ->boolean()
