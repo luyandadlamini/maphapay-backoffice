@@ -60,17 +60,20 @@ class OperationRecordService
             ->first();
 
         if ($existing !== null) {
-            if ($existing->payload_hash !== $payloadHash) {
-                throw new OperationPayloadMismatchException(
-                    'Idempotency key reused with a different request payload.'
-                );
-            }
-
+            // Completed operations replay their cached result unconditionally. The hash
+            // was validated at first execution; re-checking it on replay would wrongly
+            // reject legitimate retries when transient policy fields shift the hash.
             if ($existing->status === OperationRecord::STATUS_COMPLETED
                 && $existing->result_payload !== null) {
                 $this->telemetry->logOperationReplay($userId, $type, $key);
 
                 return $existing->result_payload;
+            }
+
+            if ($existing->payload_hash !== $payloadHash) {
+                throw new OperationPayloadMismatchException(
+                    'Idempotency key reused with a different request payload.'
+                );
             }
 
             throw new OperationInProgressException();
@@ -93,17 +96,17 @@ class OperationRecordService
                 ->where('idempotency_key', $key)
                 ->firstOrFail();
 
-            if ($record->payload_hash !== $payloadHash) {
-                throw new OperationPayloadMismatchException(
-                    'Idempotency key reused with a different request payload.'
-                );
-            }
-
             if ($record->status === OperationRecord::STATUS_COMPLETED
                 && $record->result_payload !== null) {
                 $this->telemetry->logOperationReplay($userId, $type, $key);
 
                 return $record->result_payload;
+            }
+
+            if ($record->payload_hash !== $payloadHash) {
+                throw new OperationPayloadMismatchException(
+                    'Idempotency key reused with a different request payload.'
+                );
             }
 
             throw new OperationInProgressException();

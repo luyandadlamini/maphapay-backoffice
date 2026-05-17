@@ -20,14 +20,14 @@ final class FnbEwalletOverviewPage extends AbstractOverviewPage
     {
         return [
             NavigationItem::make('Overview')
-                ->url(static fn () => FnbEwalletOverviewPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(FnbEwalletOverviewPage::getRouteName())),
+                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\FnbEwallet\FnbEwalletOverviewPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\FnbEwallet\FnbEwalletOverviewPage::getRouteName())),
             NavigationItem::make('Linked accounts')
-                ->url(static fn () => FnbEwalletLinkedAccountsPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(FnbEwalletLinkedAccountsPage::getRouteName())),
+                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\FnbEwallet\FnbEwalletLinkedAccountsPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\FnbEwallet\FnbEwalletLinkedAccountsPage::getRouteName())),
             NavigationItem::make('Transactions')
-                ->url(static fn () => FnbEwalletTransactionsPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(FnbEwalletTransactionsPage::getRouteName())),
+                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\FnbEwallet\FnbEwalletTransactionsPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\FnbEwallet\FnbEwalletTransactionsPage::getRouteName())),
         ];
     }
 }

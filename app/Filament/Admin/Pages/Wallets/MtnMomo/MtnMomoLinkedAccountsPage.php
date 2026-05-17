@@ -20,14 +20,14 @@ final class MtnMomoLinkedAccountsPage extends AbstractLinkedAccountsPage
     {
         return [
             NavigationItem::make('Overview')
-                ->url(static fn () => MtnMomoOverviewPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(MtnMomoOverviewPage::getRouteName())),
+                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\MtnMomo\MtnMomoOverviewPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\MtnMomo\MtnMomoOverviewPage::getRouteName())),
             NavigationItem::make('Linked accounts')
-                ->url(static fn () => MtnMomoLinkedAccountsPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(MtnMomoLinkedAccountsPage::getRouteName())),
+                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\MtnMomo\MtnMomoLinkedAccountsPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\MtnMomo\MtnMomoLinkedAccountsPage::getRouteName())),
             NavigationItem::make('Transactions')
-                ->url(static fn () => MtnMomoTransactionsPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(MtnMomoTransactionsPage::getRouteName())),
+                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\MtnMomo\MtnMomoTransactionsPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\MtnMomo\MtnMomoTransactionsPage::getRouteName())),
         ];
     }
 }

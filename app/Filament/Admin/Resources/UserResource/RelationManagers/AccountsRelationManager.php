@@ -9,6 +9,7 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Services\AccountService;
 use App\Domain\Account\Workflows\FreezeAccountWorkflow;
 use App\Domain\Account\Workflows\UnfreezeAccountWorkflow;
+use App\Domain\Shared\Concerns\WithTenantContext;
 use Exception;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -20,6 +21,8 @@ use Workflow\WorkflowStub;
 
 class AccountsRelationManager extends RelationManager
 {
+    use WithTenantContext;
+
     protected static string $relationship = 'accounts';
 
     protected static ?string $recordTitleAttribute = 'name';
@@ -108,9 +111,31 @@ class AccountsRelationManager extends RelationManager
                     ->weight('bold'),
                 Tables\Columns\TextColumn::make('balance')
                     ->label('Balance')
-                    ->money(config('banking.default_currency', 'SZL'), 100)
-                    ->sortable()
-                    ->color(fn ($state): string => $state < 0 ? 'danger' : 'success')
+                    ->getStateUsing(function (Account $record): string {
+                        // Each row may belong to a different tenant. Wrap the balance
+                        // read in withAccountTenancy() to ensure the correct tenant
+                        // connection is active when querying account_balances.
+                        // NOTE: This is O(N) tenant initializations per page render.
+                        // Follow-up: batch by tenant_id (group rows, init once per
+                        // tenant, read all rows for that group) when users with 10+
+                        // accounts become a performance concern.
+                        try {
+                            return $this->withAccountTenancy(
+                                $record->uuid,
+                                function () use ($record): string {
+                                    $minorUnits = $record->fresh()->getBalance(
+                                        config('banking.default_currency', 'SZL')
+                                    );
+                                    $currency = config('banking.default_currency', 'SZL');
+
+                                    return $currency . ' ' . number_format($minorUnits / 100, 2);
+                                }
+                            );
+                        } catch (Exception) {
+                            return '—';
+                        }
+                    })
+                    ->color(fn ($state): string => str_contains((string) $state, '-') ? 'danger' : 'success')
                     ->weight('bold'),
                 Tables\Columns\IconColumn::make('frozen')
                     ->label('Status')
@@ -155,12 +180,20 @@ class AccountsRelationManager extends RelationManager
                             ->helperText('Brief description or reason for this deposit'),
                     ])
                     ->action(function (Account $record, array $data): void {
+                        // depositDirect writes to TenantAwareStoredEvent (Transaction) and
+                        // TransactionProjection, both of which use UsesTenantConnection.
+                        // Wrap in withAccountTenancy() to target the correct tenant DB.
                         try {
                             $currencySymbol = \App\Domain\Asset\Models\Asset::find(config('banking.default_currency', 'SZL'))?->getSymbol() ?? 'E';
-                            $accountService = app(AccountService::class);
-                            $amountInCents = (int) ($data['amount'] * 100);
-                            $reference = $data['reference'] ?? 'Admin deposit';
-                            $accountService->depositDirect($record->uuid, $amountInCents, $reference);
+                            $amountInCents  = (int) ($data['amount'] * 100);
+                            $reference      = $data['reference'] ?? 'Admin deposit';
+
+                            $this->withAccountTenancy(
+                                $record->uuid,
+                                function () use ($record, $amountInCents, $reference): void {
+                                    app(AccountService::class)->depositDirect($record->uuid, $amountInCents, $reference);
+                                }
+                            );
 
                             Notification::make()
                                 ->title('Deposit Successful')
@@ -196,12 +229,20 @@ class AccountsRelationManager extends RelationManager
                             ->helperText('Brief description or reason for this withdrawal'),
                     ])
                     ->action(function (Account $record, array $data): void {
+                        // withdrawDirect writes to TenantAwareStoredEvent (Transaction) and
+                        // TransactionProjection, both of which use UsesTenantConnection.
+                        // Wrap in withAccountTenancy() to target the correct tenant DB.
                         try {
                             $currencySymbol = \App\Domain\Asset\Models\Asset::find(config('banking.default_currency', 'SZL'))?->getSymbol() ?? 'E';
-                            $accountService = app(AccountService::class);
-                            $amountInCents = (int) ($data['amount'] * 100);
-                            $reference = $data['reference'] ?? 'Admin withdrawal';
-                            $accountService->withdrawDirect($record->uuid, $amountInCents, $reference);
+                            $amountInCents  = (int) ($data['amount'] * 100);
+                            $reference      = $data['reference'] ?? 'Admin withdrawal';
+
+                            $this->withAccountTenancy(
+                                $record->uuid,
+                                function () use ($record, $amountInCents, $reference): void {
+                                    app(AccountService::class)->withdrawDirect($record->uuid, $amountInCents, $reference);
+                                }
+                            );
 
                             Notification::make()
                                 ->title('Withdrawal Successful')

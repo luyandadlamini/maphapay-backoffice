@@ -20,14 +20,14 @@ final class EmaliOverviewPage extends AbstractOverviewPage
     {
         return [
             NavigationItem::make('Overview')
-                ->url(static fn () => EmaliOverviewPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(EmaliOverviewPage::getRouteName())),
+                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\Emali\EmaliOverviewPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\Emali\EmaliOverviewPage::getRouteName())),
             NavigationItem::make('Linked accounts')
-                ->url(static fn () => EmaliLinkedAccountsPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(EmaliLinkedAccountsPage::getRouteName())),
+                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\Emali\EmaliLinkedAccountsPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\Emali\EmaliLinkedAccountsPage::getRouteName())),
             NavigationItem::make('Transactions')
-                ->url(static fn () => EmaliTransactionsPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(EmaliTransactionsPage::getRouteName())),
+                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\Emali\EmaliTransactionsPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\Emali\EmaliTransactionsPage::getRouteName())),
         ];
     }
 }

@@ -20,14 +20,14 @@ final class NedbankSendMoneyTransactionsPage extends AbstractTransactionsPage
     {
         return [
             NavigationItem::make('Overview')
-                ->url(static fn () => NedbankSendMoneyOverviewPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(NedbankSendMoneyOverviewPage::getRouteName())),
+                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\NedbankSendMoney\NedbankSendMoneyOverviewPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\NedbankSendMoney\NedbankSendMoneyOverviewPage::getRouteName())),
             NavigationItem::make('Linked accounts')
-                ->url(static fn () => NedbankSendMoneyLinkedAccountsPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(NedbankSendMoneyLinkedAccountsPage::getRouteName())),
+                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\NedbankSendMoney\NedbankSendMoneyLinkedAccountsPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\NedbankSendMoney\NedbankSendMoneyLinkedAccountsPage::getRouteName())),
             NavigationItem::make('Transactions')
-                ->url(static fn () => NedbankSendMoneyTransactionsPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(NedbankSendMoneyTransactionsPage::getRouteName())),
+                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\NedbankSendMoney\NedbankSendMoneyTransactionsPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\NedbankSendMoney\NedbankSendMoneyTransactionsPage::getRouteName())),
         ];
     }
 }

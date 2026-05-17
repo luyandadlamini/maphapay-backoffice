@@ -14,6 +14,8 @@ use App\Domain\AuthorizedTransaction\Services\MoneyMovementVerificationPolicyRes
 use App\Domain\Mobile\Services\HighRiskActionTrustPolicy;
 use App\Domain\Monitoring\Services\MaphaPayMoneyMovementTelemetry;
 use App\Domain\Payment\Services\PaymentLinkService;
+use App\Domain\Pricing\Services\FeeEventRecorder;
+use App\Domain\Pricing\Services\PricingResolver;
 use App\Domain\Shared\Money\MoneyConverter;
 use App\Domain\Shared\OperationRecord\Exceptions\OperationPayloadMismatchException;
 use App\Domain\Shared\OperationRecord\OperationRecordService;
@@ -53,6 +55,8 @@ class SendMoneyStoreController extends Controller
         private readonly HighRiskActionTrustPolicy $trustPolicy,
         private readonly PaymentLinkService $paymentLinkService,
         private readonly OperationRecordService $operationRecordService,
+        private readonly PricingResolver $pricingResolver,
+        private readonly FeeEventRecorder $feeEventRecorder,
     ) {
     }
 
@@ -460,6 +464,12 @@ class SendMoneyStoreController extends Controller
                 'recipient_user_id'      => $recipient->id,
             ]));
 
+            // ── Pricing engine fee assessment ────────────────────────────────────────────
+            if (config('pricing.pricing_engine_enabled')) {
+                $this->assessPricingFee($txn, $asset, $normalizedAmount, (int) $authUser->getAuthIdentifier());
+            }
+            // ─────────────────────────────────────────────────────────────────────────────
+
             // ── Saving milestone check (minor accounts only) ─────────────────────────────
             if ($fromAccount->type === 'minor') {
                 $totalSaved = (string) DB::table('transaction_projections')
@@ -514,6 +524,27 @@ class SendMoneyStoreController extends Controller
                 'code_sent_message' => $codeSentMessage,
             ],
         ]);
+    }
+
+    private function assessPricingFee(
+        AuthorizedTransaction $txn,
+        Asset $asset,
+        string $normalizedAmount,
+        int $userId,
+    ): void {
+        try {
+            $amountMinor = MoneyConverter::toSmallestUnit($normalizedAmount, $asset->precision);
+            $resolved = $this->pricingResolver->resolveWithRule('local_transfer', $amountMinor, $asset->code, $userId);
+
+            if ($resolved !== null) {
+                [$breakdown, $rule] = $resolved;
+                $this->feeEventRecorder->record($txn->id, $breakdown, $rule, $userId, 'send_money');
+            } else {
+                $this->feeEventRecorder->recordZero($txn->id, 'local_transfer', 'local_transfer', $asset->code, $userId);
+            }
+        } catch (Throwable) {
+            // Pricing is non-critical — never block the transfer response.
+        }
     }
 
     /**
