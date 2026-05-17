@@ -332,3 +332,15 @@ Schedule::command('revenue:scan-anomalies:for-tenants')
     ->description('Read-only scan for revenue-target anomalies across all tenant databases')
     ->appendOutputTo(storage_path('logs/revenue-anomaly-scan.log'))
     ->withoutOverlapping();
+
+// Nightly drift detection: detect orphaned central-DB balances that belong in a tenant DB.
+// Runs dry-run only — no --apply flag — so it is safe to run automatically.
+// A non-zero exit code (unexpected error) triggers an alert.
+Schedule::command('maphapay:sweep-orphan-central-balances')
+    ->dailyAt('03:00')
+    ->description('Detect orphaned central-DB account balances that should live in a tenant DB')
+    ->appendOutputTo(storage_path('logs/orphan-central-balances.log'))
+    ->withoutOverlapping()
+    ->onFailure(function (): void {
+        Log::critical('maphapay:sweep-orphan-central-balances drift-detection cron failed to run');
+    });
