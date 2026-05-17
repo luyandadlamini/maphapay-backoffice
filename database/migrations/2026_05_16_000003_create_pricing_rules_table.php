@@ -12,6 +12,12 @@ return new class () extends Migration {
      */
     public function up(): void
     {
+        // Guard against a partially-created table left by a previous failed deploy.
+        // MySQL DDL (CREATE TABLE) is not transactional — if a migration fails after
+        // the CREATE TABLE statement, the table persists even though the migration
+        // record is rolled back. Dropping first makes this migration idempotent.
+        Schema::dropIfExists('pricing_rules');
+
         Schema::create('pricing_rules', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('product_id');
