@@ -12,7 +12,6 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Alignment;
-use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class TransferBetweenAccountsPage extends Page
@@ -238,9 +237,19 @@ class TransferBetweenAccountsPage extends Page
         $sourceAccount = $this->sourceAccount;
         $destinationAccount = $this->destinationAccount;
 
+        // Cross-tenant transfers cannot be made atomic with a single DB::transaction()
+        // because the source and destination accounts may live on different MySQL
+        // connections (one per tenant schema).  DB::beginTransaction() / commit() /
+        // rollBack() operate on a single connection handle; switching the active tenant
+        // mid-"transaction" means commit() fires on a different connection than
+        // beginTransaction() opened on, so the wrapper provides no actual atomicity.
+        //
+        // This transfer is therefore eventually-consistent: if the credit succeeds but
+        // the debit fails (or vice versa), a compensating sweep (see
+        // maphapay:sweep-orphan-central-balances) is required to reconcile.  XA
+        // transactions across two MySQL schemas are out of scope.  For same-tenant
+        // transfers the service layer handles intra-tenant atomicity internally.
         try {
-            DB::beginTransaction();
-
             $asset = Asset::where('code', $data['asset_code'])->firstOrFail();
             $amountInSmallestUnit = $asset->toSmallestUnit((float) $data['amount']);
 
@@ -266,8 +275,6 @@ class TransferBetweenAccountsPage extends Page
             // land in the correct tenant DB.
             $this->initializeTenancyForRecord($destinationAccount);
 
-            DB::commit();
-
             Notification::make()
                 ->title('Transfer Successful')
                 ->body("{$asset->formatAmount($amountInSmallestUnit)} transferred from {$sourceAccount->name} to {$destinationAccount->name}")
@@ -277,8 +284,6 @@ class TransferBetweenAccountsPage extends Page
             $this->reset(['sourceAccountUuid', 'destinationAccountUuid', 'sourceAccount', 'destinationAccount']);
 
         } catch (Throwable $e) {
-            DB::rollBack();
-
             Notification::make()
                 ->title('Transfer Failed')
                 ->body($e->getMessage())

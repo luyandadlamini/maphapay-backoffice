@@ -56,6 +56,21 @@ trait WithTenantContext
         $currentTenant = $tenancy->tenant;
         $previousTenant = ($wasInitialized && $currentTenant instanceof TenantContract) ? $currentTenant : null;
 
+        // Idempotency guard: if tenancy is already initialised for the same tenant,
+        // run the callback directly without tearing down and re-initialising.  This
+        // matches the behaviour of WithAccountTenancy and avoids unnecessary end/
+        // initialize cycles in nested calls (e.g. a command that calls withAccountTenancy
+        // for the same account multiple times in sequence).
+        // Use $currentTenant (already narrowed to TenantContract above) rather than
+        // accessing $tenancy->tenant again, which PHPStan sees as Model|TenantContract.
+        $alreadyInTenant = $wasInitialized
+            && $currentTenant instanceof TenantContract
+            && $currentTenant->getTenantKey() === $tenant->getTenantKey();
+
+        if ($alreadyInTenant) {
+            return $callback();
+        }
+
         // Snapshot the application default connection before Stancl changes it.
         $previousDefault = config('database.default');
 

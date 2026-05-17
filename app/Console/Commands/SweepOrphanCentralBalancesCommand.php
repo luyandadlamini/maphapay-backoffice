@@ -41,7 +41,7 @@ class SweepOrphanCentralBalancesCommand extends Command
 
         foreach ($centralAccounts as $row) {
             $membership = AccountMembership::query()
-                ->where('user_uuid', $row->user_uuid)
+                ->where('account_uuid', $row->central_account_uuid)
                 ->where('status', 'active')
                 ->first();
 
@@ -103,7 +103,10 @@ class SweepOrphanCentralBalancesCommand extends Command
                 $this->withAccountTenancy($item['tenant_account_uuid'], function () use ($item): void {
                     DB::transaction(function () use ($item): void {
                         // Ensure the account row exists in the tenant DB.
-                        Account::updateOrCreate(
+                        // firstOrCreate is intentional: if the account already exists
+                        // we must NOT overwrite its name or other fields — only the
+                        // balance upsert below should change (idempotent).
+                        Account::firstOrCreate(
                             ['uuid' => $item['tenant_account_uuid']],
                             [
                                 'user_uuid' => $item['user_uuid'],

@@ -47,31 +47,42 @@ class AccountStatsOverview extends BaseWidget
         $defaultCurrency = config('banking.default_currency', 'SZL');
         $tenancy = app(Tenancy::class);
 
-        Tenant::on('central')->lazy(100)->each(
-            function (Tenant $tenant) use (
-                &$totalAccounts,
-                &$activeAccounts,
-                &$frozenAccounts,
-                &$totalBalanceMinor,
-                $defaultCurrency,
-                $tenancy,
-            ): void {
-                $tenancy->initialize($tenant);
+        // Snapshot the application connection default before we start iterating
+        // tenants.  Stancl's DatabaseTenancyBootstrapper resets database.default
+        // to 'central' on each end() call, so without this restore any code that
+        // runs after the widget (session writes, notifications, etc.) would query
+        // the wrong connection.
+        $originalDefault = config('database.default');
 
-                try {
-                    $totalAccounts += Account::count();
-                    $activeAccounts += Account::where('frozen', false)->count();
-                    $frozenAccounts += Account::where('frozen', true)->count();
-                    $totalBalanceMinor += (int) AccountBalance::query()
-                        ->where('asset_code', $defaultCurrency)
-                        ->sum('balance');
-                } catch (QueryException) {
-                    // Tenant database does not exist or is unreachable — skip.
-                } finally {
-                    $tenancy->end();
+        try {
+            Tenant::on('central')->lazy(100)->each(
+                function (Tenant $tenant) use (
+                    &$totalAccounts,
+                    &$activeAccounts,
+                    &$frozenAccounts,
+                    &$totalBalanceMinor,
+                    $defaultCurrency,
+                    $tenancy,
+                ): void {
+                    $tenancy->initialize($tenant);
+
+                    try {
+                        $totalAccounts += Account::count();
+                        $activeAccounts += Account::where('frozen', false)->count();
+                        $frozenAccounts += Account::where('frozen', true)->count();
+                        $totalBalanceMinor += (int) AccountBalance::query()
+                            ->where('asset_code', $defaultCurrency)
+                            ->sum('balance');
+                    } catch (QueryException) {
+                        // Tenant database does not exist or is unreachable — skip.
+                    } finally {
+                        $tenancy->end();
+                    }
                 }
-            }
-        );
+            );
+        } finally {
+            config(['database.default' => $originalDefault]);
+        }
 
         return [
             Stat::make('Total Accounts', number_format($totalAccounts))
