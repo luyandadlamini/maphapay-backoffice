@@ -168,3 +168,33 @@ This is out of scope for the current branch.
 | `tests/Feature/Http/Controllers/Api/Compatibility/Dashboard/DashboardControllerTest.php` | Added USD-only regression test; fixed cache-key assertion |
 | `app/Console/Commands/BackfillSzlBalanceFromUsdCommand.php` | New: one-shot SZL backfill for stranded USD-funded accounts |
 | `docs/INVESTIGATION_BALANCE_BUG_2026_05_16.md` | Rewritten with verified findings and resolution |
+
+---
+
+## Final Resolution
+
+**Status:** Resolved  
+**Resolved by:** Branch `refactor/account-tenancy-canonicalization`  
+**ADR:** `docs/architecture/ADR-001-account-tenancy.md`
+
+### Root Cause Confirmed
+
+The Filament admin panel had no tenancy middleware. `Account` and `AccountBalance` use `UsesTenantConnection`, which falls back to the central DB when tenancy is not initialized. The mobile API initialized tenancy via `account.context` middleware; admin did not — causing reads/writes to hit different databases.
+
+### Fix Summary
+
+1. `WithAccountTenancy` concern applied to all Filament single-record pages.
+2. `WithTenantContext` trait applied to workflow activities and CLI commands.
+3. `AccountStatsOverview` rewritten to iterate tenants for cross-tenant aggregates.
+4. `AccountResource` list switched to `AccountMembership` (central DB) as data source.
+5. `RequiresTenantContext` guard added to `Account` and `AccountBalance` models.
+6. `SweepOrphanCentralBalancesCommand` written to migrate orphaned central balances.
+7. Central tables scheduled for rename after data migration is verified.
+
+### Data Migration (pending human execution)
+
+The affected user (`lihledlam@gmail.com`, account `dcb74026-b79b-421f-b04b-20bfaaa34eaa`) must have their central balance (E 129,229.00) migrated to the tenant DB via:
+```bash
+php artisan maphapay:sweep-orphan-central-balances --apply --user=lihledlam@gmail.com
+```
+This must be run by a human with production access and verified before running for all users.
