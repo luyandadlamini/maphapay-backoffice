@@ -81,9 +81,9 @@ class AccountsRelationManagerTenancyTest extends TestCase
 
         $this->cleanupStagedData();
 
-        $this->stagedTenantIds    = [];
+        $this->stagedTenantIds = [];
         $this->stagedAccountUuids = [];
-        $this->stagedUserUuids    = [];
+        $this->stagedUserUuids = [];
 
         parent::tearDown();
     }
@@ -101,7 +101,9 @@ class AccountsRelationManagerTenancyTest extends TestCase
             }
 
             try {
-                DB::table('accounts')
+                // Explicit 'mysql' to avoid hitting tenant/central after withAccountTenancy ops.
+                DB::connection('mysql')
+                    ->table('accounts')
                     ->whereIn('uuid', $this->stagedAccountUuids)
                     ->delete();
             } catch (Throwable) {
@@ -121,29 +123,26 @@ class AccountsRelationManagerTenancyTest extends TestCase
         }
 
         if ($this->stagedUserUuids !== []) {
+            // Delete any accounts owned by staged users (handles auto-created accounts).
+            // Use explicit 'mysql' connection — withAccountTenancy may have changed the
+            // default connection during the test render and tearDown runs after that.
             try {
-                DB::table('users')
+                DB::connection('mysql')
+                    ->table('accounts')
+                    ->whereIn('user_uuid', $this->stagedUserUuids)
+                    ->delete();
+            } catch (Throwable) {
+                // best-effort cleanup
+            }
+
+            try {
+                DB::connection('mysql')
+                    ->table('users')
                     ->whereIn('uuid', $this->stagedUserUuids)
                     ->delete();
             } catch (Throwable) {
                 // best-effort cleanup
             }
-        }
-    }
-
-    /**
-     * Stage a user UUID for deletion and pre-clean any stale row from a prior run.
-     * Register BEFORE creating so tearDown cleans up even if creation fails.
-     */
-    private function stageUserUuid(string $uuid): void
-    {
-        $this->stagedUserUuids[] = $uuid;
-
-        // Pre-clean stale row from a prior interrupted run to prevent unique-key collision.
-        try {
-            DB::table('users')->where('uuid', $uuid)->delete();
-        } catch (Throwable) {
-            // best-effort
         }
     }
 
@@ -164,7 +163,8 @@ class AccountsRelationManagerTenancyTest extends TestCase
         }
 
         try {
-            DB::table('accounts')->where('uuid', $uuid)->delete();
+            // Explicit 'mysql' to avoid hitting tenant/central connection after tenancy ops.
+            DB::connection('mysql')->table('accounts')->where('uuid', $uuid)->delete();
         } catch (Throwable) {
             // best-effort
         }
@@ -204,28 +204,30 @@ class AccountsRelationManagerTenancyTest extends TestCase
      * Build the standard fixture: one admin, one owner user, one account with an
      * active membership for the given (or freshly generated) tenant.
      *
-     * @return array{admin: User, owner: User, account: Account, tenant: Tenant}
+     * @return array{admin: User, owner: User, tenant: Tenant}
      */
     private function buildFixture(?string $tenantId = null): array
     {
-        $tenantId    = $tenantId ?? (string) Str::uuid();
-        $adminUuid   = (string) Str::uuid();
-        $ownerUuid   = (string) Str::uuid();
+        $tenantId = $tenantId ?? (string) Str::uuid();
         $accountUuid = (string) Str::uuid();
 
-        // Register UUIDs BEFORE creating so tearDown can clean up even on failure.
-        $this->stageUserUuid($adminUuid);
-        $this->stageUserUuid($ownerUuid);
         $this->stageAccountUuid($accountUuid);
 
         $tenant = $this->seedTenantDirectly($tenantId);
 
-        $admin = User::factory()->create(['uuid' => $adminUuid]);
+        // Do NOT pin UUIDs for admin/owner — let the factory generate random ones.
+        // Pinning requires pre-cleaning which is fragile due to FK chains.
+        // Random factory UUIDs never collide with stale data (no staleness is possible).
+        $admin = User::factory()->create();
+        $this->stagedUserUuids[] = $admin->uuid;
         $admin->assignRole('finance-lead');
         $this->actingAs($admin);
 
+        $owner = User::factory()->create();
+        $this->stagedUserUuids[] = $owner->uuid;
+
         AccountMembership::factory()->create([
-            'user_uuid'    => $ownerUuid,
+            'user_uuid'    => $owner->uuid,
             'account_uuid' => $accountUuid,
             'tenant_id'    => $tenant->id,
             'status'       => 'active',
@@ -233,11 +235,9 @@ class AccountsRelationManagerTenancyTest extends TestCase
 
         Account::create([
             'uuid'      => $accountUuid,
-            'user_uuid' => $ownerUuid,
+            'user_uuid' => $owner->uuid,
             'name'      => 'Test Wallet',
         ]);
-
-        $owner = User::factory()->create(['uuid' => $ownerUuid]);
 
         return compact('admin', 'owner', 'tenant');
     }

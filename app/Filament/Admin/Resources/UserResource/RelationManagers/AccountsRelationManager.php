@@ -123,12 +123,10 @@ class AccountsRelationManager extends RelationManager
                             return $this->withAccountTenancy(
                                 $record->uuid,
                                 function () use ($record): string {
-                                    $minorUnits = $record->fresh()->getBalance(
-                                        config('banking.default_currency', 'SZL')
-                                    );
+                                    $fresh    = $record->fresh() ?? $record;
                                     $currency = config('banking.default_currency', 'SZL');
 
-                                    return $currency . ' ' . number_format($minorUnits / 100, 2);
+                                    return $currency . ' ' . number_format($fresh->getBalance($currency) / 100, 2);
                                 }
                             );
                         } catch (Exception) {
@@ -185,8 +183,8 @@ class AccountsRelationManager extends RelationManager
                         // Wrap in withAccountTenancy() to target the correct tenant DB.
                         try {
                             $currencySymbol = \App\Domain\Asset\Models\Asset::find(config('banking.default_currency', 'SZL'))?->getSymbol() ?? 'E';
-                            $amountInCents  = (int) ($data['amount'] * 100);
-                            $reference      = $data['reference'] ?? 'Admin deposit';
+                            $amountInCents = (int) ($data['amount'] * 100);
+                            $reference = $data['reference'] ?? 'Admin deposit';
 
                             $this->withAccountTenancy(
                                 $record->uuid,
@@ -234,8 +232,8 @@ class AccountsRelationManager extends RelationManager
                         // Wrap in withAccountTenancy() to target the correct tenant DB.
                         try {
                             $currencySymbol = \App\Domain\Asset\Models\Asset::find(config('banking.default_currency', 'SZL'))?->getSymbol() ?? 'E';
-                            $amountInCents  = (int) ($data['amount'] * 100);
-                            $reference      = $data['reference'] ?? 'Admin withdrawal';
+                            $amountInCents = (int) ($data['amount'] * 100);
+                            $reference = $data['reference'] ?? 'Admin withdrawal';
 
                             $this->withAccountTenancy(
                                 $record->uuid,
