@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Wallet\Workflows\Activities;
 
+use App\Domain\Shared\Concerns\WithTenantContext;
 use App\Domain\Wallet\Services\BlockchainWalletService;
 use App\Models\User;
 use Brick\Math\BigDecimal;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 class BlockchainDepositActivities
 {
+    use WithTenantContext;
+
     public function __construct(
         private BlockchainWalletService $walletService,
         private array $connectors // Injected blockchain connectors
@@ -176,22 +179,24 @@ class BlockchainDepositActivities
         string $amount,
         string $depositId
     ): void {
-        // Credit user's fiat account
-        DB::table('transactions')->insert(
-            [
-                'account_id'  => $accountId,
-                'type'        => 'credit',
-                'amount'      => $amount,
-                'description' => 'Blockchain deposit',
-                'reference'   => $depositId,
-                'created_at'  => now(),
-            ]
-        );
+        $this->withAccountTenancy($accountId, function () use ($accountId, $amount, $depositId): void {
+            // Credit user's fiat account
+            DB::table('transactions')->insert(
+                [
+                    'account_id'  => $accountId,
+                    'type'        => 'credit',
+                    'amount'      => $amount,
+                    'description' => 'Blockchain deposit',
+                    'reference'   => $depositId,
+                    'created_at'  => now(),
+                ]
+            );
 
-        // Update account balance
-        DB::table('accounts')
-            ->where('id', $accountId)
-            ->increment('balance', (int) $amount);
+            // Update account balance
+            DB::table('accounts')
+                ->where('id', $accountId)
+                ->increment('balance', (int) $amount);
+        });
     }
 
     public function updateDepositStatus(
@@ -390,18 +395,20 @@ class BlockchainDepositActivities
         string $description,
         array $metadata
     ): void {
-        DB::table('transactions')->insert([
-            'account_id'  => $accountId,
-            'type'        => 'credit',
-            'amount'      => $fiatValue,
-            'description' => $description,
-            'metadata'    => json_encode($metadata),
-            'created_at'  => now(),
-        ]);
+        $this->withAccountTenancy($accountId, function () use ($accountId, $fiatValue, $description, $metadata): void {
+            DB::table('transactions')->insert([
+                'account_id'  => $accountId,
+                'type'        => 'credit',
+                'amount'      => $fiatValue,
+                'description' => $description,
+                'metadata'    => json_encode($metadata),
+                'created_at'  => now(),
+            ]);
 
-        DB::table('accounts')
-            ->where('id', $accountId)
-            ->increment('balance', (int) $fiatValue);
+            DB::table('accounts')
+                ->where('id', $accountId)
+                ->increment('balance', (int) $fiatValue);
+        });
     }
 
     public function updateTokenBalance(
