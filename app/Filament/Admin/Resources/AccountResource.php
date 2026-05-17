@@ -57,7 +57,7 @@ class AccountResource extends Resource
 
     public static function canEdit(Model $record): bool
     {
-        return false;
+        return app(BackofficeWorkspaceAccess::class)->canAccess(static::getBackofficeWorkspace());
     }
 
     public static function canDelete(Model $record): bool
