@@ -7,6 +7,7 @@ namespace App\Filament\Admin\Pages\FundManagement;
 use App\Domain\Account\Models\Account;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\FundManagement\Services\FundManagementService;
+use App\Filament\Admin\Concerns\WithAccountTenancy;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -16,6 +17,8 @@ use Throwable;
 
 class AdjustBalancePage extends Page
 {
+    use WithAccountTenancy;
+
     protected static ?string $navigationIcon = 'heroicon-o-adjustments-horizontal';
 
     protected static ?string $navigationLabel = 'Adjust Balance';
@@ -140,7 +143,7 @@ class AdjustBalancePage extends Page
         ];
     }
 
-    protected function lookupAccount(string $uuid, callable $set): void
+    public function selectAccount(string $uuid): void
     {
         if (empty($uuid)) {
             $this->selectedAccount = null;
@@ -149,6 +152,15 @@ class AdjustBalancePage extends Page
         }
 
         $this->selectedAccount = Account::with('user')->where('uuid', $uuid)->first();
+
+        if ($this->selectedAccount !== null) {
+            $this->initializeTenancyForRecord($this->selectedAccount);
+        }
+    }
+
+    protected function lookupAccount(string $uuid, callable $set): void
+    {
+        $this->selectAccount($uuid);
     }
 
     protected function adjustBalance(array $data): void
