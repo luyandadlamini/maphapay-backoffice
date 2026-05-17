@@ -333,6 +333,16 @@ Schedule::command('revenue:scan-anomalies:for-tenants')
     ->appendOutputTo(storage_path('logs/revenue-anomaly-scan.log'))
     ->withoutOverlapping();
 
+// Nightly guard: assert that nothing has written to the renamed legacy central account tables
+// since Phase-7 data migration. Exits 0 when tables are absent (pre-migration runs).
+Schedule::command('maphapay:assert-no-central-account-access')
+    ->daily()
+    ->at('03:30')
+    ->description('Assert no writes to legacy central accounts/account_balances tables post-rename')
+    ->appendOutputTo(storage_path('logs/central-account-access-guard.log'))
+    ->withoutOverlapping()
+    ->onFailure(fn () => Log::critical('Central legacy account tables have been written to!'));
+
 // Nightly drift detection: detect orphaned central-DB balances that belong in a tenant DB.
 // Runs dry-run only — no --apply flag — so it is safe to run automatically.
 // A non-zero exit code (unexpected error) triggers an alert.
