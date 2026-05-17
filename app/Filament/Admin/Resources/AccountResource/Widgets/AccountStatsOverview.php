@@ -8,11 +8,14 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Account\Models\Transaction;
 use App\Domain\Account\Models\Turnover;
+use App\Models\Tenant;
 use App\Support\BankingDisplay;
 use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
+use Stancl\Tenancy\Tenancy;
 
 class AccountStatsOverview extends BaseWidget
 {
@@ -21,36 +24,87 @@ class AccountStatsOverview extends BaseWidget
     protected function getStats(): array
     {
         if (! $this->record) {
-            // Dashboard stats for all accounts
-            $totalAccounts = Account::count();
-            $activeAccounts = Account::where('frozen', false)->count();
-            $frozenAccounts = Account::where('frozen', true)->count();
-            $totalBalance = AccountBalance::query()
-                ->where('asset_code', config('banking.default_currency', 'SZL'))
-                ->sum('balance');
-
-            return [
-                Stat::make('Total Accounts', number_format($totalAccounts))
-                    ->description($activeAccounts . ' active, ' . $frozenAccounts . ' frozen')
-                    ->descriptionIcon('heroicon-m-arrow-trending-up')
-                    ->color('success'),
-                Stat::make('Total Balance', BankingDisplay::minorUnitsAsString($totalBalance))
-                    ->description('Across all accounts')
-                    ->descriptionIcon('heroicon-m-banknotes')
-                    ->color('primary'),
-                Stat::make('Average Balance', BankingDisplay::minorUnitsAsString($totalAccounts > 0 ? $totalBalance / $totalAccounts : 0))
-                    ->description('Per account')
-                    ->descriptionIcon('heroicon-m-calculator')
-                    ->color('info'),
-                Stat::make('Frozen Accounts', $frozenAccounts)
-                    ->description(number_format($totalAccounts > 0 ? ($frozenAccounts / $totalAccounts) * 100 : 0, 1) . '% of total')
-                    ->descriptionIcon($frozenAccounts > 0 ? 'heroicon-m-exclamation-triangle' : 'heroicon-m-check-circle')
-                    ->color($frozenAccounts > 0 ? 'danger' : 'success'),
-            ];
+            return $this->getDashboardStats();
         }
 
-        // Individual account stats
+        return $this->getAccountStats();
+    }
+
+    /**
+     * Aggregate stats across all tenants by iterating them one-by-one and
+     * initializing tenancy per tenant so that UsesTenantConnection routes
+     * queries to the correct per-tenant database.
+     *
+     * @return array<int, Stat>
+     */
+    private function getDashboardStats(): array
+    {
+        $totalAccounts = 0;
+        $activeAccounts = 0;
+        $frozenAccounts = 0;
+        $totalBalanceMinor = 0;
+
+        $defaultCurrency = config('banking.default_currency', 'SZL');
+        $tenancy = app(Tenancy::class);
+
+        Tenant::on('central')->lazy(100)->each(
+            function (Tenant $tenant) use (
+                &$totalAccounts,
+                &$activeAccounts,
+                &$frozenAccounts,
+                &$totalBalanceMinor,
+                $defaultCurrency,
+                $tenancy,
+            ): void {
+                $tenancy->initialize($tenant);
+
+                try {
+                    $totalAccounts += Account::count();
+                    $activeAccounts += Account::where('frozen', false)->count();
+                    $frozenAccounts += Account::where('frozen', true)->count();
+                    $totalBalanceMinor += (int) AccountBalance::query()
+                        ->where('asset_code', $defaultCurrency)
+                        ->sum('balance');
+                } catch (QueryException) {
+                    // Tenant database does not exist or is unreachable — skip.
+                } finally {
+                    $tenancy->end();
+                }
+            }
+        );
+
+        return [
+            Stat::make('Total Accounts', number_format($totalAccounts))
+                ->description($activeAccounts . ' active, ' . $frozenAccounts . ' frozen')
+                ->descriptionIcon('heroicon-m-arrow-trending-up')
+                ->color('success'),
+            Stat::make('Total Balance', BankingDisplay::minorUnitsAsString($totalBalanceMinor))
+                ->description('Across all accounts')
+                ->descriptionIcon('heroicon-m-banknotes')
+                ->color('primary'),
+            Stat::make('Average Balance', BankingDisplay::minorUnitsAsString($totalAccounts > 0 ? $totalBalanceMinor / $totalAccounts : 0))
+                ->description('Per account')
+                ->descriptionIcon('heroicon-m-calculator')
+                ->color('info'),
+            Stat::make('Frozen Accounts', $frozenAccounts)
+                ->description(number_format($totalAccounts > 0 ? ($frozenAccounts / $totalAccounts) * 100 : 0, 1) . '% of total')
+                ->descriptionIcon($frozenAccounts > 0 ? 'heroicon-m-exclamation-triangle' : 'heroicon-m-check-circle')
+                ->color($frozenAccounts > 0 ? 'danger' : 'success'),
+        ];
+    }
+
+    /**
+     * Stats for a single account record (shown on the ViewAccount page).
+     *
+     * @return array<int, Stat>
+     */
+    private function getAccountStats(): array
+    {
         $account = $this->record;
+
+        if (! $account instanceof Account) {
+            return [];
+        }
 
         $lastTransaction = Transaction::where('account_uuid', $account->uuid)
             ->latest()
