@@ -4,34 +4,30 @@ declare(strict_types=1);
 
 namespace App\Filament\Exports;
 
-use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountMembership;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
 
 class AccountExporter extends Exporter
 {
-    protected static ?string $model = Account::class;
+    protected static ?string $model = AccountMembership::class;
 
     public static function getColumns(): array
     {
         return [
-            ExportColumn::make('uuid')
+            ExportColumn::make('account_uuid')
                 ->label('Account ID'),
-            ExportColumn::make('name')
-                ->label('Account Name'),
             ExportColumn::make('user_uuid')
                 ->label('User ID'),
-            ExportColumn::make('balance')
-                ->label('Balance (USD)')
-                ->formatStateUsing(fn ($state) => number_format($state / 100, 2)),
-            ExportColumn::make('frozen')
-                ->label('Status')
-                ->formatStateUsing(fn ($state) => $state ? 'Frozen' : 'Active'),
+            ExportColumn::make('tenant_id')
+                ->label('Tenant'),
+            ExportColumn::make('account_type')
+                ->label('Account Type'),
+            ExportColumn::make('status')
+                ->label('Status'),
             ExportColumn::make('created_at')
                 ->label('Created Date'),
-            ExportColumn::make('updated_at')
-                ->label('Last Updated'),
         ];
     }
 

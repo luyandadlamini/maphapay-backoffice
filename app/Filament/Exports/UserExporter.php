@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Exports;
 
+use App\Domain\Account\Models\AccountMembership;
 use App\Models\User;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
@@ -26,7 +27,7 @@ class UserExporter extends Exporter
                 ->label('Email Verified'),
             ExportColumn::make('accounts_count')
                 ->label('Number of Accounts')
-                ->counts('accounts'),
+                ->state(fn (User $record): int => AccountMembership::where('user_uuid', $record->uuid)->count()),
             ExportColumn::make('created_at')
                 ->label('Registration Date'),
             ExportColumn::make('updated_at')

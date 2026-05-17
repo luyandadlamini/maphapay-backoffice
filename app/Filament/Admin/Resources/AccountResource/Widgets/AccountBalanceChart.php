@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\AccountResource\Widgets;
 
-use App\Domain\Account\Models\Account;
 use Filament\Widgets\ChartWidget;
 
 class AccountBalanceChart extends ChartWidget
@@ -78,22 +77,17 @@ class AccountBalanceChart extends ChartWidget
             default => $endDate->copy()->subDays(7),
         };
 
-        // For demonstration, we'll generate sample trend data
-        // In production, this would query historical balance snapshots
+        // Historical balance snapshots are not yet persisted cross-tenant.
+        // Return placeholder zeros so the chart renders without error.
         $data = collect();
         $current = $startDate->copy();
 
         while ($current <= $endDate) {
-            $baseTotal = Account::where('created_at', '<=', $current)->sum('balance') / 100;
-            $variance = rand(-5, 10) / 100; // Simulate balance changes
-
-            $data->push(
-                [
-                    'date'    => $current->format($groupBy['format']),
-                    'total'   => round($baseTotal * (1 + $variance), 2),
-                    'average' => round(($baseTotal * (1 + $variance)) / max(Account::where('created_at', '<=', $current)->count(), 1), 2),
-                ]
-            );
+            $data->push([
+                'date'    => $current->format($groupBy['format']),
+                'total'   => 0,
+                'average' => 0,
+            ]);
 
             if ($period === '24h') {
                 $current->addHours((int) ($groupBy['hours'] ?? 1));

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\AccountResource\Widgets;
 
-use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountMembership;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\DB;
 
@@ -129,7 +129,9 @@ class AccountGrowthChart extends ChartWidget
             ? "DATE_FORMAT(created_at, '{$dateFormat}')"
             : "strftime('{$dateFormat}', created_at)";
 
-        $accounts = Account::select(
+        // AccountMembership is on the central DB — safe to query without tenant context.
+        // Account uses UsesTenantConnection so direct queries require per-tenant iteration.
+        $accounts = AccountMembership::select(
             DB::raw("{$dateExpression} as period"),
             DB::raw('COUNT(*) as count'),
             DB::raw('MIN(created_at) as period_start')
@@ -140,7 +142,7 @@ class AccountGrowthChart extends ChartWidget
             ->orderBy('period_start')
             ->get();
 
-        $totalBefore = Account::where('created_at', '<', $startDate)->count();
+        $totalBefore = AccountMembership::where('created_at', '<', $startDate)->count();
 
         // Fill in missing periods with zeros
         $data = collect();
