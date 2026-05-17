@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Pages\FundManagement;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Asset\Models\Asset;
 use App\Filament\Admin\Concerns\HasBackofficeWorkspace;
 use App\Filament\Admin\Concerns\WithAccountTenancy;
@@ -153,11 +154,21 @@ class FundAccountPage extends Page
             return;
         }
 
-        $this->selectedAccount = Account::with('user')->where('uuid', $uuid)->first();
+        // Look up the membership first (central DB — always reachable without tenant context).
+        // Initialize tenancy from the membership before reading Account, which is a tenant-DB model.
+        $membership = AccountMembership::query()
+            ->where('account_uuid', $uuid)
+            ->where('status', 'active')
+            ->first();
 
-        if ($this->selectedAccount !== null) {
-            $this->initializeTenancyForRecord($this->selectedAccount);
+        if ($membership === null) {
+            $this->selectedAccount = null;
+
+            return;
         }
+
+        $this->initializeTenancyForRecord($membership);
+        $this->selectedAccount = Account::with('user')->where('uuid', $uuid)->first();
     }
 
     protected function lookupAccount(string $uuid, callable $set): void

@@ -81,6 +81,7 @@ class AccountStatsOverview extends BaseWidget
                 }
             );
         } finally {
+            app('db')->setDefaultConnection($originalDefault);
             config(['database.default' => $originalDefault]);
         }
 

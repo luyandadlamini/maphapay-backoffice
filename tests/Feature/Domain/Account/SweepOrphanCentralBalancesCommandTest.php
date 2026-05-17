@@ -28,6 +28,13 @@ class SweepOrphanCentralBalancesCommandTest extends TestCase
     {
         parent::setUp();
 
+        // Disable FK checks on 'central' for the duration of each test.
+        // account_memberships.user_uuid → users.uuid is in the 'mysql' transaction
+        // and is invisible to the 'central' connection's FK check (cross-transaction).
+        // Both connections wrap a transaction that rolls back after each test,
+        // so FK integrity is guaranteed structurally; we just need to let the insert through.
+        DB::connection('central')->statement('SET FOREIGN_KEY_CHECKS=0');
+
         // account_balances.asset_code has a FK to assets.code.
         // Seed the SZL asset so balance inserts don't violate the constraint.
         DB::table('assets')->insertOrIgnore([
@@ -74,12 +81,12 @@ class SweepOrphanCentralBalancesCommandTest extends TestCase
         // Insert tenant + membership via raw SQL to bypass Stancl's CreateDatabase
         // DDL job, which invalidates MySQL prepared statement cache (error 1615).
         $tenantId = (string) Str::uuid();
-        DB::connection('mysql')->table('tenants')->insert([
+        DB::connection('central')->table('tenants')->insert([
             'id'   => $tenantId,
             'name' => 'Test Tenant ' . $tenantId,
             'data' => json_encode(['tenancy_db_name' => 'tenant' . $tenantId]),
         ]);
-        DB::connection('mysql')->table('account_memberships')->insert([
+        DB::connection('central')->table('account_memberships')->insert([
             'id'           => (string) Str::uuid(),
             'user_uuid'    => $user->uuid,
             'account_uuid' => $tenantUuid,
@@ -94,7 +101,17 @@ class SweepOrphanCentralBalancesCommandTest extends TestCase
 
         // Dry-run (default — no --apply flag).
         $exitCode = Artisan::call('maphapay:sweep-orphan-central-balances');
+        $output = Artisan::output();
+
         $this->assertSame(0, $exitCode);
+
+        // The orphan must appear in the plan table output — proving it was identified,
+        // not silently skipped. If the membership lookup is wrong (e.g. looks up by
+        // account_uuid instead of user_uuid) the orphan is missed and neither UUID
+        // would appear in the output.
+        $this->assertStringContainsString($centralUuid, $output, 'Dry-run output must list the orphan central UUID');
+        $this->assertStringContainsString($tenantUuid, $output, 'Dry-run output must list the target tenant UUID');
+        $this->assertStringContainsString('would be migrated', $output, 'Dry-run output must confirm 1 row would be migrated');
 
         // Balance must be untouched — dry-run must never write.
         $storedBalance = DB::connection('mysql')
@@ -172,12 +189,12 @@ class SweepOrphanCentralBalancesCommandTest extends TestCase
         ]);
 
         $tenantId = (string) Str::uuid();
-        DB::connection('mysql')->table('tenants')->insert([
+        DB::connection('central')->table('tenants')->insert([
             'id'   => $tenantId,
             'name' => 'Test Tenant ' . $tenantId,
             'data' => json_encode(['tenancy_db_name' => 'tenant' . $tenantId]),
         ]);
-        DB::connection('mysql')->table('account_memberships')->insert([
+        DB::connection('central')->table('account_memberships')->insert([
             'id'           => (string) Str::uuid(),
             'user_uuid'    => $user->uuid,
             'account_uuid' => $sharedUuid, // same UUID — already canonical

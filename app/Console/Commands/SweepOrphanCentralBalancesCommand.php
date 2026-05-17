@@ -41,12 +41,12 @@ class SweepOrphanCentralBalancesCommand extends Command
 
         foreach ($centralAccounts as $row) {
             $membership = AccountMembership::query()
-                ->where('account_uuid', $row->central_account_uuid)
+                ->where('user_uuid', $row->user_uuid)
                 ->where('status', 'active')
                 ->first();
 
             if ($membership === null) {
-                $this->warn("No active membership for user {$row->user_uuid} — skipping");
+                $this->warn("No active membership for user {$row->user_uuid} ({$row->balance} {$row->asset_code}) — skipping");
 
                 continue;
             }
