@@ -12,6 +12,8 @@ return new class () extends Migration {
      */
     public function up(): void
     {
+        Schema::dropIfExists('fee_events');
+
         Schema::create('fee_events', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->char('transaction_uuid', 36)->nullable();
@@ -29,8 +31,8 @@ return new class () extends Migration {
             $table->string('experiment_arm', 10)->nullable();
             $table->timestamps();
 
-            $table->foreign('pricing_rule_id')->references('id')->on('pricing_rules')->onDelete('setNull');
-            $table->foreign('segment_id')->references('id')->on('customer_segments')->onDelete('setNull');
+            $table->foreign('pricing_rule_id')->references('id')->on('pricing_rules')->nullOnDelete();
+            $table->foreign('segment_id')->references('id')->on('customer_segments')->nullOnDelete();
 
             $table->index('transaction_uuid');
             $table->index('user_id');

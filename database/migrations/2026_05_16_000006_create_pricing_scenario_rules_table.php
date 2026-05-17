@@ -12,6 +12,8 @@ return new class () extends Migration {
      */
     public function up(): void
     {
+        Schema::dropIfExists('pricing_scenario_rules');
+
         Schema::create('pricing_scenario_rules', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('scenario_id');
@@ -20,7 +22,7 @@ return new class () extends Migration {
             $table->timestamps();
 
             $table->foreign('scenario_id')->references('id')->on('pricing_scenarios')->onDelete('cascade');
-            $table->foreign('pricing_rule_id')->references('id')->on('pricing_rules')->onDelete('setNull');
+            $table->foreign('pricing_rule_id')->references('id')->on('pricing_rules')->nullOnDelete();
             $table->unique(['scenario_id', 'pricing_rule_id']);
         });
     }

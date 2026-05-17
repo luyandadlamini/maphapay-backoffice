@@ -12,6 +12,8 @@ return new class () extends Migration {
      */
     public function up(): void
     {
+        Schema::dropIfExists('revenue_daily_rollups');
+
         Schema::create('revenue_daily_rollups', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->date('date');
@@ -24,7 +26,7 @@ return new class () extends Migration {
             $table->bigInteger('avg_fee_minor')->default(0);
             $table->timestamps();
 
-            $table->foreign('segment_id')->references('id')->on('customer_segments')->onDelete('setNull');
+            $table->foreign('segment_id')->references('id')->on('customer_segments')->nullOnDelete();
             $table->unique(['date', 'product_code', 'segment_id', 'currency']);
         });
     }
