@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Account\Services\AccountMembershipService;
+use App\Domain\Shared\Concerns\WithTenantContext;
 use App\Models\Team;
 use App\Models\Tenant;
 use App\Models\User;
@@ -28,6 +29,8 @@ use Throwable;
  */
 class RepairOwnerMembership extends Command
 {
+    use WithTenantContext;
+
     protected $signature = 'accounts:repair-owner-membership
                             {email : The user email to inspect/repair}
                             {--dry-run : Report only; make no changes}';
