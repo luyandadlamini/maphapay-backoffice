@@ -69,6 +69,13 @@ class User extends Authenticatable implements FilamentUser
     use TwoFactorAuthenticatable;
 
     /**
+     * The users table lives in the central database. After
+     * account.context middleware switches database.default to 'tenant',
+     * unpinned User queries would target the wrong DB. Pin explicitly.
+     */
+    protected $connection = 'central';
+
+    /**
      * Get the columns that should receive a unique identifier.
      *
      * @return array<int, string>
