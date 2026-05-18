@@ -6,6 +6,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Admin\Pages\Dashboard;
 use App\Filament\Admin\Support\LegacyAdminNavigation;
+use App\Http\Middleware\FilamentTenantMiddleware;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -74,6 +75,7 @@ class AdminPanelProvider extends PanelProvider
                     AddQueuedCookiesToResponse::class,
                     StartSession::class,
                     AuthenticateSession::class,
+                    FilamentTenantMiddleware::class,
                     ShareErrorsFromSession::class,
                     VerifyCsrfToken::class,
                     SubstituteBindings::class,

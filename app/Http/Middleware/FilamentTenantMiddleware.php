@@ -4,12 +4,25 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Domain\Account\Models\AccountMembership;
+use App\Domain\Shared\Traits\UsesTenantConnection;
+use App\Filament\Admin\Pages\CardsDashboard;
+use App\Filament\Admin\Pages\ExceptionsDashboard;
+use App\Filament\Admin\Pages\FundManagement\AdjustBalancePage;
+use App\Filament\Admin\Pages\FundManagement\FundAccountPage;
+use App\Filament\Admin\Pages\FundManagement\TransferBetweenAccountsPage;
+use App\Filament\Admin\Pages\FundManagement\TreasuryPoolPage;
+use App\Filament\Admin\Pages\RevenuePerformanceOverview;
+use App\Filament\Admin\Pages\RevenueStreamsPage;
+use App\Filament\Admin\Resources\UserResource\Pages\ViewUser;
 use App\Models\Team;
 use App\Models\Tenant;
 use Closure;
 use Exception;
+use Filament\Resources\Pages\Page as FilamentResourcePage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Stancl\Tenancy\Tenancy;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -34,6 +47,18 @@ class FilamentTenantMiddleware
      * Session key for storing the selected tenant.
      */
     public const TENANT_SESSION_KEY = 'filament_tenant_id';
+
+    /** @var array<class-string> */
+    private const TENANT_CONTEXT_PAGE_CLASSES = [
+        AdjustBalancePage::class,
+        CardsDashboard::class,
+        ExceptionsDashboard::class,
+        FundAccountPage::class,
+        RevenuePerformanceOverview::class,
+        RevenueStreamsPage::class,
+        TransferBetweenAccountsPage::class,
+        TreasuryPoolPage::class,
+    ];
 
     /**
      * Handle an incoming request.
@@ -125,9 +150,17 @@ class FilamentTenantMiddleware
             }
         }
 
+        $tenantForUserRecord = $this->resolveTenantIdForUserRecordRoute($request);
+        if ($tenantForUserRecord !== null) {
+            return $tenantForUserRecord;
+        }
+
         // Check if user is platform admin (can see all tenants)
         if ($this->isPlatformAdmin($user)) {
-            // Platform admin - no tenant context (sees all)
+            if ($this->requestNeedsTenantContext($request)) {
+                return Tenant::on('central')->oldest('created_at')->value('id');
+            }
+
             return null;
         }
 
@@ -135,6 +168,73 @@ class FilamentTenantMiddleware
         $tenant = $this->getFirstAccessibleTenant($user);
 
         return $tenant?->id;
+    }
+
+    protected function resolveTenantIdForUserRecordRoute(Request $request): ?string
+    {
+        $actionClass = $this->routeActionClass($request);
+        if ($actionClass !== ViewUser::class) {
+            return null;
+        }
+
+        $record = $request->route()?->parameter('record');
+        if (! is_string($record) || $record === '') {
+            return null;
+        }
+
+        return AccountMembership::on('central')
+            ->where('user_uuid', $record)
+            ->oldest('created_at')
+            ->value('tenant_id');
+    }
+
+    protected function requestNeedsTenantContext(Request $request): bool
+    {
+        $actionClass = $this->routeActionClass($request);
+        if ($actionClass === null) {
+            return false;
+        }
+
+        if (in_array($actionClass, self::TENANT_CONTEXT_PAGE_CLASSES, true)) {
+            return true;
+        }
+
+        if (! is_subclass_of($actionClass, FilamentResourcePage::class)) {
+            return false;
+        }
+
+        if (! method_exists($actionClass, 'getResource')) {
+            return false;
+        }
+
+        $resource = $actionClass::getResource();
+        if (! is_string($resource) || ! method_exists($resource, 'getModel')) {
+            return false;
+        }
+
+        $model = $resource::getModel();
+        if (! is_string($model) || ! class_exists($model)) {
+            return false;
+        }
+
+        return in_array(UsesTenantConnection::class, class_uses_recursive($model), true);
+    }
+
+    protected function routeActionClass(Request $request): ?string
+    {
+        $route = $request->route();
+        if (! $route || ! method_exists($route, 'getActionName')) {
+            return null;
+        }
+
+        $action = $route->getActionName();
+        if (! is_string($action) || $action === '') {
+            return null;
+        }
+
+        $class = Str::before($action, '@');
+
+        return class_exists($class) ? $class : null;
     }
 
     /**

@@ -32,7 +32,7 @@ abstract class AbstractWalletProviderPage extends Page
     public function mount(): void
     {
         $slug = static::getSlug();
-        redirect()->to("/admin/{$slug}/overview")->send();
+        $this->redirect("/admin/{$slug}/overview");
     }
 
     public static function getNavigationLabel(): string
