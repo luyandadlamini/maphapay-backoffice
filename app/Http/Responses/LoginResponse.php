@@ -16,17 +16,19 @@ class LoginResponse implements LoginResponseContract
             return new JsonResponse('', 204);
         }
 
-        return redirect()->intended($this->redirectPath($request));
+        if ($this->isAdminPanelUser($request)) {
+            return redirect('/admin');
+        }
+
+        return redirect()->intended((string) config('fortify.home', '/dashboard'));
     }
 
-    private function redirectPath($request): string
+    private function isAdminPanelUser($request): bool
     {
         $user = $request->user();
 
-        if ($user !== null && method_exists($user, 'hasAnyRole') && $user->hasAnyRole(UserRoles::adminPanelRoles())) {
-            return '/admin';
-        }
-
-        return (string) config('fortify.home', '/dashboard');
+        return $user !== null
+            && method_exists($user, 'hasAnyRole')
+            && $user->hasAnyRole(UserRoles::adminPanelRoles());
     }
 }
