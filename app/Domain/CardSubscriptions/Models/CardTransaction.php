@@ -6,7 +6,6 @@ namespace App\Domain\CardSubscriptions\Models;
 
 use App\Domain\CardIssuance\Models\Card;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -37,8 +36,6 @@ use Illuminate\Support\Carbon;
  */
 class CardTransaction extends Model
 {
-    /** @use HasFactory<\Database\Factories\Domain\CardSubscriptions\Models\CardTransactionFactory> */
-    use HasFactory;
 
     protected $table = 'card_transactions';
 
@@ -73,13 +70,13 @@ class CardTransaction extends Model
         ];
     }
 
-    /** @return BelongsTo<Card, self> */
+    /** @return BelongsTo<Card, $this> */
     public function card(): BelongsTo
     {
         return $this->belongsTo(Card::class);
     }
 
-    /** @return BelongsTo<User, self> */
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

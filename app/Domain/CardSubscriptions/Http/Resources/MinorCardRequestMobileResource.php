@@ -31,7 +31,7 @@ final class MinorCardRequestMobileResource
 
         return [
             'id'               => (string) $request->id,
-            'minor_user_id'    => (string) ($request->minorAccount?->user_uuid ?? ''),
+            'minor_user_id'    => $request->minorAccount !== null ? $request->minorAccount->user_uuid : '',
             'guardian_user_id' => '',
             'request_type'     => self::resolveKhulaRequestType($intent),
             'status'           => self::mapStatus($request->status),

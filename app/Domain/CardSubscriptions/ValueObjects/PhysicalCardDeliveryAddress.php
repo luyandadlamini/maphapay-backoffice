@@ -22,6 +22,7 @@ final readonly class PhysicalCardDeliveryAddress
     ) {
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [

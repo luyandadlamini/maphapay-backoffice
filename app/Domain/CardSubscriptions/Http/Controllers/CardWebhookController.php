@@ -59,7 +59,7 @@ class CardWebhookController extends Controller
         // Step 4 — idempotency check
         $alreadyProcessed = CardAuditLog::query()
             ->where('action', 'processor.webhook_received')
-            ->where('metadata->event_id', $processorEventId)
+            ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(`metadata`, '$.event_id')) = ?", [$processorEventId])
             ->exists();
 
         if ($alreadyProcessed) {

@@ -35,7 +35,13 @@ class PhysicalCardOrderService
             'activated_at' => now(),
         ]);
 
-        return $order->card;
+        $card = $order->card;
+
+        if ($card === null) {
+            throw new \RuntimeException("Activated order {$order->id} has no associated card.");
+        }
+
+        return $card;
     }
 
     public function cancel(User $user, PhysicalCardOrder $order, string $reason): PhysicalCardOrder

@@ -46,7 +46,7 @@ class CardBillingService
         }
 
         // Load payer account
-        $account = Account::where('user_uuid', $subscription->payer->uuid)->first();
+        $account = Account::where('user_uuid', $subscription->payer?->uuid)->first();
         if ($account === null) {
             $result = BillingAttemptResult::failed('PAYER_ACCOUNT_NOT_FOUND');
             CardSubscriptionBillingAttempt::create([
@@ -147,7 +147,7 @@ class CardBillingService
 
     public function billRenewal(CardSubscription $subscription): BillingAttemptResult
     {
-        $idempotencyKey = sha1("renewal:{$subscription->id}:{$subscription->next_billing_date->toIso8601String()}");
+        $idempotencyKey = sha1("renewal:{$subscription->id}:{($subscription->next_billing_date ?? now())->toIso8601String()}");
 
         // Idempotent replay: return the actual result of the previous attempt
         $existing = CardSubscriptionBillingAttempt::where('idempotency_key', $idempotencyKey)->first();
@@ -158,7 +158,7 @@ class CardBillingService
         }
 
         // Load payer account
-        $account = Account::where('user_uuid', $subscription->payer->uuid)->first();
+        $account = Account::where('user_uuid', $subscription->payer?->uuid)->first();
         if ($account === null) {
             $result = BillingAttemptResult::failed('PAYER_ACCOUNT_NOT_FOUND');
             CardSubscriptionBillingAttempt::create([
@@ -273,7 +273,7 @@ class CardBillingService
         }
 
         // Load payer account
-        $account = Account::where('user_uuid', $subscription->payer->uuid)->first();
+        $account = Account::where('user_uuid', $subscription->payer?->uuid)->first();
         if ($account === null) {
             $result = BillingAttemptResult::failed('PAYER_ACCOUNT_NOT_FOUND');
             CardSubscriptionBillingAttempt::create([
@@ -379,9 +379,7 @@ class CardBillingService
     {
         $wasPastDueOrSuspended = false;
         $dispatchRestored = false;
-        // Fix 5: Capture $locked->id via $subscriptionId so the event uses the
-        // locked row's ID rather than the (potentially stale) $subscription object
-        $subscriptionId = null;
+        $subscriptionId = '';
 
         DB::transaction(function () use ($subscription, &$wasPastDueOrSuspended, &$dispatchRestored, &$subscriptionId): void {
             $locked = CardSubscription::where('id', $subscription->id)->lockForUpdate()->firstOrFail();
@@ -392,7 +390,7 @@ class CardBillingService
             ], true);
 
             // Roll the period forward — copy() to avoid mutating the same Carbon instance
-            $nextBilling = $locked->next_billing_date->copy();
+            $nextBilling = ($locked->next_billing_date ?? now())->copy();
             $locked->current_period_start = $nextBilling->copy();
             $locked->current_period_end = $nextBilling->copy()->addMonth();
             $locked->next_billing_date = $nextBilling->addMonth();
@@ -423,92 +421,89 @@ class CardBillingService
 
     public function handleFailedPayment(CardSubscription $subscription, BillingAttemptResult $result): void
     {
-        $eventToDispatch = null;
-        $eventPayload = [];
+        /** @var (\Closure(): void)|null $dispatchEvent */
+        $dispatchEvent = null;
 
-        DB::transaction(function () use ($subscription, $result, &$eventToDispatch, &$eventPayload): void {
+        DB::transaction(function () use ($subscription, $result, &$dispatchEvent): void {
             $locked = CardSubscription::where('id', $subscription->id)->lockForUpdate()->firstOrFail();
 
-            // Fix 4: Guard against Cancelled/PendingGuardianApproval — billing must not
+            // Guard against Cancelled/PendingGuardianApproval — billing must not
             // transition a terminated or not-yet-approved subscription
             if (in_array($locked->status, [
                 CardSubscriptionStatus::Cancelled,
                 CardSubscriptionStatus::PendingGuardianApproval,
             ], true)) {
-                return; // No-op: billing should not transition a terminated/pending subscription
+                return;
             }
 
             $locked->failed_payment_count++;
 
             if ($locked->status === CardSubscriptionStatus::Active) {
-                $locked->status = CardSubscriptionStatus::PastDue;
-                $locked->grace_period_ends_at = now()->addDays(3);
+                $gracePeriodEndsAt = now()->addDays(3);
+                $locked->status               = CardSubscriptionStatus::PastDue;
+                $locked->grace_period_ends_at = $gracePeriodEndsAt;
                 $locked->save();
 
-                $eventToDispatch = 'past_due';
-                $eventPayload = [
-                    'subscriptionId'     => (string) $subscription->id,
-                    'failedPaymentCount' => $locked->failed_payment_count,
-                    'gracePeriodEndsAt'  => $locked->grace_period_ends_at->toIso8601String(),
-                    'failureReason'      => $result->reason ?? 'UNKNOWN',
-                ];
+                $subscriptionId     = (string) $subscription->id;
+                $failedPaymentCount = $locked->failed_payment_count;
+                $failureReason      = $result->reason ?? 'UNKNOWN';
+
+                $dispatchEvent = static function () use ($subscriptionId, $failedPaymentCount, $gracePeriodEndsAt, $failureReason): void {
+                    event(new CardSubscriptionPastDue(
+                        subscriptionId:     $subscriptionId,
+                        failedPaymentCount: $failedPaymentCount,
+                        gracePeriodEndsAt:  $gracePeriodEndsAt->toIso8601String(),
+                        failureReason:      $failureReason,
+                    ));
+                };
             } elseif (
                 $locked->status === CardSubscriptionStatus::PastDue
                 && $locked->grace_period_ends_at !== null
                 && $locked->grace_period_ends_at->isPast()
             ) {
-                $locked->status = CardSubscriptionStatus::Suspended;
-                $locked->suspended_at = now();
+                $suspendedAt = now();
+                $locked->status      = CardSubscriptionStatus::Suspended;
+                $locked->suspended_at = $suspendedAt;
                 $locked->save();
 
                 $locked->cards()->where('status', 'active')->update(['status' => 'suspended']);
 
-                $eventToDispatch = 'suspended';
-                $eventPayload = [
-                    'subscriptionId' => (string) $subscription->id,
-                    'suspendedAt'    => $locked->suspended_at->toIso8601String(),
-                ];
+                $subscriptionId = (string) $subscription->id;
+
+                $dispatchEvent = static function () use ($subscriptionId, $suspendedAt): void {
+                    event(new CardSubscriptionSuspended(
+                        subscriptionId: $subscriptionId,
+                        suspendedAt:    $suspendedAt->toIso8601String(),
+                    ));
+                };
             } elseif (
                 $locked->status === CardSubscriptionStatus::Suspended
                 && $locked->suspended_at !== null
                 && $locked->suspended_at->diffInDays(now()) >= 14
             ) {
-                $locked->status = CardSubscriptionStatus::Cancelled;
-                $locked->cancelled_at = now();
+                $cancelledAt = now();
+                $locked->status      = CardSubscriptionStatus::Cancelled;
+                $locked->cancelled_at = $cancelledAt;
                 $locked->save();
 
                 $locked->cards()->whereNotIn('status', ['cancelled'])->update(['status' => 'cancelled']);
 
-                $eventToDispatch = 'cancelled';
-                $eventPayload = [
-                    'subscriptionId' => (string) $subscription->id,
-                    'cancelledAt'    => $locked->cancelled_at->toIso8601String(),
-                    'cancelledBy'    => 'system',
-                ];
+                $subscriptionId = (string) $subscription->id;
+
+                $dispatchEvent = static function () use ($subscriptionId, $cancelledAt): void {
+                    event(new CardSubscriptionCancelled(
+                        subscriptionId: $subscriptionId,
+                        cancelledAt:    $cancelledAt->toIso8601String(),
+                        cancelledBy:    'system',
+                    ));
+                };
             } else {
-                // Increment already applied; no FSM transition
                 $locked->save();
             }
         });
 
-        // Dispatch events outside transaction
-        match ($eventToDispatch) {
-            'past_due' => event(new CardSubscriptionPastDue(
-                subscriptionId:    $eventPayload['subscriptionId'],
-                failedPaymentCount: $eventPayload['failedPaymentCount'],
-                gracePeriodEndsAt: $eventPayload['gracePeriodEndsAt'],
-                failureReason:     $eventPayload['failureReason'],
-            )),
-            'suspended' => event(new CardSubscriptionSuspended(
-                subscriptionId: $eventPayload['subscriptionId'],
-                suspendedAt:    $eventPayload['suspendedAt'],
-            )),
-            'cancelled' => event(new CardSubscriptionCancelled(
-                subscriptionId: $eventPayload['subscriptionId'],
-                cancelledAt:    $eventPayload['cancelledAt'],
-                cancelledBy:    $eventPayload['cancelledBy'],
-            )),
-            default => null,
-        };
+        if ($dispatchEvent !== null) {
+            ($dispatchEvent)();
+        }
     }
 }

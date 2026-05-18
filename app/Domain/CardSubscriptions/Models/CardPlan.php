@@ -9,7 +9,34 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string               $id
+ * @property string               $code
+ * @property string               $name
+ * @property numeric-string       $monthly_fee
+ * @property int                  $max_virtual_cards
+ * @property int                  $max_physical_cards
+ * @property int                  $monthly_card_creation_limit
+ * @property int                  $free_virtual_reissues_per_month
+ * @property string               $virtual_card_replacement_fee
+ * @property string               $monthly_card_spend_limit
+ * @property string               $daily_card_spend_limit
+ * @property string               $single_transaction_limit
+ * @property bool                 $atm_enabled
+ * @property string               $atm_daily_limit
+ * @property string               $atm_monthly_limit
+ * @property string               $atm_fixed_fee
+ * @property int                  $atm_percentage_fee_bps
+ * @property int                  $fx_markup_bps
+ * @property string               $physical_card_issuance_fee
+ * @property string               $physical_card_replacement_fee
+ * @property CardPlanEligibility  $eligibility
+ * @property bool                 $active
+ * @property Carbon               $created_at
+ * @property Carbon               $updated_at
+ */
 class CardPlan extends Model
 {
     /** @use HasFactory<\Database\Factories\Domain\CardSubscriptions\Models\CardPlanFactory> */

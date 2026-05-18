@@ -53,14 +53,17 @@ class CardSubscriptionService
         $isMinor = $payer->id !== $subscriber->id;
 
         $subscription = DB::transaction(function () use ($subscriber, $payer, $plan, $isMinor, $minorRequestId): CardSubscription {
+            $periodStart = now();
+            $periodEnd   = now()->addMonth();
+
             $subscription = CardSubscription::create([
                 'subscriber_user_id'    => $subscriber->id,
                 'payer_user_id'         => $payer->id,
                 'card_plan_id'          => $plan->id,
                 'status'                => CardSubscriptionStatus::Active,
-                'current_period_start'  => now(),
-                'current_period_end'    => now()->addMonth(),
-                'next_billing_date'     => now()->addMonth(),
+                'current_period_start'  => $periodStart,
+                'current_period_end'    => $periodEnd,
+                'next_billing_date'     => $periodEnd,
                 'failed_payment_count'  => 0,
                 'is_minor_subscription' => $isMinor,
                 'guardian_user_id'      => $isMinor ? $payer->id : null,
@@ -83,8 +86,8 @@ class CardSubscriptionService
                 payerUserId:         (string) $payer->id,
                 planCode:            $plan->code,
                 billedAmount:        $billedAmountDecimal,
-                currentPeriodStart:  $subscription->current_period_start->toIso8601String(),
-                currentPeriodEnd:    $subscription->current_period_end->toIso8601String(),
+                currentPeriodStart:  $periodStart->toIso8601String(),
+                currentPeriodEnd:    $periodEnd->toIso8601String(),
                 isMinorSubscription: $isMinor,
                 guardianUserId:      $isMinor ? (string) $payer->id : null,
             ));
@@ -122,7 +125,7 @@ class CardSubscriptionService
             ->where('active', true)
             ->firstOrFail();
 
-        $oldPlanCode = $subscription->plan?->code ?? '';
+        $oldPlanCode = $subscription->plan !== null ? $subscription->plan->code : '';
 
         DB::transaction(function () use ($subscription, $newPlan): void {
             $locked = CardSubscription::where('id', $subscription->id)
@@ -192,7 +195,7 @@ class CardSubscriptionService
             );
         }
 
-        $oldPlanCode = $subscription->plan?->code ?? '';
+        $oldPlanCode = $subscription->plan !== null ? $subscription->plan->code : '';
 
         DB::transaction(function () use ($subscription, $newPlan, $excess): void {
             $locked = CardSubscription::where('id', $subscription->id)
@@ -237,14 +240,16 @@ class CardSubscriptionService
      */
     public function cancel(User $subscriber): CardSubscription
     {
-        $subscription = DB::transaction(function () use ($subscriber): CardSubscription {
+        $cancelledAt = now();
+
+        $subscription = DB::transaction(function () use ($subscriber, $cancelledAt): CardSubscription {
             $subscription = CardSubscription::where('subscriber_user_id', $subscriber->id)
                 ->whereNotIn('status', [CardSubscriptionStatus::Cancelled->value])
                 ->lockForUpdate()
                 ->latest()
                 ->firstOrFail();
-            $subscription->status = CardSubscriptionStatus::Cancelled;
-            $subscription->cancelled_at = now();
+            $subscription->status      = CardSubscriptionStatus::Cancelled;
+            $subscription->cancelled_at = $cancelledAt;
             $subscription->save();
 
             return $subscription;
@@ -254,7 +259,7 @@ class CardSubscriptionService
 
         event(new CardSubscriptionCancelled(
             subscriptionId: (string) $subscription->id,
-            cancelledAt:    $subscription->cancelled_at->toIso8601String(),
+            cancelledAt:    $cancelledAt->toIso8601String(),
             cancelledBy:    (string) $subscription->subscriber_user_id,
         ));
 
@@ -278,10 +283,12 @@ class CardSubscriptionService
      */
     public function markPastDue(CardSubscription $subscription, string $failureReason): void
     {
-        DB::transaction(function () use ($subscription, $failureReason): void {
+        $gracePeriodEndsAt = now()->addDays(3);
+
+        DB::transaction(function () use ($subscription, $gracePeriodEndsAt): void {
             $subscription->lockForUpdate();
-            $subscription->status = CardSubscriptionStatus::PastDue;
-            $subscription->grace_period_ends_at = now()->addDays(3);
+            $subscription->status               = CardSubscriptionStatus::PastDue;
+            $subscription->grace_period_ends_at = $gracePeriodEndsAt;
             $subscription->failed_payment_count++;
             $subscription->save();
         });
@@ -291,7 +298,7 @@ class CardSubscriptionService
         event(new CardSubscriptionPastDue(
             subscriptionId:     (string) $subscription->id,
             failedPaymentCount: $subscription->failed_payment_count,
-            gracePeriodEndsAt:  $subscription->grace_period_ends_at->toIso8601String(),
+            gracePeriodEndsAt:  $gracePeriodEndsAt->toIso8601String(),
             failureReason:      $failureReason,
         ));
     }
@@ -301,10 +308,12 @@ class CardSubscriptionService
      */
     public function suspend(CardSubscription $subscription): void
     {
-        DB::transaction(function () use ($subscription): void {
+        $suspendedAt = now();
+
+        DB::transaction(function () use ($subscription, $suspendedAt): void {
             $subscription->lockForUpdate();
-            $subscription->status = CardSubscriptionStatus::Suspended;
-            $subscription->suspended_at = now();
+            $subscription->status      = CardSubscriptionStatus::Suspended;
+            $subscription->suspended_at = $suspendedAt;
             $subscription->save();
 
             $subscription->cards()
@@ -316,7 +325,7 @@ class CardSubscriptionService
 
         event(new CardSubscriptionSuspended(
             subscriptionId: (string) $subscription->id,
-            suspendedAt:    $subscription->suspended_at->toIso8601String(),
+            suspendedAt:    $suspendedAt->toIso8601String(),
         ));
     }
 
@@ -352,10 +361,12 @@ class CardSubscriptionService
      */
     public function terminateUnpaid(CardSubscription $subscription): void
     {
-        DB::transaction(function () use ($subscription): void {
+        $cancelledAt = now();
+
+        DB::transaction(function () use ($subscription, $cancelledAt): void {
             $subscription->lockForUpdate();
-            $subscription->status = CardSubscriptionStatus::Cancelled;
-            $subscription->cancelled_at = now();
+            $subscription->status      = CardSubscriptionStatus::Cancelled;
+            $subscription->cancelled_at = $cancelledAt;
             $subscription->save();
 
             $subscription->cards()
@@ -367,7 +378,7 @@ class CardSubscriptionService
 
         event(new CardSubscriptionCancelled(
             subscriptionId: (string) $subscription->id,
-            cancelledAt:    $subscription->cancelled_at->toIso8601String(),
+            cancelledAt:    $cancelledAt->toIso8601String(),
             cancelledBy:    'system',
         ));
     }

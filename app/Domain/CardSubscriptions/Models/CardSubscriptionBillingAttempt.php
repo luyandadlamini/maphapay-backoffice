@@ -10,7 +10,22 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string                       $id
+ * @property string|null                  $tenant_id
+ * @property string                       $card_subscription_id
+ * @property CardSubscriptionBillingResult $result
+ * @property string|null                  $failure_reason
+ * @property string                       $amount
+ * @property string                       $currency
+ * @property string|null                  $idempotency_key
+ * @property string|null                  $ledger_posting_id
+ * @property Carbon                       $attempted_at
+ * @property Carbon                       $created_at
+ * @property Carbon                       $updated_at
+ */
 class CardSubscriptionBillingAttempt extends Model
 {
     /** @use HasFactory<\Database\Factories\Domain\CardSubscriptions\Models\CardSubscriptionBillingAttemptFactory> */

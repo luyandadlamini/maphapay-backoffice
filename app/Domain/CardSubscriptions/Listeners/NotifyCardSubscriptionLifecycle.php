@@ -51,7 +51,7 @@ class NotifyCardSubscriptionLifecycle extends Reactor implements ShouldQueue
                 return;
             }
 
-            $planName = $sub->plan?->name ?? $sub->plan?->code ?? 'card plan';
+            $planName = $sub->plan !== null ? ($sub->plan->name ?? $sub->plan->code) : 'card plan';
             $next = $sub->next_billing_date?->toFormattedDateString() ?? '';
 
             $this->push->sendToUser(
@@ -73,7 +73,7 @@ class NotifyCardSubscriptionLifecycle extends Reactor implements ShouldQueue
             return;
         }
 
-        $planName = $sub->plan?->name ?? $sub->plan?->code ?? 'card plan';
+        $planName = $sub->plan !== null ? ($sub->plan->name ?? $sub->plan->code) : 'card plan';
 
         match (true) {
             $event instanceof CardSubscriptionActivated   => $this->notifyActivated($sub, $subscriber, $planName, $event),
@@ -81,7 +81,6 @@ class NotifyCardSubscriptionLifecycle extends Reactor implements ShouldQueue
             $event instanceof CardSubscriptionSuspended   => $this->notifySuspended($sub, $subscriber, $planName),
             $event instanceof CardSubscriptionCancelled   => $this->notifyCancelled($sub, $subscriber, $planName),
             $event instanceof CardSubscriptionRestored    => $this->notifyRestored($sub, $planName),
-            $event instanceof CardSubscriptionPlanChanged => null,
             default                                       => null,
         };
     }

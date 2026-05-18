@@ -13,7 +13,26 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string          $id
+ * @property string|null     $tenant_id
+ * @property string          $user_id
+ * @property string          $related_entity_id
+ * @property string          $related_entity_type
+ * @property CardFeeType     $fee_type
+ * @property string          $amount
+ * @property string          $currency
+ * @property CardFeeStatus   $status
+ * @property string|null     $ledger_posting_id
+ * @property Carbon|null     $charged_at
+ * @property Carbon|null     $waived_at
+ * @property Carbon|null     $refunded_at
+ * @property string|null     $notes
+ * @property Carbon          $created_at
+ * @property Carbon          $updated_at
+ */
 class CardFee extends Model
 {
     /** @use HasFactory<\Database\Factories\Domain\CardSubscriptions\Models\CardFeeFactory> */
@@ -62,6 +81,9 @@ class CardFee extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function payer(): BelongsTo
     {
         return $this->user();

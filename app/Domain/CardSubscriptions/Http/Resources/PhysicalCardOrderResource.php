@@ -8,6 +8,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class PhysicalCardOrderResource extends JsonResource
 {
+    /** @return array<string, mixed> */
     public function toArray($request): array
     {
         return [

@@ -491,7 +491,7 @@ class CardEntitlementService
         //       For now, check account_type from the request attributes if available;
         //       otherwise fall back to false.
 
-        $accountType = request()?->attributes->get('account_type');
+        $accountType = request()->attributes->get('account_type');
 
         if ($accountType !== null) {
             return $accountType === 'minor';

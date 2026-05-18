@@ -78,9 +78,15 @@ class HandleAuthorisationWebhookJob implements ShouldQueue
             }
 
             // 3. Calculate fees (FX, ATM)
-            // Assuming billing amount is mapped to amountCents
+            $plan = $card->plan();
+            if ($plan === null) {
+                $this->respondToProcessor(decline: 'no_plan');
+
+                return;
+            }
+
             $billingAmount = new Money((string) $authReq->amountCents, 'SZL');
-            $fxFee = $feeService->calculateFxFee($card->plan(), $authReq->currency, $billingAmount);
+            $fxFee = $feeService->calculateFxFee($plan, $authReq->currency, $billingAmount);
 
             // TODO: Place hold on wallet, record transaction, etc.
             Log::info("Authorisation successful for card {$card->id}", [
