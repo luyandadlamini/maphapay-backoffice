@@ -166,6 +166,9 @@ class FilamentTenantMiddleware
 
         // Try to get first accessible tenant for regular users
         $tenant = $this->getFirstAccessibleTenant($user);
+        if (! $tenant && $this->requestNeedsTenantContext($request)) {
+            return Tenant::on('central')->oldest('created_at')->value('id');
+        }
 
         return $tenant?->id;
     }

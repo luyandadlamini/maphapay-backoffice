@@ -65,6 +65,29 @@ it('keeps platform admins in platform view for central Filament pages', function
     expect($method->invoke($middleware, $request, $user))->toBeNull();
 });
 
+it('defaults admin panel users without teams into a tenant for tenant backed Filament resources', function (): void {
+    $middleware = new FilamentTenantMiddleware();
+    $method = new ReflectionMethod($middleware, 'resolveTenantId');
+    $method->setAccessible(true);
+
+    $request = adminTenantMiddlewareRequest(ListMultiSigWallets::class);
+    $user = new class {
+        public int $id = 2;
+
+        public function hasRole(string $role): bool
+        {
+            return false;
+        }
+
+        public function hasPermission(string $permission): bool
+        {
+            return false;
+        }
+    };
+
+    expect($method->invoke($middleware, $request, $user))->toBeString();
+});
+
 function adminTenantMiddlewareRequest(string $actionClass): Request
 {
     $request = Request::create('/admin/test', 'GET');
