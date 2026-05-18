@@ -7,11 +7,39 @@ namespace App\Filament\Admin\Resources\ExchangeRateResource\Widgets;
 use App\Domain\Asset\Models\ExchangeRate;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Stancl\Tenancy\Tenancy;
 
 class ExchangeRateStatsWidget extends BaseWidget
 {
     protected function getStats(): array
     {
+        if (! app(Tenancy::class)->initialized) {
+            return [
+                Stat::make('Total Rates', 0)
+                    ->description('All exchange rates')
+                    ->icon('heroicon-m-arrow-path')
+                    ->color('primary'),
+
+                Stat::make('Valid Rates', 0)
+                    ->description('0% of total')
+                    ->icon('heroicon-m-check-circle')
+                    ->color('success')
+                    ->descriptionIcon('heroicon-m-arrow-trending-up'),
+
+                Stat::make('Stale Rates', 0)
+                    ->description('0% over 24h old')
+                    ->icon('heroicon-m-clock')
+                    ->color('success')
+                    ->descriptionIcon('heroicon-m-check'),
+
+                Stat::make('Expired Rates', 0)
+                    ->description('Need renewal')
+                    ->icon('heroicon-m-x-circle')
+                    ->color('success')
+                    ->descriptionIcon('heroicon-m-check'),
+            ];
+        }
+
         $totalRates = ExchangeRate::count();
         $validRates = ExchangeRate::valid()->count();
         $staleRates = ExchangeRate::where('valid_at', '<=', now()->subDay())->count();

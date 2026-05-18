@@ -43,6 +43,8 @@ class CardPlan extends Model
     use HasFactory;
     use HasUuids;
 
+    protected $connection = 'central';
+
     protected $table = 'card_plans';
 
     protected $fillable = [

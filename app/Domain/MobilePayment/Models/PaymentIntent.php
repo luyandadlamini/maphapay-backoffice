@@ -55,6 +55,8 @@ class PaymentIntent extends Model
     use HasFactory;
     use HasUuids;
 
+    protected $connection = 'central';
+
     protected $table = 'payment_intents';
 
     protected $fillable = [
