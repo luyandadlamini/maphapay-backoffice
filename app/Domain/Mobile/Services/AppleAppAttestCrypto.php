@@ -11,6 +11,7 @@ use Elliptic\EC;
 use Elliptic\EC\Signature;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * CBOR parsing, credential public key extraction (attestation), and ES256 assertion verification
@@ -91,7 +92,7 @@ final class AppleAppAttestCrypto
 
         if ($raw === false || $raw === '') {
             Log::warning('App Attest: base64 decode failed or empty', [
-                'input_length' => strlen($attestationObjectBase64),
+                'input_length'  => strlen($attestationObjectBase64),
                 'decode_result' => $raw === false ? 'false' : 'empty',
             ]);
 
@@ -102,8 +103,8 @@ final class AppleAppAttestCrypto
             $map = $this->decodeCborMap($raw);
         } catch (InvalidArgumentException $e) {
             Log::warning('App Attest: top-level CBOR decode failed', [
-                'error' => $e->getMessage(),
-                'raw_length' => strlen($raw),
+                'error'               => $e->getMessage(),
+                'raw_length'          => strlen($raw),
                 'raw_first_bytes_hex' => bin2hex(substr($raw, 0, 16)),
             ]);
 
@@ -114,10 +115,10 @@ final class AppleAppAttestCrypto
 
         if (! is_string($authData) || strlen($authData) < 37) {
             Log::warning('App Attest: authData missing or too short', [
-                'has_authData' => array_key_exists('authData', $map),
-                'authData_type' => gettype($authData),
+                'has_authData'    => array_key_exists('authData', $map),
+                'authData_type'   => gettype($authData),
                 'authData_length' => is_string($authData) ? strlen($authData) : null,
-                'map_keys' => array_keys($map),
+                'map_keys'        => array_keys($map),
             ]);
 
             return null;
@@ -127,7 +128,7 @@ final class AppleAppAttestCrypto
         if ($actualRpIdHash !== $expectedRpIdHashBinary) {
             Log::warning('App Attest: authData rpIdHash mismatch during credential extraction', [
                 'expected_rpIdHash_hex' => bin2hex($expectedRpIdHashBinary),
-                'actual_rpIdHash_hex' => bin2hex($actualRpIdHash),
+                'actual_rpIdHash_hex'   => bin2hex($actualRpIdHash),
             ]);
 
             return null;
@@ -148,7 +149,7 @@ final class AppleAppAttestCrypto
 
         if (strlen($authData) < $offset + 16 + 2) {
             Log::warning('App Attest: authData too short for aaguid + credIdLen', [
-                'authData_length' => strlen($authData),
+                'authData_length'  => strlen($authData),
                 'minimum_required' => $offset + 16 + 2,
             ]);
 
@@ -161,8 +162,8 @@ final class AppleAppAttestCrypto
 
         if ($credIdLen < 0 || strlen($authData) < $offset + $credIdLen) {
             Log::warning('App Attest: authData too short for credential ID', [
-                'credIdLen' => $credIdLen,
-                'authData_length' => strlen($authData),
+                'credIdLen'              => $credIdLen,
+                'authData_length'        => strlen($authData),
                 'offset_after_credIdLen' => $offset,
             ]);
 
@@ -174,7 +175,7 @@ final class AppleAppAttestCrypto
 
         if ($coseBytes === '' || $coseBytes === false) {
             Log::warning('App Attest: no COSE key bytes after credential ID', [
-                'offset' => $offset,
+                'offset'    => $offset,
                 'credIdLen' => $credIdLen,
             ]);
 
@@ -185,8 +186,8 @@ final class AppleAppAttestCrypto
             $cose = $this->decodeCborMap($coseBytes);
         } catch (InvalidArgumentException $e) {
             Log::warning('App Attest: COSE key CBOR decode failed', [
-                'error' => $e->getMessage(),
-                'coseBytes_length' => strlen($coseBytes),
+                'error'                     => $e->getMessage(),
+                'coseBytes_length'          => strlen($coseBytes),
                 'coseBytes_first_bytes_hex' => bin2hex(substr($coseBytes, 0, 16)),
             ]);
 
@@ -202,16 +203,16 @@ final class AppleAppAttestCrypto
                 $coseKeys,
             );
             Log::warning('App Attest: COSE key format mismatch', [
-                'cose_kty' => $cose[self::COSE_KEY_KTY] ?? null,
-                'cose_crv' => $cose[self::COSE_EC2_CRV] ?? null,
-                'cose_has_x' => isset($cose[self::COSE_EC2_X]),
-                'cose_has_y' => isset($cose[self::COSE_EC2_Y]),
-                'cose_x_length' => isset($cose[self::COSE_EC2_X]) && is_string($cose[self::COSE_EC2_X]) ? strlen($cose[self::COSE_EC2_X]) : null,
-                'cose_y_length' => isset($cose[self::COSE_EC2_Y]) && is_string($cose[self::COSE_EC2_Y]) ? strlen($cose[self::COSE_EC2_Y]) : null,
-                'cose_keys' => $coseKeys,
+                'cose_kty'             => $cose[self::COSE_KEY_KTY] ?? null,
+                'cose_crv'             => $cose[self::COSE_EC2_CRV] ?? null,
+                'cose_has_x'           => isset($cose[self::COSE_EC2_X]),
+                'cose_has_y'           => isset($cose[self::COSE_EC2_Y]),
+                'cose_x_length'        => isset($cose[self::COSE_EC2_X]) && is_string($cose[self::COSE_EC2_X]) ? strlen($cose[self::COSE_EC2_X]) : null,
+                'cose_y_length'        => isset($cose[self::COSE_EC2_Y]) && is_string($cose[self::COSE_EC2_Y]) ? strlen($cose[self::COSE_EC2_Y]) : null,
+                'cose_keys'            => $coseKeys,
                 'cose_keys_with_types' => $coseKeysWithTypes,
-                'expected_kty' => self::COSE_KTY_EC2,
-                'expected_crv' => self::COSE_CRV_P256,
+                'expected_kty'         => self::COSE_KTY_EC2,
+                'expected_crv'         => self::COSE_CRV_P256,
             ]);
 
             return null;
@@ -298,6 +299,7 @@ final class AppleAppAttestCrypto
                     'original_length' => $originalSigLen,
                     'first_bytes_hex' => bin2hex(substr($signature, 0, 8)),
                 ]);
+
                 return ['verified' => false, 'reason' => 'assertion_signature_length_invalid'];
             }
             $signature = $converted;
@@ -313,15 +315,15 @@ final class AppleAppAttestCrypto
         }
 
         Log::info('App Attest: assertion verify details', [
-            'auth_data_length' => strlen($authenticatorData),
-            'client_data_hash_length' => strlen($clientDataHash),
-            'message_digest_hex' => bin2hex($messageDigest),
-            'double_hash_hex' => $doubleHashHex,
-            'signature_original_length' => $originalSigLen,
+            'auth_data_length'           => strlen($authenticatorData),
+            'client_data_hash_length'    => strlen($clientDataHash),
+            'message_digest_hex'         => bin2hex($messageDigest),
+            'double_hash_hex'            => $doubleHashHex,
+            'signature_original_length'  => $originalSigLen,
             'signature_converted_length' => strlen($signature),
-            'r_hex' => $rHex,
-            's_hex' => $sHex,
-            'pk_hex' => $pkHex,
+            'r_hex'                      => $rHex,
+            's_hex'                      => $sHex,
+            'pk_hex'                     => $pkHex,
         ]);
 
         $ok = false;
@@ -333,7 +335,7 @@ final class AppleAppAttestCrypto
                 'r' => $rHex,
                 's' => $sHex,
             ]), $key, 'hex');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('App Attest: elliptic-php verify exception', ['message' => $e->getMessage()]);
         }
 
@@ -351,11 +353,12 @@ final class AppleAppAttestCrypto
         if (! $ok) {
             Log::warning('App Attest: assertion signature invalid', [
                 'message_digest_hex' => bin2hex($messageDigest),
-                'double_hash_hex' => $doubleHashHex,
-                'r_hex' => $rHex,
-                's_hex' => $sHex,
-                'pk_hex_prefix' => substr($pkHex, 0, 16),
+                'double_hash_hex'    => $doubleHashHex,
+                'r_hex'              => $rHex,
+                's_hex'              => $sHex,
+                'pk_hex_prefix'      => substr($pkHex, 0, 16),
             ]);
+
             return ['verified' => false, 'reason' => 'assertion_signature_invalid'];
         }
 
@@ -490,7 +493,7 @@ final class AppleAppAttestCrypto
             $result = openssl_verify($messageDigest, $signatureRaw, $pem, OPENSSL_ALGO_SHA256);
 
             return $result === 1;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('App Attest: OpenSSL verify exception', ['message' => $e->getMessage()]);
 
             return null;

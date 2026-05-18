@@ -19,12 +19,14 @@ use App\Domain\CardSubscriptions\Models\CardSubscriptionBillingAttempt;
 use App\Domain\CardSubscriptions\ValueObjects\BillingAttemptResult;
 use App\Domain\Wallet\Services\WalletService;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class CardBillingService
 {
     public function __construct(
         private readonly WalletService $wallets,
-    ) {}
+    ) {
+    }
 
     public function chargeInitialPeriod(CardSubscription $subscription): BillingAttemptResult
     {
@@ -102,7 +104,7 @@ class CardBillingService
         // Fix 3: Wrap withdraw in try/catch to handle TOCTOU race conditions
         try {
             $this->wallets->withdraw($account->uuid, 'SZL', (string) $amountCents);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $result = BillingAttemptResult::failed('WITHDRAWAL_FAILED', $amountCents);
             CardSubscriptionBillingAttempt::create([
                 'card_subscription_id' => $subscription->id,
@@ -214,7 +216,7 @@ class CardBillingService
         // Fix 3: Wrap withdraw in try/catch to handle TOCTOU race conditions
         try {
             $this->wallets->withdraw($account->uuid, 'SZL', (string) $amountCents);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $result = BillingAttemptResult::failed('WITHDRAWAL_FAILED', $amountCents);
             CardSubscriptionBillingAttempt::create([
                 'card_subscription_id' => $subscription->id,
@@ -329,7 +331,7 @@ class CardBillingService
         // Fix 3: Wrap withdraw in try/catch to handle TOCTOU race conditions
         try {
             $this->wallets->withdraw($account->uuid, 'SZL', (string) $amountCents);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $result = BillingAttemptResult::failed('WITHDRAWAL_FAILED', $amountCents);
             CardSubscriptionBillingAttempt::create([
                 'card_subscription_id' => $subscription->id,
@@ -392,8 +394,8 @@ class CardBillingService
             // Roll the period forward — copy() to avoid mutating the same Carbon instance
             $nextBilling = $locked->next_billing_date->copy();
             $locked->current_period_start = $nextBilling->copy();
-            $locked->current_period_end   = $nextBilling->copy()->addMonth();
-            $locked->next_billing_date    = $nextBilling->addMonth();
+            $locked->current_period_end = $nextBilling->copy()->addMonth();
+            $locked->next_billing_date = $nextBilling->addMonth();
 
             $locked->failed_payment_count = 0;
             $locked->grace_period_ends_at = null;
@@ -422,7 +424,7 @@ class CardBillingService
     public function handleFailedPayment(CardSubscription $subscription, BillingAttemptResult $result): void
     {
         $eventToDispatch = null;
-        $eventPayload    = [];
+        $eventPayload = [];
 
         DB::transaction(function () use ($subscription, $result, &$eventToDispatch, &$eventPayload): void {
             $locked = CardSubscription::where('id', $subscription->id)->lockForUpdate()->firstOrFail();
@@ -439,30 +441,30 @@ class CardBillingService
             $locked->failed_payment_count++;
 
             if ($locked->status === CardSubscriptionStatus::Active) {
-                $locked->status              = CardSubscriptionStatus::PastDue;
+                $locked->status = CardSubscriptionStatus::PastDue;
                 $locked->grace_period_ends_at = now()->addDays(3);
                 $locked->save();
 
                 $eventToDispatch = 'past_due';
-                $eventPayload    = [
-                    'subscriptionId'    => (string) $subscription->id,
+                $eventPayload = [
+                    'subscriptionId'     => (string) $subscription->id,
                     'failedPaymentCount' => $locked->failed_payment_count,
-                    'gracePeriodEndsAt' => $locked->grace_period_ends_at->toIso8601String(),
-                    'failureReason'     => $result->reason ?? 'UNKNOWN',
+                    'gracePeriodEndsAt'  => $locked->grace_period_ends_at->toIso8601String(),
+                    'failureReason'      => $result->reason ?? 'UNKNOWN',
                 ];
             } elseif (
                 $locked->status === CardSubscriptionStatus::PastDue
                 && $locked->grace_period_ends_at !== null
                 && $locked->grace_period_ends_at->isPast()
             ) {
-                $locked->status       = CardSubscriptionStatus::Suspended;
+                $locked->status = CardSubscriptionStatus::Suspended;
                 $locked->suspended_at = now();
                 $locked->save();
 
                 $locked->cards()->where('status', 'active')->update(['status' => 'suspended']);
 
                 $eventToDispatch = 'suspended';
-                $eventPayload    = [
+                $eventPayload = [
                     'subscriptionId' => (string) $subscription->id,
                     'suspendedAt'    => $locked->suspended_at->toIso8601String(),
                 ];
@@ -471,14 +473,14 @@ class CardBillingService
                 && $locked->suspended_at !== null
                 && $locked->suspended_at->diffInDays(now()) >= 14
             ) {
-                $locked->status       = CardSubscriptionStatus::Cancelled;
+                $locked->status = CardSubscriptionStatus::Cancelled;
                 $locked->cancelled_at = now();
                 $locked->save();
 
                 $locked->cards()->whereNotIn('status', ['cancelled'])->update(['status' => 'cancelled']);
 
                 $eventToDispatch = 'cancelled';
-                $eventPayload    = [
+                $eventPayload = [
                     'subscriptionId' => (string) $subscription->id,
                     'cancelledAt'    => $locked->cancelled_at->toIso8601String(),
                     'cancelledBy'    => 'system',
@@ -491,7 +493,7 @@ class CardBillingService
 
         // Dispatch events outside transaction
         match ($eventToDispatch) {
-            'past_due'  => event(new CardSubscriptionPastDue(
+            'past_due' => event(new CardSubscriptionPastDue(
                 subscriptionId:    $eventPayload['subscriptionId'],
                 failedPaymentCount: $eventPayload['failedPaymentCount'],
                 gracePeriodEndsAt: $eventPayload['gracePeriodEndsAt'],
@@ -506,7 +508,7 @@ class CardBillingService
                 cancelledAt:    $eventPayload['cancelledAt'],
                 cancelledBy:    $eventPayload['cancelledBy'],
             )),
-            default     => null,
+            default => null,
         };
     }
 }

@@ -63,11 +63,11 @@ class ThreadRequestController extends Controller
                 ]);
 
                 $message = Message::create([
-                    'thread_id'       => $thread->id,
-                    'sender_id'       => $userId,
-                    'type'            => 'request',
-                    'text'            => 'Money request',
-                    'payload'         => [
+                    'thread_id' => $thread->id,
+                    'sender_id' => $userId,
+                    'type'      => 'request',
+                    'text'      => 'Money request',
+                    'payload'   => [
                         'moneyRequestId' => $moneyRequest->id,
                         'amount'         => (float) $request->input('amount'),
                         'note'           => $request->input('note'),

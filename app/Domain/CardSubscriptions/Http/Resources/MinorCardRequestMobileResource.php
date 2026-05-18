@@ -30,16 +30,16 @@ final class MinorCardRequestMobileResource
             : [];
 
         return [
-            'id'                => (string) $request->id,
-            'minor_user_id'     => (string) ($request->minorAccount?->user_uuid ?? ''),
-            'guardian_user_id'  => '',
-            'request_type'      => self::resolveKhulaRequestType($intent),
-            'status'            => self::mapStatus($request->status),
-            'payload'           => $payload,
-            'approval_note'     => null,
-            'denial_reason'     => $request->denial_reason,
-            'created_at'        => $request->created_at?->toIso8601String() ?? '',
-            'resolved_at'       => self::resolveResolvedAt($request),
+            'id'               => (string) $request->id,
+            'minor_user_id'    => (string) ($request->minorAccount?->user_uuid ?? ''),
+            'guardian_user_id' => '',
+            'request_type'     => self::resolveKhulaRequestType($intent),
+            'status'           => self::mapStatus($request->status),
+            'payload'          => $payload,
+            'approval_note'    => null,
+            'denial_reason'    => $request->denial_reason,
+            'created_at'       => $request->created_at?->toIso8601String() ?? '',
+            'resolved_at'      => self::resolveResolvedAt($request),
         ];
     }
 

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
+use Throwable;
 
 class SyncTransactionToChatTest extends TestCase
 {
@@ -253,7 +254,7 @@ class SyncTransactionToChatTest extends TestCase
         $migration = require base_path('database/migrations/2026_05_15_000001_extend_messages_idempotency_key_length.php');
         try {
             $migration->up();
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // SQLite alter-column quirks: column is already TEXT-equivalent in tests, no-op is safe.
         }
     }

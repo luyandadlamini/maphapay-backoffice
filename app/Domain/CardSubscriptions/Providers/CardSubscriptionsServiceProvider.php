@@ -17,8 +17,8 @@ use App\Domain\CardSubscriptions\Listeners\BroadcastSubscriptionStateToMobile;
 use App\Domain\CardSubscriptions\Listeners\EmitCardLifecycleAuditLog;
 use App\Domain\CardSubscriptions\Listeners\EmitMrrAggregateRecalc;
 use App\Domain\CardSubscriptions\Listeners\NotifyCardFeeCharged;
-use App\Domain\CardSubscriptions\Listeners\NotifyCardSubscriptionLifecycle;
 use App\Domain\CardSubscriptions\Listeners\NotifyCardJitAuthorization;
+use App\Domain\CardSubscriptions\Listeners\NotifyCardSubscriptionLifecycle;
 use App\Domain\CardSubscriptions\Listeners\NotifyMinorCardRequest;
 use App\Domain\CardSubscriptions\Services\CardAuditService;
 use App\Domain\CardSubscriptions\Services\CardBillingService;
@@ -64,8 +64,8 @@ class CardSubscriptionsServiceProvider extends ServiceProvider
             $driver = (string) config('cards.default_processor', config('cardissuance.default_issuer', 'demo'));
 
             return match ($driver) {
-                'demo' => $app->make(DemoCardIssuerAdapter::class),
-                'rain' => new RainCardIssuerAdapter((array) config('cards.processors.rain', config('cardissuance.issuers.rain', []))),
+                'demo'   => $app->make(DemoCardIssuerAdapter::class),
+                'rain'   => new RainCardIssuerAdapter((array) config('cards.processors.rain', config('cardissuance.issuers.rain', []))),
                 'stripe' => new StripeCardIssuerAdapter(
                     stripe: $app->make(StripeClient::class),
                     converter: $app->make(StripeUsdToSzlConverter::class),

@@ -49,9 +49,9 @@ class DemoCardIssuerAdapterTest extends TestCase
     /** TTL is reflected in expiresAt */
     public function test_reveal_url_ttl_is_reflected_in_expires_at(): void
     {
-        $ttl    = 45;
+        $ttl = 45;
         $before = now()->addSeconds($ttl - 2)->timestamp;
-        $after  = now()->addSeconds($ttl + 2)->timestamp;
+        $after = now()->addSeconds($ttl + 2)->timestamp;
 
         $result = $this->adapter->generateRevealUrl('tok_ttl_test', $ttl);
 
@@ -63,8 +63,8 @@ class DemoCardIssuerAdapterTest extends TestCase
     public function test_verify_webhook_signature_accepts_valid_hmac(): void
     {
         $rawBody = '{"event_id":"evt_001","type":"authorisation"}';
-        $secret  = config('cardissuance.webhook_secret') ?: 'demo_webhook_secret';
-        $sig     = hash_hmac('sha256', $rawBody, $secret);
+        $secret = config('cardissuance.webhook_secret') ?: 'demo_webhook_secret';
+        $sig = hash_hmac('sha256', $rawBody, $secret);
 
         $this->assertTrue($this->adapter->verifyWebhookSignature($rawBody, $sig));
     }
@@ -72,9 +72,9 @@ class DemoCardIssuerAdapterTest extends TestCase
     /** Tampered body fails verification */
     public function test_verify_webhook_signature_rejects_tampered_body(): void
     {
-        $rawBody  = '{"event_id":"evt_001","type":"authorisation"}';
-        $secret   = config('cardissuance.webhook_secret') ?: 'demo_webhook_secret';
-        $sig      = hash_hmac('sha256', $rawBody, $secret);
+        $rawBody = '{"event_id":"evt_001","type":"authorisation"}';
+        $secret = config('cardissuance.webhook_secret') ?: 'demo_webhook_secret';
+        $sig = hash_hmac('sha256', $rawBody, $secret);
         $tampered = '{"event_id":"evt_001","type":"clearing"}';  // same sig, different body
 
         $this->assertFalse($this->adapter->verifyWebhookSignature($tampered, $sig));
@@ -84,7 +84,7 @@ class DemoCardIssuerAdapterTest extends TestCase
     public function test_verify_webhook_signature_rejects_wrong_secret(): void
     {
         $rawBody = '{"event_id":"evt_001"}';
-        $sig     = hash_hmac('sha256', $rawBody, 'wrong_secret');
+        $sig = hash_hmac('sha256', $rawBody, 'wrong_secret');
 
         $this->assertFalse($this->adapter->verifyWebhookSignature($rawBody, $sig));
     }

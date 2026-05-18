@@ -16,7 +16,8 @@ class SyncTransactionToChatService
 {
     public function __construct(
         private readonly ThreadResolver $threadResolver,
-    ) {}
+    ) {
+    }
 
     /**
      * Post a `payment` chat message after a send-money transaction completes
@@ -45,11 +46,11 @@ class SyncTransactionToChatService
         }
 
         $message = Message::create([
-            'thread_id'       => $thread->id,
-            'sender_id'       => $senderUserId,
-            'type'            => 'payment',
-            'text'            => 'Payment sent',
-            'payload'         => [
+            'thread_id' => $thread->id,
+            'sender_id' => $senderUserId,
+            'type'      => 'payment',
+            'text'      => 'Payment sent',
+            'payload'   => [
                 'amount'                  => $amount,
                 'assetCode'               => $assetCode,
                 'note'                    => $note,
@@ -88,11 +89,11 @@ class SyncTransactionToChatService
         }
 
         $message = Message::create([
-            'thread_id'       => $thread->id,
-            'sender_id'       => $requesterId,
-            'type'            => 'request',
-            'text'            => 'Money requested',
-            'payload'         => [
+            'thread_id' => $thread->id,
+            'sender_id' => $requesterId,
+            'type'      => 'request',
+            'text'      => 'Money requested',
+            'payload'   => [
                 'moneyRequestId' => (string) $request->id,
                 'amount'         => (float) $request->amount,
                 'assetCode'      => $request->asset_code,
@@ -172,11 +173,11 @@ class SyncTransactionToChatService
 
         // The recipient (who is declining) is the sender of this system message.
         $message = Message::create([
-            'thread_id'       => $thread->id,
-            'sender_id'       => $recipientId,
-            'type'            => 'system',
-            'text'            => 'Request declined',
-            'payload'         => [
+            'thread_id' => $thread->id,
+            'sender_id' => $recipientId,
+            'type'      => 'system',
+            'text'      => 'Request declined',
+            'payload'   => [
                 'kind'           => 'money_request_declined',
                 'moneyRequestId' => (string) $request->id,
                 'amount'         => (float) $request->amount,

@@ -30,6 +30,7 @@ final class SyncTransferAwaiter
     public const DEFAULT_WAIT_SECONDS = 5;
 
     private const POLL_INTERVAL_MS_INITIAL = 50;
+
     private const POLL_INTERVAL_MS_MAX = 500;
 
     public function awaitOrAccept(WorkflowStub $stub, int $waitSeconds = self::DEFAULT_WAIT_SECONDS): TransferAwaitOutcome

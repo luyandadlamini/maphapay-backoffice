@@ -22,7 +22,10 @@ use Illuminate\Support\Facades\Log;
  */
 class HandleReversalWebhookJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * @param array<string, mixed> $payload
@@ -30,15 +33,17 @@ class HandleReversalWebhookJob implements ShouldQueue
     public function __construct(
         public readonly string $processor,
         public readonly array $payload
-    ) {}
+    ) {
+    }
 
     public function handle(): void
     {
         DB::transaction(function (): void {
             $transactionId = $this->payload['transaction_id'] ?? $this->payload['authorization_id'] ?? null;
 
-            if (!$transactionId) {
+            if (! $transactionId) {
                 Log::warning('Reversal webhook missing transaction_id.', ['processor' => $this->processor]);
+
                 return;
             }
 
@@ -47,14 +52,15 @@ class HandleReversalWebhookJob implements ShouldQueue
                 ->lockForUpdate()
                 ->first();
 
-            if (!$tx) {
+            if (! $tx) {
                 Log::warning("Reversal webhook for unknown transaction: {$transactionId}", [
                     'processor' => $this->processor,
                 ]);
+
                 return;
             }
 
-            $tx->status     = 'reversed';
+            $tx->status = 'reversed';
             $tx->reversed_at = now();
             $tx->save();
 

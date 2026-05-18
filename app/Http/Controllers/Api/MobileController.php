@@ -84,14 +84,14 @@ class MobileController extends Controller
         $user = $request->user();
 
         Log::info('mobile.devices.register.start', [
-            'user_id'            => $user->id,
-            'device_id_present'  => $request->device_id !== '',
-            'platform'           => $request->platform,
-            'app_version'        => $request->app_version,
-            'push_token_present' => $request->push_token !== null && $request->push_token !== '',
-            'device_name_present'=> $request->device_name !== null && $request->device_name !== '',
-            'device_model'       => $request->device_model,
-            'os_version'         => $request->os_version,
+            'user_id'             => $user->id,
+            'device_id_present'   => $request->device_id !== '',
+            'platform'            => $request->platform,
+            'app_version'         => $request->app_version,
+            'push_token_present'  => $request->push_token !== null && $request->push_token !== '',
+            'device_name_present' => $request->device_name !== null && $request->device_name !== '',
+            'device_model'        => $request->device_model,
+            'os_version'          => $request->os_version,
         ]);
 
         $device = $this->deviceService->registerDevice(
@@ -960,7 +960,7 @@ class MobileController extends Controller
         return response()->json([
             'status' => 'success',
             'remark' => 'mobile_config',
-            'data' => [
+            'data'   => [
                 'min_app_version'    => config('mobile.min_version', '1.0.0'),
                 'latest_app_version' => config('mobile.latest_version', '1.0.0'),
                 'force_update'       => config('mobile.force_update', false),

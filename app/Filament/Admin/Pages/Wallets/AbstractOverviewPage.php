@@ -19,29 +19,31 @@ abstract class AbstractOverviewPage extends Page
     protected static string $view = 'filament.admin.pages.wallets.overview';
 
     public static string $providerKey = '';
+
     public static string $providerLabel = '';
+
     public static string $mockEndpointPath = '';
 
     public function getTitle(): string
     {
-        return static::$providerLabel.' — Overview';
+        return static::$providerLabel . ' — Overview';
     }
 
     public function getViewData(): array
     {
         return [
-            'providerLabel'       => static::$providerLabel,
-            'linkedActiveCount'   => WalletLinking::query()
+            'providerLabel'     => static::$providerLabel,
+            'linkedActiveCount' => WalletLinking::query()
                 ->where('provider', static::$providerKey)
                 ->where('link_status', WalletLinking::STATUS_ACTIVE)
                 ->count(),
-            'linkedPendingCount'  => WalletLinking::query()
+            'linkedPendingCount' => WalletLinking::query()
                 ->where('provider', static::$providerKey)
                 ->where('link_status', WalletLinking::STATUS_PENDING)
                 ->count(),
-            'transactionsToday'   => $this->countTodayTransactions(),
-            'successRate7d'       => $this->successRate7d(),
-            'lastActivity'        => $this->lastActivity(),
+            'transactionsToday' => $this->countTodayTransactions(),
+            'successRate7d'     => $this->successRate7d(),
+            'lastActivity'      => $this->lastActivity(),
         ];
     }
 

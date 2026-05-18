@@ -11,8 +11,8 @@ return [
     'default_processor' => env('CARDS_DEFAULT_PROCESSOR', 'demo'),
 
     'processors' => [
-        'demo' => [],
-        'rain' => [],
+        'demo'   => [],
+        'rain'   => [],
         'stripe' => [
             'secret_key'      => env('STRIPE_SECRET'),
             'publishable_key' => env('STRIPE_KEY'),
@@ -35,8 +35,8 @@ return [
     |
     */
     'risk' => [
-        'declines_10min_deny_at'                     => 6,
-        'declines_24h_deny_at'                       => 11,
+        'declines_10min_deny_at'                    => 6,
+        'declines_24h_deny_at'                      => 11,
         'distinct_declined_merchants_30min_deny_at' => 3,
         'replacements_30d_block_at'                 => 3,
         'disputes_60d_review_at'                    => 3,

@@ -16,7 +16,7 @@ class CreateCardSubscriptionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'plan_code' => ['required', 'string'],
+            'plan_code'          => ['required', 'string'],
             'subscriber_user_id' => ['nullable', 'uuid'],
         ];
     }

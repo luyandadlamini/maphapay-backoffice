@@ -19,7 +19,10 @@ use Illuminate\Support\Facades\Log;
  */
 class ProcessIssuerWebhookJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * @param array<string, mixed> $payload
@@ -28,7 +31,8 @@ class ProcessIssuerWebhookJob implements ShouldQueue
         public readonly string $processor,
         public readonly string $eventType,
         public readonly array $payload
-    ) {}
+    ) {
+    }
 
     public function handle(): void
     {

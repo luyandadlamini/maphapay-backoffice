@@ -48,11 +48,11 @@ class AppAttestVerifier implements AppAttestVerifierInterface
         $attestationSignCount = $this->crypto->extractSignCountFromAttestation($attestationObject);
 
         return AppAttestVerificationResult::success([
-            'key_id'                     => $keyId,
-            'mode'                       => 'apple_app_attest_crypto',
+            'key_id'                    => $keyId,
+            'mode'                      => 'apple_app_attest_crypto',
             'credential_public_key_hex' => $publicKeyHex,
-            'public_key'                 => $publicKeyHex,
-            'attestation_sign_count'     => $attestationSignCount,
+            'public_key'                => $publicKeyHex,
+            'attestation_sign_count'    => $attestationSignCount,
         ], 'attestation_verified');
     }
 

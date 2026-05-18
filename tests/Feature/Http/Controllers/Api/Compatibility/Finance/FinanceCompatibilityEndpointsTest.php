@@ -330,20 +330,20 @@ class FinanceCompatibilityEndpointsTest extends ControllerTestCase
         [$user] = $this->makeUserWithAccount();
 
         RewardProfile::create([
-            'user_id' => $user->id,
+            'user_id'        => $user->id,
             'points_balance' => 1000,
         ]);
 
         $reward = RewardShopItem::create([
-            'slug' => 'bronze-tier',
-            'title' => 'Bronze Tier',
+            'slug'        => 'bronze-tier',
+            'title'       => 'Bronze Tier',
             'description' => 'Unlock bronze perks',
             'points_cost' => 250,
-            'category' => 'tiers',
-            'icon' => 'medal',
-            'stock' => 10,
-            'is_active' => true,
-            'sort_order' => 1,
+            'category'    => 'tiers',
+            'icon'        => 'medal',
+            'stock'       => 10,
+            'is_active'   => true,
+            'sort_order'  => 1,
         ]);
 
         $this->postJson('/api/rewards/redeem', [
@@ -358,8 +358,8 @@ class FinanceCompatibilityEndpointsTest extends ControllerTestCase
 
         $this->assertDatabaseHas('reward_redemptions', [
             'reward_profile_id' => RewardProfile::where('user_id', $user->id)->firstOrFail()->id,
-            'shop_item_id' => $reward->id,
-            'status' => 'completed',
+            'shop_item_id'      => $reward->id,
+            'status'            => 'completed',
         ]);
     }
 

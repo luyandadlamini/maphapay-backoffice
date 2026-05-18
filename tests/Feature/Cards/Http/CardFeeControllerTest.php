@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Models\User;
-use Illuminate\Testing\Fluent\AssertableJson;
-
 beforeEach(function () {
     $this->user->update([
         'kyc_status'      => 'approved',
@@ -12,15 +9,23 @@ beforeEach(function () {
     ]);
 
     // Bypass KYC middleware — tested separately in CheckKycApprovedTest.
-    $this->app->instance(\App\Http\Middleware\CheckKycApproved::class, new class {
-        public function handle($request, $next) { return $next($request); }
+    $this->app->instance(App\Http\Middleware\CheckKycApproved::class, new class () {
+        public function handle($request, $next)
+        {
+        return $next($request);
+        }
     });
 
     // Stub account context so we don't need a real account record.
-    $this->app->instance(\App\Http\Middleware\ResolveAccountContext::class, new class($this->account) {
-        public function __construct(private $acc) {}
-        public function handle($request, $next) {
+    $this->app->instance(App\Http\Middleware\ResolveAccountContext::class, new class ($this->account) {
+        public function __construct(private $acc)
+        {
+        }
+
+        public function handle($request, $next)
+        {
             $request->attributes->set('account_uuid', $this->acc->uuid);
+
             return $next($request);
         }
     });

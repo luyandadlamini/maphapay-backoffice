@@ -76,13 +76,13 @@ class NotifyCardSubscriptionLifecycle extends Reactor implements ShouldQueue
         $planName = $sub->plan?->name ?? $sub->plan?->code ?? 'card plan';
 
         match (true) {
-            $event instanceof CardSubscriptionActivated => $this->notifyActivated($sub, $subscriber, $planName, $event),
-            $event instanceof CardSubscriptionPastDue => $this->notifyPastDue($sub, $subscriber, $planName, $event),
-            $event instanceof CardSubscriptionSuspended => $this->notifySuspended($sub, $subscriber, $planName),
-            $event instanceof CardSubscriptionCancelled => $this->notifyCancelled($sub, $subscriber, $planName),
-            $event instanceof CardSubscriptionRestored => $this->notifyRestored($sub, $planName),
+            $event instanceof CardSubscriptionActivated   => $this->notifyActivated($sub, $subscriber, $planName, $event),
+            $event instanceof CardSubscriptionPastDue     => $this->notifyPastDue($sub, $subscriber, $planName, $event),
+            $event instanceof CardSubscriptionSuspended   => $this->notifySuspended($sub, $subscriber, $planName),
+            $event instanceof CardSubscriptionCancelled   => $this->notifyCancelled($sub, $subscriber, $planName),
+            $event instanceof CardSubscriptionRestored    => $this->notifyRestored($sub, $planName),
             $event instanceof CardSubscriptionPlanChanged => null,
-            default => null,
+            default                                       => null,
         };
     }
 

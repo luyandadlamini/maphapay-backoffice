@@ -54,7 +54,7 @@ class CardSubscriptionStateUpdated implements ShouldBroadcast
     {
         return array_merge([
             'subscription_id' => $this->subscriptionId,
-            'status'            => $this->status,
+            'status'          => $this->status,
         ], $this->payload);
     }
 

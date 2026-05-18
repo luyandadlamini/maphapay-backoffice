@@ -21,19 +21,19 @@ class CardAuditLogFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id'     => null,
-            'actor_type'    => 'system',
-            'actor_id'      => null,
-            'action'        => 'subscription.created',
-            'entity_type'   => 'card_subscription',
-            'entity_id'     => Str::uuid()->toString(),
-            'before_state'  => null,
-            'after_state'   => ['status' => 'active'],
-            'metadata'      => [],
-            'ip_address'    => null,
-            'device_id'     => null,
-            'user_agent'    => null,
-            'created_at'    => now(),
+            'tenant_id'    => null,
+            'actor_type'   => 'system',
+            'actor_id'     => null,
+            'action'       => 'subscription.created',
+            'entity_type'  => 'card_subscription',
+            'entity_id'    => Str::uuid()->toString(),
+            'before_state' => null,
+            'after_state'  => ['status' => 'active'],
+            'metadata'     => [],
+            'ip_address'   => null,
+            'device_id'    => null,
+            'user_agent'   => null,
+            'created_at'   => now(),
         ];
     }
 }

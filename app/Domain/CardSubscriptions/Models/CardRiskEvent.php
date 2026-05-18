@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Domain\CardSubscriptions\Models;
 
 use App\Domain\CardIssuance\Models\Card;
-use App\Domain\CardSubscriptions\Enums\CardRiskSeverity;
 use App\Domain\CardSubscriptions\Enums\CardRiskEventStatus;
+use App\Domain\CardSubscriptions\Enums\CardRiskSeverity;
 use App\Domain\Shared\Traits\UsesTenantConnection;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

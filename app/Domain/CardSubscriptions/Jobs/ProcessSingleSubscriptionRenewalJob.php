@@ -62,10 +62,10 @@ class ProcessSingleSubscriptionRenewalJob implements ShouldQueue
     public function failed(Throwable $e): void
     {
         Log::error('Card job failed', [
-            'job'              => static::class,
-            'subscription_id'  => $this->subscriptionId,
-            'tenant'           => $this->dispatchedTenantId,
-            'error'            => $e->getMessage(),
+            'job'             => static::class,
+            'subscription_id' => $this->subscriptionId,
+            'tenant'          => $this->dispatchedTenantId,
+            'error'           => $e->getMessage(),
         ]);
     }
 

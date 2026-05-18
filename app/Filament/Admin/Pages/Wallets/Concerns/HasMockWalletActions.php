@@ -12,12 +12,13 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
+use Throwable;
 
 trait HasMockWalletActions
 {
     protected function getHeaderActions(): array
     {
-        if (!Auth::user()?->can('wallet.manage_mock')) {
+        if (! Auth::user()?->can('wallet.manage_mock')) {
             return [];
         }
 
@@ -31,8 +32,8 @@ trait HasMockWalletActions
     {
         return Action::make('fund')
             ->label('Fund account')
-            ->hidden(fn (): bool => !Auth::user()?->can('wallet.manage_mock'))
-            ->modalHeading(static::$providerLabel.' — sandbox only — not real funds')
+            ->hidden(fn (): bool => ! Auth::user()?->can('wallet.manage_mock'))
+            ->modalHeading(static::$providerLabel . ' — sandbox only — not real funds')
             ->color('success')
             ->form([
                 TextInput::make('account_ref')
@@ -62,7 +63,7 @@ trait HasMockWalletActions
                         'event_type'  => 'wallet.mock_fund',
                         'severity'    => 'medium',
                         'user_id'     => Auth::id(),
-                        'reason'      => 'Mock-funded '.static::$providerKey.' account '.$data['account_ref'].' with '.$amountMinor.' minor units',
+                        'reason'      => 'Mock-funded ' . static::$providerKey . ' account ' . $data['account_ref'] . ' with ' . $amountMinor . ' minor units',
                         'occurred_at' => now(),
                         'context'     => [
                             'provider'    => static::$providerKey,
@@ -72,11 +73,11 @@ trait HasMockWalletActions
                     ]);
 
                     Notification::make()
-                        ->title('Funded '.$data['account_ref'])
-                        ->body("New balance: {$result->currency} ".number_format($result->balanceMinor / 100, 2))
+                        ->title('Funded ' . $data['account_ref'])
+                        ->body("New balance: {$result->currency} " . number_format($result->balanceMinor / 100, 2))
                         ->success()
                         ->send();
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     Notification::make()
                         ->title('Fund failed')
                         ->body($e->getMessage())
@@ -90,8 +91,8 @@ trait HasMockWalletActions
     {
         return Action::make('balance')
             ->label('Check balance')
-            ->hidden(fn (): bool => !Auth::user()?->can('wallet.manage_mock'))
-            ->modalHeading(static::$providerLabel.' — mock balance lookup')
+            ->hidden(fn (): bool => ! Auth::user()?->can('wallet.manage_mock'))
+            ->modalHeading(static::$providerLabel . ' — mock balance lookup')
             ->color('gray')
             ->form([
                 TextInput::make('account_ref')
@@ -106,10 +107,10 @@ trait HasMockWalletActions
 
                     Notification::make()
                         ->title($data['account_ref'])
-                        ->body("Balance: {$result->currency} ".number_format($result->balanceMinor / 100, 2))
+                        ->body("Balance: {$result->currency} " . number_format($result->balanceMinor / 100, 2))
                         ->success()
                         ->send();
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     Notification::make()
                         ->title('No mock balance')
                         ->body('Fund the account first to create the record.')

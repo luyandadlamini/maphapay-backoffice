@@ -8,6 +8,9 @@ use App\Domain\CardIssuance\Models\Card;
 use App\Domain\CardSubscriptions\Models\CardAuditLog;
 use App\Domain\CardSubscriptions\Models\CardSubscription;
 use App\Models\User;
+use InvalidArgumentException;
+use RecursiveArrayIterator;
+use RecursiveIteratorIterator;
 
 class CardAuditService
 {
@@ -18,7 +21,7 @@ class CardAuditService
      */
     private function assertMetadataHasNoPanLikeDigitRuns(array $metadata): void
     {
-        $iterator = new \RecursiveIteratorIterator(new \RecursiveArrayIterator($metadata));
+        $iterator = new RecursiveIteratorIterator(new RecursiveArrayIterator($metadata));
 
         foreach ($iterator as $leaf) {
             if (! is_string($leaf)) {
@@ -26,7 +29,7 @@ class CardAuditService
             }
 
             if (preg_match('/\d{13,19}/', $leaf) === 1) {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     'Card audit metadata must not contain digit sequences resembling a PAN.',
                 );
             }

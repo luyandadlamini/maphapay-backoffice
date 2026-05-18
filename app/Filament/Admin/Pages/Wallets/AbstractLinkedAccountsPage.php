@@ -22,15 +22,18 @@ abstract class AbstractLinkedAccountsPage extends Page implements HasTable
     use InteractsWithTable;
 
     protected static ?string $navigationGroup = 'E-Wallets';
+
     protected static string $view = 'filament.admin.pages.wallets.table-page';
 
     public static string $providerKey = '';
+
     public static string $providerLabel = '';
+
     public static string $mockEndpointPath = '';
 
     public function getTitle(): string
     {
-        return static::$providerLabel.' — Linked accounts';
+        return static::$providerLabel . ' — Linked accounts';
     }
 
     public function table(Table $table): Table
@@ -51,8 +54,7 @@ abstract class AbstractLinkedAccountsPage extends Page implements HasTable
                     ->label('Unlink')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->visible(fn (WalletLinking $row): bool =>
-                        Auth::user()?->can('wallet.manage_mock')
+                    ->visible(fn (WalletLinking $row): bool => Auth::user()?->can('wallet.manage_mock')
                         && $row->link_status !== WalletLinking::STATUS_DISABLED)
                     ->action(function (WalletLinking $row): void {
                         $row->fill([

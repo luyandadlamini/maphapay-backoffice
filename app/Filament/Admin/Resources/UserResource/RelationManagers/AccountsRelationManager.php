@@ -131,7 +131,7 @@ class AccountsRelationManager extends RelationManager
                             return $this->withAccountTenancy(
                                 $record->uuid,
                                 function () use ($record): string {
-                                    $fresh    = $record->fresh() ?? $record;
+                                    $fresh = $record->fresh() ?? $record;
                                     $currency = config('banking.default_currency', 'SZL');
 
                                     return $currency . ' ' . number_format($fresh->getBalance($currency) / 100, 2);

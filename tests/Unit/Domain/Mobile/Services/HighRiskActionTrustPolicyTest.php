@@ -8,8 +8,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Tests\UnitTestCase;
 
@@ -298,16 +298,16 @@ describe('HighRiskActionTrustPolicy', function (): void {
 
         $deviceId = 'ios-provider-error-fallback-device-' . $user->id;
         DB::table('mobile_devices')->insert([
-            'id'                 => (string) Str::uuid(),
-            'user_id'            => $user->id,
-            'device_id'          => $deviceId,
-            'platform'           => 'ios',
-            'app_version'        => '1.0.0',
-            'biometric_enabled'  => false,
-            'is_trusted'         => false,
-            'is_blocked'         => false,
-            'created_at'         => now(),
-            'updated_at'         => now(),
+            'id'                => (string) Str::uuid(),
+            'user_id'           => $user->id,
+            'device_id'         => $deviceId,
+            'platform'          => 'ios',
+            'app_version'       => '1.0.0',
+            'biometric_enabled' => false,
+            'is_trusted'        => false,
+            'is_blocked'        => false,
+            'created_at'        => now(),
+            'updated_at'        => now(),
         ]);
 
         $request = Request::create('/api/v1/commerce/payments', 'POST', [
@@ -340,11 +340,11 @@ describe('HighRiskActionTrustPolicy', function (): void {
 
         $deviceId = 'ios-test-device-uuid';
         $envelope = 'ios-app-attest:' . json_encode([
-            'action'           => 'send-money',
-            'deviceId'         => $deviceId,
-            'keyId'            => 'key-1',
-            'assertionReason'  => 'assertion_verified',
-            'metadata'         => ['challenge_id' => 'ch-1'],
+            'action'          => 'send-money',
+            'deviceId'        => $deviceId,
+            'keyId'           => 'key-1',
+            'assertionReason' => 'assertion_verified',
+            'metadata'        => ['challenge_id' => 'ch-1'],
         ], JSON_THROW_ON_ERROR);
 
         $request = Request::create('/api/send-money/store', 'POST', [
@@ -372,7 +372,7 @@ describe('HighRiskActionTrustPolicy', function (): void {
         expect($metadata)
             ->toMatchArray([
                 'attestation_present' => true,
-                'app_attest' => [
+                'app_attest'          => [
                     'prefix'               => 'ios-app-attest',
                     'key_id_present'       => true,
                     'assertion_reason'     => 'assertion_verified',

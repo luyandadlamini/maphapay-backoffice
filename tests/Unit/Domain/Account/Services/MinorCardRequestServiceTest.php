@@ -301,16 +301,16 @@ class MinorCardRequestServiceTest extends BaseTestCase
             'last_name'  => 'User',
         ]);
         DB::table('cards')->insert([
-            'id'                  => Str::uuid()->toString(),
-            'user_id'             => $child->id,
-            'minor_account_uuid'  => $minorAccount->uuid,
-            'cardholder_id'       => $cardholderId,
-            'issuer_card_token'   => Str::uuid()->toString(),
-            'issuer'              => 'test',
-            'last4'               => '1234',
-            'network'             => 'visa',
-            'status'              => 'active',
-            'currency'            => 'USD',
+            'id'                 => Str::uuid()->toString(),
+            'user_id'            => $child->id,
+            'minor_account_uuid' => $minorAccount->uuid,
+            'cardholder_id'      => $cardholderId,
+            'issuer_card_token'  => Str::uuid()->toString(),
+            'issuer'             => 'test',
+            'last4'              => '1234',
+            'network'            => 'visa',
+            'status'             => 'active',
+            'currency'           => 'USD',
         ]);
 
         $this->expectException(InvalidArgumentException::class);
@@ -347,16 +347,16 @@ class MinorCardRequestServiceTest extends BaseTestCase
             'last_name'  => 'User',
         ]);
         DB::table('cards')->insert([
-            'id'                  => Str::uuid()->toString(),
-            'user_id'             => $child->id,
-            'minor_account_uuid'  => $minorAccount->uuid,
-            'cardholder_id'       => $cardholderId,
-            'issuer_card_token'   => Str::uuid()->toString(),
-            'issuer'              => 'test',
-            'last4'               => '1234',
-            'network'             => 'visa',
-            'status'              => 'active',
-            'currency'            => 'USD',
+            'id'                 => Str::uuid()->toString(),
+            'user_id'            => $child->id,
+            'minor_account_uuid' => $minorAccount->uuid,
+            'cardholder_id'      => $cardholderId,
+            'issuer_card_token'  => Str::uuid()->toString(),
+            'issuer'             => 'test',
+            'last4'              => '1234',
+            'network'            => 'visa',
+            'status'             => 'active',
+            'currency'           => 'USD',
         ]);
 
         $intent = [

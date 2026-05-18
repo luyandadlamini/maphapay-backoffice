@@ -15,14 +15,13 @@ use App\Domain\Analytics\Infrastructure\NullUnitEconomicsDataPort;
 use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderInterface;
 use App\Domain\AuthorizedTransaction\Events\AuthorizedTransactionFinalized;
 use App\Domain\AuthorizedTransaction\Services\DatabaseMoneyMovementRiskSignalProvider;
-use App\Domain\SocialMoney\Observers\AuthorizedTransactionChatSyncObserver;
-use App\Domain\SocialMoney\Observers\MoneyRequestChatSyncObserver;
-use Illuminate\Support\Facades\Event;
 use App\Domain\Governance\Strategies\AssetWeightedVoteStrategy;
 use App\Domain\Governance\Strategies\AssetWeightedVotingStrategy;
 use App\Domain\Governance\Strategies\OneUserOneVoteStrategy;
 use App\Domain\Mobile\Contracts\AppAttestVerifierInterface;
 use App\Domain\Mobile\Services\AppAttestVerifier;
+use App\Domain\SocialMoney\Observers\AuthorizedTransactionChatSyncObserver;
+use App\Domain\SocialMoney\Observers\MoneyRequestChatSyncObserver;
 use App\Models\MoneyRequest;
 use App\Models\Thread;
 use App\Observers\ThreadGroupSavingsObserver;
@@ -30,6 +29,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -88,26 +88,26 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(CorMarginBridgeDataPort::class, function (): CorMarginBridgeDataPort {
             if ($this->app->isProduction()) {
-                return new NullCorMarginBridgeDataPort;
+                return new NullCorMarginBridgeDataPort();
             }
 
             if ((bool) config('maphapay.revenue_cor_bridge_stub_reader', false)) {
-                return new LocalDevCorMarginBridgeStubDataPort;
+                return new LocalDevCorMarginBridgeStubDataPort();
             }
 
-            return new NullCorMarginBridgeDataPort;
+            return new NullCorMarginBridgeDataPort();
         });
 
         $this->app->bind(UnitEconomicsDataPort::class, function (): UnitEconomicsDataPort {
             if ($this->app->isProduction()) {
-                return new NullUnitEconomicsDataPort;
+                return new NullUnitEconomicsDataPort();
             }
 
             if ((bool) config('maphapay.revenue_unit_economics_stub_reader', false)) {
-                return new LocalDevUnitEconomicsStubDataPort;
+                return new LocalDevUnitEconomicsStubDataPort();
             }
 
-            return new NullUnitEconomicsDataPort;
+            return new NullUnitEconomicsDataPort();
         });
     }
 
@@ -121,8 +121,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->resolving(GeneratorFactory::class, function () {
             if (config('l5-swagger.defaults.scanOptions.analyser') === null) {
                 config(['l5-swagger.defaults.scanOptions.analyser' => new ReflectionAnalyser([
-                    new DocBlockAnnotationFactory,
-                    new AttributeAnnotationFactory,
+                    new DocBlockAnnotationFactory(),
+                    new AttributeAnnotationFactory(),
                 ])]);
             }
         });
@@ -136,7 +136,7 @@ class AppServiceProvider extends ServiceProvider
             // For domain models, preserve the full path structure
             if (str_starts_with($modelName, 'App\\Domain\\')) {
                 // Replace App\ with Database\Factories\ and append Factory
-                $factoryName = str_replace('App\\', 'Database\\Factories\\', $modelName).'Factory';
+                $factoryName = str_replace('App\\', 'Database\\Factories\\', $modelName) . 'Factory';
 
                 /** @var class-string<Factory> */
                 return $factoryName;
@@ -146,7 +146,7 @@ class AppServiceProvider extends ServiceProvider
             $modelBaseName = class_basename($modelName);
 
             /** @var class-string<Factory> */
-            return 'Database\\Factories\\'.$modelBaseName.'Factory';
+            return 'Database\\Factories\\' . $modelBaseName . 'Factory';
         });
 
         // MaphaPay compatibility: per-user rate limits for money-moving endpoints.

@@ -12,13 +12,13 @@ use App\Models\User;
 
 it('sends payment_failed push to payer on past due', function () {
     try {
-        \DB::connection()->getPdo();
-    } catch (\Throwable) {
+        DB::connection()->getPdo();
+    } catch (Throwable) {
         test()->markTestSkipped('Database not available.');
     }
 
     foreach (['card_plans', 'card_subscriptions'] as $table) {
-        if (! \DB::getSchemaBuilder()->hasTable($table)) {
+        if (! DB::getSchemaBuilder()->hasTable($table)) {
             test()->markTestSkipped("Table `{$table}` missing.");
         }
     }
@@ -35,7 +35,7 @@ it('sends payment_failed push to payer on past due', function () {
         'status'             => CardSubscriptionStatus::PastDue,
     ]);
 
-    $push = \Mockery::mock(PushNotificationService::class);
+    $push = Mockery::mock(PushNotificationService::class);
     $push->shouldReceive('sendToUser')
         ->atLeast()
         ->once();

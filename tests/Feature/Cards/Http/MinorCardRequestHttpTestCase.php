@@ -43,7 +43,7 @@ abstract class MinorCardRequestHttpTestCase extends BaseTestCase
             'kyc_approved_at' => now(),
         ]);
 
-        $this->app->instance(\App\Http\Middleware\CheckKycApproved::class, new class {
+        $this->app->instance(\App\Http\Middleware\CheckKycApproved::class, new class () {
             public function handle($request, $next)
             {
                 return $next($request);
@@ -69,17 +69,19 @@ abstract class MinorCardRequestHttpTestCase extends BaseTestCase
         }
 
         AccountMembership::query()->create([
-            'id'             => (string) Str::uuid(),
-            'user_uuid'      => $this->guardian->uuid,
-            'tenant_id'      => $this->tenantId,
-            'account_uuid'   => $this->minorAccount->uuid,
-            'account_type'   => 'minor',
-            'role'           => 'guardian',
-            'status'         => 'active',
+            'id'           => (string) Str::uuid(),
+            'user_uuid'    => $this->guardian->uuid,
+            'tenant_id'    => $this->tenantId,
+            'account_uuid' => $this->minorAccount->uuid,
+            'account_type' => 'minor',
+            'role'         => 'guardian',
+            'status'       => 'active',
         ]);
 
-        $this->app->instance(\App\Http\Middleware\ResolveAccountContext::class, new class($this->minorAccount) {
-            public function __construct(private Account $acc) {}
+        $this->app->instance(\App\Http\Middleware\ResolveAccountContext::class, new class ($this->minorAccount) {
+            public function __construct(private Account $acc)
+            {
+            }
 
             public function handle($request, $next)
             {

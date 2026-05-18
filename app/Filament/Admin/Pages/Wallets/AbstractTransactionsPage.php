@@ -21,15 +21,18 @@ abstract class AbstractTransactionsPage extends Page implements HasTable
     use InteractsWithTable;
 
     protected static ?string $navigationGroup = 'E-Wallets';
+
     protected static string $view = 'filament.admin.pages.wallets.table-page';
 
     public static string $providerKey = '';
+
     public static string $providerLabel = '';
+
     public static string $mockEndpointPath = '';
 
     public function getTitle(): string
     {
-        return static::$providerLabel.' — Transactions';
+        return static::$providerLabel . ' — Transactions';
     }
 
     public function table(Table $table): Table

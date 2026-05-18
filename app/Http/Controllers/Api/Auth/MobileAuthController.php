@@ -146,9 +146,9 @@ class MobileAuthController extends Controller
                 $user->update(['mobile_verified_at' => now()]);
             }
 
-            $tokenPair       = $this->createTokenPair($user, $validated['device_name'] ?? 'mobile');
+            $tokenPair = $this->createTokenPair($user, $validated['device_name'] ?? 'mobile');
             $this->enforceSessionLimits($user, $tokenPair['newly_created_token_ids']);
-            $accounts        = $this->transformAccountMemberships($user);
+            $accounts = $this->transformAccountMemberships($user);
             $activeAccountId = $this->resolveActiveAccountId($user);
 
             return response()->json([

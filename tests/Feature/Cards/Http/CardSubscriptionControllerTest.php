@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 beforeEach(function () {
     config(['maphapay_migration.enable_verification' => true]);
 
-    $this->seed(\Database\Seeders\CardPlanSeeder::class);
+    $this->seed(Database\Seeders\CardPlanSeeder::class);
 
     if (isset($this->business_user)) {
         $this->business_user->update([
@@ -19,16 +19,24 @@ beforeEach(function () {
     }
 
     // Bypass KYC middleware — tested separately in CheckKycApprovedTest.
-    $this->app->instance(\App\Http\Middleware\CheckKycApproved::class, new class {
-        public function handle($request, $next) { return $next($request); }
+    $this->app->instance(App\Http\Middleware\CheckKycApproved::class, new class () {
+        public function handle($request, $next)
+        {
+        return $next($request);
+        }
     });
 
     // Use business_user + account via a stubbed account context.
-    $this->app->instance(\App\Http\Middleware\ResolveAccountContext::class, new class($this->account) {
-        public function __construct(private $acc) {}
-        public function handle($request, $next) {
+    $this->app->instance(App\Http\Middleware\ResolveAccountContext::class, new class ($this->account) {
+        public function __construct(private $acc)
+        {
+        }
+
+        public function handle($request, $next)
+        {
             $request->attributes->set('account_uuid', $this->acc->uuid);
             $request->attributes->set('account_type', 'business');
+
             return $next($request);
         }
     });
@@ -127,11 +135,16 @@ describe('POST / (create subscription)', function () {
         $minorAccount = $this->createAccount($minor);
         $minorAccount->update(['type' => 'minor']);
 
-        $this->app->instance(\App\Http\Middleware\ResolveAccountContext::class, new class($minorAccount) {
-            public function __construct(private $minorAccount) {}
-            public function handle($request, $next) {
+        $this->app->instance(App\Http\Middleware\ResolveAccountContext::class, new class ($minorAccount) {
+            public function __construct(private $minorAccount)
+            {
+            }
+
+            public function handle($request, $next)
+            {
                 $request->attributes->set('account_uuid', $this->minorAccount->uuid);
                 $request->attributes->set('account_type', 'minor');
+
                 return $next($request);
             }
         });

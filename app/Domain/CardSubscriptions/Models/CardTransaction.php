@@ -66,10 +66,10 @@ class CardTransaction extends Model
     protected function casts(): array
     {
         return [
-            'settled_at'  => 'datetime',
-            'reversed_at' => 'datetime',
-            'refunded_at' => 'datetime',
-            'amount_cents'=> 'integer',
+            'settled_at'   => 'datetime',
+            'reversed_at'  => 'datetime',
+            'refunded_at'  => 'datetime',
+            'amount_cents' => 'integer',
         ];
     }
 

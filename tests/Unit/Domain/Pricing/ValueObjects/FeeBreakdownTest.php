@@ -88,14 +88,14 @@ final class FeeBreakdownTest extends TestCase
         );
 
         $this->assertSame([
-            'fixed_minor'       => 200,
-            'percentage_minor'  => 150,
-            'fx_spread_minor'   => 50,
-            'discount_minor'    => 25,
-            'cap_min_minor'     => 100,
-            'cap_max_minor'     => 5_000,
-            'currency'          => 'SZL',
-            'total_minor'       => 375,
+            'fixed_minor'      => 200,
+            'percentage_minor' => 150,
+            'fx_spread_minor'  => 50,
+            'discount_minor'   => 25,
+            'cap_min_minor'    => 100,
+            'cap_max_minor'    => 5_000,
+            'currency'         => 'SZL',
+            'total_minor'      => 375,
         ], $breakdown->toArray());
     }
 

@@ -22,15 +22,15 @@ class CardSubscriptionBillingAttemptFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id'             => null,
-            'card_subscription_id'  => CardSubscription::factory(),
-            'result'                => 'success',
-            'failure_reason'        => null,
-            'amount'                => '25.00',
-            'currency'              => 'SZL',
-            'idempotency_key'       => Str::uuid()->toString(),
-            'ledger_posting_id'     => null,
-            'attempted_at'          => now(),
+            'tenant_id'            => null,
+            'card_subscription_id' => CardSubscription::factory(),
+            'result'               => 'success',
+            'failure_reason'       => null,
+            'amount'               => '25.00',
+            'currency'             => 'SZL',
+            'idempotency_key'      => Str::uuid()->toString(),
+            'ledger_posting_id'    => null,
+            'attempted_at'         => now(),
         ];
     }
 }

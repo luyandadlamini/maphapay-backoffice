@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature\Cards\Services;
 
 use App\Domain\CardIssuance\Models\Card;
-use App\Domain\CardIssuance\Models\Cardholder;
 use App\Domain\CardSubscriptions\Enums\CardErrorCode;
 use App\Domain\CardSubscriptions\Enums\CardPlanEligibility;
 use App\Domain\CardSubscriptions\Enums\CardSubscriptionStatus;
@@ -20,7 +19,13 @@ use App\Domain\CardSubscriptions\Services\CardSubscriptionService;
 use App\Domain\CardSubscriptions\ValueObjects\BillingAttemptResult;
 use App\Domain\CardSubscriptions\ValueObjects\EntitlementDecision;
 use App\Models\User;
+use Closure;
+use DB;
+use Exception;
+use LogicException;
+use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use RuntimeException;
 use Tests\TestCase;
 use Throwable;
 
@@ -40,7 +45,6 @@ use Throwable;
  */
 class CardSubscriptionServiceTest extends TestCase
 {
-
     private CardSubscriptionService $service;
 
     /** @var \Mockery\MockInterface */
@@ -56,7 +60,7 @@ class CardSubscriptionServiceTest extends TestCase
      * Controls what chargeInitialPeriod() does; set to a Closure that throws or returns.
      * Default: returns a successful BillingAttemptResult.
      *
-     * @var \Closure|\Exception|BillingAttemptResult
+     * @var Closure|Exception|BillingAttemptResult
      */
     private mixed $billingAction;
 
@@ -71,7 +75,7 @@ class CardSubscriptionServiceTest extends TestCase
 
         $this->mock(CardAuditService::class, function ($mock): void {
             $mock->shouldReceive('recordSubscriptionEvent')
-                ->andReturn(\Mockery::mock(CardAuditLog::class));
+                ->andReturn(Mockery::mock(CardAuditLog::class));
         });
 
         $this->billingAction = BillingAttemptResult::success(null, 4900, 'SZL');
@@ -80,10 +84,11 @@ class CardSubscriptionServiceTest extends TestCase
             $mock->shouldReceive('chargeInitialPeriod')
                 ->andReturnUsing(function () {
                     $action = $this->billingAction;
-                    if ($action instanceof \Throwable) {
+                    if ($action instanceof Throwable) {
                         throw $action;
                     }
-                    return $action instanceof \Closure ? ($action)() : $action;
+
+                    return $action instanceof Closure ? ($action)() : $action;
                 });
         });
 
@@ -131,7 +136,7 @@ class CardSubscriptionServiceTest extends TestCase
             $this->service->getCurrent($probe);
 
             return false;
-        } catch (\LogicException $e) {
+        } catch (LogicException $e) {
             return str_contains($e->getMessage(), 'not implemented');
         } catch (Throwable) {
             // Any other exception (e.g. DB error, missing attribute) means the
@@ -160,9 +165,9 @@ class CardSubscriptionServiceTest extends TestCase
         $this->assertSame($user->id, $subscription->payer_user_id);
 
         $this->assertDatabaseHas('card_subscriptions', [
-            'id'                  => $subscription->id,
-            'subscriber_user_id'  => $user->id,
-            'status'              => CardSubscriptionStatus::Active->value,
+            'id'                 => $subscription->id,
+            'subscriber_user_id' => $user->id,
+            'status'             => CardSubscriptionStatus::Active->value,
         ]);
     }
 
@@ -198,7 +203,7 @@ class CardSubscriptionServiceTest extends TestCase
     {
         $this->requireDatabase();
 
-        $this->billingAction = new \RuntimeException('bank error');
+        $this->billingAction = new RuntimeException('bank error');
 
         $user = $this->makeSubscribableUser();
         $plan = $this->makePlan('BILL_ERR_' . uniqid());
@@ -210,7 +215,7 @@ class CardSubscriptionServiceTest extends TestCase
             $this->service->subscribe($user, $plan->code);
         } catch (\PHPUnit\Framework\Exception $e) {
             throw $e; // never swallow PHPUnit exceptions
-        } catch (\RuntimeException $e) {
+        } catch (RuntimeException $e) {
             $caughtMessage = $e->getMessage();
         }
 
@@ -231,8 +236,8 @@ class CardSubscriptionServiceTest extends TestCase
         $this->requireDatabase();
 
         $guardian = $this->makeSubscribableUser();
-        $child    = $this->makeSubscribableUser();
-        $plan     = $this->makePlan('MINOR_' . uniqid());
+        $child = $this->makeSubscribableUser();
+        $plan = $this->makePlan('MINOR_' . uniqid());
 
         $subscription = $this->service->subscribe($child, $plan->code, $guardian, 'req-abc');
 
@@ -250,8 +255,8 @@ class CardSubscriptionServiceTest extends TestCase
     {
         $this->requireDatabase();
 
-        $user       = $this->makeSubscribableUser();
-        $basicPlan  = $this->makePlan('BASIC_' . uniqid());
+        $user = $this->makeSubscribableUser();
+        $basicPlan = $this->makePlan('BASIC_' . uniqid());
         $premiumPlan = $this->makePlan('PREM_' . uniqid(), [
             'max_virtual_cards'  => 5,
             'max_physical_cards' => 2,
@@ -281,7 +286,7 @@ class CardSubscriptionServiceTest extends TestCase
     {
         $this->requireDatabase();
 
-        $user    = $this->makeSubscribableUser();
+        $user = $this->makeSubscribableUser();
         $newPlan = $this->makePlan('NO_SUB_' . uniqid());
 
         $this->expectException(EntitlementDeniedException::class);
@@ -298,9 +303,9 @@ class CardSubscriptionServiceTest extends TestCase
     {
         $this->requireDatabase();
 
-        $user     = $this->makeSubscribableUser();
+        $user = $this->makeSubscribableUser();
         $highPlan = $this->makePlan('HIGH_' . uniqid(), ['max_virtual_cards' => 5]);
-        $lowPlan  = $this->makePlan('LOW_' . uniqid(), ['max_virtual_cards' => 3]);
+        $lowPlan = $this->makePlan('LOW_' . uniqid(), ['max_virtual_cards' => 3]);
 
         $subscription = CardSubscription::factory()->create([
             'subscriber_user_id' => $user->id,
@@ -332,9 +337,9 @@ class CardSubscriptionServiceTest extends TestCase
     {
         $this->requireDatabase();
 
-        $user     = $this->makeSubscribableUser();
+        $user = $this->makeSubscribableUser();
         $highPlan = $this->makePlan('HIGH2_' . uniqid(), ['max_virtual_cards' => 3]);
-        $lowPlan  = $this->makePlan('LOW2_' . uniqid(), ['max_virtual_cards' => 1]);
+        $lowPlan = $this->makePlan('LOW2_' . uniqid(), ['max_virtual_cards' => 1]);
 
         $subscription = CardSubscription::factory()->create([
             'subscriber_user_id' => $user->id,
@@ -362,9 +367,9 @@ class CardSubscriptionServiceTest extends TestCase
     {
         $this->requireDatabase();
 
-        $user     = $this->makeSubscribableUser();
+        $user = $this->makeSubscribableUser();
         $highPlan = $this->makePlan('HIGH3_' . uniqid(), ['max_virtual_cards' => 3]);
-        $lowPlan  = $this->makePlan('LOW3_' . uniqid(), ['max_virtual_cards' => 1]);
+        $lowPlan = $this->makePlan('LOW3_' . uniqid(), ['max_virtual_cards' => 1]);
 
         $subscription = CardSubscription::factory()->create([
             'subscriber_user_id' => $user->id,
@@ -430,10 +435,10 @@ class CardSubscriptionServiceTest extends TestCase
         $plan = $this->makePlan('PASTDUE_' . uniqid());
 
         $subscription = CardSubscription::factory()->create([
-            'subscriber_user_id' => $user->id,
-            'payer_user_id'      => $user->id,
-            'card_plan_id'       => $plan->id,
-            'status'             => CardSubscriptionStatus::Active->value,
+            'subscriber_user_id'   => $user->id,
+            'payer_user_id'        => $user->id,
+            'card_plan_id'         => $plan->id,
+            'status'               => CardSubscriptionStatus::Active->value,
             'failed_payment_count' => 0,
         ]);
 
@@ -629,13 +634,13 @@ class CardSubscriptionServiceTest extends TestCase
     private function requireDatabase(): void
     {
         try {
-            \DB::connection()->getPdo();
+            DB::connection()->getPdo();
         } catch (Throwable) {
             $this->markTestSkipped('Database not available.');
         }
 
         foreach (['card_plans', 'card_subscriptions', 'cards'] as $table) {
-            if (! \DB::getSchemaBuilder()->hasTable($table)) {
+            if (! DB::getSchemaBuilder()->hasTable($table)) {
                 $this->markTestSkipped(
                     "Table `{$table}` does not exist — run Cards migrations first: " .
                     'php artisan migrate --path=database/migrations/tenant/ --force'

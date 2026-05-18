@@ -30,7 +30,7 @@ final class WalletLinkingStoreController extends Controller
                 WalletLinking::STATUS_PENDING,
                 WalletLinking::STATUS_FAILED,
             ])],
-            'metadata'    => ['sometimes', 'array'],
+            'metadata' => ['sometimes', 'array'],
         ]);
 
         /** @var User $authUser */
@@ -55,12 +55,12 @@ final class WalletLinkingStoreController extends Controller
             'remark' => 'wallet_linking_store',
             'data'   => [
                 'linking' => [
-                    'id'           => $linking->id,
-                    'provider'     => $linking->provider,
-                    'account_ref'  => $linking->account_ref,
-                    'currency'     => $linking->currency,
-                    'link_status'  => $linking->link_status,
-                    'linked_at'    => $linking->linked_at->toIso8601String(),
+                    'id'          => $linking->id,
+                    'provider'    => $linking->provider,
+                    'account_ref' => $linking->account_ref,
+                    'currency'    => $linking->currency,
+                    'link_status' => $linking->link_status,
+                    'linked_at'   => $linking->linked_at->toIso8601String(),
                 ],
             ],
         ]);

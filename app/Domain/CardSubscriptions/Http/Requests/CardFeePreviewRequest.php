@@ -17,8 +17,8 @@ class CardFeePreviewRequest extends FormRequest
     {
         return [
             'transaction_type' => ['required', 'string', 'in:online_purchase,atm_withdrawal,physical_card_issuance,physical_card_replacement,virtual_card_replacement'],
-            'amount' => ['required', 'numeric', 'min:0'],
-            'currency' => ['required', 'string', 'size:3'],
+            'amount'           => ['required', 'numeric', 'min:0'],
+            'currency'         => ['required', 'string', 'size:3'],
             'billing_currency' => ['required', 'string', 'size:3'],
         ];
     }

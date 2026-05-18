@@ -8,12 +8,12 @@ beforeEach(function (): void {
     config(['maphapay_migration.enable_verification' => true]);
 
     $this->business_user->update([
-        'kyc_status'        => 'approved',
-        'kyc_approved_at'   => now(),
-        'transaction_pin'   => '1234',
+        'kyc_status'      => 'approved',
+        'kyc_approved_at' => now(),
+        'transaction_pin' => '1234',
     ]);
 
-    $this->app->instance(\App\Http\Middleware\CheckKycApproved::class, new class {
+    $this->app->instance(App\Http\Middleware\CheckKycApproved::class, new class () {
         public function handle($request, $next)
         {
             return $next($request);
@@ -23,15 +23,17 @@ beforeEach(function (): void {
 
 it('validates intent.request_type on POST /api/v1/minor-card-requests', function (): void {
     $minor = User::factory()->create([
-        'kyc_status'        => 'approved',
-        'kyc_approved_at'   => now(),
-        'transaction_pin'   => '1234',
+        'kyc_status'      => 'approved',
+        'kyc_approved_at' => now(),
+        'transaction_pin' => '1234',
     ]);
     $minorAccount = $this->createAccount($minor);
     $minorAccount->update(['type' => 'minor', 'tier' => 'rise']);
 
-    $this->app->instance(\App\Http\Middleware\ResolveAccountContext::class, new class($minorAccount) {
-        public function __construct(private $minorAccount) {}
+    $this->app->instance(App\Http\Middleware\ResolveAccountContext::class, new class ($minorAccount) {
+        public function __construct(private $minorAccount)
+        {
+        }
 
         public function handle($request, $next)
         {

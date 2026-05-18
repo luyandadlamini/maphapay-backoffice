@@ -47,7 +47,7 @@ class CardFeeService
         $plan = $subscription->plan;
 
         $amountMajor = number_format($input->amountCents / 100, 2, '.', '');
-        $amount      = Money::fromMajorString($amountMajor, $input->currency);
+        $amount = Money::fromMajorString($amountMajor, $input->currency);
 
         $breakdown = [];
 
@@ -60,7 +60,7 @@ class CardFeeService
 
         // ATM withdrawal fee
         if ($input->transactionType === 'atm_withdrawal' && $plan->atm_enabled) {
-            $atmFee      = $this->calculateAtmFee($plan, $amount);
+            $atmFee = $this->calculateAtmFee($plan, $amount);
             $atmFeeCents = (int) round((float) $atmFee->amount * 100);
             if ($atmFeeCents > 0) {
                 $breakdown['atm'] = $atmFeeCents;
@@ -92,7 +92,7 @@ class CardFeeService
      */
     public function calculateAtmFee(CardPlan $plan, Money $withdrawalAmount): Money
     {
-        $fixed      = Money::fromMajorString((string) $plan->atm_fixed_fee, $withdrawalAmount->currency);
+        $fixed = Money::fromMajorString((string) $plan->atm_fixed_fee, $withdrawalAmount->currency);
         $percentage = $withdrawalAmount->multiplyBps($plan->atm_percentage_fee_bps);
 
         return $fixed->add($percentage);
@@ -187,7 +187,7 @@ class CardFeeService
 
         // Physical card replacement
         $subscription = CardSubscription::find($card->card_subscription_id);
-        $plan         = $subscription->plan;
+        $plan = $subscription->plan;
 
         /** @var CardFee $fee */
         $fee = CardFee::create([
@@ -215,7 +215,7 @@ class CardFeeService
     public function chargeVirtualReplacementFee(User $payer, Card $card): ?CardFee
     {
         $subscription = CardSubscription::find($card->card_subscription_id);
-        $plan         = $subscription->plan;
+        $plan = $subscription->plan;
 
         $usedThisMonth = CardFee::query()
             ->where('user_id', $payer->id)
@@ -276,9 +276,9 @@ class CardFeeService
      */
     public function waiveFee(CardFee $fee, string $reason, User $admin): CardFee
     {
-        $fee->status   = CardFeeStatus::Waived;
+        $fee->status = CardFeeStatus::Waived;
         $fee->waived_at = Carbon::now();
-        $fee->notes    = $reason;
+        $fee->notes = $reason;
         $fee->save();
 
         return $fee;
@@ -292,9 +292,9 @@ class CardFeeService
      */
     public function refundFee(CardFee $fee, string $reason, User $admin): CardFee
     {
-        $fee->status      = CardFeeStatus::Refunded;
+        $fee->status = CardFeeStatus::Refunded;
         $fee->refunded_at = Carbon::now();
-        $fee->notes       = $reason;
+        $fee->notes = $reason;
         $fee->save();
 
         return $fee;

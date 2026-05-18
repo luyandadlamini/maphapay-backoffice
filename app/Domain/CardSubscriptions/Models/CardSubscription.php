@@ -51,15 +51,15 @@ class CardSubscription extends Model
     protected function casts(): array
     {
         return [
-            'status'                 => CardSubscriptionStatus::class,
-            'current_period_start'   => 'datetime',
-            'current_period_end'     => 'datetime',
-            'next_billing_date'      => 'datetime',
-            'failed_payment_count'   => 'integer',
-            'grace_period_ends_at'   => 'datetime',
-            'suspended_at'           => 'datetime',
-            'cancelled_at'           => 'datetime',
-            'is_minor_subscription'  => 'boolean',
+            'status'                => CardSubscriptionStatus::class,
+            'current_period_start'  => 'datetime',
+            'current_period_end'    => 'datetime',
+            'next_billing_date'     => 'datetime',
+            'failed_payment_count'  => 'integer',
+            'grace_period_ends_at'  => 'datetime',
+            'suspended_at'          => 'datetime',
+            'cancelled_at'          => 'datetime',
+            'is_minor_subscription' => 'boolean',
         ];
     }
 

@@ -91,11 +91,11 @@ it('instantiates all card subscription stored events with sample data', function
 
 it('can make card subscription domain models from factories without database writes', function (): void {
     $models = [
-        CardPlan::class => [],
+        CardPlan::class         => [],
         CardSubscription::class => [
             'subscriber_user_id' => '00000000-0000-0000-0000-000000000001',
-            'payer_user_id' => '00000000-0000-0000-0000-000000000002',
-            'card_plan_id' => '00000000-0000-0000-0000-000000000003',
+            'payer_user_id'      => '00000000-0000-0000-0000-000000000002',
+            'card_plan_id'       => '00000000-0000-0000-0000-000000000003',
         ],
         CardSubscriptionBillingAttempt::class => [
             'card_subscription_id' => '00000000-0000-0000-0000-000000000004',
@@ -103,16 +103,16 @@ it('can make card subscription domain models from factories without database wri
         CardFee::class => [
             'user_id' => '00000000-0000-0000-0000-000000000005',
         ],
-        CardAuditLog::class => [],
+        CardAuditLog::class  => [],
         CardRiskEvent::class => [
             'user_id' => '00000000-0000-0000-0000-000000000006',
         ],
         CardDispute::class => [
-            'user_id' => '00000000-0000-0000-0000-000000000007',
+            'user_id'             => '00000000-0000-0000-0000-000000000007',
             'card_transaction_id' => '00000000-0000-0000-0000-000000000008',
         ],
         PhysicalCardOrder::class => [
-            'user_id' => '00000000-0000-0000-0000-000000000009',
+            'user_id'              => '00000000-0000-0000-0000-000000000009',
             'card_subscription_id' => '00000000-0000-0000-0000-000000000010',
         ],
     ];

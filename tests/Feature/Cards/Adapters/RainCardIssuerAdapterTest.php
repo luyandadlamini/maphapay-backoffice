@@ -8,6 +8,7 @@ use App\Domain\CardIssuance\Adapters\RainCardIssuerAdapter;
 use App\Domain\CardIssuance\ValueObjects\RevealUrlResult;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use RuntimeException;
 use Tests\TestCase;
 
 /**
@@ -40,7 +41,7 @@ class RainCardIssuerAdapterTest extends TestCase
         ]);
 
         $adapter = $this->makeAdapter();
-        $result  = $adapter->generateRevealUrl('tok_rain_123', 60);
+        $result = $adapter->generateRevealUrl('tok_rain_123', 60);
 
         $this->assertInstanceOf(RevealUrlResult::class, $result);
         $this->assertStringContainsString('reveal.rainbank.io', $result->url);
@@ -55,11 +56,11 @@ class RainCardIssuerAdapterTest extends TestCase
     /** verifyWebhookSignature uses hash_equals to prevent timing attacks */
     public function test_verify_webhook_signature_uses_constant_time_comparison(): void
     {
-        $secret  = 'rain_test_secret';
+        $secret = 'rain_test_secret';
         config(['cardissuance.webhook_secret' => $secret]);
 
         $adapter = $this->makeAdapter();
-        $body    = '{"event_id":"evt_rain_001","type":"authorisation"}';
+        $body = '{"event_id":"evt_rain_001","type":"authorisation"}';
         $validSig = hash_hmac('sha256', $body, $secret);
 
         $this->assertTrue($adapter->verifyWebhookSignature($body, $validSig));
@@ -70,7 +71,7 @@ class RainCardIssuerAdapterTest extends TestCase
     /** RainAdapter constructor requires all three config keys */
     public function test_constructor_throws_when_config_incomplete(): void
     {
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Rain issuer requires base_url, api_key and program_id');
 
         new RainCardIssuerAdapter([

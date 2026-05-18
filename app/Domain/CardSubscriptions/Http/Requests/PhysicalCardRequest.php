@@ -16,14 +16,14 @@ class PhysicalCardRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'delivery_method' => ['required', 'string', 'in:branch_collection,courier'],
-            'delivery_address' => ['required_if:delivery_method,courier', 'array'],
-            'delivery_address.line1' => ['required_with:delivery_address', 'string'],
-            'delivery_address.line2' => ['nullable', 'string'],
-            'delivery_address.city' => ['required_with:delivery_address', 'string'],
-            'delivery_address.country' => ['required_with:delivery_address', 'string'],
+            'delivery_method'               => ['required', 'string', 'in:branch_collection,courier'],
+            'delivery_address'              => ['required_if:delivery_method,courier', 'array'],
+            'delivery_address.line1'        => ['required_with:delivery_address', 'string'],
+            'delivery_address.line2'        => ['nullable', 'string'],
+            'delivery_address.city'         => ['required_with:delivery_address', 'string'],
+            'delivery_address.country'      => ['required_with:delivery_address', 'string'],
             'delivery_address.phone_number' => ['required_with:delivery_address', 'string'],
-            'collection_point_id' => ['required_if:delivery_method,branch_collection', 'uuid', 'nullable'],
+            'collection_point_id'           => ['required_if:delivery_method,branch_collection', 'uuid', 'nullable'],
         ];
     }
 }

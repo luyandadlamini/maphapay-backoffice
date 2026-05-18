@@ -18,7 +18,9 @@ namespace App\Domain\Wallet\Workflows;
 final class TransferAwaitOutcome
 {
     public const STATE_COMPLETED = 'completed';
+
     public const STATE_PENDING = 'pending';
+
     public const STATE_FAILED = 'failed';
 
     /**

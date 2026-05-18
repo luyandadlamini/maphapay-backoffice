@@ -34,24 +34,25 @@ class CardWebhookController extends Controller
         CardAuditService $auditService
     ): JsonResponse {
         // Step 1 — raw body (must be read before any parsing)
-        $rawBody   = $request->getContent();
+        $rawBody = $request->getContent();
         $signature = $request->header('X-Webhook-Signature', '');
 
         // Step 2 — signature verification (constant-time via hash_equals in adapter)
-        if (!$adapter->verifyWebhookSignature($rawBody, $signature)) {
+        if (! $adapter->verifyWebhookSignature($rawBody, $signature)) {
             return response()->json(['error' => 'Invalid signature'], 401);
         }
 
         // Step 3 — parse JSON
         /** @var array<string, mixed> $payload */
-        $payload          = json_decode($rawBody, true) ?? [];
+        $payload = json_decode($rawBody, true) ?? [];
         $processorEventId = (string) ($payload['event_id'] ?? '');
 
         if ($processorEventId === '') {
-            Log::warning("Card webhook missing event_id.", [
+            Log::warning('Card webhook missing event_id.', [
                 'processor'  => $processor,
                 'event_type' => $eventType,
             ]);
+
             return response()->json(['status' => 'ignored']);
         }
 

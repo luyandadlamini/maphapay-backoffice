@@ -107,7 +107,7 @@ class AdjustBalancePageTenancyTest extends TestCase
             }
         }
 
-        $this->seededTenantIds   = [];
+        $this->seededTenantIds = [];
         $this->seededAccountUuids = [];
 
         parent::tearDown();
@@ -150,9 +150,9 @@ class AdjustBalancePageTenancyTest extends TestCase
         $admin->assignRole('super-admin');
         $this->actingAs($admin);
 
-        $tenantId   = (string) Str::uuid();
-        $tenant     = $this->seedTenantDirectly($tenantId);
-        $userUuid   = (string) Str::uuid();
+        $tenantId = (string) Str::uuid();
+        $tenant = $this->seedTenantDirectly($tenantId);
+        $userUuid = (string) Str::uuid();
         $accountUuid = (string) Str::uuid();
         $this->seededAccountUuids[] = $accountUuid;
 

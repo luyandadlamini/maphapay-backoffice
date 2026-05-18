@@ -94,7 +94,7 @@ class TransferStatusController extends Controller
         ]);
     }
 
-    private function failureMessageFor(\Workflow\WorkflowStub $stub): string
+    private function failureMessageFor(WorkflowStub $stub): string
     {
         try {
             $first = $stub->exceptions()->first();

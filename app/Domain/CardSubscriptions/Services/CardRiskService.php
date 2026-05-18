@@ -18,6 +18,7 @@ use App\Domain\CardSubscriptions\Models\CardRiskEvent;
 use App\Domain\CardSubscriptions\Models\CardTransaction;
 use App\Domain\CardSubscriptions\ValueObjects\RiskDecision;
 use App\Models\User;
+use Throwable;
 
 class CardRiskService
 {
@@ -192,7 +193,7 @@ class CardRiskService
                     /** @var Card $issuedCard */
                     try {
                         $provisioning->freezeCard($issuedCard->issuer_card_token);
-                    } catch (\Throwable) {
+                    } catch (Throwable) {
                         // Processor failure should not block freezing remaining cards.
                     }
 

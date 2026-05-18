@@ -12,5 +12,6 @@ final readonly class RevealUrlResult
         public string $url,
         public DateTimeImmutable $expiresAt,
         public int $ttlSeconds,
-    ) {}
+    ) {
+    }
 }

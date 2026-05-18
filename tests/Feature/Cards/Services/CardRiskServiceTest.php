@@ -15,6 +15,7 @@ use App\Domain\CardSubscriptions\Models\CardTransaction;
 use App\Domain\CardSubscriptions\Services\CardRiskService;
 use App\Models\User;
 use DateTimeImmutable;
+use DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Throwable;
@@ -100,14 +101,14 @@ class CardRiskServiceTest extends TestCase
 
         for ($i = 0; $i < 6; $i++) {
             CardTransaction::create([
-                'card_id'            => $card->id,
-                'user_id'            => $user->id,
-                'external_id'        => 'ext_vel_' . $i . '_' . uniqid('', true),
-                'merchant_name'      => 'M' . $i,
-                'merchant_category'  => '5411',
-                'amount_cents'       => 100,
-                'currency'           => 'SZL',
-                'status'             => 'declined',
+                'card_id'           => $card->id,
+                'user_id'           => $user->id,
+                'external_id'       => 'ext_vel_' . $i . '_' . uniqid('', true),
+                'merchant_name'     => 'M' . $i,
+                'merchant_category' => '5411',
+                'amount_cents'      => 100,
+                'currency'          => 'SZL',
+                'status'            => 'declined',
             ]);
         }
 
@@ -141,13 +142,13 @@ class CardRiskServiceTest extends TestCase
     private function requireDatabase(): void
     {
         try {
-            \DB::connection()->getPdo();
+            DB::connection()->getPdo();
         } catch (Throwable) {
             $this->markTestSkipped('Database not available.');
         }
 
         foreach (['card_plans', 'card_subscriptions', 'cards', 'card_transactions'] as $table) {
-            if (! \DB::getSchemaBuilder()->hasTable($table)) {
+            if (! DB::getSchemaBuilder()->hasTable($table)) {
                 $this->markTestSkipped("Table `{$table}` does not exist — run migrations first.");
             }
         }

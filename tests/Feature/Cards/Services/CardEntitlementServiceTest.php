@@ -12,6 +12,8 @@ use App\Domain\CardSubscriptions\Models\CardPlan;
 use App\Domain\CardSubscriptions\Models\CardSubscription;
 use App\Domain\CardSubscriptions\Services\CardEntitlementService;
 use App\Models\User;
+use DB;
+use LogicException;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Throwable;
@@ -74,7 +76,7 @@ class CardEntitlementServiceTest extends TestCase
             $this->service->canUseFeature($probe, '__stub_probe__');
 
             return false;
-        } catch (\LogicException $e) {
+        } catch (LogicException $e) {
             return str_contains($e->getMessage(), 'not implemented');
         } catch (Throwable) {
             // Any other exception (e.g. DB error, missing attribute) means the
@@ -868,17 +870,17 @@ class CardEntitlementServiceTest extends TestCase
     private function requireDatabase(): void
     {
         try {
-            \DB::connection()->getPdo();
+            DB::connection()->getPdo();
         } catch (Throwable) {
             $this->markTestSkipped('Database not available.');
         }
 
         // Skip if the Cards phase-3 schema migrations have not been run yet.
         foreach (['card_plans', 'card_subscriptions', 'cards'] as $table) {
-            if (! \DB::getSchemaBuilder()->hasTable($table)) {
+            if (! DB::getSchemaBuilder()->hasTable($table)) {
                 $this->markTestSkipped(
                     "Table `{$table}` does not exist — run Cards phase-3 migrations first: " .
-                    "php artisan migrate --path=database/migrations/tenant/ --force"
+                    'php artisan migrate --path=database/migrations/tenant/ --force'
                 );
             }
         }

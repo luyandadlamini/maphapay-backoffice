@@ -44,8 +44,8 @@ test('fund action posts to correct provider endpoint', function (string $pageCla
         ])
         ->assertHasNoActionErrors();
 
-    Http::assertSent(fn ($req) =>
-        str_ends_with($req->url(), "/{$endpointPath}/_admin/fund")
+    Http::assertSent(
+        fn ($req) => str_ends_with($req->url(), "/{$endpointPath}/_admin/fund")
         && $req['account_ref'] === '46733123453'
         && $req['amount'] === 10000
     );

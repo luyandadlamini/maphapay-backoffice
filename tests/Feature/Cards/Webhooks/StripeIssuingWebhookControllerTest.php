@@ -6,8 +6,8 @@ namespace Tests\Feature\Cards\Webhooks;
 
 use App\Domain\CardIssuance\Contracts\CardIssuerInterface;
 use App\Domain\CardIssuance\Models\Card;
-use App\Domain\CardSubscriptions\Models\CardTransaction;
 use App\Domain\CardIssuance\ValueObjects\StripeUsdToSzlConverter;
+use App\Domain\CardSubscriptions\Models\CardTransaction;
 use Illuminate\Support\Facades\DB;
 use Mockery;
 use Tests\TestCase;
@@ -23,7 +23,7 @@ class StripeIssuingWebhookControllerTest extends TestCase
         $this->app->instance(StripeUsdToSzlConverter::class, new StripeUsdToSzlConverter(18.50));
 
         $this->postJson('/api/v1/cards/webhooks/stripe-issuing', [
-            'id' => 'evt_test',
+            'id'   => 'evt_test',
             'type' => 'issuing_card.updated',
         ], ['Stripe-Signature' => 't=123,v1=deadbeef'])
             ->assertStatus(400)
@@ -39,7 +39,7 @@ class StripeIssuingWebhookControllerTest extends TestCase
         $this->app->instance(StripeUsdToSzlConverter::class, new StripeUsdToSzlConverter(18.50));
 
         $payload = [
-            'id' => 'evt_ignored_once',
+            'id'   => 'evt_ignored_once',
             'type' => 'unhandled.event',
             'data' => ['object' => []],
         ];
@@ -65,23 +65,23 @@ class StripeIssuingWebhookControllerTest extends TestCase
         $this->app->instance(StripeUsdToSzlConverter::class, new StripeUsdToSzlConverter(18.50));
 
         $card = Card::factory()->create([
-            'user_id' => $this->user->id,
-            'issuer' => 'stripe',
+            'user_id'           => $this->user->id,
+            'issuer'            => 'stripe',
             'issuer_card_token' => 'ic_test_123',
-            'status' => 'active',
+            'status'            => 'active',
         ]);
 
         $this->postJson('/api/v1/cards/webhooks/stripe-issuing', [
-            'id' => 'evt_txn_created',
+            'id'   => 'evt_txn_created',
             'type' => 'issuing_transaction.created',
             'data' => [
                 'object' => [
-                    'id' => 'ipi_test_123',
-                    'amount' => -1000,
+                    'id'            => 'ipi_test_123',
+                    'amount'        => -1000,
                     'authorization' => 'iauth_test_123',
-                    'card' => ['id' => 'ic_test_123'],
+                    'card'          => ['id' => 'ic_test_123'],
                     'merchant_data' => [
-                        'name' => 'Stripe Test Merchant',
+                        'name'     => 'Stripe Test Merchant',
                         'category' => '5734',
                     ],
                 ],

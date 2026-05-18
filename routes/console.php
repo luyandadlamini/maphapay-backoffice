@@ -332,4 +332,3 @@ Schedule::command('revenue:scan-anomalies:for-tenants')
     ->description('Read-only scan for revenue-target anomalies across all tenant databases')
     ->appendOutputTo(storage_path('logs/revenue-anomaly-scan.log'))
     ->withoutOverlapping();
-

@@ -44,10 +44,10 @@ class AccountDomainProjectorMigrationTest extends DomainTestCase
     /** @return iterable<string, array{0:class-string}> */
     public static function migratedProjectorsProvider(): iterable
     {
-        yield 'AccountProjector'         => [AccountProjector::class];
-        yield 'TransactionProjector'     => [TransactionProjector::class];
-        yield 'TurnoverProjector'        => [TurnoverProjector::class];
-        yield 'MinorPointsProjector'     => [MinorPointsProjector::class];
+        yield 'AccountProjector' => [AccountProjector::class];
+        yield 'TransactionProjector' => [TransactionProjector::class];
+        yield 'TurnoverProjector' => [TurnoverProjector::class];
+        yield 'MinorPointsProjector' => [MinorPointsProjector::class];
         yield 'MinorRedemptionProjector' => [MinorRedemptionProjector::class];
     }
 

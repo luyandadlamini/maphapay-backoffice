@@ -24,7 +24,8 @@ class PhysicalCardOrderController extends Controller
     public function __construct(
         private readonly CardProductAuthorizationCoordinator $cardProductAuthorization,
         private readonly CardSubscriptionService $subscriptionService
-    ) {}
+    ) {
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -79,8 +80,8 @@ class PhysicalCardOrderController extends Controller
 
         return $this->cardProductAuthorization->begin($user, 'physical_request', [
             'physical_request' => [
-                'delivery_method'      => $input->deliveryMethod,
-                'delivery_address'     => $deliveryMethod === 'courier'
+                'delivery_method'  => $input->deliveryMethod,
+                'delivery_address' => $deliveryMethod === 'courier'
                     ? [
                         'phone_number' => $address['phone_number'],
                         'line1'        => $address['line1'],
@@ -154,8 +155,8 @@ class PhysicalCardOrderController extends Controller
         $idempotencyKey = (string) $request->header('Idempotency-Key', '');
 
         return $this->cardProductAuthorization->begin($user, 'physical_cancel', [
-            'order_id'              => $orderId,
-            'cancellation_reason'   => (string) ($validated['reason'] ?? 'user_requested'),
+            'order_id'            => $orderId,
+            'cancellation_reason' => (string) ($validated['reason'] ?? 'user_requested'),
         ], $idempotencyKey);
     }
 }

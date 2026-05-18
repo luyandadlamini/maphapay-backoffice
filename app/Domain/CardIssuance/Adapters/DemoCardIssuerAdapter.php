@@ -82,9 +82,10 @@ class DemoCardIssuerAdapter implements CardIssuerInterface
     public function verifyWebhookSignature(string $rawBody, string $signature): bool
     {
         $secret = config('cardissuance.webhook_secret', 'demo_webhook_secret');
-        if (!is_string($secret) || $secret === '') {
+        if (! is_string($secret) || $secret === '') {
             $secret = 'demo_webhook_secret';
         }
+
         return hash_equals(hash_hmac('sha256', $rawBody, $secret), $signature);
     }
 

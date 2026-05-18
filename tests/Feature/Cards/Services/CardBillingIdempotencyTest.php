@@ -12,6 +12,7 @@ use App\Domain\CardSubscriptions\Models\CardSubscription;
 use App\Domain\CardSubscriptions\Services\CardBillingService;
 use App\Domain\Wallet\Services\WalletService;
 use App\Models\User;
+use DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Throwable;
@@ -84,13 +85,13 @@ class CardBillingIdempotencyTest extends TestCase
         $this->assertSame(1, $this->withdrawCallCount, 'withdraw() should be called exactly once on idempotent replay');
 
         // Only ONE attempt row should exist
-        $attemptCount = \DB::table('card_subscription_billing_attempts')
+        $attemptCount = DB::table('card_subscription_billing_attempts')
             ->where('card_subscription_id', $subscription->id)
             ->count();
         $this->assertSame(1, $attemptCount, 'Expected exactly 1 billing attempt row on idempotent replay');
 
         // Only ONE fee row
-        $feeCount = \DB::table('card_fees')
+        $feeCount = DB::table('card_fees')
             ->where('related_entity_id', $subscription->id)
             ->count();
         $this->assertSame(1, $feeCount, 'Expected exactly 1 fee row on idempotent replay');
@@ -131,7 +132,7 @@ class CardBillingIdempotencyTest extends TestCase
         $this->assertSame(0, $this->withdrawCallCount, 'withdraw() should not be called when replaying a previous failure');
 
         // Still only ONE attempt row (the original failure)
-        $attemptCount = \DB::table('card_subscription_billing_attempts')
+        $attemptCount = DB::table('card_subscription_billing_attempts')
             ->where('card_subscription_id', $subscription->id)
             ->count();
         $this->assertSame(1, $attemptCount, 'Idempotent replay must not create a second attempt row');
@@ -167,7 +168,7 @@ class CardBillingIdempotencyTest extends TestCase
         // calling billRenewal with the SAME next_billing_date twice only inserts one row.
         // We verify this by checking the original key's attempt count.
         $originalKey = sha1("renewal:{$subscription->id}:{$nextBillingDate->toIso8601String()}");
-        $attemptCount = \DB::table('card_subscription_billing_attempts')
+        $attemptCount = DB::table('card_subscription_billing_attempts')
             ->where('idempotency_key', $originalKey)
             ->count();
 
@@ -204,7 +205,7 @@ class CardBillingIdempotencyTest extends TestCase
         // withdraw() should have been called only once despite two retryFailedPayment calls
         $this->assertSame(1, $this->withdrawCallCount, 'withdraw() should be called exactly once for same-day retry idempotency');
 
-        $attemptCount = \DB::table('card_subscription_billing_attempts')
+        $attemptCount = DB::table('card_subscription_billing_attempts')
             ->where('card_subscription_id', $subscription->id)
             ->count();
         $this->assertSame(1, $attemptCount, 'Expected exactly 1 billing attempt row for same-day retry idempotency');
@@ -225,7 +226,7 @@ class CardBillingIdempotencyTest extends TestCase
     private function createAccountWithBalance(User $user, int $balanceCents, bool $frozen = false): Account
     {
         // Ensure the SZL asset row exists — account_balances.asset_code has a FK to assets.code
-        \DB::table('assets')->insertOrIgnore([
+        DB::table('assets')->insertOrIgnore([
             'code'         => 'SZL',
             'name'         => 'Swazi Lilangeni',
             'type'         => 'fiat',
@@ -289,13 +290,13 @@ class CardBillingIdempotencyTest extends TestCase
     private function requireDatabase(): void
     {
         try {
-            \DB::connection()->getPdo();
+            DB::connection()->getPdo();
         } catch (Throwable) {
             $this->markTestSkipped('Database not available.');
         }
 
         foreach (['card_plans', 'card_subscriptions', 'card_subscription_billing_attempts', 'card_fees'] as $table) {
-            if (! \DB::getSchemaBuilder()->hasTable($table)) {
+            if (! DB::getSchemaBuilder()->hasTable($table)) {
                 $this->markTestSkipped(
                     "Table `{$table}` does not exist — run Cards migrations first: " .
                     'php artisan migrate --path=database/migrations/tenant/ --force'

@@ -13,7 +13,8 @@ class MoneyRequestChatSyncObserver
 {
     public function __construct(
         private readonly SyncTransactionToChatService $sync,
-    ) {}
+    ) {
+    }
 
     public function created(MoneyRequest $request): void
     {

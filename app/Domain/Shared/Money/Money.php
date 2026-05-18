@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Shared\Money;
 
+use InvalidArgumentException;
+
 final readonly class Money
 {
     public function __construct(
@@ -25,7 +27,7 @@ final readonly class Money
     public function add(self $other): self
     {
         if ($this->currency !== $other->currency) {
-            throw new \InvalidArgumentException('Cannot add money values with different currencies.');
+            throw new InvalidArgumentException('Cannot add money values with different currencies.');
         }
 
         return new self(bcadd($this->amount, $other->amount, 2), $this->currency);

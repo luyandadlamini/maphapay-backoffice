@@ -23,7 +23,8 @@ class AuthorizedTransactionChatSyncObserver
 {
     public function __construct(
         private readonly SyncTransactionToChatService $sync,
-    ) {}
+    ) {
+    }
 
     public function handle(AuthorizedTransactionFinalized $event): void
     {

@@ -17,7 +17,7 @@ class PhysicalCardActivationRequest extends FormRequest
     {
         return [
             'activation_code' => ['required', 'string', 'size:6'],
-            'pin' => ['required', 'string', 'size:4'],
+            'pin'             => ['required', 'string', 'size:4'],
         ];
     }
 }

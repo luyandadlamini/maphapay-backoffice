@@ -17,7 +17,7 @@ class UpdateCardSubscriptionRequest extends FormRequest
     {
         return [
             'plan_code' => ['required', 'string'],
-            'force' => ['nullable', 'boolean'],
+            'force'     => ['nullable', 'boolean'],
         ];
     }
 }

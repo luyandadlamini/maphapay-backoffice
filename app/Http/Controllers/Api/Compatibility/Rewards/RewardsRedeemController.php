@@ -24,8 +24,8 @@ class RewardsRedeemController extends Controller
 
         if (! is_string($rewardId) || trim($rewardId) === '') {
             return response()->json([
-                'status' => 'error',
-                'remark' => 'reward_redeem',
+                'status'  => 'error',
+                'remark'  => 'reward_redeem',
                 'message' => ['Reward ID is required.'],
             ], 422);
         }
@@ -37,15 +37,15 @@ class RewardsRedeemController extends Controller
             $redemption = $this->rewardsService->redeemItem($user, $rewardId);
 
             return response()->json([
-                'status' => 'success',
-                'remark' => 'reward_redeem',
+                'status'  => 'success',
+                'remark'  => 'reward_redeem',
                 'message' => ['Reward redeemed successfully.'],
-                'data' => $redemption,
+                'data'    => $redemption,
             ]);
         } catch (RuntimeException $exception) {
             return response()->json([
-                'status' => 'error',
-                'remark' => 'reward_redeem',
+                'status'  => 'error',
+                'remark'  => 'reward_redeem',
                 'message' => [$exception->getMessage()],
             ], 422);
         }

@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Cards\Http;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\Config;
 use App\Domain\CardSubscriptions\Jobs\ProcessIssuerWebhookJob;
 use App\Domain\CardSubscriptions\Models\CardAuditLog;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Queue;
+use Tests\TestCase;
 
 class CardWebhookControllerTest extends TestCase
 {
@@ -22,9 +21,9 @@ class CardWebhookControllerTest extends TestCase
     public function test_it_rejects_invalid_signature(): void
     {
         $payload = ['event_id' => 'evt_123', 'card_token' => 'tok_123', 'type' => 'authorisation'];
-        
+
         $response = $this->postJson('/api/webhooks/cards/demo/authorisation', $payload, [
-            'X-Webhook-Signature' => 'invalid_signature'
+            'X-Webhook-Signature' => 'invalid_signature',
         ]);
 
         $response->assertStatus(401)
@@ -36,12 +35,12 @@ class CardWebhookControllerTest extends TestCase
         Queue::fake();
 
         $payload = [
-            'event_id' => 'evt_123',
+            'event_id'   => 'evt_123',
             'card_token' => 'tok_123',
-            'type' => 'authorisation',
-            'amount' => 1000
+            'type'       => 'authorisation',
+            'amount'     => 1000,
         ];
-        
+
         $rawBody = json_encode($payload);
         $signature = hash_hmac('sha256', (string) $rawBody, 'test_secret');
 
@@ -53,8 +52,8 @@ class CardWebhookControllerTest extends TestCase
             [], // files
             [
                 'HTTP_X-Webhook-Signature' => $signature,
-                'CONTENT_TYPE' => 'application/json',
-                'HTTP_ACCEPT' => 'application/json'
+                'CONTENT_TYPE'             => 'application/json',
+                'HTTP_ACCEPT'              => 'application/json',
             ],
             $rawBody
         );
@@ -63,8 +62,8 @@ class CardWebhookControllerTest extends TestCase
                  ->assertJson(['status' => 'queued']);
 
         Queue::assertPushed(ProcessIssuerWebhookJob::class, function ($job) use ($payload) {
-            return $job->processor === 'demo' && 
-                   $job->eventType === 'authorisation' && 
+            return $job->processor === 'demo' &&
+                   $job->eventType === 'authorisation' &&
                    $job->payload['event_id'] === $payload['event_id'];
         });
 
@@ -78,19 +77,19 @@ class CardWebhookControllerTest extends TestCase
         Queue::fake();
 
         CardAuditLog::create([
-            'actor_type' => 'processor',
-            'action' => 'processor.webhook_received',
+            'actor_type'  => 'processor',
+            'action'      => 'processor.webhook_received',
             'entity_type' => 'processor_event',
-            'metadata' => ['event_id' => 'evt_123_duplicate']
+            'metadata'    => ['event_id' => 'evt_123_duplicate'],
         ]);
 
         $payload = [
-            'event_id' => 'evt_123_duplicate',
+            'event_id'   => 'evt_123_duplicate',
             'card_token' => 'tok_123',
-            'type' => 'authorisation',
-            'amount' => 1000
+            'type'       => 'authorisation',
+            'amount'     => 1000,
         ];
-        
+
         $rawBody = json_encode($payload);
         $signature = hash_hmac('sha256', (string) $rawBody, 'test_secret');
 
@@ -102,8 +101,8 @@ class CardWebhookControllerTest extends TestCase
             [], // files
             [
                 'HTTP_X-Webhook-Signature' => $signature,
-                'CONTENT_TYPE' => 'application/json',
-                'HTTP_ACCEPT' => 'application/json'
+                'CONTENT_TYPE'             => 'application/json',
+                'HTTP_ACCEPT'              => 'application/json',
             ],
             $rawBody
         );

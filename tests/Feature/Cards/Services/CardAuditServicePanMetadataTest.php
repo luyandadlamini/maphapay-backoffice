@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Cards\Services;
 
 use App\Domain\CardSubscriptions\Services\CardAuditService;
+use InvalidArgumentException;
 use Tests\TestCase;
 
 class CardAuditServicePanMetadataTest extends TestCase
@@ -16,7 +17,7 @@ class CardAuditServicePanMetadataTest extends TestCase
 
     public function test_rejects_metadata_containing_thirteen_digit_run(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
 
         $service = app(CardAuditService::class);
 

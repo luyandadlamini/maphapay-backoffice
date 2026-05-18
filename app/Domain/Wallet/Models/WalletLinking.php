@@ -35,14 +35,21 @@ final class WalletLinking extends Model
     use SoftDeletes;
 
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_FAILED = 'failed';
+
     public const STATUS_DISABLED = 'disabled';
 
     public const PROVIDER_MTN_MOMO = 'mtn_momo';
+
     public const PROVIDER_EMALI = 'emali_eswatini_mobile';
+
     public const PROVIDER_FNB = 'fnb_ewallet';
+
     public const PROVIDER_STANDARD_UNAYO = 'standard_unayo';
+
     public const PROVIDER_NEDBANK = 'nedbank_send_money';
 
     public const PROVIDERS = [

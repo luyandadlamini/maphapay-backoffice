@@ -33,7 +33,7 @@ class ClearingWebhookTest extends TestCase
             'user_id' => $this->user->id,
             'status'  => 'active',
         ]);
-        
+
         $tx = CardTransaction::create([
             'card_id'                  => $card->id,
             'external_id'              => 'ext_' . uniqid(),
@@ -55,7 +55,7 @@ class ClearingWebhookTest extends TestCase
             'currency'       => 'ZAR',
         ];
         $body = json_encode($payload);
-        $sig  = $this->sign($body);
+        $sig = $this->sign($body);
 
         $response = $this->call(
             'POST',
@@ -87,7 +87,7 @@ class ClearingWebhookTest extends TestCase
             'currency'       => 'ZAR',
         ];
         $body = json_encode($payload);
-        $sig  = $this->sign($body);
+        $sig = $this->sign($body);
 
         $response = $this->call(
             'POST',
@@ -111,7 +111,7 @@ class ClearingWebhookTest extends TestCase
             'type'           => 'clearing',
             'transaction_id' => 'txn_badsig',
         ];
-        $body   = json_encode($payload);
+        $body = json_encode($payload);
         $badSig = 'not_valid_signature';
 
         $response = $this->call(

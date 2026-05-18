@@ -490,7 +490,7 @@ class CardEntitlementService
         //       request context (account_type attribute) is available here.
         //       For now, check account_type from the request attributes if available;
         //       otherwise fall back to false.
-        
+
         $accountType = request()?->attributes->get('account_type');
 
         if ($accountType !== null) {

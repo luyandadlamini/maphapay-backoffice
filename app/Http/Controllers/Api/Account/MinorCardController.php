@@ -58,10 +58,10 @@ class MinorCardController extends Controller
     public function createRequest(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'minor_account_uuid' => 'required_without:self_request|uuid|exists:accounts,uuid',
-            'self_request'       => 'sometimes|boolean',
-            'network'            => 'in:visa,mastercard',
-            'requested_limits'   => 'nullable|array',
+            'minor_account_uuid'  => 'required_without:self_request|uuid|exists:accounts,uuid',
+            'self_request'        => 'sometimes|boolean',
+            'network'             => 'in:visa,mastercard',
+            'requested_limits'    => 'nullable|array',
             'intent'              => 'nullable|array',
             'intent.request_type' => ['required_with:intent', 'string', Rule::in(['subscribe', 'change_plan', 'create_card', 'replace_card', 'unfreeze_card'])],
             'intent.payload'      => 'nullable|array',

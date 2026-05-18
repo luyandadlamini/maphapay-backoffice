@@ -11,6 +11,7 @@ use App\Domain\CardSubscriptions\Http\Requests\CardDisputeRequest;
 use App\Domain\CardSubscriptions\Models\CardTransaction as CardTransactionRecord;
 use App\Domain\CardSubscriptions\Services\CardProductAuthorizationCoordinator;
 use App\Http\Controllers\Controller;
+use DateTimeImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -21,7 +22,8 @@ class CardTransactionController extends Controller
 
     public function __construct(
         private readonly CardProductAuthorizationCoordinator $cardProductAuthorization,
-    ) {}
+    ) {
+    }
 
     public function index(Request $request, string $cardId): JsonResponse
     {
@@ -84,7 +86,7 @@ class CardTransactionController extends Controller
             amountCents: 1000,
             currency: 'ZAR',
             status: 'settled',
-            timestamp: new \DateTimeImmutable()
+            timestamp: new DateTimeImmutable()
         );
 
         return $this->cardSuccess('card_transaction', [
@@ -107,12 +109,12 @@ class CardTransactionController extends Controller
         $idempotencyKey = (string) $request->header('Idempotency-Key', '');
 
         return $this->cardProductAuthorization->begin($user, 'dispute_transaction', [
-            'card_id'         => $cardId,
-            'transaction_id'  => $transactionId,
-            'dispute'         => [
-                'reason'           => $request->validated('reason'),
-                'description'      => $request->validated('description'),
-                'disputed_amount'  => $request->validated('disputed_amount'),
+            'card_id'        => $cardId,
+            'transaction_id' => $transactionId,
+            'dispute'        => [
+                'reason'          => $request->validated('reason'),
+                'description'     => $request->validated('description'),
+                'disputed_amount' => $request->validated('disputed_amount'),
             ],
         ], $idempotencyKey);
     }

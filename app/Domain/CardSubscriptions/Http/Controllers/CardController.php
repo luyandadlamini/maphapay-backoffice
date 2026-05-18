@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Domain\CardSubscriptions\Http\Controllers;
 
 use App\Domain\CardIssuance\Models\Card;
+use App\Domain\CardSubscriptions\Http\Concerns\RespondsWithCardApiEnvelope;
 use App\Domain\CardSubscriptions\Http\Requests\CardFreezeRequest;
 use App\Domain\CardSubscriptions\Http\Requests\CardReplaceRequest;
 use App\Domain\CardSubscriptions\Http\Requests\CreateVirtualCardRequest;
 use App\Domain\CardSubscriptions\Http\Requests\UpdateCardControlsRequest;
-use App\Domain\CardSubscriptions\Http\Concerns\RespondsWithCardApiEnvelope;
 use App\Domain\CardSubscriptions\Http\Resources\CardResource;
 use App\Domain\CardSubscriptions\Services\CardAuditService;
 use App\Domain\CardSubscriptions\Services\CardProductAuthorizationCoordinator;
@@ -28,7 +28,8 @@ class CardController extends Controller
         private readonly CardRevealService $revealService,
         private readonly CardSubscriptionService $subscriptionService,
         private readonly CardAuditService $auditService
-    ) {}
+    ) {
+    }
 
     public function index(Request $request): JsonResponse
     {

@@ -18,8 +18,12 @@ use App\Domain\CardSubscriptions\ValueObjects\CardFeePreviewInput;
 use App\Domain\CardSubscriptions\ValueObjects\ReplacementReason;
 use App\Domain\Shared\Money\Money;
 use App\Models\User;
+use DB;
+use Exception;
+use LogicException;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
+use Throwable;
 
 /**
  * Feature tests for CardFeeService — all 9 public methods.
@@ -34,7 +38,6 @@ use Tests\TestCase;
  */
 class CardFeeServiceTest extends TestCase
 {
-
     private CardFeeService $service;
 
     protected function setUp(): void
@@ -76,9 +79,9 @@ class CardFeeServiceTest extends TestCase
             $this->service->calculateFxFee($plan, 'SZL', Money::fromMajorString('1.00'));
 
             return false;
-        } catch (\LogicException $e) {
+        } catch (LogicException $e) {
             return str_contains($e->getMessage(), 'not implemented');
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // Any other exception means the real implementation ran.
             return false;
         }
@@ -143,8 +146,8 @@ class CardFeeServiceTest extends TestCase
     {
         // fixed=12, bps=150 on E500 → E500 * 150 / 10000 = E7.50 + E12.00 = E19.50
         $plan = $this->makePlan([
-            'atm_fixed_fee'           => '12.00',
-            'atm_percentage_fee_bps'  => 150,
+            'atm_fixed_fee'          => '12.00',
+            'atm_percentage_fee_bps' => 150,
         ]);
 
         $fee = $this->service->calculateAtmFee($plan, Money::fromMajorString('500.00'));
@@ -458,9 +461,9 @@ class CardFeeServiceTest extends TestCase
         $user = User::factory()->create(['kyc_status' => 'pending', 'frozen_at' => null]);
 
         $plan = CardPlan::factory()->create([
-            'fx_markup_bps' => 350,
-            'atm_enabled'   => true,
-            'atm_fixed_fee' => '12.00',
+            'fx_markup_bps'          => 350,
+            'atm_enabled'            => true,
+            'atm_fixed_fee'          => '12.00',
             'atm_percentage_fee_bps' => 150,
         ]);
 
@@ -587,14 +590,14 @@ class CardFeeServiceTest extends TestCase
     private function requireDatabase(): void
     {
         try {
-            \DB::connection()->getPdo();
-            \DB::statement('SELECT 1 FROM card_plans LIMIT 1');
-        } catch (\Exception) {
+            DB::connection()->getPdo();
+            DB::statement('SELECT 1 FROM card_plans LIMIT 1');
+        } catch (Exception) {
             $this->markTestSkipped('Database / card_plans table not available.');
         }
 
         foreach (['card_fees', 'card_subscriptions', 'cards', 'card_disputes', 'physical_card_orders'] as $table) {
-            if (! \DB::getSchemaBuilder()->hasTable($table)) {
+            if (! DB::getSchemaBuilder()->hasTable($table)) {
                 $this->markTestSkipped(
                     "Table `{$table}` does not exist — run Cards phase-3 migrations first: " .
                     'php artisan migrate --path=database/migrations/tenant/ --force'

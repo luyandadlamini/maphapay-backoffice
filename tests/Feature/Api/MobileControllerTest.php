@@ -246,11 +246,11 @@ class MobileControllerTest extends TestCase
             'event'       => 'app_attest_high_risk_blocked',
             'occurred_at' => '2026-04-28T21:00:00Z',
             'context'     => [
-                'action' => 'send-money',
-                'deviceId' => 'ios-device-telemetry',
+                'action'        => 'send-money',
+                'deviceId'      => 'ios-device-telemetry',
                 'failureReason' => 'challenge_failed',
-                'failureStage' => '/api/mobile/auth/attestation/app-attest/challenge',
-                'attestation' => 'ios-app-attest:secret',
+                'failureStage'  => '/api/mobile/auth/attestation/app-attest/challenge',
+                'attestation'   => 'ios-app-attest:secret',
             ],
         ]);
 

@@ -41,8 +41,8 @@ test('balance action calls correct provider endpoint', function (string $pageCla
         ])
         ->assertHasNoActionErrors();
 
-    Http::assertSent(fn ($req) =>
-        str_ends_with($req->url(), "/{$endpointPath}/_admin/balance/46733123453")
+    Http::assertSent(
+        fn ($req) => str_ends_with($req->url(), "/{$endpointPath}/_admin/balance/46733123453")
     );
 })->with('balanceProviderCases');
 

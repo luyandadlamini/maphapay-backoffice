@@ -9,14 +9,13 @@ use App\Domain\Account\Models\AccountBalance;
 use App\Domain\CardIssuance\Models\Card;
 use App\Domain\CardSubscriptions\Enums\CardSubscriptionBillingResult;
 use App\Domain\CardSubscriptions\Enums\CardSubscriptionStatus;
-use App\Domain\CardSubscriptions\Models\CardFee;
 use App\Domain\CardSubscriptions\Models\CardPlan;
 use App\Domain\CardSubscriptions\Models\CardSubscription;
-use App\Domain\CardSubscriptions\Models\CardSubscriptionBillingAttempt;
 use App\Domain\CardSubscriptions\Services\CardBillingService;
 use App\Domain\CardSubscriptions\ValueObjects\BillingAttemptResult;
 use App\Domain\Wallet\Services\WalletService;
 use App\Models\User;
+use DB;
 use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -247,7 +246,7 @@ class CardBillingServiceTest extends TestCase
         $this->createAccountWithBalance($user, 0); // insufficient
 
         $subscription = $this->makeSubscription($user, [], [
-            'status'              => CardSubscriptionStatus::PastDue->value,
+            'status'               => CardSubscriptionStatus::PastDue->value,
             'grace_period_ends_at' => now()->subDay(), // grace expired
             'failed_payment_count' => 1,
         ]);
@@ -325,7 +324,7 @@ class CardBillingServiceTest extends TestCase
 
         $nextBillingDate = Carbon::parse('2025-01-15');
 
-        $user         = $this->makeUser();
+        $user = $this->makeUser();
         $subscription = $this->makeSubscription($user, [], [
             'next_billing_date'    => $nextBillingDate,
             'current_period_start' => $nextBillingDate->copy()->subMonth(),
@@ -441,16 +440,16 @@ class CardBillingServiceTest extends TestCase
     private function createAccountWithBalance(User $user, int $balanceCents, bool $frozen = false): Account
     {
         // Ensure the SZL asset row exists — account_balances.asset_code has a FK to assets.code
-        \DB::table('assets')->insertOrIgnore([
-            'code'       => 'SZL',
-            'name'       => 'Swazi Lilangeni',
-            'type'       => 'fiat',
-            'precision'  => 2,
-            'is_active'  => true,
-            'is_basket'  => false,
+        DB::table('assets')->insertOrIgnore([
+            'code'         => 'SZL',
+            'name'         => 'Swazi Lilangeni',
+            'type'         => 'fiat',
+            'precision'    => 2,
+            'is_active'    => true,
+            'is_basket'    => false,
             'is_tradeable' => false,
-            'created_at' => now(),
-            'updated_at' => now(),
+            'created_at'   => now(),
+            'updated_at'   => now(),
         ]);
 
         $account = Account::create([
@@ -508,13 +507,13 @@ class CardBillingServiceTest extends TestCase
     private function requireDatabase(): void
     {
         try {
-            \DB::connection()->getPdo();
+            DB::connection()->getPdo();
         } catch (Throwable) {
             $this->markTestSkipped('Database not available.');
         }
 
         foreach (['card_plans', 'card_subscriptions', 'card_subscription_billing_attempts', 'card_fees'] as $table) {
-            if (! \DB::getSchemaBuilder()->hasTable($table)) {
+            if (! DB::getSchemaBuilder()->hasTable($table)) {
                 $this->markTestSkipped(
                     "Table `{$table}` does not exist — run Cards migrations first: " .
                     'php artisan migrate --path=database/migrations/tenant/ --force'

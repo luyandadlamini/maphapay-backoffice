@@ -97,8 +97,8 @@ return [
         ],
 
         'stderr' => [
-            'driver'               => 'stack',
-            'channels'             => array_values(array_filter(array_map(
+            'driver'   => 'stack',
+            'channels' => array_values(array_filter(array_map(
                 static fn (string $channel): string => trim($channel),
                 explode(',', env('LOG_STDERR_STACK', 'stderr_stream,daily'))
             ))),

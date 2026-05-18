@@ -29,8 +29,8 @@ final class MockWalletAdminClientTest extends TestCase
         $this->assertSame(500000, $result->balanceMinor);
         $this->assertSame('SZL', $result->currency);
 
-        Http::assertSent(fn ($req) =>
-            $req->url() === 'https://internal.test/__mock/wallets/mtn-momo/_admin/fund'
+        Http::assertSent(
+            fn ($req) => $req->url() === 'https://internal.test/__mock/wallets/mtn-momo/_admin/fund'
             && $req['account_ref'] === '46733123453'
             && $req['amount'] === 100000
             && $req['currency'] === 'SZL'

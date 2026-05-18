@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
-use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Shared\Services\OtpService;
 use App\Filament\Admin\Concerns\HasBackofficeWorkspace;

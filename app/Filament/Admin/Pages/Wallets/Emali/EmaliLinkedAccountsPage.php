@@ -10,24 +10,27 @@ use Filament\Navigation\NavigationItem;
 final class EmaliLinkedAccountsPage extends AbstractLinkedAccountsPage
 {
     protected static ?string $slug = 'wallets/emali/linked-accounts';
+
     protected static bool $shouldRegisterNavigation = false;
 
     public static string $providerKey = 'emali_eswatini_mobile';
+
     public static string $providerLabel = 'eMali';
+
     public static string $mockEndpointPath = 'emali';
 
     public function getSubNavigation(): array
     {
         return [
             NavigationItem::make('Overview')
-                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\Emali\EmaliOverviewPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\Emali\EmaliOverviewPage::getRouteName())),
+                ->url(static fn () => EmaliOverviewPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(EmaliOverviewPage::getRouteName())),
             NavigationItem::make('Linked accounts')
-                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\Emali\EmaliLinkedAccountsPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\Emali\EmaliLinkedAccountsPage::getRouteName())),
+                ->url(static fn () => EmaliLinkedAccountsPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(EmaliLinkedAccountsPage::getRouteName())),
             NavigationItem::make('Transactions')
-                ->url(static fn () => \App\Filament\Admin\Pages\Wallets\Emali\EmaliTransactionsPage::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs(\App\Filament\Admin\Pages\Wallets\Emali\EmaliTransactionsPage::getRouteName())),
+                ->url(static fn () => EmaliTransactionsPage::getUrl())
+                ->isActiveWhen(fn () => request()->routeIs(EmaliTransactionsPage::getRouteName())),
         ];
     }
 }

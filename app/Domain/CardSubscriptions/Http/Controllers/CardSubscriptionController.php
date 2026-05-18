@@ -26,7 +26,8 @@ class CardSubscriptionController extends Controller
         private readonly CardSubscriptionService $subscriptionService,
         private readonly CardBillingService $billingService,
         private readonly CardProductAuthorizationCoordinator $cardProductAuthorization,
-    ) {}
+    ) {
+    }
 
     public function plans(Request $request): JsonResponse
     {

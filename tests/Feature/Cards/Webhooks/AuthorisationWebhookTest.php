@@ -27,14 +27,14 @@ class AuthorisationWebhookTest extends TestCase
     private function makePayload(string $cardToken = 'tok_auth_test'): array
     {
         return [
-            'event_id'         => 'evt_' . uniqid(),
-            'type'             => 'authorisation',
-            'card_token'       => $cardToken,
-            'authorization_id' => 'auth_' . uniqid(),
-            'amount'           => 5000,
-            'currency'         => 'ZAR',
-            'merchant_name'    => 'Test Merchant',
-            'merchant_category'=> 'Retail',
+            'event_id'          => 'evt_' . uniqid(),
+            'type'              => 'authorisation',
+            'card_token'        => $cardToken,
+            'authorization_id'  => 'auth_' . uniqid(),
+            'amount'            => 5000,
+            'currency'          => 'ZAR',
+            'merchant_name'     => 'Test Merchant',
+            'merchant_category' => 'Retail',
         ];
     }
 
@@ -80,8 +80,8 @@ class AuthorisationWebhookTest extends TestCase
         Queue::fake();
 
         $payload = $this->makePayload();
-        $body    = json_encode($payload);
-        $sig     = $this->sign($body);
+        $body = json_encode($payload);
+        $sig = $this->sign($body);
 
         $response = $this->call(
             'POST',
@@ -103,8 +103,8 @@ class AuthorisationWebhookTest extends TestCase
         Queue::fake();
 
         $payload = $this->makePayload();
-        $body    = json_encode($payload);
-        $badSig  = hash_hmac('sha256', $body, 'wrong_secret');
+        $body = json_encode($payload);
+        $badSig = hash_hmac('sha256', $body, 'wrong_secret');
 
         $response = $this->call(
             'POST',
@@ -126,8 +126,8 @@ class AuthorisationWebhookTest extends TestCase
         Queue::fake();
 
         $payload = $this->makePayload();
-        $body    = json_encode($payload);
-        $sig     = $this->sign($body);
+        $body = json_encode($payload);
+        $sig = $this->sign($body);
 
         $headers = ['HTTP_X_WEBHOOK_SIGNATURE' => $sig, 'CONTENT_TYPE' => 'application/json'];
 
@@ -150,8 +150,8 @@ class AuthorisationWebhookTest extends TestCase
     {
         Queue::fake();
 
-        $payload  = $this->makePayload();
-        $body     = json_encode($payload);
+        $payload = $this->makePayload();
+        $body = json_encode($payload);
 
         $response = $this->call(
             'POST',
@@ -173,7 +173,7 @@ class AuthorisationWebhookTest extends TestCase
         Queue::fake();
 
         $payload = $this->makePayload();
-        $body    = json_encode($payload);
+        $body = json_encode($payload);
         // Use demo secret — if unknown processors fall back to demo adapter, it works
         $sig = $this->sign($body);
 

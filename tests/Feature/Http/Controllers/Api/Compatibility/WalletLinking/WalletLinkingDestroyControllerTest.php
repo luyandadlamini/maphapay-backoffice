@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature\Http\Controllers\Api\Compatibility\WalletLinking;
 
 use App\Domain\Wallet\Models\WalletLinking;
-use App\Models\SecurityAuditLog;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;

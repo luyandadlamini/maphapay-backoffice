@@ -66,9 +66,9 @@ class StripeIssuingWebhookController extends Controller
         try {
             match ($event['type']) {
                 'issuing_authorization.created' => $this->handleAuthorizationCreated($event),
-                'issuing_transaction.created' => $this->handleTransactionCreated($event),
-                'issuing_card.updated' => $this->handleCardUpdated($event),
-                default => Log::info('Ignoring Stripe Issuing event', [
+                'issuing_transaction.created'   => $this->handleTransactionCreated($event),
+                'issuing_card.updated'          => $this->handleCardUpdated($event),
+                default                         => Log::info('Ignoring Stripe Issuing event', [
                     'type' => $event['type'],
                     'id'   => $event['id'],
                 ]),
@@ -189,10 +189,10 @@ class StripeIssuingWebhookController extends Controller
 
         $cardToken = (string) ($stripeCard['id'] ?? '');
         $status = match ((string) ($stripeCard['status'] ?? '')) {
-            'active' => 'active',
+            'active'   => 'active',
             'inactive' => 'frozen_by_admin',
             'canceled' => 'cancelled',
-            default => null,
+            default    => null,
         };
 
         if ($cardToken === '' || $status === null) {

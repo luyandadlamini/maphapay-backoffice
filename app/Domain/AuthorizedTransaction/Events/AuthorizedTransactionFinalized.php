@@ -19,5 +19,6 @@ final class AuthorizedTransactionFinalized
 {
     public function __construct(
         public readonly AuthorizedTransaction $transaction,
-    ) {}
+    ) {
+    }
 }

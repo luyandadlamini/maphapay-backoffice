@@ -56,7 +56,7 @@ final class MockWalletAdminClient
 
     private function guardEnabled(): void
     {
-        if (!config('services.mock_wallets.enabled')) {
+        if (! config('services.mock_wallets.enabled')) {
             throw MockNotAvailableException::disabled();
         }
     }

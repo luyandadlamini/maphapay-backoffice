@@ -8,9 +8,9 @@ use App\Domain\AuthorizedTransaction\Contracts\AuthorizedTransactionHandlerInter
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\CardIssuance\Models\Card;
 use App\Domain\CardIssuance\ValueObjects\CardTransaction as CardTransactionValueObject;
+use App\Domain\CardSubscriptions\Http\Resources\CardDisputeResource;
 use App\Domain\CardSubscriptions\Http\Resources\CardResource;
 use App\Domain\CardSubscriptions\Http\Resources\CardSubscriptionResource;
-use App\Domain\CardSubscriptions\Http\Resources\CardDisputeResource;
 use App\Domain\CardSubscriptions\Http\Resources\PhysicalCardOrderResource;
 use App\Domain\CardSubscriptions\Models\CardSubscription;
 use App\Domain\CardSubscriptions\Services\CardAuditService;
@@ -27,6 +27,7 @@ use App\Domain\CardSubscriptions\ValueObjects\PhysicalCardDeliveryAddress;
 use App\Domain\CardSubscriptions\ValueObjects\ReplacementReason;
 use App\Domain\CardSubscriptions\ValueObjects\RequestPhysicalCardInput;
 use App\Models\User;
+use DateTimeImmutable;
 use InvalidArgumentException;
 
 /**
@@ -67,22 +68,22 @@ class CardProductAuthorizedHandler implements AuthorizedTransactionHandlerInterf
         }
 
         return match ($operation) {
-            'freeze'                 => $this->handleFreeze($user, $payload),
-            'unfreeze'               => $this->handleUnfreeze($user, $payload),
-            'cancel'                 => $this->handleCancel($user, $payload),
-            'replace'                => $this->handleReplace($user, $payload),
-            'create_virtual'         => $this->handleCreateVirtual($user, $payload),
-            'update_controls'        => $this->handleUpdateControls($user, $payload),
-            'subscribe'              => $this->handleSubscribe($user, $payload),
-            'upgrade'                => $this->handleUpgrade($user, $payload),
-            'downgrade'              => $this->handleDowngrade($user, $payload),
-            'cancel_subscription'    => $this->handleCancelSubscription($user, $payload),
-            'reveal_mint'            => $this->handleRevealMint($user, $payload),
-            'dispute_transaction'    => $this->handleDispute($user, $payload),
-            'physical_request'       => $this->handlePhysicalRequest($user, $payload),
-            'physical_activate'      => $this->handlePhysicalActivate($user, $payload),
-            'physical_cancel'        => $this->handlePhysicalCancel($user, $payload),
-            default                  => throw new InvalidArgumentException("Unknown card_product operation: {$operation}"),
+            'freeze'              => $this->handleFreeze($user, $payload),
+            'unfreeze'            => $this->handleUnfreeze($user, $payload),
+            'cancel'              => $this->handleCancel($user, $payload),
+            'replace'             => $this->handleReplace($user, $payload),
+            'create_virtual'      => $this->handleCreateVirtual($user, $payload),
+            'update_controls'     => $this->handleUpdateControls($user, $payload),
+            'subscribe'           => $this->handleSubscribe($user, $payload),
+            'upgrade'             => $this->handleUpgrade($user, $payload),
+            'downgrade'           => $this->handleDowngrade($user, $payload),
+            'cancel_subscription' => $this->handleCancelSubscription($user, $payload),
+            'reveal_mint'         => $this->handleRevealMint($user, $payload),
+            'dispute_transaction' => $this->handleDispute($user, $payload),
+            'physical_request'    => $this->handlePhysicalRequest($user, $payload),
+            'physical_activate'   => $this->handlePhysicalActivate($user, $payload),
+            'physical_cancel'     => $this->handlePhysicalCancel($user, $payload),
+            default               => throw new InvalidArgumentException("Unknown card_product operation: {$operation}"),
         };
     }
 
@@ -181,14 +182,14 @@ class CardProductAuthorizedHandler implements AuthorizedTransactionHandlerInterf
         $input = CardControlsInput::fromArray([
             'limits' => [
                 'per_transaction_cents' => $patch['per_transaction_limit'] ?? $patch['per_transaction_cents'] ?? null,
-                'daily_cents' => $patch['daily_limit'] ?? $patch['daily_cents'] ?? null,
-                'monthly_cents' => $patch['monthly_limit'] ?? $patch['monthly_cents'] ?? null,
+                'daily_cents'           => $patch['daily_limit'] ?? $patch['daily_cents'] ?? null,
+                'monthly_cents'         => $patch['monthly_limit'] ?? $patch['monthly_cents'] ?? null,
             ],
-            'online_enabled' => (bool) ($patch['online_enabled'] ?? true),
+            'online_enabled'        => (bool) ($patch['online_enabled'] ?? true),
             'international_enabled' => (bool) ($patch['international_enabled'] ?? false),
-            'atm_enabled' => (bool) ($patch['atm_enabled'] ?? false),
-            'contactless_enabled' => (bool) ($patch['contactless_enabled'] ?? true),
-            'blocked_mcc_groups' => is_array($patch['blocked_mcc_groups'] ?? null) ? $patch['blocked_mcc_groups'] : [],
+            'atm_enabled'           => (bool) ($patch['atm_enabled'] ?? false),
+            'contactless_enabled'   => (bool) ($patch['contactless_enabled'] ?? true),
+            'blocked_mcc_groups'    => is_array($patch['blocked_mcc_groups'] ?? null) ? $patch['blocked_mcc_groups'] : [],
         ]);
         $card = $this->lifecycleService->updateControls($user, $card, $input);
 
@@ -303,7 +304,7 @@ class CardProductAuthorizedHandler implements AuthorizedTransactionHandlerInterf
             amountCents: 1000,
             currency: 'ZAR',
             status: 'settled',
-            timestamp: new \DateTimeImmutable()
+            timestamp: new DateTimeImmutable()
         );
         $input = new DisputeInput(
             reason: (string) ($disputePayload['reason'] ?? ''),
@@ -449,14 +450,14 @@ class CardProductAuthorizedHandler implements AuthorizedTransactionHandlerInterf
             controls: CardControlsInput::fromArray([
                 'limits' => [
                     'per_transaction_cents' => (int) round(((float) ($controls['per_transaction_limit'] ?? 0)) * 100),
-                    'daily_cents' => (int) round(((float) ($controls['daily_limit'] ?? 0)) * 100),
-                    'monthly_cents' => (int) round(((float) ($controls['monthly_limit'] ?? 0)) * 100),
+                    'daily_cents'           => (int) round(((float) ($controls['daily_limit'] ?? 0)) * 100),
+                    'monthly_cents'         => (int) round(((float) ($controls['monthly_limit'] ?? 0)) * 100),
                 ],
-                'online_enabled' => (bool) ($controls['online_enabled'] ?? true),
+                'online_enabled'        => (bool) ($controls['online_enabled'] ?? true),
                 'international_enabled' => (bool) ($controls['international_enabled'] ?? false),
-                'atm_enabled' => (bool) ($controls['atm_enabled'] ?? false),
-                'contactless_enabled' => (bool) ($controls['contactless_enabled'] ?? true),
-                'blocked_mcc_groups' => array_values($controls['blocked_mcc_groups'] ?? []),
+                'atm_enabled'           => (bool) ($controls['atm_enabled'] ?? false),
+                'contactless_enabled'   => (bool) ($controls['contactless_enabled'] ?? true),
+                'blocked_mcc_groups'    => array_values($controls['blocked_mcc_groups'] ?? []),
             ]),
             label: isset($raw['nickname']) ? (string) $raw['nickname'] : null,
         );

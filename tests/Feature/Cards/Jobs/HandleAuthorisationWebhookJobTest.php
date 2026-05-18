@@ -157,8 +157,8 @@ class HandleAuthorisationWebhookJobTest extends TestCase
     public function test_it_warns_when_card_token_missing(): void
     {
         $entitlementService = Mockery::mock(CardEntitlementService::class);
-        $riskService        = Mockery::mock(CardRiskService::class);
-        $feeService         = Mockery::mock(CardFeeService::class);
+        $riskService = Mockery::mock(CardRiskService::class);
+        $feeService = Mockery::mock(CardFeeService::class);
 
         $entitlementService->shouldReceive('canAuthorize')->never();
 

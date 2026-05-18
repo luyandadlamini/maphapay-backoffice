@@ -37,7 +37,7 @@ class StripeIssuingRevealControllerTest extends TestCase
     {
         $this->postJson('/api/stripe-cards/reveal/ephemeral-key', [
             'card_id' => 'ic_test_123',
-            'nonce' => 'ephkeynonce_test_123',
+            'nonce'   => 'ephkeynonce_test_123',
         ])->assertForbidden();
     }
 
@@ -51,7 +51,7 @@ class StripeIssuingRevealControllerTest extends TestCase
 
         $this->postJson($url, [
             'card_id' => 'ic_other',
-            'nonce' => 'ephkeynonce_test_123',
+            'nonce'   => 'ephkeynonce_test_123',
         ])->assertUnprocessable();
     }
 }

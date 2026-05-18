@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\CardSubscriptions\Jobs;
 
+use App\Domain\CardIssuance\Models\Card;
+use App\Domain\CardIssuance\ValueObjects\AuthorizationRequest;
+use App\Domain\CardSubscriptions\Services\CardEntitlementService;
+use App\Domain\CardSubscriptions\Services\CardFeeService;
+use App\Domain\CardSubscriptions\Services\CardRiskService;
+use App\Domain\Shared\Money\Money;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -11,17 +17,13 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Domain\CardIssuance\Models\Card;
-use App\Domain\CardIssuance\ValueObjects\AuthorizationRequest;
-use App\Domain\CardSubscriptions\Services\CardEntitlementService;
-use App\Domain\CardSubscriptions\Services\CardRiskService;
-use App\Domain\CardSubscriptions\Services\CardFeeService;
-use App\Domain\Shared\Money\Money;
-use App\Domain\CardSubscriptions\Models\Enums\DeclineReason;
 
 class HandleAuthorisationWebhookJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * Create a new job instance.
@@ -31,7 +33,8 @@ class HandleAuthorisationWebhookJob implements ShouldQueue
     public function __construct(
         public readonly string $processor,
         public readonly array $payload
-    ) {}
+    ) {
+    }
 
     /**
      * Execute the job.
@@ -44,13 +47,15 @@ class HandleAuthorisationWebhookJob implements ShouldQueue
         DB::transaction(function () use ($entitlementService, $riskService, $feeService) {
             if (empty($this->payload['card_token'])) {
                 Log::warning('Authorisation webhook missing card_token.', ['payload' => $this->payload]);
+
                 return;
             }
 
             $card = Card::where('issuer_card_token', $this->payload['card_token'])->lockForUpdate()->first();
-            
-            if (!$card) {
+
+            if (! $card) {
                 Log::warning("Card not found for token: {$this->payload['card_token']}");
+
                 return;
             }
 
@@ -58,15 +63,17 @@ class HandleAuthorisationWebhookJob implements ShouldQueue
 
             // 1. Entitlement check (subscription, limits, controls)
             $entitlement = $entitlementService->canAuthorize($card, $authReq);
-            if (!$entitlement->allowed) {
+            if (! $entitlement->allowed) {
                 $this->respondToProcessor(decline: $entitlement->code->value ?? 'insufficient_funds');
+
                 return;
             }
 
             // 2. Risk check
             $risk = $riskService->evaluateAuthorization($card, $authReq);
-            if (!$risk->allowed) {
+            if (! $risk->allowed) {
                 $this->respondToProcessor(decline: $risk->code->value ?? 'suspected_fraud');
+
                 return;
             }
 

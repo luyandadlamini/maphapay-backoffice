@@ -26,8 +26,8 @@ class StripeIssuingRevealController extends Controller
 
         return view('stripe-cards.reveal', [
             'stripePublishableKey' => (string) config('cards.processors.stripe.publishable_key', ''),
-            'stripeCardId' => $cardId,
-            'ephemeralKeyUrl' => \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'stripeCardId'         => $cardId,
+            'ephemeralKeyUrl'      => \Illuminate\Support\Facades\URL::temporarySignedRoute(
                 'api.v1.cards.stripe.reveal.ephemeral-key',
                 now()->addMinutes(15),
                 ['card' => $cardId]
@@ -44,12 +44,12 @@ class StripeIssuingRevealController extends Controller
         $cardId = $this->cardId($request);
         $validated = $request->validate([
             'card_id' => ['required', 'string', 'same:card'],
-            'nonce' => ['required', 'string'],
+            'nonce'   => ['required', 'string'],
         ]);
 
         $ephemeralKey = $this->stripe->ephemeralKeys->create(
             [
-                'nonce' => $validated['nonce'],
+                'nonce'        => $validated['nonce'],
                 'issuing_card' => $cardId,
             ],
             ['stripe_version' => (string) config('cards.processors.stripe.api_version', '2026-04-22.dahlia')]

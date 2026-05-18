@@ -18,7 +18,8 @@ class CardFeeController extends Controller
 
     public function __construct(
         private readonly CardFeeService $feeService
-    ) {}
+    ) {
+    }
 
     public function preview(CardFeePreviewRequest $request): JsonResponse
     {

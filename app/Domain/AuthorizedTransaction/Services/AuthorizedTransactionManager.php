@@ -6,8 +6,8 @@ namespace App\Domain\AuthorizedTransaction\Services;
 
 use App\Console\Commands\ExecuteScheduledSends;
 use App\Domain\AuthorizedTransaction\Contracts\AuthorizedTransactionHandlerInterface;
-use App\Domain\AuthorizedTransaction\Events\AuthorizedTransactionFinalized;
 use App\Domain\AuthorizedTransaction\Contracts\MoneyMovementRiskSignalProviderInterface;
+use App\Domain\AuthorizedTransaction\Events\AuthorizedTransactionFinalized;
 use App\Domain\AuthorizedTransaction\Exceptions\InvalidTransactionPinException;
 use App\Domain\AuthorizedTransaction\Exceptions\TransactionNotFoundException;
 use App\Domain\AuthorizedTransaction\Exceptions\TransactionPinNotSetException;
@@ -61,7 +61,7 @@ class AuthorizedTransactionManager
         AuthorizedTransaction::REMARK_SCHEDULED_SEND         => ScheduledSendHandler::class,
         AuthorizedTransaction::REMARK_REQUEST_MONEY          => RequestMoneyHandler::class,
         AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED => RequestMoneyReceivedHandler::class,
-        AuthorizedTransaction::REMARK_CARD_PRODUCT          => CardProductAuthorizedHandler::class,
+        AuthorizedTransaction::REMARK_CARD_PRODUCT           => CardProductAuthorizedHandler::class,
     ];
 
     public function __construct(
@@ -565,7 +565,7 @@ class AuthorizedTransactionManager
             AuthorizedTransaction::REMARK_SCHEDULED_SEND         => $this->scheduledSendHandler,
             AuthorizedTransaction::REMARK_REQUEST_MONEY          => $this->requestMoneyHandler,
             AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED => $this->requestMoneyReceivedHandler,
-            AuthorizedTransaction::REMARK_CARD_PRODUCT          => $this->cardProductAuthorizedHandler,
+            AuthorizedTransaction::REMARK_CARD_PRODUCT           => $this->cardProductAuthorizedHandler,
             default                                              => throw new InvalidArgumentException("No handler for remark: {$remark}"),
         };
     }

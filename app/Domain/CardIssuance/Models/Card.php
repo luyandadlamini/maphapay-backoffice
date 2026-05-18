@@ -101,11 +101,11 @@ class Card extends Model
     protected function casts(): array
     {
         return [
-            'metadata'                          => 'encrypted:array',
-            'spend_limit_cents'                 => 'integer',
-            'expires_at'                        => 'datetime',
-            'frozen_at'                         => 'datetime',
-            'cancelled_at'                      => 'datetime',
+            'metadata'          => 'encrypted:array',
+            'spend_limit_cents' => 'integer',
+            'expires_at'        => 'datetime',
+            'frozen_at'         => 'datetime',
+            'cancelled_at'      => 'datetime',
             // Monetisation fields (2026_05_08_000001_alter_cards_add_monetisation_fields)
             'lifecycle_config'                  => 'array',
             'is_default'                        => 'boolean',

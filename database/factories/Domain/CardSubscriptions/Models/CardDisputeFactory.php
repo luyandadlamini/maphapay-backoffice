@@ -22,20 +22,20 @@ class CardDisputeFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id'                  => null,
-            'user_id'                    => User::factory(),
-            'card_transaction_id'        => Str::uuid()->toString(),
-            'reason'                     => 'unrecognised',
-            'status'                     => 'submitted',
-            'user_description'           => $this->faker->sentence(),
-            'evidence'                   => [],
-            'disputed_amount'            => '25.00',
-            'currency'                   => 'SZL',
-            'processor_dispute_id'       => null,
-            'submitted_at'               => now(),
-            'processor_acknowledged_at'  => null,
-            'resolved_at'                => null,
-            'resolution_notes'           => null,
+            'tenant_id'                 => null,
+            'user_id'                   => User::factory(),
+            'card_transaction_id'       => Str::uuid()->toString(),
+            'reason'                    => 'unrecognised',
+            'status'                    => 'submitted',
+            'user_description'          => $this->faker->sentence(),
+            'evidence'                  => [],
+            'disputed_amount'           => '25.00',
+            'currency'                  => 'SZL',
+            'processor_dispute_id'      => null,
+            'submitted_at'              => now(),
+            'processor_acknowledged_at' => null,
+            'resolved_at'               => null,
+            'resolution_notes'          => null,
         ];
     }
 }

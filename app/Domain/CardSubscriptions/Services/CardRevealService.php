@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\CardSubscriptions\Services;
 
-use App\Domain\CardIssuance\Models\Card;
 use App\Domain\CardIssuance\Contracts\CardIssuerInterface;
+use App\Domain\CardIssuance\Models\Card;
 use App\Domain\CardIssuance\ValueObjects\RevealUrlResult;
 use App\Models\User;
 use RuntimeException;
@@ -16,7 +16,8 @@ class CardRevealService
 
     public function __construct(
         private readonly CardIssuerInterface $issuer
-    ) {}
+    ) {
+    }
 
     public function mintRevealUrl(User $user, Card $card): RevealUrlResult
     {

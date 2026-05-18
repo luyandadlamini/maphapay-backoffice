@@ -157,7 +157,9 @@ final class ReconcileWalletProviderTransactionsTest extends TestCase
     {
         return new class ($providerId) implements ProviderSettler {
             public int $calls = 0;
+
             public string $lastRequestId = '';
+
             public string $lastOutcome = '';
 
             public function __construct(private readonly string $providerId)

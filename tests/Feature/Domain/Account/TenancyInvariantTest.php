@@ -7,6 +7,7 @@ namespace Tests\Feature\Domain\Account;
 use App\Domain\Account\Models\Account;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
+use RuntimeException;
 use Tests\TestCase;
 
 class TenancyInvariantTest extends TestCase
@@ -17,7 +18,7 @@ class TenancyInvariantTest extends TestCase
         // Temporarily set env to production for this test only
         config(['app.env' => 'production']);
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionMessageMatches('/tenancy/i');
 
         Account::create([

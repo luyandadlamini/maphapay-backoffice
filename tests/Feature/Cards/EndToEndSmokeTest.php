@@ -19,7 +19,7 @@ use Illuminate\Support\Str;
 beforeEach(function (): void {
     config(['maphapay_migration.enable_verification' => true]);
 
-    $this->seed(\Database\Seeders\CardPlanSeeder::class);
+    $this->seed(Database\Seeders\CardPlanSeeder::class);
 
     $this->business_user->update([
         'kyc_status'      => 'approved',
@@ -27,15 +27,17 @@ beforeEach(function (): void {
         'transaction_pin' => '1234',
     ]);
 
-    $this->app->instance(\App\Http\Middleware\CheckKycApproved::class, new class {
+    $this->app->instance(App\Http\Middleware\CheckKycApproved::class, new class () {
         public function handle($request, $next)
         {
             return $next($request);
         }
     });
 
-    $this->app->instance(\App\Http\Middleware\ResolveAccountContext::class, new class($this->account) {
-        public function __construct(private $acc) {}
+    $this->app->instance(App\Http\Middleware\ResolveAccountContext::class, new class ($this->account) {
+        public function __construct(private $acc)
+        {
+        }
 
         public function handle($request, $next)
         {
@@ -47,15 +49,15 @@ beforeEach(function (): void {
     });
 
     DB::table('assets')->insertOrIgnore([
-        'code'           => 'SZL',
-        'name'           => 'Swazi Lilangeni',
-        'type'           => 'fiat',
-        'precision'      => 2,
-        'is_active'      => true,
-        'is_basket'      => false,
-        'is_tradeable'   => false,
-        'created_at'     => now(),
-        'updated_at'     => now(),
+        'code'         => 'SZL',
+        'name'         => 'Swazi Lilangeni',
+        'type'         => 'fiat',
+        'precision'    => 2,
+        'is_active'    => true,
+        'is_basket'    => false,
+        'is_tradeable' => false,
+        'created_at'   => now(),
+        'updated_at'   => now(),
     ]);
 
     AccountBalance::updateOrCreate(
@@ -135,7 +137,7 @@ it('adult subscribe → virtual card → webhooks → transactions list → reve
         'merchant_category' => 'Retail',
     ];
     $authBody = json_encode($authPayload);
-    $authSig  = hash_hmac('sha256', $authBody, 'demo_webhook_secret');
+    $authSig = hash_hmac('sha256', $authBody, 'demo_webhook_secret');
 
     $this->call(
         'POST',
@@ -170,7 +172,7 @@ it('adult subscribe → virtual card → webhooks → transactions list → reve
         'currency'       => 'ZAR',
     ];
     $clearBody = json_encode($clearPayload);
-    $clearSig  = hash_hmac('sha256', $clearBody, 'demo_webhook_secret');
+    $clearSig = hash_hmac('sha256', $clearBody, 'demo_webhook_secret');
 
     $this->call(
         'POST',
@@ -191,8 +193,8 @@ it('adult subscribe → virtual card → webhooks → transactions list → reve
 
     $reveal = $this->actingAsWithScopes($user)
         ->withHeaders([
-            'X-Account-Id'     => $this->account->uuid,
-            'X-Mobile-Trust'   => 'smoke-trust',
+            'X-Account-Id'   => $this->account->uuid,
+            'X-Mobile-Trust' => 'smoke-trust',
         ])
         ->getJson("/api/v1/cards/{$cardId}/reveal");
 

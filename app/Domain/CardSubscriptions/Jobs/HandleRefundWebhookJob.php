@@ -22,7 +22,10 @@ use Illuminate\Support\Facades\Log;
  */
 class HandleRefundWebhookJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * @param array<string, mixed> $payload
@@ -30,15 +33,17 @@ class HandleRefundWebhookJob implements ShouldQueue
     public function __construct(
         public readonly string $processor,
         public readonly array $payload
-    ) {}
+    ) {
+    }
 
     public function handle(): void
     {
         DB::transaction(function (): void {
             $transactionId = $this->payload['original_transaction_id'] ?? $this->payload['transaction_id'] ?? null;
 
-            if (!$transactionId) {
+            if (! $transactionId) {
                 Log::warning('Refund webhook missing transaction_id.', ['processor' => $this->processor]);
+
                 return;
             }
 
@@ -46,17 +51,18 @@ class HandleRefundWebhookJob implements ShouldQueue
                 ->lockForUpdate()
                 ->first();
 
-            if (!$tx) {
+            if (! $tx) {
                 Log::warning("Refund webhook for unknown transaction: {$transactionId}", [
                     'processor' => $this->processor,
                 ]);
+
                 return;
             }
 
             /** @var string|int|null $refundAmount */
             $refundAmount = $this->payload['refund_amount'] ?? $this->payload['amount'] ?? null;
 
-            $tx->status    = 'refunded';
+            $tx->status = 'refunded';
             $tx->refunded_at = now();
             if ($refundAmount !== null) {
                 $tx->refunded_amount = (string) $refundAmount;

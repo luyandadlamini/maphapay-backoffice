@@ -10,7 +10,6 @@ use Tests\TestCase;
 
 final class WalletLinkingTest extends TestCase
 {
-
     public function test_belongs_to_user(): void
     {
         $user = User::factory()->create();

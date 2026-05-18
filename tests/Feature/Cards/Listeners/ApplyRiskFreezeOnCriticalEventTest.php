@@ -10,10 +10,10 @@ use App\Models\User;
 it('invokes suspendCardsForUser on high severity risk events', function () {
     $user = User::factory()->create();
 
-    $risk = \Mockery::mock(CardRiskService::class);
+    $risk = Mockery::mock(CardRiskService::class);
     $risk->shouldReceive('suspendCardsForUser')
         ->once()
-        ->with(\Mockery::on(fn (User $u) => $u->is($user)), 'velocity.declines_10min');
+        ->with(Mockery::on(fn (User $u) => $u->is($user)), 'velocity.declines_10min');
 
     $listener = new ApplyRiskFreezeOnCriticalEvent($risk);
 

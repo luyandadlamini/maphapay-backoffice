@@ -25,21 +25,21 @@ enum PricingCategory: string
     public function label(): string
     {
         return match ($this) {
-            self::LocalTransfer            => __('Local transfer'),
-            self::InternationalTransfer    => __('International transfer'),
-            self::WalletToWallet           => __('Wallet-to-wallet'),
-            self::BankTransfer             => __('Bank transfer'),
-            self::AtmWithdrawal            => __('ATM withdrawal'),
-            self::PosTransaction           => __('POS transaction'),
-            self::VirtualCardTransaction   => __('Virtual card transaction'),
-            self::PhysicalCardTransaction  => __('Physical card transaction'),
-            self::MerchantPayment          => __('Merchant payment'),
-            self::Airtime                  => __('Airtime'),
-            self::BillPayment              => __('Bill payment'),
-            self::CashIn                   => __('Cash in'),
-            self::CashOut                  => __('Cash out'),
-            self::FxConversion             => __('FX conversion'),
-            self::CrossBorder              => __('Cross-border'),
+            self::LocalTransfer           => __('Local transfer'),
+            self::InternationalTransfer   => __('International transfer'),
+            self::WalletToWallet          => __('Wallet-to-wallet'),
+            self::BankTransfer            => __('Bank transfer'),
+            self::AtmWithdrawal           => __('ATM withdrawal'),
+            self::PosTransaction          => __('POS transaction'),
+            self::VirtualCardTransaction  => __('Virtual card transaction'),
+            self::PhysicalCardTransaction => __('Physical card transaction'),
+            self::MerchantPayment         => __('Merchant payment'),
+            self::Airtime                 => __('Airtime'),
+            self::BillPayment             => __('Bill payment'),
+            self::CashIn                  => __('Cash in'),
+            self::CashOut                 => __('Cash out'),
+            self::FxConversion            => __('FX conversion'),
+            self::CrossBorder             => __('Cross-border'),
         };
     }
 }

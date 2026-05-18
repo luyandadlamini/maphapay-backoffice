@@ -235,7 +235,7 @@ class StripeCardIssuerAdapter implements CardIssuerInterface
                 'address' => $this->defaultBillingAddress(),
             ],
             'individual' => $this->individualDetails($cardholderName),
-            'metadata' => [
+            'metadata'   => [
                 'maphapay_user_id' => (string) $user->id,
             ],
         ]);
@@ -287,12 +287,12 @@ class StripeCardIssuerAdapter implements CardIssuerInterface
         $lastName = count($nameParts) > 1 ? implode(' ', array_slice($nameParts, 1)) : 'User';
 
         return [
-            'first_name' => $firstName !== '' ? $firstName : 'Test',
-            'last_name' => $lastName !== '' ? $lastName : 'User',
+            'first_name'   => $firstName !== '' ? $firstName : 'Test',
+            'last_name'    => $lastName !== '' ? $lastName : 'User',
             'card_issuing' => [
                 'user_terms_acceptance' => [
                     'date' => time(),
-                    'ip' => '127.0.0.1',
+                    'ip'   => '127.0.0.1',
                 ],
             ],
         ];
@@ -329,7 +329,7 @@ class StripeCardIssuerAdapter implements CardIssuerInterface
             'inactive', 'frozen', 'frozen_by_user', 'frozen_by_admin', 'suspended' => CardStatus::FROZEN,
             'canceled', 'cancelled' => CardStatus::CANCELLED,
             'expired' => CardStatus::EXPIRED,
-            default => CardStatus::PENDING,
+            default   => CardStatus::PENDING,
         };
     }
 }

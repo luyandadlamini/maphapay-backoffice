@@ -21,7 +21,8 @@ class MinorCardRequestController extends Controller
 {
     public function __construct(
         private readonly MinorCardRequestService $minorCardRequestService,
-    ) {}
+    ) {
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -91,16 +92,16 @@ class MinorCardRequestController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'minor_account_uuid' => ['required_without:self_request', 'uuid', 'exists:accounts,uuid'],
-            'self_request'       => ['sometimes', 'boolean'],
-            'network'            => ['sometimes', 'in:visa,mastercard'],
-            'requested_limits'   => ['nullable', 'array'],
+            'minor_account_uuid'                  => ['required_without:self_request', 'uuid', 'exists:accounts,uuid'],
+            'self_request'                        => ['sometimes', 'boolean'],
+            'network'                             => ['sometimes', 'in:visa,mastercard'],
+            'requested_limits'                    => ['nullable', 'array'],
             'requested_limits.daily'              => ['nullable', 'numeric', 'min:0'],
             'requested_limits.monthly'            => ['nullable', 'numeric', 'min:0'],
             'requested_limits.single_transaction' => ['nullable', 'numeric', 'min:0'],
-            'intent'              => ['nullable', 'array'],
-            'intent.request_type' => ['required_with:intent', 'string', Rule::in(['subscribe', 'change_plan', 'create_card', 'replace_card', 'unfreeze_card'])],
-            'intent.payload'      => ['nullable', 'array'],
+            'intent'                              => ['nullable', 'array'],
+            'intent.request_type'                 => ['required_with:intent', 'string', Rule::in(['subscribe', 'change_plan', 'create_card', 'replace_card', 'unfreeze_card'])],
+            'intent.payload'                      => ['nullable', 'array'],
         ]);
 
         /** @var \App\Models\User $user */
@@ -116,9 +117,9 @@ class MinorCardRequestController extends Controller
         $limits = $validated['requested_limits'] ?? null;
         if (is_array($limits)) {
             $limits = array_filter([
-                'daily'               => isset($limits['daily']) ? (string) $limits['daily'] : null,
-                'monthly'             => isset($limits['monthly']) ? (string) $limits['monthly'] : null,
-                'single_transaction'  => isset($limits['single_transaction']) ? (string) $limits['single_transaction'] : null,
+                'daily'              => isset($limits['daily']) ? (string) $limits['daily'] : null,
+                'monthly'            => isset($limits['monthly']) ? (string) $limits['monthly'] : null,
+                'single_transaction' => isset($limits['single_transaction']) ? (string) $limits['single_transaction'] : null,
             ], static fn ($v) => $v !== null && $v !== '');
         } else {
             $limits = null;
@@ -142,7 +143,7 @@ class MinorCardRequestController extends Controller
         return response()->json([
             'status' => 'success',
             'remark' => 'minor_card_request',
-            'data'    => ['request' => MinorCardRequestMobileResource::toArray($created->loadMissing('minorAccount'))],
+            'data'   => ['request' => MinorCardRequestMobileResource::toArray($created->loadMissing('minorAccount'))],
         ], 201);
     }
 

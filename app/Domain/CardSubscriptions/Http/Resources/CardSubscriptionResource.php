@@ -18,19 +18,19 @@ class CardSubscriptionResource extends JsonResource
         }
 
         return [
-            'id' => $this->id,
-            'subscriber_user_id' => $this->subscriber_user_id,
-            'payer_user_id' => $this->payer_user_id,
-            'plan_code' => $this->plan?->code,
-            'plan' => new CardSubscriptionPlanResource($this->whenLoaded('plan')),
-            'status' => $this->status,
-            'current_period_start' => $this->current_period_start?->toIso8601String(),
-            'current_period_end' => $this->current_period_end?->toIso8601String(),
-            'next_billing_date' => $this->next_billing_date?->toIso8601String(),
-            'failed_payment_count' => $this->failed_payment_count,
-            'grace_period_ends_at' => $this->grace_period_ends_at?->toIso8601String(),
+            'id'                    => $this->id,
+            'subscriber_user_id'    => $this->subscriber_user_id,
+            'payer_user_id'         => $this->payer_user_id,
+            'plan_code'             => $this->plan?->code,
+            'plan'                  => new CardSubscriptionPlanResource($this->whenLoaded('plan')),
+            'status'                => $this->status,
+            'current_period_start'  => $this->current_period_start?->toIso8601String(),
+            'current_period_end'    => $this->current_period_end?->toIso8601String(),
+            'next_billing_date'     => $this->next_billing_date?->toIso8601String(),
+            'failed_payment_count'  => $this->failed_payment_count,
+            'grace_period_ends_at'  => $this->grace_period_ends_at?->toIso8601String(),
             'is_minor_subscription' => (bool) $this->is_minor_subscription,
-            'guardian_user_id' => $this->guardian_user_id,
+            'guardian_user_id'      => $this->guardian_user_id,
         ];
     }
 }

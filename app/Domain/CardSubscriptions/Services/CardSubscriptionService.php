@@ -24,7 +24,8 @@ class CardSubscriptionService
         private readonly CardEntitlementService $entitlements,
         private readonly CardBillingService $billing,
         private readonly CardAuditService $audit,
-    ) {}
+    ) {
+    }
 
     /**
      * Subscribe a user to a card plan.
@@ -53,16 +54,16 @@ class CardSubscriptionService
 
         $subscription = DB::transaction(function () use ($subscriber, $payer, $plan, $isMinor, $minorRequestId): CardSubscription {
             $subscription = CardSubscription::create([
-                'subscriber_user_id'   => $subscriber->id,
-                'payer_user_id'        => $payer->id,
-                'card_plan_id'         => $plan->id,
-                'status'               => CardSubscriptionStatus::Active,
-                'current_period_start' => now(),
-                'current_period_end'   => now()->addMonth(),
-                'next_billing_date'    => now()->addMonth(),
-                'failed_payment_count' => 0,
+                'subscriber_user_id'    => $subscriber->id,
+                'payer_user_id'         => $payer->id,
+                'card_plan_id'          => $plan->id,
+                'status'                => CardSubscriptionStatus::Active,
+                'current_period_start'  => now(),
+                'current_period_end'    => now()->addMonth(),
+                'next_billing_date'     => now()->addMonth(),
+                'failed_payment_count'  => 0,
                 'is_minor_subscription' => $isMinor,
-                'guardian_user_id'     => $isMinor ? $payer->id : null,
+                'guardian_user_id'      => $isMinor ? $payer->id : null,
                 'minor_card_request_id' => $minorRequestId,
             ]);
 
@@ -242,9 +243,10 @@ class CardSubscriptionService
                 ->lockForUpdate()
                 ->latest()
                 ->firstOrFail();
-            $subscription->status       = CardSubscriptionStatus::Cancelled;
+            $subscription->status = CardSubscriptionStatus::Cancelled;
             $subscription->cancelled_at = now();
             $subscription->save();
+
             return $subscription;
         });
 
@@ -278,7 +280,7 @@ class CardSubscriptionService
     {
         DB::transaction(function () use ($subscription, $failureReason): void {
             $subscription->lockForUpdate();
-            $subscription->status               = CardSubscriptionStatus::PastDue;
+            $subscription->status = CardSubscriptionStatus::PastDue;
             $subscription->grace_period_ends_at = now()->addDays(3);
             $subscription->failed_payment_count++;
             $subscription->save();
@@ -301,7 +303,7 @@ class CardSubscriptionService
     {
         DB::transaction(function () use ($subscription): void {
             $subscription->lockForUpdate();
-            $subscription->status       = CardSubscriptionStatus::Suspended;
+            $subscription->status = CardSubscriptionStatus::Suspended;
             $subscription->suspended_at = now();
             $subscription->save();
 
@@ -325,7 +327,7 @@ class CardSubscriptionService
     {
         DB::transaction(function () use ($subscription): void {
             $subscription->lockForUpdate();
-            $subscription->status               = CardSubscriptionStatus::Active;
+            $subscription->status = CardSubscriptionStatus::Active;
             $subscription->failed_payment_count = 0;
             $subscription->grace_period_ends_at = null;
             $subscription->save();
@@ -352,7 +354,7 @@ class CardSubscriptionService
     {
         DB::transaction(function () use ($subscription): void {
             $subscription->lockForUpdate();
-            $subscription->status       = CardSubscriptionStatus::Cancelled;
+            $subscription->status = CardSubscriptionStatus::Cancelled;
             $subscription->cancelled_at = now();
             $subscription->save();
 

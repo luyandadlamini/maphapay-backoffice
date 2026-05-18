@@ -16,9 +16,9 @@ class CardDisputeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'card_id' => ['required', 'string'],
-            'reason' => ['required', 'string', 'in:unrecognised,duplicate,wrong_amount,service_not_received,other'],
-            'description' => ['required', 'string', 'max:500'],
+            'card_id'         => ['required', 'string'],
+            'reason'          => ['required', 'string', 'in:unrecognised,duplicate,wrong_amount,service_not_received,other'],
+            'description'     => ['required', 'string', 'max:500'],
             'disputed_amount' => ['required', 'numeric', 'min:0'],
         ];
     }

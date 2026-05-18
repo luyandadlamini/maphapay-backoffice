@@ -16,17 +16,17 @@ class CreateVirtualCardRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nickname' => ['required', 'string', 'max:255'],
-            'lifecycle' => ['required', 'string'],
-            'lifecycle_config' => ['nullable', 'array'],
-            'controls' => ['required', 'array'],
+            'nickname'                       => ['required', 'string', 'max:255'],
+            'lifecycle'                      => ['required', 'string'],
+            'lifecycle_config'               => ['nullable', 'array'],
+            'controls'                       => ['required', 'array'],
             'controls.per_transaction_limit' => ['required', 'numeric', 'min:0'],
-            'controls.daily_limit' => ['required', 'numeric', 'min:0'],
-            'controls.monthly_limit' => ['required', 'numeric', 'min:0'],
-            'controls.online_enabled' => ['required', 'boolean'],
+            'controls.daily_limit'           => ['required', 'numeric', 'min:0'],
+            'controls.monthly_limit'         => ['required', 'numeric', 'min:0'],
+            'controls.online_enabled'        => ['required', 'boolean'],
             'controls.international_enabled' => ['required', 'boolean'],
-            'controls.blocked_mcc_groups' => ['nullable', 'array'],
-            'controls.blocked_mcc_groups.*' => ['string'],
+            'controls.blocked_mcc_groups'    => ['nullable', 'array'],
+            'controls.blocked_mcc_groups.*'  => ['string'],
         ];
     }
 }

@@ -12,7 +12,7 @@ use App\Domain\CardSubscriptions\ValueObjects\BillingAttemptResult;
 use Illuminate\Support\Str;
 
 beforeEach(function () {
-    $this->seed(\Database\Seeders\CardPlanSeeder::class);
+    $this->seed(Database\Seeders\CardPlanSeeder::class);
 
     $this->user->update([
         'kyc_status'      => 'approved',
@@ -20,13 +20,20 @@ beforeEach(function () {
         'transaction_pin' => '1234',
     ]);
 
-    $this->app->instance(\App\Http\Middleware\CheckKycApproved::class, new class {
-        public function handle($request, $next) { return $next($request); }
+    $this->app->instance(App\Http\Middleware\CheckKycApproved::class, new class () {
+        public function handle($request, $next)
+        {
+        return $next($request);
+        }
     });
 
-    $this->app->instance(\App\Http\Middleware\ResolveAccountContext::class, new class($this->account) {
-        public function __construct(private $acc) {}
-        public function handle($request, $next) {
+    $this->app->instance(App\Http\Middleware\ResolveAccountContext::class, new class ($this->account) {
+        public function __construct(private $acc)
+        {
+        }
+
+        public function handle($request, $next)
+        {
             $request->attributes->set('account_uuid', $this->acc->uuid);
             $request->attributes->set('account_type', 'business');
 
@@ -78,25 +85,25 @@ it('mobile config exposes card feature flags in the standard envelope', function
 
 it('returns cards in the documented mobile envelope and field vocabulary', function (): void {
     $card = Card::create([
-        'user_id'              => $this->user->id,
-        'cardholder_id'        => $this->cardholder->id,
-        'card_subscription_id' => $this->subscription->id,
-        'kind'                 => 'virtual',
-        'status'               => 'active',
-        'issuer'               => 'mock',
-        'issuer_card_token'    => 'contract_card_token',
-        'last4'                => '4242',
-        'network'              => 'visa',
-        'currency'             => 'SZL',
-        'label'                => 'Online shopping',
-        'per_transaction_limit'=> '1000.00',
-        'daily_limit'          => '2000.00',
-        'monthly_limit'        => '5000.00',
-        'online_enabled'       => true,
-        'international_enabled'=> false,
-        'atm_enabled'          => false,
-        'contactless_enabled'  => false,
-        'blocked_mcc_groups'   => ['gambling'],
+        'user_id'               => $this->user->id,
+        'cardholder_id'         => $this->cardholder->id,
+        'card_subscription_id'  => $this->subscription->id,
+        'kind'                  => 'virtual',
+        'status'                => 'active',
+        'issuer'                => 'mock',
+        'issuer_card_token'     => 'contract_card_token',
+        'last4'                 => '4242',
+        'network'               => 'visa',
+        'currency'              => 'SZL',
+        'label'                 => 'Online shopping',
+        'per_transaction_limit' => '1000.00',
+        'daily_limit'           => '2000.00',
+        'monthly_limit'         => '5000.00',
+        'online_enabled'        => true,
+        'international_enabled' => false,
+        'atm_enabled'           => false,
+        'contactless_enabled'   => false,
+        'blocked_mcc_groups'    => ['gambling'],
     ]);
 
     $response = $this->actingAsWithScopes($this->user)

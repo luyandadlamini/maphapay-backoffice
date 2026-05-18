@@ -174,7 +174,7 @@ class HighRiskActionTrustPolicy
             'envelope_failed',
             'native_module_missing',
             'native_module_unavailable' => 'attestation_' . $capabilityReason,
-            default => 'attestation_provider_error',
+            default                     => 'attestation_provider_error',
         };
     }
 
@@ -270,9 +270,9 @@ class HighRiskActionTrustPolicy
             : [];
 
         return [
-            'prefix'               => 'ios-app-attest',
-            'key_id_present'       => isset($payload['keyId']) && is_string($payload['keyId']) && trim($payload['keyId']) !== '',
-            'assertion_reason'     => isset($payload['assertionReason']) && is_string($payload['assertionReason'])
+            'prefix'           => 'ios-app-attest',
+            'key_id_present'   => isset($payload['keyId']) && is_string($payload['keyId']) && trim($payload['keyId']) !== '',
+            'assertion_reason' => isset($payload['assertionReason']) && is_string($payload['assertionReason'])
                 ? strtolower(trim($payload['assertionReason']))
                 : null,
             'challenge_id_present' => isset($metadata['challenge_id']) && is_string($metadata['challenge_id']) && trim($metadata['challenge_id']) !== '',
