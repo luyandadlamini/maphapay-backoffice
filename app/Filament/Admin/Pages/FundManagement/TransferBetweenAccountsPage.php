@@ -245,8 +245,8 @@ class TransferBetweenAccountsPage extends Page
         // beginTransaction() opened on, so the wrapper provides no actual atomicity.
         //
         // This transfer is therefore eventually-consistent: if the credit succeeds but
-        // the debit fails (or vice versa), a compensating sweep (see
-        // maphapay:sweep-orphan-central-balances) is required to reconcile.  XA
+        // the debit fails (or vice versa), an out-of-band compensating action is
+        // required to reconcile (book a corrective transfer or contact support). XA
         // transactions across two MySQL schemas are out of scope.  For same-tenant
         // transfers the service layer handles intra-tenant atomicity internally.
         try {
