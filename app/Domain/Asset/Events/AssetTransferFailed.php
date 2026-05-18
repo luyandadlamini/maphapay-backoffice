@@ -7,9 +7,10 @@ namespace App\Domain\Asset\Events;
 use App\Domain\Account\DataObjects\AccountUuid;
 use App\Domain\Account\DataObjects\Hash;
 use App\Domain\Account\DataObjects\Money;
+use App\Domain\Shared\Contracts\CarriesTenantContext;
 use Spatie\EventSourcing\StoredEvents\ShouldBeStored;
 
-class AssetTransferFailed extends ShouldBeStored
+class AssetTransferFailed extends ShouldBeStored implements CarriesTenantContext
 {
     public function __construct(
         public readonly AccountUuid $fromAccountUuid,
@@ -47,5 +48,10 @@ class AssetTransferFailed extends ShouldBeStored
     {
         return str_contains(strtolower($this->reason), 'exchange') ||
                str_contains(strtolower($this->reason), 'rate');
+    }
+
+    public function tenantAccountUuid(): string
+    {
+        return (string) $this->fromAccountUuid;
     }
 }
