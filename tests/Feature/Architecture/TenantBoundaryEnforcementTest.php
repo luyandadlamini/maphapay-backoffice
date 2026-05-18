@@ -1,0 +1,137 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Architecture;
+
+use App\Domain\Account\Models\AccountBalance;
+use App\Domain\Shared\Exceptions\TenantContextMissingException;
+use App\Models\Tenant;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Stancl\Tenancy\Tenancy;
+use Tests\TestCase;
+use Throwable;
+
+class TenantBoundaryEnforcementTest extends TestCase
+{
+    /**
+     * Disable DB transaction wrapping — we initialize tenancy which switches connections,
+     * and wrapping breaks across connection switches on MySQL.
+     *
+     * @return array<string>
+     */
+    protected function connectionsToTransact(): array
+    {
+        return [];
+    }
+
+    protected function shouldCreateDefaultAccountsInSetup(): bool
+    {
+        return false;
+    }
+
+    /** @var list<string> Tenant IDs seeded in this test; deleted in tearDown. */
+    private array $seededTenantIds = [];
+
+    protected function tearDown(): void
+    {
+        $tenancy = app(Tenancy::class);
+
+        if ($tenancy->initialized) {
+            $tenancy->end();
+        }
+
+        // Restore testing env in case a test flipped it.
+        config(['app.env' => 'testing']);
+
+        if ($this->seededTenantIds !== []) {
+            try {
+                DB::connection('central')->reconnect();
+            } catch (Throwable) {
+                // best-effort
+            }
+
+            try {
+                DB::connection('central')
+                    ->table('tenants')
+                    ->whereIn('id', $this->seededTenantIds)
+                    ->delete();
+            } catch (Throwable) {
+                // best-effort cleanup
+            }
+
+            $this->seededTenantIds = [];
+        }
+
+        parent::tearDown();
+    }
+
+    /**
+     * Insert a tenant row directly into the central DB without firing Stancl events
+     * (avoids CreateDatabase job failures on MySQL after migration-heavy setUp()).
+     */
+    private function seedTenantDirectly(): Tenant
+    {
+        $tenantId = (string) Str::uuid();
+
+        DB::connection('central')->table('tenants')->insert([
+            'id'            => $tenantId,
+            'name'          => 'TenantBoundary test tenant',
+            'plan'          => 'default',
+            'team_id'       => null,
+            'trial_ends_at' => null,
+            'created_at'    => now(),
+            'updated_at'    => now(),
+            'data'          => json_encode([]),
+        ]);
+
+        $this->seededTenantIds[] = $tenantId;
+
+        /** @var Tenant $tenant */
+        $tenant = Tenant::on('central')->findOrFail($tenantId);
+
+        return $tenant;
+    }
+
+    public function test_tenant_model_throws_when_used_without_tenant_context_outside_testing(): void
+    {
+        // Force the trait out of its testing-env short-circuit so we can
+        // assert the strict behavior that runs in local/staging/prod.
+        config(['app.env' => 'local']);
+
+        $this->expectException(TenantContextMissingException::class);
+        $this->expectExceptionMessageMatches('/AccountBalance.*without an active tenant context/');
+
+        // Touching getConnectionName() (which a query builder does) must throw.
+        (new AccountBalance())->getConnectionName();
+    }
+
+    public function test_tenant_model_is_lenient_in_testing_env(): void
+    {
+        $this->assertSame('testing', config('app.env'));
+
+        // No exception. Returns null (default connection) per current behavior.
+        $this->assertNull((new AccountBalance())->getConnectionName());
+    }
+
+    public function test_tenant_model_returns_tenant_connection_when_tenancy_initialized_outside_testing(): void
+    {
+        if ($this->isInMemorySqlite()) {
+            $this->markTestSkipped(
+                'Tenant initialization test requires MySQL (SQLite :memory: cannot share tables across connections)'
+            );
+        }
+
+        config(['app.env' => 'local']);
+
+        $tenant = $this->seedTenantDirectly();
+        app(Tenancy::class)->initialize($tenant);
+
+        try {
+            $this->assertSame('tenant', (new AccountBalance())->getConnectionName());
+        } finally {
+            app(Tenancy::class)->end();
+        }
+    }
+}

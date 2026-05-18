@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Domain\Account\Events;
 
 use App\Domain\Account\DataObjects\Hash;
+use App\Domain\Shared\Contracts\CarriesTenantContext;
 use App\Values\EventQueues;
 use Spatie\EventSourcing\StoredEvents\ShouldBeStored;
 
-class AssetBalanceSubtracted extends ShouldBeStored implements HasHash
+class AssetBalanceSubtracted extends ShouldBeStored implements CarriesTenantContext, HasHash
 {
     use HashValidatorProvider;
 
@@ -36,5 +37,10 @@ class AssetBalanceSubtracted extends ShouldBeStored implements HasHash
     public function getAssetCode(): string
     {
         return $this->assetCode;
+    }
+
+    public function tenantAccountUuid(): string
+    {
+        return (string) $this->aggregateRootUuid();
     }
 }
