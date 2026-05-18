@@ -127,9 +127,11 @@ class FilamentTenantMiddleware
      */
     protected function resolveTenantId(Request $request, object $user): ?string
     {
+        $needsTenantContext = $this->requestNeedsTenantContext($request);
+
         // First, check session for previously selected tenant
         $sessionTenantId = $request->session()->get(self::TENANT_SESSION_KEY);
-        if ($sessionTenantId) {
+        if ($sessionTenantId && $needsTenantContext) {
             // Verify user still has access
             /** @var Tenant|null $tenant */
             $tenant = Tenant::find($sessionTenantId);
@@ -157,7 +159,7 @@ class FilamentTenantMiddleware
 
         // Check if user is platform admin (can see all tenants)
         if ($this->isPlatformAdmin($user)) {
-            if ($this->requestNeedsTenantContext($request)) {
+            if ($needsTenantContext) {
                 return Tenant::on('central')->oldest('created_at')->value('id');
             }
 
@@ -166,7 +168,7 @@ class FilamentTenantMiddleware
 
         // Try to get first accessible tenant for regular users
         $tenant = $this->getFirstAccessibleTenant($user);
-        if (! $tenant && $this->requestNeedsTenantContext($request)) {
+        if (! $tenant && $needsTenantContext) {
             return Tenant::on('central')->oldest('created_at')->value('id');
         }
 

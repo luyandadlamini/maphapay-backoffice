@@ -66,6 +66,31 @@ it('keeps platform admins in platform view for central Filament pages', function
     expect($method->invoke($middleware, $request, $user))->toBeNull();
 });
 
+it('ignores a stored tenant when platform admins open central Filament pages', function (): void {
+    $middleware = new FilamentTenantMiddleware();
+    $method = new ReflectionMethod($middleware, 'resolveTenantId');
+    $method->setAccessible(true);
+
+    $request = adminTenantMiddlewareRequest(\App\Filament\Admin\Pages\Dashboard::class);
+    $request->session()->put(FilamentTenantMiddleware::TENANT_SESSION_KEY, $this->tenantId);
+    $user = adminTenantMiddlewarePlatformAdmin();
+
+    expect($method->invoke($middleware, $request, $user))->toBeNull();
+});
+
+it('uses a stored tenant when platform admins open tenant backed Filament pages', function (): void {
+    $middleware = new FilamentTenantMiddleware();
+    $method = new ReflectionMethod($middleware, 'resolveTenantId');
+    $method->setAccessible(true);
+
+    $request = adminTenantMiddlewareRequest(ListMultiSigWallets::class);
+    $request->session()->put(FilamentTenantMiddleware::TENANT_SESSION_KEY, $this->tenantId);
+    $user = adminTenantMiddlewarePlatformAdmin();
+
+    expect($method->invoke($middleware, $request, $user))->toBe($this->tenantId);
+});
+
+
 it('defaults admin panel users without teams into a tenant for tenant backed Filament resources', function (): void {
     $middleware = new FilamentTenantMiddleware();
     $method = new ReflectionMethod($middleware, 'resolveTenantId');
