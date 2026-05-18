@@ -7,6 +7,7 @@ namespace App\Http\Middleware;
 use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Shared\Traits\UsesTenantConnection;
 use App\Filament\Admin\Pages\CardsDashboard;
+use App\Filament\Admin\Pages\Dashboard;
 use App\Filament\Admin\Pages\ExceptionsDashboard;
 use App\Filament\Admin\Pages\FundManagement\AdjustBalancePage;
 use App\Filament\Admin\Pages\FundManagement\FundAccountPage;
@@ -52,6 +53,7 @@ class FilamentTenantMiddleware
     private const TENANT_CONTEXT_PAGE_CLASSES = [
         AdjustBalancePage::class,
         CardsDashboard::class,
+        Dashboard::class,
         ExceptionsDashboard::class,
         FundAccountPage::class,
         RevenuePerformanceOverview::class,

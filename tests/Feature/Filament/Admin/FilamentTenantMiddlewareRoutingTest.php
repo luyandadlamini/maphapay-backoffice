@@ -60,7 +60,7 @@ it('keeps platform admins in platform view for central Filament pages', function
     $method = new ReflectionMethod($middleware, 'resolveTenantId');
     $method->setAccessible(true);
 
-    $request = adminTenantMiddlewareRequest(\App\Filament\Admin\Pages\Dashboard::class);
+    $request = adminTenantMiddlewareRequest(\App\Filament\Admin\Pages\BroadcastNotificationPage::class);
     $user = adminTenantMiddlewarePlatformAdmin();
 
     expect($method->invoke($middleware, $request, $user))->toBeNull();
@@ -71,11 +71,22 @@ it('ignores a stored tenant when platform admins open central Filament pages', f
     $method = new ReflectionMethod($middleware, 'resolveTenantId');
     $method->setAccessible(true);
 
-    $request = adminTenantMiddlewareRequest(\App\Filament\Admin\Pages\Dashboard::class);
+    $request = adminTenantMiddlewareRequest(\App\Filament\Admin\Pages\BroadcastNotificationPage::class);
     $request->session()->put(FilamentTenantMiddleware::TENANT_SESSION_KEY, $this->tenantId);
     $user = adminTenantMiddlewarePlatformAdmin();
 
     expect($method->invoke($middleware, $request, $user))->toBeNull();
+});
+
+it('defaults dashboard requests into a tenant for tenant backed finance widgets', function (): void {
+    $middleware = new FilamentTenantMiddleware();
+    $method = new ReflectionMethod($middleware, 'resolveTenantId');
+    $method->setAccessible(true);
+
+    $request = adminTenantMiddlewareRequest(\App\Filament\Admin\Pages\Dashboard::class);
+    $user = adminTenantMiddlewarePlatformAdmin();
+
+    expect($method->invoke($middleware, $request, $user))->toBeString();
 });
 
 it('uses a stored tenant when platform admins open tenant backed Filament pages', function (): void {

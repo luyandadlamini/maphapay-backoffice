@@ -7,6 +7,7 @@ namespace App\Filament\Admin\Pages;
 use App\Domain\Account\Models\AdjustmentRequest;
 use App\Models\MtnMomoTransaction;
 use Filament\Pages\Page;
+use Stancl\Tenancy\Tenancy;
 
 class ExceptionsDashboard extends Page
 {
@@ -22,6 +23,10 @@ class ExceptionsDashboard extends Page
 
     public static function getNavigationBadge(): ?string
     {
+        if (! app(Tenancy::class)->initialized) {
+            return null;
+        }
+
         $failedMomo = MtnMomoTransaction::where('status', MtnMomoTransaction::STATUS_FAILED)->count();
         $pendingAdj = AdjustmentRequest::where('status', 'pending')->count();
         $total = $failedMomo + $pendingAdj;

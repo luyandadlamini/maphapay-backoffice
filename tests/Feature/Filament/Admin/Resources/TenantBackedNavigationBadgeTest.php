@@ -10,6 +10,7 @@ use App\Filament\Admin\Resources\CgoNotificationResource;
 use App\Filament\Admin\Resources\ExchangeRateResource;
 use App\Filament\Admin\Resources\GcuVotingProposalResource;
 use App\Filament\Admin\Resources\SubscriberResource;
+use App\Filament\Admin\Pages\ExceptionsDashboard;
 use Stancl\Tenancy\Tenancy;
 
 afterEach(function (): void {
@@ -26,5 +27,6 @@ it('does not query tenant-backed resources for navigation badges without active 
         ->and(ExchangeRateResource::getNavigationBadge())->toBeNull()
         ->and(GcuVotingProposalResource::getNavigationBadge())->toBeNull()
         ->and(CgoNotificationResource::getNavigationBadge())->toBeNull()
-        ->and(SubscriberResource::getNavigationBadge())->toBeNull();
+        ->and(SubscriberResource::getNavigationBadge())->toBeNull()
+        ->and(ExceptionsDashboard::getNavigationBadge())->toBeNull();
 });
