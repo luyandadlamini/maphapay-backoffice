@@ -45,7 +45,7 @@ class SendMoneyStoreControllerTest extends ControllerTestCase
             'frozen'    => false,
         ]);
 
-        Account::factory()->create([
+        Account::factory()->withMembership()->create([
             'user_uuid' => $this->recipient->uuid,
             'frozen'    => false,
         ]);

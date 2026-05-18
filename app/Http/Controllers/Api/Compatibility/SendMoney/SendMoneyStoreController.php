@@ -125,11 +125,6 @@ class SendMoneyStoreController extends Controller
             ->orderBy('id')
             ->first();
 
-        $toAccount = Account::query()
-            ->where('user_uuid', $recipient->uuid)
-            ->orderBy('id')
-            ->first();
-
         if (! $fromAccount || $fromAccount->frozen) {
             return $this->errorResponse($request, 'Sender wallet account not found or is frozen.', 422, [
                 'event'             => 'send_money_initiation_failed',
@@ -137,7 +132,17 @@ class SendMoneyStoreController extends Controller
             ]);
         }
 
-        if (! $toAccount) {
+        // Recipient lives in their own tenant DB; resolve via the central
+        // AccountMembership directory rather than the sender's tenant Account table.
+        $recipientMembership = AccountMembership::query()
+            ->forUser((string) $recipient->uuid)
+            ->active()
+            ->orderBy('created_at')
+            ->first();
+
+        $toAccountUuid = $recipientMembership?->account_uuid;
+
+        if ($toAccountUuid === null) {
             return $this->errorResponse($request, 'Recipient wallet account not found.', 422, [
                 'event'             => 'send_money_initiation_failed',
                 'recipient_user_id' => $recipient->id,
@@ -266,7 +271,7 @@ class SendMoneyStoreController extends Controller
                     'minor_account_uuid'    => $fromAccount->uuid,
                     'guardian_account_uuid' => $guardianAccountUuid,
                     'from_account_uuid'     => $fromAccount->uuid,
-                    'to_account_uuid'       => $toAccount->uuid,
+                    'to_account_uuid'       => $toAccountUuid,
                     'amount'                => $normalizedAmount,
                     'asset_code'            => $asset->code,
                     'note'                  => $validated['note'] ?? null,
@@ -305,7 +310,7 @@ class SendMoneyStoreController extends Controller
             clientHint: isset($validated['verification_type']) ? (string) $validated['verification_type'] : null,
             context: [
                 'sender_account_uuid'    => $fromAccount->uuid,
-                'recipient_account_uuid' => $toAccount->uuid,
+                'recipient_account_uuid' => $toAccountUuid,
                 'recipient_user_id'      => $recipient->id,
             ],
         );
@@ -313,7 +318,7 @@ class SendMoneyStoreController extends Controller
 
         $payload = [
             'from_account_uuid' => $fromAccount->uuid,
-            'to_account_uuid'   => $toAccount->uuid,
+            'to_account_uuid'   => $toAccountUuid,
             'amount'            => $normalizedAmount,
             'asset_code'        => $asset->code,
             'note'              => $moneyRequest instanceof MoneyRequest
@@ -384,7 +389,7 @@ class SendMoneyStoreController extends Controller
         $this->telemetry->logEvent('send_money_initiation_started', $this->telemetry->requestContext($request, [
             'remark'                 => AuthorizedTransaction::REMARK_SEND_MONEY,
             'sender_account_uuid'    => $fromAccount->uuid,
-            'recipient_account_uuid' => $toAccount->uuid,
+            'recipient_account_uuid' => $toAccountUuid,
             'sender_user_id'         => $authUser->id,
             'recipient_user_id'      => $recipient->id,
             'amount'                 => $normalizedAmount,
@@ -408,7 +413,7 @@ class SendMoneyStoreController extends Controller
                 'remark'                 => AuthorizedTransaction::REMARK_SEND_MONEY,
                 'recipient_user_id'      => $recipient->id,
                 'sender_account_uuid'    => $fromAccount->uuid,
-                'recipient_account_uuid' => $toAccount->uuid,
+                'recipient_account_uuid' => $toAccountUuid,
                 'amount'                 => $normalizedAmount,
                 'asset_code'             => $asset->code,
                 'verification_policy'    => $policy['verification_type'],
@@ -428,7 +433,7 @@ class SendMoneyStoreController extends Controller
                     'remark'                 => AuthorizedTransaction::REMARK_SEND_MONEY,
                     'trx'                    => $txn->trx,
                     'sender_account_uuid'    => $fromAccount->uuid,
-                    'recipient_account_uuid' => $toAccount->uuid,
+                    'recipient_account_uuid' => $toAccountUuid,
                     'sender_user_id'         => $authUser->id,
                     'recipient_user_id'      => $recipient->id,
                     'amount'                 => $normalizedAmount,
@@ -441,7 +446,7 @@ class SendMoneyStoreController extends Controller
                 return $this->errorResponse($request, $throwable->getMessage(), 422, [
                     'recipient_user_id'      => $recipient->id,
                     'sender_account_uuid'    => $fromAccount->uuid,
-                    'recipient_account_uuid' => $toAccount->uuid,
+                    'recipient_account_uuid' => $toAccountUuid,
                     'sender_user_id'         => $authUser->id,
                     'amount'                 => $normalizedAmount,
                     'asset_code'             => $asset->code,
@@ -455,7 +460,7 @@ class SendMoneyStoreController extends Controller
                 'trx'                    => $txn->trx,
                 'reference'              => $result['reference'] ?? null,
                 'sender_account_uuid'    => $fromAccount->uuid,
-                'recipient_account_uuid' => $toAccount->uuid,
+                'recipient_account_uuid' => $toAccountUuid,
                 'sender_user_id'         => $authUser->id,
                 'next_step'              => 'none',
                 'verification_policy'    => $policy['verification_type'],
@@ -506,7 +511,7 @@ class SendMoneyStoreController extends Controller
             'remark'                 => AuthorizedTransaction::REMARK_SEND_MONEY,
             'trx'                    => $txn->trx,
             'sender_account_uuid'    => $fromAccount->uuid,
-            'recipient_account_uuid' => $toAccount->uuid,
+            'recipient_account_uuid' => $toAccountUuid,
             'sender_user_id'         => $authUser->id,
             'next_step'              => $verificationType === AuthorizedTransaction::VERIFICATION_PIN ? 'pin' : 'otp',
             'verification_policy'    => $policy['verification_type'],

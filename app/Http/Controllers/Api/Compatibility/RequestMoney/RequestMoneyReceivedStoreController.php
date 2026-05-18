@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Compatibility\RequestMoney;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\AuthorizedTransaction\Services\AuthorizedTransactionManager;
@@ -63,16 +64,21 @@ class RequestMoneyReceivedStoreController extends Controller
             return $this->errorResponse($request, 'Requester account not found.', 422, $moneyRequest);
         }
 
-        $toAccount = Account::query()
-            ->where('user_uuid', $requester->uuid)
-            ->orderBy('id')
-            ->first();
-
         if (! $fromAccount || $fromAccount->frozen) {
             return $this->errorResponse($request, 'Your wallet account was not found or is frozen.', 422, $moneyRequest);
         }
 
-        if (! $toAccount) {
+        // Requester lives in their own tenant DB; resolve via the central
+        // AccountMembership directory rather than the auth user's tenant Account table.
+        $requesterMembership = AccountMembership::query()
+            ->forUser((string) $requester->uuid)
+            ->active()
+            ->orderBy('created_at')
+            ->first();
+
+        $toAccountUuid = $requesterMembership?->account_uuid;
+
+        if ($toAccountUuid === null) {
             return $this->errorResponse($request, 'Requester wallet account not found.', 422, $moneyRequest);
         }
 
@@ -94,7 +100,7 @@ class RequestMoneyReceivedStoreController extends Controller
             context: [
                 'money_request_id'       => $moneyRequest->id,
                 'sender_account_uuid'    => $fromAccount->uuid,
-                'recipient_account_uuid' => $toAccount->uuid,
+                'recipient_account_uuid' => $toAccountUuid,
                 'requester_user_id'      => $requester->id,
             ],
         );
@@ -133,7 +139,7 @@ class RequestMoneyReceivedStoreController extends Controller
             'money_request_id'       => $moneyRequest->id,
             'money_request_status'   => $moneyRequest->status,
             'sender_account_uuid'    => $fromAccount->uuid,
-            'recipient_account_uuid' => $toAccount->uuid,
+            'recipient_account_uuid' => $toAccountUuid,
             'sender_user_id'         => $authUser->id,
             'recipient_user_id'      => $requester->id,
             'amount'                 => $moneyRequest->amount,
@@ -149,7 +155,7 @@ class RequestMoneyReceivedStoreController extends Controller
                 $authUser,
                 $moneyRequest,
                 $fromAccount,
-                $toAccount,
+                $toAccountUuid,
                 $policy,
                 $verificationType,
                 $validated,
@@ -215,7 +221,7 @@ class RequestMoneyReceivedStoreController extends Controller
                     'amount'               => $lockedMoneyRequest->amount,
                     'asset_code'           => $lockedMoneyRequest->asset_code,
                     'from_account_uuid'    => $fromAccount->uuid,
-                    'to_account_uuid'      => $toAccount->uuid,
+                    'to_account_uuid'      => $toAccountUuid,
                     '_verification_policy' => $policy,
                     '_trust_record_id'     => $trust['record_id'] ?? null,
                     '_trust_decision'      => $trust['decision'] ?? 'allow',
@@ -249,7 +255,7 @@ class RequestMoneyReceivedStoreController extends Controller
                 'remark'                 => AuthorizedTransaction::REMARK_REQUEST_MONEY_RECEIVED,
                 'money_request_id'       => $moneyRequest->id,
                 'sender_account_uuid'    => $fromAccount->uuid,
-                'recipient_account_uuid' => $toAccount->uuid,
+                'recipient_account_uuid' => $toAccountUuid,
                 'sender_user_id'         => $authUser->id,
                 'recipient_user_id'      => $requester->id,
                 'amount'                 => $moneyRequest->amount,
@@ -269,7 +275,7 @@ class RequestMoneyReceivedStoreController extends Controller
             'money_request_id'       => $moneyRequest->id,
             'trx'                    => $txn->trx,
             'sender_account_uuid'    => $fromAccount->uuid,
-            'recipient_account_uuid' => $toAccount->uuid,
+            'recipient_account_uuid' => $toAccountUuid,
             'sender_user_id'         => $authUser->id,
             'recipient_user_id'      => $requester->id,
             'amount'                 => $moneyRequest->amount,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Compatibility\ScheduledSend;
 
 use App\Domain\Account\Models\Account;
+use App\Domain\Account\Models\AccountMembership;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\AuthorizedTransaction\Services\AuthorizedTransactionManager;
@@ -58,16 +59,21 @@ class ScheduledSendStoreController extends Controller
             ->orderBy('id')
             ->first();
 
-        $toAccount = Account::query()
-            ->where('user_uuid', $recipient->uuid)
-            ->orderBy('id')
-            ->first();
-
         if (! $fromAccount || $fromAccount->frozen) {
             return $this->errorResponse('Sender wallet account not found or is frozen.', 422);
         }
 
-        if (! $toAccount) {
+        // Recipient lives in their own tenant DB; resolve via the central
+        // AccountMembership directory rather than the sender's tenant Account table.
+        $recipientMembership = AccountMembership::query()
+            ->forUser((string) $recipient->uuid)
+            ->active()
+            ->orderBy('created_at')
+            ->first();
+
+        $toAccountUuid = $recipientMembership?->account_uuid;
+
+        if ($toAccountUuid === null) {
             return $this->errorResponse('Recipient wallet account not found.', 422);
         }
 
@@ -98,7 +104,7 @@ class ScheduledSendStoreController extends Controller
             $authUser,
             $recipient,
             $fromAccount,
-            $toAccount,
+            $toAccountUuid,
             $normalizedAmount,
             $asset,
             $validated,
@@ -119,7 +125,7 @@ class ScheduledSendStoreController extends Controller
             $payload = [
                 'scheduled_send_id' => $scheduledSend->id,
                 'from_account_uuid' => $fromAccount->uuid,
-                'to_account_uuid'   => $toAccount->uuid,
+                'to_account_uuid'   => $toAccountUuid,
                 'amount'            => $normalizedAmount,
                 'asset_code'        => $asset->code,
                 'note'              => $validated['note'] ?? '',

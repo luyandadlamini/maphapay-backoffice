@@ -6,8 +6,11 @@ namespace Database\Factories;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
+use App\Domain\Account\Models\AccountMembership;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Domain\Account\Models\Account>
@@ -15,6 +18,63 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class AccountFactory extends Factory
 {
     protected $model = Account::class;
+
+    /**
+     * Opt-in: seed a central AccountMembership row pointing at this account,
+     * mirroring the production invariant where every Account has a paired
+     * owner membership on the central directory. Required for cross-tenant
+     * lookups (e.g. send-money recipient resolution).
+     *
+     * Not the default because seeding a membership activates the production
+     * tenancy-initialization path in ResolveAccountContext, and tests that
+     * pre-date the central directory still rely on tenancy staying dormant.
+     */
+    public function withMembership(): static
+    {
+        return $this->afterCreating(function (Account $account): void {
+            if (AccountMembership::query()->where('account_uuid', $account->uuid)->exists()) {
+                return;
+            }
+
+            $type = (string) ($account->type ?? 'personal');
+            $tenantId = self::ensureFactoryTenant();
+
+            AccountMembership::query()->create([
+                'id'           => (string) Str::uuid(),
+                'user_uuid'    => $account->user_uuid,
+                'tenant_id'    => $tenantId,
+                'account_uuid' => $account->uuid,
+                'account_type' => $type === 'standard' ? 'personal' : $type,
+                'role'         => 'owner',
+                'status'       => 'active',
+                'joined_at'    => now(),
+            ]);
+        });
+    }
+
+    /**
+     * Insert a sentinel tenant row directly on the central connection,
+     * bypassing Stancl's CreateDatabase job (which is heavy and brittle in tests).
+     */
+    private static function ensureFactoryTenant(): string
+    {
+        $tenantId = '00000000-0000-0000-0000-00000000fac7';
+        $central = DB::connection('central');
+
+        if (! $central->table('tenants')->where('id', $tenantId)->exists()) {
+            $central->table('tenants')->insert([
+                'id'         => $tenantId,
+                'name'       => 'AccountFactory sentinel tenant',
+                'plan'       => 'default',
+                'team_id'    => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+                'data'       => json_encode([]),
+            ]);
+        }
+
+        return $tenantId;
+    }
 
     /**
      * Define the model's default state.
