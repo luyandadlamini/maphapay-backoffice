@@ -7,6 +7,7 @@ namespace Tests\Feature\Filament\Admin;
 use App\Filament\Admin\Resources\MultiSigWalletResource\Pages\ListMultiSigWallets;
 use App\Filament\Admin\Resources\AdjustmentRequestResource\Pages\ListAdjustmentRequests;
 use App\Filament\Admin\Resources\Cards\CardTransactionResource\Pages\ListCardTransactions;
+use App\Filament\Admin\Resources\OrderResource\Pages\ListOrders;
 use App\Http\Middleware\FilamentTenantMiddleware;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
@@ -143,6 +144,17 @@ it('defaults admin panel users into a tenant for card transaction pages', functi
     $method->setAccessible(true);
 
     $request = adminTenantMiddlewareRequest(ListCardTransactions::class);
+    $user = adminTenantMiddlewarePlatformAdmin();
+
+    expect($method->invoke($middleware, $request, $user))->toBeString();
+});
+
+it('defaults admin panel users into a tenant for exchange order pages', function (): void {
+    $middleware = new FilamentTenantMiddleware();
+    $method = new ReflectionMethod($middleware, 'resolveTenantId');
+    $method->setAccessible(true);
+
+    $request = adminTenantMiddlewareRequest(ListOrders::class);
     $user = adminTenantMiddlewarePlatformAdmin();
 
     expect($method->invoke($middleware, $request, $user))->toBeString();
