@@ -9,7 +9,9 @@ use App\Filament\Admin\Resources\BasketAssetResource;
 use App\Filament\Admin\Resources\CgoNotificationResource;
 use App\Filament\Admin\Resources\ExchangeRateResource;
 use App\Filament\Admin\Resources\GcuVotingProposalResource;
+use App\Filament\Admin\Resources\MtnMomoTransactionResource;
 use App\Filament\Admin\Resources\SubscriberResource;
+use App\Filament\Admin\Resources\WalletProviderTransactionResource;
 use App\Filament\Admin\Pages\ExceptionsDashboard;
 use App\Filament\Admin\Pages\PayoutApprovalQueue;
 use Stancl\Tenancy\Tenancy;
@@ -29,6 +31,10 @@ it('does not query tenant-backed resources for navigation badges without active 
         ->and(GcuVotingProposalResource::getNavigationBadge())->toBeNull()
         ->and(CgoNotificationResource::getNavigationBadge())->toBeNull()
         ->and(SubscriberResource::getNavigationBadge())->toBeNull()
+        ->and(MtnMomoTransactionResource::getNavigationBadge())->toBeNull()
+        ->and(MtnMomoTransactionResource::getNavigationBadgeColor())->toBe('primary')
+        ->and(WalletProviderTransactionResource::getNavigationBadge())->toBeNull()
+        ->and(WalletProviderTransactionResource::getNavigationBadgeColor())->toBe('primary')
         ->and(ExceptionsDashboard::getNavigationBadge())->toBeNull()
         ->and(PayoutApprovalQueue::getNavigationBadge())->toBeNull();
 });

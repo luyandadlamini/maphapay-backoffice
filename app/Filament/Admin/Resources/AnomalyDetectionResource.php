@@ -6,11 +6,13 @@ namespace App\Filament\Admin\Resources;
 
 use App\Domain\Fraud\Models\AnomalyDetection;
 use App\Filament\Admin\Resources\AnomalyDetectionResource\Pages;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Spatie\Permission\Exceptions\RoleDoesNotExist;
 
 class AnomalyDetectionResource extends Resource
 {
@@ -235,11 +237,7 @@ class AnomalyDetectionResource extends Resource
                         ->form([
                             Forms\Components\Select::make('assigned_to')
                                 ->label('Assign to Analyst')
-                                ->options(
-                                    \App\Models\User::role('fraud-analyst')
-                                        ->get()
-                                        ->pluck('name', 'id')
-                                )
+                                ->options(static::fraudAnalystOptions())
                                 ->required(),
                         ])
                         ->action(function (AnomalyDetection $record, array $data): void {
@@ -344,5 +342,20 @@ class AnomalyDetectionResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    /**
+     * @return array<int|string, string>
+     */
+    public static function fraudAnalystOptions(): array
+    {
+        try {
+            return User::role('fraud-analyst')
+                ->get()
+                ->pluck('name', 'id')
+                ->all();
+        } catch (RoleDoesNotExist) {
+            return [];
+        }
     }
 }

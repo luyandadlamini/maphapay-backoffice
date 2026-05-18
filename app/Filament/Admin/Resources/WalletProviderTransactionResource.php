@@ -16,6 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Stancl\Tenancy\Tenancy;
 
 class WalletProviderTransactionResource extends Resource
 {
@@ -33,6 +34,10 @@ class WalletProviderTransactionResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
+        if (! app(Tenancy::class)->initialized) {
+            return null;
+        }
+
         $count = static::getModel()::where('status', WalletProviderTransaction::STATUS_FAILED)->count();
 
         return $count > 0 ? (string) $count : null;
@@ -40,6 +45,10 @@ class WalletProviderTransactionResource extends Resource
 
     public static function getNavigationBadgeColor(): ?string
     {
+        if (! app(Tenancy::class)->initialized) {
+            return 'primary';
+        }
+
         return static::getModel()::where('status', WalletProviderTransaction::STATUS_FAILED)->count() > 0
             ? 'danger'
             : 'primary';
