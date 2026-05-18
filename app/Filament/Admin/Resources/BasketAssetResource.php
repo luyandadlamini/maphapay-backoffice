@@ -284,8 +284,7 @@ class BasketAssetResource extends Resource
                             fn ($record): string => $record->needsRebalancing()
                             ? 'Rebalancing needed'
                             : 'Balanced'
-                        )
-                        ->visible(fn ($record) => $record->type === 'dynamic'),
+                        ),
 
                     Tables\Columns\TextColumn::make('created_at')
                         ->label('Created')
