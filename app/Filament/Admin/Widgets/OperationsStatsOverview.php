@@ -43,10 +43,21 @@ class OperationsStatsOverview extends BaseWidget
 
         $pendingKyc = 0;
         $tenancy = app(Tenancy::class);
+        $previousDefaultConnection = config('database.default');
+
         Tenant::on('central')->lazy()->each(function (Tenant $tenant) use (&$pendingKyc, $tenancy) {
-            $tenancy->initialize($tenant);
-            $pendingKyc += KycDocument::pending()->count();
+            try {
+                $tenancy->initialize($tenant);
+                $pendingKyc += KycDocument::pending()->count();
+            } finally {
+                if ($tenancy->initialized) {
+                    $tenancy->end();
+                }
+            }
         });
+
+        app('db')->setDefaultConnection($previousDefaultConnection);
+        config(['database.default' => $previousDefaultConnection]);
 
         $pendingAdjustments = AdjustmentRequest::where('status', 'pending')->count();
 

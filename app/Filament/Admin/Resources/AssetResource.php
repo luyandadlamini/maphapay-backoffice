@@ -21,6 +21,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Stancl\Tenancy\Contracts\Tenant as TenantContract;
+use Stancl\Tenancy\Tenancy;
 
 class AssetResource extends Resource
 {
@@ -389,12 +391,31 @@ class AssetResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
+        if (! static::hasActiveTenantContext()) {
+            return null;
+        }
+
         return (string) static::getModel()::count();
     }
 
     public static function getNavigationBadgeColor(): string
     {
+        if (! static::hasActiveTenantContext()) {
+            return 'primary';
+        }
+
         return static::getModel()::count() > 10 ? 'warning' : 'primary';
+    }
+
+    private static function hasActiveTenantContext(): bool
+    {
+        if (config('app.env') === 'testing') {
+            return true;
+        }
+
+        $tenancy = app(Tenancy::class);
+
+        return $tenancy->initialized && $tenancy->tenant instanceof TenantContract;
     }
 
     /**

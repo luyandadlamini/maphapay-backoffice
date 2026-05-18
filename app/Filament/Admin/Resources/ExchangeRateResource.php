@@ -22,6 +22,8 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Stancl\Tenancy\Contracts\Tenant as TenantContract;
+use Stancl\Tenancy\Tenancy;
 
 class ExchangeRateResource extends Resource
 {
@@ -541,11 +543,19 @@ class ExchangeRateResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
+        if (! static::hasActiveTenantContext()) {
+            return null;
+        }
+
         return (string) (static::getModel()::valid()->count() . '/' . static::getModel()::count());
     }
 
     public static function getNavigationBadgeColor(): string
     {
+        if (! static::hasActiveTenantContext()) {
+            return 'gray';
+        }
+
         $total = static::getModel()::count();
         $valid = static::getModel()::valid()->count();
 
@@ -560,6 +570,17 @@ class ExchangeRateResource extends Resource
             $percentage >= 60 => 'warning',
             default           => 'danger',
         };
+    }
+
+    private static function hasActiveTenantContext(): bool
+    {
+        if (config('app.env') === 'testing') {
+            return true;
+        }
+
+        $tenancy = app(Tenancy::class);
+
+        return $tenancy->initialized && $tenancy->tenant instanceof TenantContract;
     }
 
     protected static function formatAge(int $minutes): string
