@@ -10,6 +10,7 @@ use App\Domain\Shared\Services\OtpService;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\UserOtp;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -183,6 +184,15 @@ class MobileAuthController extends Controller
             });
 
             $isNewUser = $user->wasRecentlyCreated;
+
+            // Fire the standard Registered event on first login so
+            // CreateAccountForNewUser provisions the central directory
+            // quintet (Team -> Tenant -> tenant DB -> Account ->
+            // AccountMembership). Without this, mobile users land as bare
+            // User rows and break send-money recipient resolution.
+            if ($isNewUser) {
+                event(new Registered($user));
+            }
         }
 
         if (
