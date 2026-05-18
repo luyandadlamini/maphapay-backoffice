@@ -75,7 +75,6 @@ class AdminPanelProvider extends PanelProvider
                     AddQueuedCookiesToResponse::class,
                     StartSession::class,
                     AuthenticateSession::class,
-                    FilamentTenantMiddleware::class,
                     ShareErrorsFromSession::class,
                     VerifyCsrfToken::class,
                     SubstituteBindings::class,
@@ -86,6 +85,7 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware(
                 [
                     Authenticate::class,
+                    FilamentTenantMiddleware::class,
                 ]
             );
     }
