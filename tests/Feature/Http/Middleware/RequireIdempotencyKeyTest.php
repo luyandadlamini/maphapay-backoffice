@@ -49,7 +49,7 @@ class RequireIdempotencyKeyTest extends TestCase
         $this->assertSame(400, $response->getStatusCode());
 
         /** @var array{status: string, message: array<int,string>, data: mixed} $body */
-        $body = json_decode($response->getContent(), true);
+        $body = json_decode((string) $response->getContent(), true);
         $this->assertSame('error', $body['status']);
         $this->assertSame(['Idempotency-Key header is required for this endpoint.'], $body['message']);
         $this->assertNull($body['data']);

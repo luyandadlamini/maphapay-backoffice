@@ -54,7 +54,7 @@ class SyncTransferAwaiterTest extends TestCase
         // serialization (which can exceed the workflow_exceptions.exception
         // TEXT column for trace-heavy throws — out of scope here).
         $stub = WorkflowStub::make(TestHangingWorkflow::class);
-        $stored = StoredWorkflow::findOrFail($stub->id());
+        $stored = StoredWorkflow::query()->whereKey($stub->id())->firstOrFail();
 
         DB::table('workflow_exceptions')->insert([
             'stored_workflow_id' => $stored->id,

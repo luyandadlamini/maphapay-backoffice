@@ -16,7 +16,29 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string|null $tenant_id
+ * @property string $subscriber_user_id
+ * @property string|null $payer_user_id
+ * @property string $card_plan_id
+ * @property CardSubscriptionStatus $status
+ * @property Carbon|null $current_period_start
+ * @property Carbon|null $current_period_end
+ * @property Carbon|null $next_billing_date
+ * @property int $failed_payment_count
+ * @property Carbon|null $grace_period_ends_at
+ * @property Carbon|null $suspended_at
+ * @property Carbon|null $cancelled_at
+ * @property bool $is_minor_subscription
+ * @property string|null $guardian_user_id
+ * @property string|null $minor_account_uuid
+ * @property string|null $minor_card_request_id
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ */
 class CardSubscription extends Model
 {
     /** @use HasFactory<\Database\Factories\Domain\CardSubscriptions\Models\CardSubscriptionFactory> */

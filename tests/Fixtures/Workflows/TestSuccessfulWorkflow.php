@@ -15,7 +15,8 @@ class TestSuccessfulWorkflow extends Workflow
 {
     public function execute(string $input = 'ok'): Generator
     {
+        yield from [];
+
         return $input . '-ok';
-        yield; // make this a generator
     }
 }

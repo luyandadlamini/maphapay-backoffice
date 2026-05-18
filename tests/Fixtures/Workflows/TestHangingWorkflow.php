@@ -18,6 +18,6 @@ class TestHangingWorkflow extends Workflow
 {
     public function execute(): Generator
     {
-        yield;
+        yield from [];
     }
 }

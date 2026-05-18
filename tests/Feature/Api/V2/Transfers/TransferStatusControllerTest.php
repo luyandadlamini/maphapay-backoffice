@@ -81,7 +81,7 @@ class TransferStatusControllerTest extends TestCase
         Sanctum::actingAs(User::factory()->create(), ['read', 'write']);
 
         $stub = WorkflowStub::make(TestHangingWorkflow::class);
-        $stored = StoredWorkflow::findOrFail($stub->id());
+        $stored = StoredWorkflow::query()->whereKey($stub->id())->firstOrFail();
 
         DB::table('workflow_exceptions')->insert([
             'stored_workflow_id' => $stored->id,
