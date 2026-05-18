@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
@@ -130,6 +131,13 @@ class TeamMemberController extends Controller
                 'password' => Hash::make($validated['password']),
             ]
         );
+
+        // Fire the standard Registered event so CreateAccountForNewUser
+        // provisions the central directory quintet (personal Team -> Tenant ->
+        // tenant DB -> Account -> AccountMembership) for the new member.
+        // The personal Team is separate from the business $team they're being
+        // added to below.
+        event(new Registered($user));
 
         // Add to team
         $team->users()->attach($user);

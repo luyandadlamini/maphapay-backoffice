@@ -7,6 +7,7 @@ namespace App\Domain\User\Services;
 use App\Domain\User\Mail\UserInvitationMail;
 use App\Domain\User\Models\UserInvitation;
 use App\Models\User;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -87,6 +88,11 @@ class UserInvitationService
                 'email'    => $invitation->email,
                 'password' => Hash::make($password),
             ]);
+
+            // Fire the standard Registered event so CreateAccountForNewUser
+            // provisions the central directory quintet (Team -> Tenant ->
+            // tenant DB -> Account -> AccountMembership) for the invited user.
+            event(new Registered($user));
 
             Role::firstOrCreate(['name' => $invitation->role, 'guard_name' => 'web']);
             $user->assignRole($invitation->role);

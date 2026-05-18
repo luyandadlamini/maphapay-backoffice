@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Traits\HasApiScopes;
 use Exception;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -141,6 +142,13 @@ class SocialAuthController extends Controller
                         'email_verified_at' => now(), // Auto-verify OAuth users
                     ]
                 );
+
+                // Fire the standard Registered event so CreateAccountForNewUser
+                // provisions the central directory quintet (Team -> Tenant ->
+                // tenant DB -> Account -> AccountMembership). Without this,
+                // OAuth users land as bare User rows and break send-money
+                // recipient resolution (see commit e326e01d).
+                event(new Registered($user));
             }
 
             // Generate token with proper expiration
