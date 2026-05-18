@@ -7,13 +7,14 @@ namespace App\Http\Controllers\Api;
 use App\Domain\Account\DataObjects\AccountUuid;
 use App\Domain\Account\Models\Account;
 use App\Domain\Asset\Models\Asset;
+use App\Domain\Wallet\Workflows\SyncTransferAwaiter;
+use App\Domain\Wallet\Workflows\TransferAwaitOutcome;
 use App\Domain\Wallet\Workflows\WalletTransferWorkflow;
 use App\Http\Controllers\Controller;
 use DB;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 use OpenApi\Attributes as OA;
 use Workflow\WorkflowStub;
@@ -200,10 +201,9 @@ DESC
         $toUuid = new AccountUuid($toAccountUuid);
 
         try {
-            // Use our wallet transfer workflow for all assets
-            $workflow = WorkflowStub::make(WalletTransferWorkflow::class);
-            $workflow->start($fromUuid, $toUuid, $validated['asset_code'], $amountInMinorUnits);
-        } catch (Exception $e) {
+            $stub = WorkflowStub::make(WalletTransferWorkflow::class);
+            $stub->start($fromUuid, $toUuid, $validated['asset_code'], $amountInMinorUnits);
+        } catch (Exception) {
             return response()->json(
                 [
                     'message' => 'Transfer failed',
@@ -213,29 +213,52 @@ DESC
             );
         }
 
-        // Since we're using event sourcing, we don't have a traditional transfer record
-        // Just use the provided data for the response
-        $transferUuid = Str::uuid()->toString();
+        $outcome = app(SyncTransferAwaiter::class)->awaitOrAccept($stub);
 
         $amountMajorOut = $this->minorUnitsToMajorAmountString($amountInMinorUnits, $asset->precision);
+        $reference = $validated['reference'] ?? $validated['description'] ?? null;
 
-        return response()->json(
-            [
-                'data' => [
-                    'uuid'         => $transferUuid,
-                    'status'       => 'pending',
-                    'from_account' => $fromAccountUuid,
-                    'to_account'   => $toAccountUuid,
-                    'amount'       => $amountMajorOut,
-                    'amount_minor' => $amountInMinorUnits,
-                    'asset_code'   => $validated['asset_code'],
-                    'reference'    => $validated['reference'] ?? $validated['description'] ?? null,
-                    'created_at'   => now()->toISOString(),
+        $basePayload = [
+            'workflow_id'  => $outcome->workflowId,
+            'from_account' => $fromAccountUuid,
+            'to_account'   => $toAccountUuid,
+            'amount'       => $amountMajorOut,
+            'amount_minor' => $amountInMinorUnits,
+            'asset_code'   => $validated['asset_code'],
+            'reference'    => $reference,
+            'created_at'   => now()->toISOString(),
+        ];
+
+        return match ($outcome->state) {
+            TransferAwaitOutcome::STATE_COMPLETED => response()->json([
+                'data' => $basePayload + [
+                    'uuid'   => $outcome->workflowId,
+                    'status' => 'completed',
+                    'result' => $outcome->result,
                 ],
-                'message' => 'Transfer initiated successfully',
-            ],
-            201
-        );
+                'message' => 'Transfer completed',
+            ], 200),
+            TransferAwaitOutcome::STATE_PENDING => response()->json([
+                'data' => $basePayload + [
+                    'uuid'       => $outcome->workflowId,
+                    'status'     => 'pending',
+                    'status_url' => route('transfers.status', ['workflowId' => $outcome->workflowId]),
+                ],
+                'message' => 'Transfer accepted; poll status_url for terminal state',
+            ], 202),
+            TransferAwaitOutcome::STATE_FAILED => response()->json([
+                'message' => $outcome->failureMessage ?? 'Transfer failed',
+                'error'   => 'TRANSFER_FAILED',
+                'data'    => $basePayload + [
+                    'uuid'   => $outcome->workflowId,
+                    'status' => 'failed',
+                ],
+            ], 422),
+            default => response()->json([
+                'message' => 'Transfer failed',
+                'error'   => 'TRANSFER_FAILED',
+            ], 422),
+        };
     }
 
     /**

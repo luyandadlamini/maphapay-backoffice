@@ -162,8 +162,17 @@ Route::middleware(['auth.api_or_sanctum:read'])->group(function () {
 
     // Transfers
     Route::prefix('transfers')->group(function () {
-        Route::post('/', [App\Http\Controllers\Api\TransferController::class, 'store'])->middleware(['transaction.rate_limit:transfer', 'auth.api_or_sanctum:write']);
-        Route::get('/{uuid}', [App\Http\Controllers\Api\TransferController::class, 'show']);
+        Route::post('/', [App\Http\Controllers\Api\TransferController::class, 'store'])
+            ->middleware([
+                App\Http\Middleware\RequireIdempotencyKey::class,
+                'transaction.rate_limit:transfer',
+                'auth.api_or_sanctum:write',
+            ])
+            ->name('transfers.store');
+        Route::get('/{workflowId}/status', [App\Http\Controllers\Api\V2\Transfers\TransferStatusController::class, 'show'])
+            ->name('transfers.status');
+        Route::get('/{uuid}', [App\Http\Controllers\Api\TransferController::class, 'show'])
+            ->name('transfers.show');
     });
 
     // Basket assets (protected operations)
