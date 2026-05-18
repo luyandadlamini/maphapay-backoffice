@@ -7,6 +7,7 @@ namespace App\Filament\Admin\Widgets;
 use App\Domain\Fraud\Models\AnomalyDetection;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Stancl\Tenancy\Tenancy;
 
 class AnomalyTrendWidget extends BaseWidget
 {
@@ -16,6 +17,30 @@ class AnomalyTrendWidget extends BaseWidget
 
     protected function getStats(): array
     {
+        if (! app(Tenancy::class)->initialized) {
+            return [
+                Stat::make('Opened This Week', 0)
+                    ->description('New anomaly detections')
+                    ->icon('heroicon-o-exclamation-triangle')
+                    ->color('warning'),
+
+                Stat::make('Resolved This Week', 0)
+                    ->description('Triaged and closed')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success'),
+
+                Stat::make('Under Review', 0)
+                    ->description('Assigned and being investigated')
+                    ->icon('heroicon-o-magnifying-glass')
+                    ->color('info'),
+
+                Stat::make('False Positive Rate', '0%')
+                    ->description('Of all resolved anomalies')
+                    ->icon('heroicon-o-chart-bar')
+                    ->color('success'),
+            ];
+        }
+
         $openedThisWeek = AnomalyDetection::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count();
         $resolvedThisWeek = AnomalyDetection::whereBetween('resolved_at', [now()->startOfWeek(), now()->endOfWeek()])->count();
         $underReview = AnomalyDetection::where('triage_status', 'under_review')->count();

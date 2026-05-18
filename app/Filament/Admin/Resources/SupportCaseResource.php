@@ -14,6 +14,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Stancl\Tenancy\Tenancy;
 
 class SupportCaseResource extends Resource
 {
@@ -27,6 +28,10 @@ class SupportCaseResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
+        if (! app(Tenancy::class)->initialized) {
+            return null;
+        }
+
         $count = static::getModel()::where('status', 'open')->count();
 
         return $count > 0 ? (string) $count : null;
@@ -34,6 +39,10 @@ class SupportCaseResource extends Resource
 
     public static function getNavigationBadgeColor(): ?string
     {
+        if (! app(Tenancy::class)->initialized) {
+            return 'primary';
+        }
+
         return static::getModel()::where('status', 'open')->count() > 0 ? 'danger' : 'primary';
     }
 

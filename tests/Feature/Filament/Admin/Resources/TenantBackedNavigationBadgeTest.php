@@ -11,6 +11,7 @@ use App\Filament\Admin\Resources\ExchangeRateResource;
 use App\Filament\Admin\Resources\GcuVotingProposalResource;
 use App\Filament\Admin\Resources\MtnMomoTransactionResource;
 use App\Filament\Admin\Resources\SubscriberResource;
+use App\Filament\Admin\Resources\SupportCaseResource;
 use App\Filament\Admin\Resources\WalletProviderTransactionResource;
 use App\Filament\Admin\Pages\ExceptionsDashboard;
 use App\Filament\Admin\Pages\PayoutApprovalQueue;
@@ -31,6 +32,8 @@ it('does not query tenant-backed resources for navigation badges without active 
         ->and(GcuVotingProposalResource::getNavigationBadge())->toBeNull()
         ->and(CgoNotificationResource::getNavigationBadge())->toBeNull()
         ->and(SubscriberResource::getNavigationBadge())->toBeNull()
+        ->and(SupportCaseResource::getNavigationBadge())->toBeNull()
+        ->and(SupportCaseResource::getNavigationBadgeColor())->toBe('primary')
         ->and(MtnMomoTransactionResource::getNavigationBadge())->toBeNull()
         ->and(MtnMomoTransactionResource::getNavigationBadgeColor())->toBe('primary')
         ->and(WalletProviderTransactionResource::getNavigationBadge())->toBeNull()
