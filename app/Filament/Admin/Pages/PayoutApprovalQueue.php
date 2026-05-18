@@ -6,6 +6,7 @@ namespace App\Filament\Admin\Pages;
 
 use App\Models\MtnMomoTransaction;
 use Filament\Pages\Page;
+use Stancl\Tenancy\Tenancy;
 
 class PayoutApprovalQueue extends Page
 {
@@ -26,6 +27,10 @@ class PayoutApprovalQueue extends Page
 
     public static function getNavigationBadge(): ?string
     {
+        if (! app(Tenancy::class)->initialized) {
+            return null;
+        }
+
         $count = MtnMomoTransaction::where('status', 'pending')
             ->where('type', 'disbursement')
             ->count();
