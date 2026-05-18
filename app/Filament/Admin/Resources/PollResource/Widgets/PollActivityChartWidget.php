@@ -7,6 +7,7 @@ namespace App\Filament\Admin\Resources\PollResource\Widgets;
 use App\Domain\Governance\Models\Poll;
 use App\Domain\Governance\Models\Vote;
 use Filament\Widgets\ChartWidget;
+use Stancl\Tenancy\Tenancy;
 
 class PollActivityChartWidget extends ChartWidget
 {
@@ -26,6 +27,13 @@ class PollActivityChartWidget extends ChartWidget
         for ($i = 29; $i >= 0; $i--) {
             $date = now()->subDays($i);
             $labels[] = $date->format('M j');
+
+            if (! $this->hasActiveTenantContext()) {
+                $pollsData[] = 0;
+                $votesData[] = 0;
+
+                continue;
+            }
 
             $pollsData[] = Poll::whereDate('created_at', $date->toDateString())->count();
             $votesData[] = Vote::whereDate('voted_at', $date->toDateString())->count();
@@ -71,5 +79,13 @@ class PollActivityChartWidget extends ChartWidget
                 ],
             ],
         ];
+    }
+
+    private function hasActiveTenantContext(): bool
+    {
+        /** @var Tenancy $tenancy */
+        $tenancy = app(Tenancy::class);
+
+        return $tenancy->initialized;
     }
 }

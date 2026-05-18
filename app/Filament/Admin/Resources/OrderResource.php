@@ -15,6 +15,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Schema;
 
 class OrderResource extends Resource
 {
@@ -146,7 +147,7 @@ class OrderResource extends Resource
                             ]
                         ),
                     Tables\Filters\SelectFilter::make('base_currency')
-                        ->options(fn () => Asset::where('is_tradeable', true)->pluck('code', 'code')),
+                        ->options(fn (): array => self::baseCurrencyFilterOptions()),
                 ]
             )
             ->actions(
@@ -186,5 +187,23 @@ class OrderResource extends Resource
     public static function canCreate(): bool
     {
         return false; // Orders are created through the exchange interface
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function baseCurrencyFilterOptions(?bool $hasTradeableColumn = null): array
+    {
+        $query = Asset::query();
+        $hasTradeableColumn ??= Schema::connection($query->getModel()->getConnectionName())
+            ->hasColumn($query->getModel()->getTable(), 'is_tradeable');
+
+        if ($hasTradeableColumn) {
+            $query->where('is_tradeable', true);
+        } else {
+            $query->where('is_active', true);
+        }
+
+        return $query->orderBy('code')->pluck('code', 'code')->all();
     }
 }
