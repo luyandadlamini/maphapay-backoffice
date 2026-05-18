@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\CompanyDocumentController;
-use App\Http\Controllers\Api\MinorAccountController;
 use App\Http\Controllers\Api\Compatibility\Budget\BudgetCategoriesController;
 use App\Http\Controllers\Api\Compatibility\Budget\BudgetCategoriesDeleteController;
 use App\Http\Controllers\Api\Compatibility\Budget\BudgetCategoriesStoreController;
@@ -35,8 +34,8 @@ use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyReceivedStor
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyRejectController;
 use App\Http\Controllers\Api\Compatibility\RequestMoney\RequestMoneyStoreController;
 use App\Http\Controllers\Api\Compatibility\Rewards\RewardsController;
-use App\Http\Controllers\Api\Compatibility\Rewards\RewardsRedeemController;
 use App\Http\Controllers\Api\Compatibility\Rewards\RewardsPointsController;
+use App\Http\Controllers\Api\Compatibility\Rewards\RewardsRedeemController;
 use App\Http\Controllers\Api\Compatibility\Rewards\RewardsSyncController;
 use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendCancelController;
 use App\Http\Controllers\Api\Compatibility\ScheduledSend\ScheduledSendIndexController;
@@ -56,6 +55,7 @@ use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyBiometricCo
 use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyOtpController;
 use App\Http\Controllers\Api\Compatibility\VerificationProcess\VerifyPinController;
 use App\Http\Controllers\Api\Compatibility\WalletLinking\WalletLinkingController;
+use App\Http\Controllers\Api\MinorAccountController;
 use App\Http\Controllers\Api\PublicMinorFundingLinkController;
 use App\Http\Controllers\Api\SocialMoney\GroupController;
 use App\Http\Controllers\Api\SocialMoney\MessageController;
@@ -231,6 +231,10 @@ Route::middleware('auth:sanctum')
     ->name('maphapay.compat.social-money.user-lookup');
 
 Route::middleware('auth:sanctum')
+    ->post('user/exist', App\Http\Controllers\Api\Compatibility\Users\UserExistController::class)
+    ->name('maphapay.compat.user.exist');
+
+Route::middleware('auth:sanctum')
     ->get('social-money/friendship-status/{userId}', SocialFriendshipStatusController::class)
     ->name('maphapay.compat.social-money.friendship-status');
 
@@ -321,11 +325,11 @@ Route::middleware('auth:sanctum')
     ->name('maphapay.compat.wallet-linking');
 
 Route::middleware('auth:sanctum')
-    ->post('wallet-linking', \App\Http\Controllers\Api\Compatibility\WalletLinking\WalletLinkingStoreController::class)
+    ->post('wallet-linking', App\Http\Controllers\Api\Compatibility\WalletLinking\WalletLinkingStoreController::class)
     ->name('maphapay.compat.wallet-linking.store');
 
 Route::middleware('auth:sanctum')
-    ->delete('wallet-linking/{linking}', \App\Http\Controllers\Api\Compatibility\WalletLinking\WalletLinkingDestroyController::class)
+    ->delete('wallet-linking/{linking}', App\Http\Controllers\Api\Compatibility\WalletLinking\WalletLinkingDestroyController::class)
     ->where('linking', '[0-9]+')
     ->name('maphapay.compat.wallet-linking.destroy');
 
