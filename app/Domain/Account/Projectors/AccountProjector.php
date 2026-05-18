@@ -14,10 +14,10 @@ use App\Domain\Account\Events\AccountFrozen;
 use App\Domain\Account\Events\AccountUnfrozen;
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Services\Cache\CacheManager;
+use App\Domain\Shared\EventSourcing\TenantAwareProjector;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Spatie\EventSourcing\EventHandlers\Projectors\Projector;
 
-class AccountProjector extends Projector implements ShouldQueue
+class AccountProjector extends TenantAwareProjector implements ShouldQueue
 {
     public function onAccountCreated(AccountCreated $event): void
     {

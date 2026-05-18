@@ -6,10 +6,11 @@ namespace App\Domain\Account\Events;
 
 use App\Domain\Account\DataObjects\Hash;
 use App\Domain\Account\DataObjects\Money;
+use App\Domain\Shared\Contracts\CarriesTenantContext;
 use App\Values\EventQueues;
 use Spatie\EventSourcing\StoredEvents\ShouldBeStored;
 
-class MoneySubtracted extends ShouldBeStored implements HasHash, HasMoney
+class MoneySubtracted extends ShouldBeStored implements CarriesTenantContext, HasHash, HasMoney
 {
     use HashValidatorProvider;
 
@@ -19,5 +20,10 @@ class MoneySubtracted extends ShouldBeStored implements HasHash, HasMoney
         public readonly Money $money,
         public readonly Hash $hash
     ) {
+    }
+
+    public function tenantAccountUuid(): string
+    {
+        return (string) $this->aggregateRootUuid();
     }
 }

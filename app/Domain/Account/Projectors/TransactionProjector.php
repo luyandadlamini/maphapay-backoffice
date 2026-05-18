@@ -11,12 +11,12 @@ use App\Domain\Account\Support\TransactionDisplay;
 use App\Domain\Asset\Events\AssetTransactionCreated;
 use App\Domain\Asset\Events\AssetTransferCompleted;
 use App\Domain\Ledger\Models\LedgerPosting;
+use App\Domain\Shared\EventSourcing\TenantAwareProjector;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Spatie\EventSourcing\EventHandlers\Projectors\Projector;
 
-class TransactionProjector extends Projector
+class TransactionProjector extends TenantAwareProjector
 {
     /**
      * @param  array<string, mixed>  $metadata

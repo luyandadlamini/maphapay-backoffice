@@ -7,9 +7,9 @@ namespace App\Domain\Account\Projectors;
 use App\Domain\Account\Events\PointsAwarded;
 use App\Domain\Account\Events\PointsDeducted;
 use App\Domain\Account\Models\MinorPointsLedger;
-use Spatie\EventSourcing\EventHandlers\Projectors\Projector;
+use App\Domain\Shared\EventSourcing\TenantAwareProjector;
 
-class MinorPointsProjector extends Projector
+class MinorPointsProjector extends TenantAwareProjector
 {
     public function onPointsAwarded(PointsAwarded $event): void
     {

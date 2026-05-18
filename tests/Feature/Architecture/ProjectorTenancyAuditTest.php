@@ -80,14 +80,6 @@ class ProjectorTenancyAuditTest extends TestCase
         // Wallet/blockchain — multisig wallet state. PENDING AUDIT.
         \App\Domain\Wallet\Projectors\BlockchainWalletProjector::class,
 
-        // Account domain — these touch tenant-scoped state and SHOULD be migrated next.
-        // PENDING MIGRATION (high priority — same risk profile as AssetBalanceProjector).
-        \App\Domain\Account\Projectors\MinorPointsProjector::class,
-        \App\Domain\Account\Projectors\AccountProjector::class,
-        \App\Domain\Account\Projectors\MinorRedemptionProjector::class,
-        \App\Domain\Account\Projectors\TurnoverProjector::class,
-        \App\Domain\Account\Projectors\TransactionProjector::class,
-
         // Stablecoin — reserves likely central, positions per-tenant. PENDING AUDIT.
         \App\Domain\Stablecoin\Projectors\StablecoinProjector::class,
         \App\Domain\Stablecoin\Projectors\StablecoinReserveProjector::class,

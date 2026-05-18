@@ -7,9 +7,10 @@ namespace App\Domain\Asset\Events;
 use App\Domain\Account\DataObjects\AccountUuid;
 use App\Domain\Account\DataObjects\Hash;
 use App\Domain\Account\DataObjects\Money;
+use App\Domain\Shared\Contracts\CarriesTenantContext;
 use Spatie\EventSourcing\StoredEvents\ShouldBeStored;
 
-class AssetTransactionCreated extends ShouldBeStored
+class AssetTransactionCreated extends ShouldBeStored implements CarriesTenantContext
 {
     public function __construct(
         public readonly AccountUuid $accountUuid,
@@ -20,6 +21,11 @@ class AssetTransactionCreated extends ShouldBeStored
         public readonly ?string $description = null,
         public readonly ?array $metadata = null
     ) {
+    }
+
+    public function tenantAccountUuid(): string
+    {
+        return (string) $this->accountUuid;
     }
 
     /**

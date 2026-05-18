@@ -7,9 +7,9 @@ namespace App\Domain\Account\Projectors;
 use App\Domain\Account\Events\RedemptionApproved;
 use App\Domain\Account\Events\RedemptionDeclined;
 use App\Domain\Account\Models\MinorRewardRedemption;
-use Spatie\EventSourcing\EventHandlers\Projectors\Projector;
+use App\Domain\Shared\EventSourcing\TenantAwareProjector;
 
-class MinorRedemptionProjector extends Projector
+class MinorRedemptionProjector extends TenantAwareProjector
 {
     public function onRedemptionApproved(RedemptionApproved $event): void
     {
