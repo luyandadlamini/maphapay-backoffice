@@ -42,13 +42,15 @@ class OperationsStatsOverview extends BaseWidget
         $urgentCases = SupportCase::where('status', 'open')->where('priority', 'urgent')->count();
 
         $pendingKyc = 0;
+        $pendingAdjustments = 0;
         $tenancy = app(Tenancy::class);
         $previousDefaultConnection = config('database.default');
 
-        Tenant::on('central')->lazy()->each(function (Tenant $tenant) use (&$pendingKyc, $tenancy) {
+        Tenant::on('central')->lazy()->each(function (Tenant $tenant) use (&$pendingKyc, &$pendingAdjustments, $tenancy) {
             try {
                 $tenancy->initialize($tenant);
                 $pendingKyc += KycDocument::pending()->count();
+                $pendingAdjustments += AdjustmentRequest::where('status', 'pending')->count();
             } finally {
                 if ($tenancy->initialized) {
                     $tenancy->end();
@@ -58,8 +60,6 @@ class OperationsStatsOverview extends BaseWidget
 
         app('db')->setDefaultConnection($previousDefaultConnection);
         config(['database.default' => $previousDefaultConnection]);
-
-        $pendingAdjustments = AdjustmentRequest::where('status', 'pending')->count();
 
         return [
             Stat::make('Transactions Today', number_format($transactionsToday))
