@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Filament\Admin;
 
 use App\Filament\Admin\Resources\MultiSigWalletResource\Pages\ListMultiSigWallets;
+use App\Filament\Admin\Resources\AdjustmentRequestResource\Pages\ListAdjustmentRequests;
 use App\Http\Middleware\FilamentTenantMiddleware;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
@@ -84,6 +85,17 @@ it('defaults admin panel users without teams into a tenant for tenant backed Fil
             return false;
         }
     };
+
+    expect($method->invoke($middleware, $request, $user))->toBeString();
+});
+
+it('defaults admin panel users into a tenant for adjustment request pages', function (): void {
+    $middleware = new FilamentTenantMiddleware();
+    $method = new ReflectionMethod($middleware, 'resolveTenantId');
+    $method->setAccessible(true);
+
+    $request = adminTenantMiddlewareRequest(ListAdjustmentRequests::class);
+    $user = adminTenantMiddlewarePlatformAdmin();
 
     expect($method->invoke($middleware, $request, $user))->toBeString();
 });

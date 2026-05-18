@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Account\Models;
 
+use App\Domain\Shared\Traits\UsesTenantConnection;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -16,6 +17,7 @@ class AdjustmentRequest extends Model
     /** @use HasFactory<Factory<static>> */
     use HasFactory;
     use HasUuids;
+    use UsesTenantConnection;
 
     protected $fillable = [
         'account_id',
