@@ -58,3 +58,4 @@ database/schema/*.bak
 .trae/
 .windsurf/
 skills-lock.json
+docs/review/upi-fineract-payment-hub-architecture-review.md
