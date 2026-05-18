@@ -8,6 +8,7 @@ use App\Domain\RegTech\Models\FilingSchedule;
 use App\Filament\Admin\Resources\FilingScheduleResource\Pages;
 use App\Filament\Admin\Resources\FilingScheduleResource\Widgets\FilingDeadlineWidget;
 use App\Filament\Admin\Traits\RespectsModuleVisibility;
+use BackedEnum;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -46,7 +47,7 @@ class FilingScheduleResource extends Resource
                                     ->maxLength(255),
                                 Forms\Components\TextInput::make('jurisdiction')
                                     ->label('Jurisdiction')
-                                    ->formatStateUsing(fn ($state) => $state->value)
+                                    ->formatStateUsing(fn ($state): string => static::formatJurisdictionState($state))
                                     ->disabled(),
                                 Forms\Components\TextInput::make('regulator')
                                     ->maxLength(255),
@@ -109,7 +110,7 @@ class FilingScheduleResource extends Resource
                         ->searchable()
                         ->sortable(),
                     Tables\Columns\TextColumn::make('jurisdiction')
-                        ->formatStateUsing(fn ($state) => strtoupper($state->value))
+                        ->formatStateUsing(fn ($state): string => strtoupper(static::formatJurisdictionState($state)))
                         ->sortable(),
                     Tables\Columns\TextColumn::make('frequency')
                         ->badge()
@@ -240,5 +241,14 @@ class FilingScheduleResource extends Resource
             'view'   => Pages\ViewFilingSchedule::route('/{record}'),
             'edit'   => Pages\EditFilingSchedule::route('/{record}/edit'),
         ];
+    }
+
+    public static function formatJurisdictionState(mixed $state): string
+    {
+        if ($state instanceof BackedEnum) {
+            return (string) $state->value;
+        }
+
+        return is_scalar($state) ? (string) $state : '';
     }
 }
