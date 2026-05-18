@@ -12,11 +12,11 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountBalance;
 use App\Domain\Account\Services\Cache\CacheManager;
 use App\Domain\Asset\Events\AssetTransferCompleted;
+use App\Domain\Shared\EventSourcing\TenantAwareProjector;
 use App\Domain\Wallet\Events\Broadcast\WalletBalanceUpdated;
 use Illuminate\Support\Facades\Cache;
-use Spatie\EventSourcing\EventHandlers\Projectors\Projector;
 
-class AssetBalanceProjector extends Projector
+class AssetBalanceProjector extends TenantAwareProjector
 {
     /**
      * @param  array<string, mixed>|null  $metadata
