@@ -12,6 +12,8 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Stancl\Tenancy\Contracts\Tenant as TenantContract;
+use Stancl\Tenancy\Tenancy;
 
 class CgoNotificationResource extends Resource
 {
@@ -92,9 +94,24 @@ class CgoNotificationResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
+        if (! static::hasActiveTenantContext()) {
+            return null;
+        }
+
         $count = static::getModel()::count();
 
         return $count > 0 ? (string) $count : null;
+    }
+
+    private static function hasActiveTenantContext(): bool
+    {
+        if (config('app.env') === 'testing') {
+            return true;
+        }
+
+        $tenancy = app(Tenancy::class);
+
+        return $tenancy->initialized && $tenancy->tenant instanceof TenantContract;
     }
 
     public static function getPages(): array
