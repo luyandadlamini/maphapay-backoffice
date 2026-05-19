@@ -8,6 +8,8 @@ use App\Domain\Asset\Models\Asset;
 use App\Domain\AuthorizedTransaction\Models\AuthorizedTransaction;
 use App\Domain\AuthorizedTransaction\Services\MoneyMovementVerificationPolicyResolver;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\DomainTestCase;
 
@@ -186,6 +188,65 @@ class MoneyMovementVerificationPolicyResolverTest extends DomainTestCase
         $this->assertSame(500000, $policy['step_up_threshold_minor']);
         $this->assertSame(AuthorizedTransaction::VERIFICATION_NONE, $policy['verification_type']);
         $this->assertSame('none', $policy['next_step']);
+    }
+
+    #[Test]
+    public function it_reads_send_money_threshold_settings_from_central_connection_inside_tenant_context(): void
+    {
+        $user = User::factory()->create([
+            'transaction_pin' => null,
+            'kyc_level'       => 'enhanced',
+            'risk_rating'     => 'low',
+        ]);
+        $asset = Asset::query()->where('code', 'SZL')->firstOrFail();
+        $originalDefaultConnection = DB::getDefaultConnection();
+
+        config([
+            'database.connections.tenant_without_settings' => [
+                'driver'                  => 'sqlite',
+                'database'                => ':memory:',
+                'prefix'                  => '',
+                'foreign_key_constraints' => false,
+            ],
+            'maphapay_migration.money_movement.risk_signals' => [
+                'velocity' => [
+                    'lookback_minutes' => 15,
+                    'max_initiations'  => 0,
+                ],
+                'verification_failures' => [
+                    'lookback_minutes' => 30,
+                    'max_failures'     => 0,
+                ],
+                'amount_anomaly' => [
+                    'lookback_minutes' => 1440,
+                    'min_samples'      => 3,
+                    'multiplier'       => 0,
+                ],
+                'recipient_churn' => [
+                    'lookback_minutes'            => 1440,
+                    'max_distinct_counterparties' => 0,
+                ],
+            ],
+        ]);
+
+        Cache::forget('setting.send_money_threshold_low_enhanced_or_full');
+        DB::purge('tenant_without_settings');
+        DB::setDefaultConnection('tenant_without_settings');
+
+        try {
+            $policy = app(MoneyMovementVerificationPolicyResolver::class)->resolveSendMoneyPolicy(
+                user: $user,
+                amount: '200.00',
+                asset: $asset,
+                clientHint: 'none',
+            );
+        } finally {
+            DB::setDefaultConnection($originalDefaultConnection);
+            DB::purge('tenant_without_settings');
+        }
+
+        $this->assertSame(500000, $policy['step_up_threshold_minor']);
+        $this->assertSame(AuthorizedTransaction::VERIFICATION_NONE, $policy['verification_type']);
     }
 
     #[Test]

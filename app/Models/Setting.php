@@ -29,6 +29,8 @@ class Setting extends Model
 {
     use HasFactory;
 
+    protected $connection = 'central';
+
     protected $fillable = [
         'group',
         'key',
@@ -65,7 +67,9 @@ class Setting extends Model
 
                 $original = $setting->getOriginal();
                 if ($original['value'] !== $setting->attributes['value']) {
-                    $setting->oldValue = json_decode($original['value'], true);
+                    $setting->oldValue = is_string($original['value'])
+                        ? json_decode($original['value'], true)
+                        : $original['value'];
                 }
             }
         );
