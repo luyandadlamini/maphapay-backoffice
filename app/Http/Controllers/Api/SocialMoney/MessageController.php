@@ -115,6 +115,36 @@ class MessageController extends Controller
         ]);
     }
 
+    public function indexByFriend(Request $request, int $friendId): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user instanceof User, 401);
+        $userId = (int) $user->getAuthIdentifier();
+
+        $threadId = ThreadParticipant::query()
+            ->from('thread_participants as mine')
+            ->join('thread_participants as theirs', 'mine.thread_id', '=', 'theirs.thread_id')
+            ->join('threads', 'threads.id', '=', 'mine.thread_id')
+            ->where('threads.type', 'direct')
+            ->where('mine.user_id', $userId)
+            ->whereNull('mine.left_at')
+            ->where('theirs.user_id', $friendId)
+            ->whereNull('theirs.left_at')
+            ->value('mine.thread_id');
+
+        if ($threadId === null) {
+            return response()->json([
+                'status' => 'success',
+                'data'   => [
+                    'messages'   => [],
+                    'nextCursor' => null,
+                ],
+            ]);
+        }
+
+        return $this->index($request, (int) $threadId);
+    }
+
     public function markRead(Request $request, int $threadId): JsonResponse
     {
         $request->validate(['lastReadMessageId' => 'required|integer']);

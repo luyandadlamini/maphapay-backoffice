@@ -147,6 +147,47 @@ class MessageControllerTest extends TestCase
     }
 
     #[Test]
+    public function legacy_friend_messages_route_resolves_direct_thread_messages(): void
+    {
+        $alice = User::factory()->create(['name' => 'Alice']);
+        $bob = User::factory()->create(['name' => 'Bob']);
+        $thread = $this->createDirectThread($alice, $bob);
+
+        Message::create([
+            'thread_id'  => $thread->id,
+            'sender_id'  => $bob->id,
+            'type'       => 'text',
+            'text'       => 'Existing direct message',
+            'created_at' => now(),
+        ]);
+
+        Sanctum::actingAs($alice, ['read', 'write', 'delete']);
+
+        $response = $this->getJson("/api/social-money/messages/{$bob->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.messages.0.text', 'Existing direct message')
+            ->assertJsonPath('data.messages.0.threadId', (string) $thread->id);
+    }
+
+    #[Test]
+    public function legacy_friend_messages_route_returns_empty_list_when_direct_thread_does_not_exist(): void
+    {
+        $alice = User::factory()->create(['name' => 'Alice']);
+        $bob = User::factory()->create(['name' => 'Bob']);
+
+        Sanctum::actingAs($alice, ['read', 'write', 'delete']);
+
+        $response = $this->getJson("/api/social-money/messages/{$bob->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('data.messages', [])
+            ->assertJsonPath('data.nextCursor', null);
+    }
+
+    #[Test]
     public function mark_read_updates_message_reads(): void
     {
         $alice = User::factory()->create();

@@ -197,6 +197,7 @@ Route::middleware('auth:sanctum')
 Route::prefix('social-money')->middleware('auth:sanctum')->group(function (): void {
     Route::get('threads', [ThreadController::class, 'index']);
     Route::post('threads/direct', [ThreadController::class, 'createDirect']);
+    Route::get('messages/{friendId}', [MessageController::class, 'indexByFriend']);
     Route::get('threads/{threadId}/messages', [MessageController::class, 'index']);
     Route::post('threads/{threadId}/send', [MessageController::class, 'send']);
     Route::post('threads/{threadId}/typing', [MessageController::class, 'typing']);
