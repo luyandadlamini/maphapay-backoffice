@@ -33,6 +33,11 @@ class AccountsRelationManager extends RelationManager
         $this->initializeTenancyForUserUuid((string) $this->getOwnerRecord()->uuid);
     }
 
+    public function dehydrate(): void
+    {
+        $this->releaseAccountTenancy();
+    }
+
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $title = 'Wallet Accounts';

@@ -6,6 +6,7 @@ namespace Tests\Feature\Filament\Admin\Resources\UserResource\RelationManagers;
 
 use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
+use App\Filament\Admin\Resources\UserResource\Pages\ViewUser;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\AccountsRelationManager;
 use App\Models\Tenant;
 use App\Models\User;
@@ -220,7 +221,7 @@ class AccountsRelationManagerTenancyTest extends TestCase
         // Random factory UUIDs never collide with stale data (no staleness is possible).
         $admin = User::factory()->create();
         $this->stagedUserUuids[] = $admin->uuid;
-        $admin->assignRole('finance-lead');
+        $admin->assignRole('super-admin');
         $this->actingAs($admin);
 
         $owner = User::factory()->create();
@@ -253,6 +254,16 @@ class AccountsRelationManagerTenancyTest extends TestCase
         Livewire::test(AccountsRelationManager::class, [
             'ownerRecord' => $owner,
             'pageClass'   => \App\Filament\Admin\Resources\UserResource\Pages\EditUser::class,
+        ])->assertSuccessful();
+    }
+
+    #[Test]
+    public function user_detail_page_initializes_tenancy_before_resolving_account_relation_managers(): void
+    {
+        ['owner' => $owner] = $this->buildFixture();
+
+        Livewire::test(ViewUser::class, [
+            'record' => $owner->getRouteKey(),
         ])->assertSuccessful();
     }
 

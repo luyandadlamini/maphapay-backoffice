@@ -26,6 +26,11 @@ class TransactionsRelationManager extends RelationManager
         $this->initializeTenancyForUserUuid((string) $this->getOwnerRecord()->uuid);
     }
 
+    public function dehydrate(): void
+    {
+        $this->releaseAccountTenancy();
+    }
+
     public function table(Table $table): Table
     {
         return $table

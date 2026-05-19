@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\UserResource\Pages;
 
+use App\Filament\Admin\Concerns\WithAccountTenancy;
 use App\Filament\Admin\Resources\UserResource;
 use App\Models\User;
 use App\Support\Backoffice\AdminActionGovernance;
@@ -15,7 +16,21 @@ use Illuminate\Auth\Passwords\PasswordBroker;
 
 class ViewUser extends ViewRecord
 {
+    use WithAccountTenancy;
+
     protected static string $resource = UserResource::class;
+
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+
+        $this->initializeTenancyForUserUuid((string) $this->record->uuid);
+    }
+
+    public function dehydrate(): void
+    {
+        $this->releaseAccountTenancy();
+    }
 
     public function hasCombinedRelationManagerTabsWithContent(): bool
     {
