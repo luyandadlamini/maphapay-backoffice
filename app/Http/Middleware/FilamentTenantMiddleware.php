@@ -15,6 +15,7 @@ use App\Filament\Admin\Pages\FundManagement\TransferBetweenAccountsPage;
 use App\Filament\Admin\Pages\FundManagement\TreasuryPoolPage;
 use App\Filament\Admin\Pages\RevenuePerformanceOverview;
 use App\Filament\Admin\Pages\RevenueStreamsPage;
+use App\Filament\Admin\Resources\ReconciliationReportResource\Pages\ListReconciliationReports;
 use App\Filament\Admin\Resources\UserResource\Pages\ViewUser;
 use App\Models\Team;
 use App\Models\Tenant;
@@ -56,6 +57,7 @@ class FilamentTenantMiddleware
         Dashboard::class,
         ExceptionsDashboard::class,
         FundAccountPage::class,
+        ListReconciliationReports::class,
         RevenuePerformanceOverview::class,
         RevenueStreamsPage::class,
         TransferBetweenAccountsPage::class,
