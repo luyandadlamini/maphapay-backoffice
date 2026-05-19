@@ -8,8 +8,12 @@ use App\Http\Controllers\StatusController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// Public Pages — production (Zelta.app) serves app landing at root; demo/other serves full marketing site
-Route::get('/', function () {
+// Public Pages — customer marketing lives on www (Vercel); apex / redirects in production
+Route::get('/', function (Request $request) {
+    if (app()->environment('production') && $request->getHost() === 'maphapay.com') {
+        return redirect('https://www.maphapay.com', 301);
+    }
+
     if (app()->environment('production')) {
         return view('app');
     }

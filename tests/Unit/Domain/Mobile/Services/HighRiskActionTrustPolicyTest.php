@@ -510,4 +510,28 @@ describe('HighRiskActionTrustPolicy', function (): void {
         expect($result['decision'])->toBe('deny')
             ->and($result['reason'])->toBe('attestation_failed');
     });
+
+    it('allows web clients without native attestation when attestation rollout is enabled', function (): void {
+        Config::set('mobile.attestation.enabled', true);
+
+        /** @var BiometricJWTServiceInterface&Mockery\MockInterface $biometricJwtService */
+        $biometricJwtService = Mockery::mock(BiometricJWTServiceInterface::class);
+        $biometricJwtService->shouldNotReceive('verifyDeviceAttestation');
+
+        $policy = new HighRiskActionTrustPolicy($biometricJwtService);
+
+        $user = new User();
+        $user->id = 3001;
+
+        $request = Request::create('/api/send-money/store', 'POST', [
+            'device_type' => 'web',
+            'device_id'   => 'web-test-device',
+        ]);
+        $request->headers->set('X-Client-Platform', 'web');
+
+        $result = $policy->evaluate($user, $request, 'send_money');
+
+        expect($result['decision'])->toBe('allow')
+            ->and($result['reason'])->toBe('web_client_step_up_only');
+    });
 });

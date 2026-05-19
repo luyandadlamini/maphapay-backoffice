@@ -23,7 +23,7 @@ return [
 
     'allowed_origins' => array_filter(array_merge(
         // Production origins (env-driven for multi-domain deployment)
-        array_filter(explode(',', env('CORS_PRODUCTION_ORIGINS', 'https://finaegis.org,https://www.finaegis.org,https://api.finaegis.org,https://app.finaegis.org,https://dashboard.finaegis.org'))),
+        array_filter(explode(',', env('CORS_PRODUCTION_ORIGINS', 'https://finaegis.org,https://www.finaegis.org,https://api.finaegis.org,https://app.finaegis.org,https://dashboard.finaegis.org,https://app.maphapay.com,https://www.maphapay.com'))),
         // Frontend URL (configurable per environment)
         array_filter([env('FRONTEND_URL')]),
         // Local development origins (set to empty string in production to disable)

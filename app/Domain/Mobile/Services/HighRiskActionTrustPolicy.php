@@ -46,7 +46,14 @@ class HighRiskActionTrustPolicy
         $reason = 'attestation_disabled';
         $attestationVerified = false;
 
-        if ($attestationEnabled) {
+        $isWebClient = $deviceType === 'web'
+            || strtolower(trim((string) $request->header('X-Client-Platform', ''))) === 'web';
+
+        if ($attestationEnabled && $isWebClient) {
+            // Browser clients use PIN/OTP step-up only; native attestation is not available on web.
+            $decision = 'allow';
+            $reason = 'web_client_step_up_only';
+        } elseif ($attestationEnabled) {
             if ($attestation === '') {
                 $collectionFailureReason = $this->attestationCollectionFailureReason(
                     $attestationStatus,
