@@ -8,6 +8,7 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Filament\Admin\Resources\UserResource\Pages\ViewUser;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\AccountsRelationManager;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\TransactionsRelationManager;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -265,6 +266,21 @@ class AccountsRelationManagerTenancyTest extends TestCase
         Livewire::test(ViewUser::class, [
             'record' => $owner->getRouteKey(),
         ])->assertSuccessful();
+    }
+
+    #[Test]
+    public function tenant_backed_user_relation_managers_are_hidden_without_active_membership(): void
+    {
+        $admin = User::factory()->create();
+        $this->stagedUserUuids[] = $admin->uuid;
+        $admin->assignRole('super-admin');
+        $this->actingAs($admin);
+
+        $owner = User::factory()->create();
+        $this->stagedUserUuids[] = $owner->uuid;
+
+        $this->assertFalse(AccountsRelationManager::canViewForRecord($owner, ViewUser::class));
+        $this->assertFalse(TransactionsRelationManager::canViewForRecord($owner, ViewUser::class));
     }
 
     #[Test]
