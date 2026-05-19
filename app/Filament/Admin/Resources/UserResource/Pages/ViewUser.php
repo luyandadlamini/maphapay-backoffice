@@ -32,6 +32,13 @@ class ViewUser extends ViewRecord
         $this->releaseAccountTenancy();
     }
 
+    public function getRelationManagers(): array
+    {
+        $this->initializeTenancyForUserUuid((string) $this->record->uuid);
+
+        return parent::getRelationManagers();
+    }
+
     public function hasCombinedRelationManagerTabsWithContent(): bool
     {
         return true;
