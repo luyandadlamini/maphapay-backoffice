@@ -5,34 +5,22 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\UserResource\RelationManagers;
 
 use App\Domain\Account\Models\TransactionProjection;
-use App\Domain\Account\Models\AccountMembership;
 use App\Filament\Admin\Concerns\WithAccountTenancy;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\Concerns\RequiresActiveAccountMembership;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Model;
 
 class TransactionsRelationManager extends RelationManager
 {
     use WithAccountTenancy;
+    use RequiresActiveAccountMembership;
 
     protected static string $relationship = 'transactionProjections';
 
     protected static ?string $recordTitleAttribute = 'uuid';
 
     protected static ?string $title = 'Transaction History';
-
-    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
-    {
-        if (! AccountMembership::query()
-            ->where('user_uuid', (string) $ownerRecord->getAttribute('uuid'))
-            ->where('status', 'active')
-            ->exists()) {
-            return false;
-        }
-
-        return parent::canViewForRecord($ownerRecord, $pageClass);
-    }
 
     public function mount(): void
     {

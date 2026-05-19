@@ -8,7 +8,11 @@ use App\Domain\Account\Models\Account;
 use App\Domain\Account\Models\AccountMembership;
 use App\Filament\Admin\Resources\UserResource\Pages\ViewUser;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\AccountsRelationManager;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\BankAccountsRelationManager;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\CardsRelationManager;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\KycStatusRelationManager;
 use App\Filament\Admin\Resources\UserResource\RelationManagers\TransactionsRelationManager;
+use App\Filament\Admin\Resources\UserResource\RelationManagers\UserAuditLogRelationManager;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -280,7 +284,11 @@ class AccountsRelationManagerTenancyTest extends TestCase
         $this->stagedUserUuids[] = $owner->uuid;
 
         $this->assertFalse(AccountsRelationManager::canViewForRecord($owner, ViewUser::class));
+        $this->assertFalse(BankAccountsRelationManager::canViewForRecord($owner, ViewUser::class));
+        $this->assertFalse(CardsRelationManager::canViewForRecord($owner, ViewUser::class));
+        $this->assertFalse(KycStatusRelationManager::canViewForRecord($owner, ViewUser::class));
         $this->assertFalse(TransactionsRelationManager::canViewForRecord($owner, ViewUser::class));
+        $this->assertFalse(UserAuditLogRelationManager::canViewForRecord($owner, ViewUser::class));
     }
 
     #[Test]

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\UserResource\RelationManagers;
 
+use App\Filament\Admin\Resources\UserResource\RelationManagers\Concerns\RequiresActiveAccountMembership;
 use App\Support\BankingDisplay;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
@@ -11,6 +12,8 @@ use Filament\Tables\Table;
 
 class CardsRelationManager extends RelationManager
 {
+    use RequiresActiveAccountMembership;
+
     protected static string $relationship = 'cards';
 
     protected static ?string $recordTitleAttribute = 'last4';

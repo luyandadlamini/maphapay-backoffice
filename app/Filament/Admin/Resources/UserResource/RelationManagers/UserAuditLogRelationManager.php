@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\UserResource\RelationManagers;
 
+use App\Filament\Admin\Resources\UserResource\RelationManagers\Concerns\RequiresActiveAccountMembership;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class UserAuditLogRelationManager extends RelationManager
 {
+    use RequiresActiveAccountMembership;
+
     protected static string $relationship = 'auditLogs';
 
     protected static ?string $title = 'Audit Trail';
